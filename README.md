@@ -1,4 +1,4 @@
-# loop-cli
+# loop-task
 
 A cross-platform CLI that repeatedly executes a shell command at a human-readable interval.
 
@@ -7,13 +7,13 @@ Inspired by agent loops, but intentionally simple.
 ## Installation
 
 ```bash
-npm install -g loop-cli
+npm install -g loop-task
 ```
 
 Or use directly with npx:
 
 ```bash
-npx loop-cli 30m npm test
+npx loop-task 30m npm test
 ```
 
 ## Usage
@@ -33,8 +33,8 @@ loop 1d node sync.js
 ### With npx
 
 ```bash
-npx loop-cli 30m npm test
-npx loop-cli 1h opencode --prompt '/ob-init'
+npx loop-task 30m npm test
+npx loop-task 1h opencode --prompt '/ob-init'
 ```
 
 ### Options
@@ -54,7 +54,7 @@ Options must come before the interval:
 ### Agent workflows
 
 ```bash
-npx loop-cli 30m opencode --prompt "search for missing translation text and translate them, 3 maximum" --model "opencode/big-pickle"
+npx loop-task 30m opencode --prompt "search for missing translation text and translate them, 3 maximum" --model "opencode/big-pickle"
 ```
 
 ### Run tests every 30 minutes

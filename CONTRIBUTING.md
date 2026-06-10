@@ -1,12 +1,12 @@
-# Contributing to loop-cli
+# Contributing to loop-task
 
 Thanks for your interest in contributing!
 
 ## Getting started
 
 ```bash
-git clone https://github.com/your-username/loop-cli.git
-cd loop-cli
+git clone https://github.com/your-username/loop-task.git
+cd loop-task
 pnpm install
 ```
 
