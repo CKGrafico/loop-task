@@ -26,7 +26,7 @@ loop-task [options] <interval> <command>
 
 ```bash
 loop-task 30m npm test
-loop-task 1h opencode --prompt '/ob-init'
+loop-task 1h --now -- opencode run "Check the plans"
 loop-task 1d node sync.js
 ```
 
@@ -34,7 +34,7 @@ loop-task 1d node sync.js
 
 ```bash
 npx loop-task 30m npm test
-npx loop-task 1h opencode --prompt '/ob-init'
+npx loop-task 1h --now -- opencode run "Check the plans"
 ```
 
 ### Options

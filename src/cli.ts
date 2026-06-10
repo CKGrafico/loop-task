@@ -41,7 +41,7 @@ Usage:
 
 Examples:
   loop-task 30m npm test
-  loop-task 1h opencode --prompt '/ob-init'
+  loop-task 1h --now -- opencode run "Check the plans" --model "opencode/big-pickle"
   loop-task 30s --now -- echo hello
   loop-task --max-runs 5 5m npm test
 
