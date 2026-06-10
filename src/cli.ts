@@ -9,7 +9,7 @@ import type { LoopOptions } from "./types.js";
 const program = new Command();
 
 program
-  .name("loop")
+  .name("loop-task")
   .description(
     "Repeatedly execute a shell command at a human-readable interval"
   )
@@ -31,13 +31,13 @@ program
     "before",
     `
 Usage:
-  loop [options] <interval> <command>
+  loop-task [options] <interval> <command>
 
 Examples:
-  loop 30m npm test
-  loop 1h opencode --prompt '/ob-init'
-  loop --immediate 1h npm test
-  loop --max-runs 5 5m npm test
+  loop-task 30m npm test
+  loop-task 1h opencode --prompt '/ob-init'
+  loop-task --immediate 1h npm test
+  loop-task --max-runs 5 5m npm test
 `
   )
   .action(async (intervalStr: string, commandParts: string[], opts: Record<string, unknown>) => {

@@ -1,10 +1,10 @@
 {
   "name": "loop-task",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "A cross-platform CLI that repeatedly executes a shell command at a human-readable interval",
   "type": "module",
   "bin": {
-    "loop": "dist/cli.js"
+    "loop-task": "dist/cli.js"
   },
   "main": "dist/cli.js",
   "files": [

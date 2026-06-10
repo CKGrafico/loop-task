@@ -6,7 +6,7 @@ const cliPath = "dist/cli.js";
 describe("cli", () => {
   it("shows help output", async () => {
     const result = await execa("node", [cliPath, "--help"]);
-    expect(result.stdout).toContain("loop [options] <interval> <command>");
+    expect(result.stdout).toContain("loop-task [options] <interval> <command>");
     expect(result.stdout).toContain("--immediate");
     expect(result.stdout).toContain("--max-runs");
     expect(result.stdout).toContain("--verbose");

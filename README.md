@@ -19,15 +19,15 @@ npx loop-task 30m npm test
 ## Usage
 
 ```bash
-loop [options] <interval> <command>
+loop-task [options] <interval> <command>
 ```
 
 ### Basic examples
 
 ```bash
-loop 30m npm test
-loop 1h opencode --prompt '/ob-init'
-loop 1d node sync.js
+loop-task 30m npm test
+loop-task 1h opencode --prompt '/ob-init'
+loop-task 1d node sync.js
 ```
 
 ### With npx
@@ -60,25 +60,25 @@ npx loop-task 30m opencode --prompt "search for missing translation text and tra
 ### Run tests every 30 minutes
 
 ```bash
-loop 30m npm test
+loop-task 30m npm test
 ```
 
 ### Run immediately, then every hour
 
 ```bash
-loop --immediate 1h npm test
+loop-task --immediate 1h npm test
 ```
 
 ### Run up to 5 times then stop
 
 ```bash
-loop --max-runs 5 5m npm test
+loop-task --max-runs 5 5m npm test
 ```
 
 ### Verbose mode
 
 ```bash
-loop --verbose 30m npm test
+loop-task --verbose 30m npm test
 ```
 
 Shows start/end timestamps, exit code, execution duration, and next scheduled run.
