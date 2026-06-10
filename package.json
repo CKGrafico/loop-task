@@ -1,6 +1,6 @@
 {
   "name": "loop-task",
-  "version": "1.0.2",
+  "version": "1.1.0",
   "description": "A cross-platform CLI that repeatedly executes a shell command at a human-readable interval",
   "type": "module",
   "bin": {

@@ -7,7 +7,7 @@ describe("cli", () => {
   it("shows help output", async () => {
     const result = await execa("node", [cliPath, "--help"]);
     expect(result.stdout).toContain("loop-task [options] <interval> <command>");
-    expect(result.stdout).toContain("--immediate");
+    expect(result.stdout).toContain("--now");
     expect(result.stdout).toContain("--max-runs");
     expect(result.stdout).toContain("--verbose");
     expect(result.stdout).toContain("Examples:");
@@ -49,10 +49,10 @@ describe("cli", () => {
     }
   });
 
-  it("runs with max-runs 1 and immediate", async () => {
+  it("runs with max-runs 1 and now", async () => {
     const result = await execa("node", [
       cliPath,
-      "--immediate",
+      "--now",
       "--max-runs",
       "1",
       "1s",
@@ -68,7 +68,7 @@ describe("cli", () => {
     const result = await execa("node", [
       cliPath,
       "--verbose",
-      "--immediate",
+      "--now",
       "--max-runs",
       "1",
       "1s",

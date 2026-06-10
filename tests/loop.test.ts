@@ -4,12 +4,12 @@ import { Logger } from "../src/logger.js";
 import type { LoopOptions } from "../src/types.js";
 
 vi.mock("execa", () => ({
-  execaCommand: vi.fn(),
+  execa: vi.fn(),
 }));
 
-import { execaCommand } from "execa";
+import { execa } from "execa";
 
-const mockedExeca = vi.mocked(execaCommand);
+const mockedExeca = vi.mocked(execa);
 
 function createLogger(): Logger {
   return new Logger(false);
@@ -32,7 +32,7 @@ describe("executeCommand", () => {
       failed: false,
     } as never);
 
-    const result = await executeCommand("echo hello", createLogger());
+    const result = await executeCommand("echo", ["hello"], createLogger());
     expect(result.exitCode).toBe(0);
     expect(result.duration).toBeGreaterThanOrEqual(0);
     expect(result.startedAt).toBeInstanceOf(Date);
@@ -44,14 +44,14 @@ describe("executeCommand", () => {
     error.exitCode = 1;
     mockedExeca.mockRejectedValueOnce(error);
 
-    const result = await executeCommand("exit 1", createLogger());
+    const result = await executeCommand("exit", ["1"], createLogger());
     expect(result.exitCode).toBe(1);
   });
 
   it("returns exit code 1 for unknown errors", async () => {
     mockedExeca.mockRejectedValueOnce(new Error("unknown"));
 
-    const result = await executeCommand("bad", createLogger());
+    const result = await executeCommand("bad", [], createLogger());
     expect(result.exitCode).toBe(1);
   });
 });
@@ -84,7 +84,8 @@ describe("runLoop", () => {
 
     const options: LoopOptions = {
       interval: 1000,
-      command: "echo hello",
+      command: "echo",
+      commandArgs: ["hello"],
       immediate: true,
       maxRuns: 2,
       verbose: false,
@@ -108,7 +109,8 @@ describe("runLoop", () => {
 
     const options: LoopOptions = {
       interval: 5000,
-      command: "echo hello",
+      command: "echo",
+      commandArgs: ["hello"],
       immediate: false,
       maxRuns: 1,
       verbose: false,
@@ -135,7 +137,8 @@ describe("runLoop", () => {
 
     const options: LoopOptions = {
       interval: 5000,
-      command: "echo hello",
+      command: "echo",
+      commandArgs: ["hello"],
       immediate: true,
       maxRuns: 1,
       verbose: false,
@@ -165,6 +168,7 @@ describe("runLoop", () => {
     const options: LoopOptions = {
       interval: 1000,
       command: "might-fail",
+      commandArgs: [],
       immediate: true,
       maxRuns: 2,
       verbose: false,
@@ -194,6 +198,7 @@ describe("runLoop", () => {
     const options: LoopOptions = {
       interval: 500,
       command: "slow-cmd",
+      commandArgs: [],
       immediate: true,
       maxRuns: 2,
       verbose: false,
@@ -217,7 +222,8 @@ describe("runLoop", () => {
 
     const options: LoopOptions = {
       interval: 10000,
-      command: "echo hello",
+      command: "echo",
+      commandArgs: ["hello"],
       immediate: true,
       maxRuns: null,
       verbose: false,
@@ -238,7 +244,8 @@ describe("runLoop", () => {
   it("exits immediately when maxRuns is 0", async () => {
     const options: LoopOptions = {
       interval: 1000,
-      command: "echo hello",
+      command: "echo",
+      commandArgs: ["hello"],
       immediate: true,
       maxRuns: 0,
       verbose: false,
@@ -263,7 +270,8 @@ describe("runLoop", () => {
     const verboseLogger = new Logger(true);
     const options: LoopOptions = {
       interval: 1000,
-      command: "echo hello",
+      command: "echo",
+      commandArgs: ["hello"],
       immediate: true,
       maxRuns: 1,
       verbose: true,
@@ -280,7 +288,8 @@ describe("runLoop", () => {
   it("aborts during initial wait when not immediate", async () => {
     const options: LoopOptions = {
       interval: 10000,
-      command: "echo hello",
+      command: "echo",
+      commandArgs: ["hello"],
       immediate: false,
       maxRuns: 1,
       verbose: false,

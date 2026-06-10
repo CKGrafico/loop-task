@@ -13,7 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Human-readable duration parsing (`10s`, `5m`, `1h`, `1d`, `1w`)
 - Command execution with `execa` (inherits stdout/stderr)
 - No overlapping executions
-- `--immediate` flag to run before first wait
+- `--now` flag to run before first wait
 - `--max-runs` flag to limit executions
 - `--verbose` flag for detailed output
 - Graceful shutdown on SIGINT/SIGTERM

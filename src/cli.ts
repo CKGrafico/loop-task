@@ -19,7 +19,7 @@ let i = 0;
 while (i < args.length) {
   const arg = args[i];
 
-  if (arg === "--immediate") {
+  if (arg === "--now") {
     loopOptions.immediate = true;
     i++;
   } else if (arg === "--max-runs") {
@@ -42,11 +42,11 @@ Usage:
 Examples:
   loop-task 30m npm test
   loop-task 1h opencode --prompt '/ob-init'
-  loop-task 30s --immediate -- echo hello
+  loop-task 30s --now -- echo hello
   loop-task --max-runs 5 5m npm test
 
 Options:
-  --immediate     Run immediately before waiting
+  --now           Run immediately before waiting
   --max-runs <n>  Stop after N executions
   --verbose       Show execution details
   -h, --help      Display help
@@ -73,7 +73,9 @@ if (commandParts.length < 2) {
 }
 
 const intervalStr = commandParts[0];
-const command = commandParts.slice(1).join(" ");
+const cmdArgs = commandParts.slice(1);
+const command = cmdArgs[0];
+const commandArgs = cmdArgs.slice(1);
 
 const logger = new Logger(loopOptions.verbose);
 
@@ -89,6 +91,7 @@ try {
 const options: LoopOptions = {
   interval,
   command,
+  commandArgs,
   immediate: loopOptions.immediate,
   maxRuns: loopOptions.maxRuns,
   verbose: loopOptions.verbose,

@@ -1,4 +1,4 @@
-import { execaCommand } from "execa";
+import { execa } from "execa";
 import type { LoopOptions, ExecutionResult, LoopState } from "./types.js";
 import { Logger } from "./logger.js";
 import { formatDuration } from "./duration.js";
@@ -26,14 +26,15 @@ function sleep(ms: number, signal: AbortSignal): Promise<void> {
 
 export async function executeCommand(
   command: string,
+  commandArgs: string[],
   logger: Logger
 ): Promise<ExecutionResult> {
   const startedAt = new Date();
 
-  logger.debug(`Executing: ${command}`);
+  logger.debug(`Executing: ${command} ${commandArgs.join(" ")}`);
 
   try {
-    const result = await execaCommand(command, {
+    const result = await execa(command, commandArgs, {
       stdout: "inherit",
       stderr: "inherit",
       stdin: "inherit",
@@ -114,7 +115,7 @@ export async function runLoop(
         `\n--- Run ${state.runCount}${options.maxRuns !== null ? `/${options.maxRuns}` : ""} ---`
       );
 
-      const result = await executeCommand(options.command, logger);
+      const result = await executeCommand(options.command, options.commandArgs, logger);
       state.running = false;
 
       if (result.exitCode !== 0) {

@@ -43,7 +43,7 @@ Options must come before the interval:
 
 | Option            | Description                      |
 | ----------------- | -------------------------------- |
-| `--immediate`     | Run immediately before waiting   |
+| `--now`           | Run immediately before waiting   |
 | `--max-runs <n>`  | Stop after N executions          |
 | `--verbose`       | Show execution details           |
 | `-h, --help`      | Display help                     |
@@ -54,7 +54,7 @@ Options must come before the interval:
 ### Agent workflows
 
 ```bash
-npx loop-task 30m opencode --prompt "search for missing translation text and translate them, 3 maximum" --model "opencode/big-pickle"
+npx loop-task 30m --now -- opencode run "search for missing translation text and translate them, 3 maximum" --model "opencode/big-pickle"
 ```
 
 ### Run tests every 30 minutes
@@ -66,7 +66,7 @@ loop-task 30m npm test
 ### Run immediately, then every hour
 
 ```bash
-loop-task --immediate 1h npm test
+loop-task --now 1h npm test
 ```
 
 ### Run up to 5 times then stop

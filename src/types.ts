@@ -1,6 +1,7 @@
 export interface LoopOptions {
   interval: number;
   command: string;
+  commandArgs: string[];
   immediate: boolean;
   maxRuns: number | null;
   verbose: boolean;

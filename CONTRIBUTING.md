@@ -23,7 +23,7 @@ pnpm run typecheck    # Type check without emitting
 
 ```bash
 pnpm run build
-node dist/cli.js 30m "echo hello" --immediate --max-runs 1
+node dist/cli.js 30m "echo hello" --now --max-runs 1
 ```
 
 ## Testing
