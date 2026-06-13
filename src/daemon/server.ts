@@ -188,6 +188,12 @@ export class IpcServer {
     let fileSize = fs.existsSync(logPath) ? fs.statSync(logPath).size : 0;
 
     const watcher = fs.watch(logPath, (eventType) => {
+      if (eventType === "rename" && !fs.existsSync(logPath)) {
+        watcher.close();
+        this.send(socket, { type: "end" });
+        return;
+      }
+
       if (eventType === "change") {
         try {
           const stat = fs.statSync(logPath);
@@ -205,7 +211,8 @@ export class IpcServer {
             }
           }
         } catch {
-          // file may have been deleted
+          watcher.close();
+          this.send(socket, { type: "end" });
         }
       }
     });

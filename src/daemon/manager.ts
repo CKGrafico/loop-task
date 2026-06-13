@@ -38,6 +38,7 @@ export class LoopManager {
         lastExitCode: meta.lastExitCode,
         lastDuration: meta.lastDuration,
         nextRunAt: meta.nextRunAt,
+        remainingDelayMs: meta.remainingDelayMs,
       });
       this.loops.set(meta.id, {
         controller,
@@ -144,6 +145,7 @@ export class LoopManager {
       immediate: options.immediate,
       maxRuns: options.maxRuns,
       verbose: options.verbose,
+      remainingDelayMs: runtime.remainingDelayMs,
       pid: process.pid,
     };
     saveLoop(meta);
@@ -160,6 +162,7 @@ export class LoopManager {
       immediate: entry.options.immediate,
       maxRuns: entry.options.maxRuns,
       verbose: entry.options.verbose,
+      remainingDelayMs: runtime.remainingDelayMs,
       pid: process.pid,
     };
   }

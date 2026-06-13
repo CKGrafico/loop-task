@@ -38,6 +38,7 @@ export interface LoopMeta {
   lastExitCode: number | null;
   lastDuration: number | null;
   nextRunAt: string | null;
+  remainingDelayMs: number | null;
   pid: number;
 }
 

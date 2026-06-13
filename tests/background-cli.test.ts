@@ -62,6 +62,23 @@ async function shutdownDaemon(home: string): Promise<void> {
   }
 }
 
+async function readLogs(home: string, id: string): Promise<string> {
+  const result = await runCli(["logs", id, "--tail", "50"], home);
+  return result.stdout;
+}
+
+async function readLoopState(home: string, id: string): Promise<{
+  status: string;
+  remainingDelayMs: number | null;
+}> {
+  const filePath = path.join(home, ".loop-cli", "loops", `${id}.json`);
+  const raw = await fs.readFile(filePath, "utf-8");
+  return JSON.parse(raw) as {
+    status: string;
+    remainingDelayMs: number | null;
+  };
+}
+
 afterEach(async () => {
   for (const root of tempRoots.splice(0)) {
     await shutdownDaemon(root);
@@ -121,5 +138,67 @@ describe("background cli", () => {
 
     const listed = await runCli(["list"], home);
     expect(listed.stdout).toContain("No background loops running.");
-  });
+  }, 15000);
+
+  it("preserves paused sleep state across daemon restart", async () => {
+    const home = await makeTestHome();
+
+    const start = await runCli(
+      [
+        "start",
+        "--max-runs",
+        "1",
+        "1500ms",
+        "--",
+        "node",
+        "-e",
+        "console.log('restart-sensitive-run')",
+      ],
+      home,
+      20000
+    );
+
+    const id = start.stdout.match(/ID:\s+([a-f0-9]{8})/i)?.[1];
+    expect(id).toBeDefined();
+
+    await new Promise((resolve) => setTimeout(resolve, 400));
+
+    const pause = await runCli(["pause", id!], home);
+    expect(pause.stdout).toContain(`Loop ${id} paused.`);
+
+    await waitFor(async () => {
+      const result = await runCli(["status", id!], home);
+      return result.stdout.includes("Status:    paused");
+    });
+
+    const pausedState = await readLoopState(home, id!);
+    expect(pausedState.status).toBe("paused");
+    expect(pausedState.remainingDelayMs).not.toBeNull();
+    expect(pausedState.remainingDelayMs).toBeGreaterThan(0);
+
+    await shutdownDaemon(home);
+    await new Promise((resolve) => setTimeout(resolve, 500));
+
+    const restartedStatus = await runCli(["status", id!], home);
+    expect(restartedStatus.stdout).toContain("Status:    paused");
+
+    const restartedState = await readLoopState(home, id!);
+    expect(restartedState.status).toBe("paused");
+    expect(restartedState.remainingDelayMs).not.toBeNull();
+    expect(restartedState.remainingDelayMs).toBeGreaterThan(0);
+
+    const beforeResumeLogs = await readLogs(home, id!);
+    expect(beforeResumeLogs).not.toContain("restart-sensitive-run");
+
+    const resume = await runCli(["resume", id!], home);
+    expect(resume.stdout).toContain(`Loop ${id} resumed.`);
+
+    await waitFor(async () => {
+      const logs = await readLogs(home, id!);
+      return logs.includes("restart-sensitive-run");
+    }, 4000, 250);
+
+    const remove = await runCli(["delete", id!], home);
+    expect(remove.stdout).toContain(`Loop ${id} deleted.`);
+  }, 15000);
 });

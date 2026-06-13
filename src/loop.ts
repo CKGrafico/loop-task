@@ -12,6 +12,7 @@ import { Logger } from "./logger.js";
 import { formatDuration } from "./duration.js";
 
 const MAX_LOG_BYTES = 1024 * 1024;
+const MAX_LOG_GENERATIONS = 3;
 
 function sleep(ms: number, signal: AbortSignal): Promise<void> {
   return new Promise((resolve, reject) => {
@@ -79,6 +80,7 @@ interface LoopControllerState {
   lastExitCode?: number | null;
   lastDuration?: number | null;
   nextRunAt?: string | null;
+  remainingDelayMs?: number | null;
 }
 
 export class LoopController extends EventEmitter {
@@ -116,6 +118,7 @@ export class LoopController extends EventEmitter {
     this.lastExitCode = state?.lastExitCode ?? null;
     this.lastDuration = state?.lastDuration ?? null;
     this.nextRunAt = state?.nextRunAt ?? null;
+    this.remainingDelayMs = state?.remainingDelayMs ?? null;
     this._status = state?.status ?? "running";
     this._paused = state?.status === "paused";
   }
@@ -141,12 +144,21 @@ export class LoopController extends EventEmitter {
 
     this.logStream?.end();
 
-    const rotatedPath = `${this.logPath}.1`;
-    if (fs.existsSync(rotatedPath)) {
-      fs.unlinkSync(rotatedPath);
+    for (let index = MAX_LOG_GENERATIONS; index >= 1; index--) {
+      const currentPath = `${this.logPath}.${index}`;
+      if (!fs.existsSync(currentPath)) {
+        continue;
+      }
+
+      if (index === MAX_LOG_GENERATIONS) {
+        fs.unlinkSync(currentPath);
+        continue;
+      }
+
+      fs.renameSync(currentPath, `${this.logPath}.${index + 1}`);
     }
 
-    fs.renameSync(this.logPath, rotatedPath);
+    fs.renameSync(this.logPath, `${this.logPath}.1`);
     this.logStream = fs.createWriteStream(this.logPath, { flags: "a" });
   }
 
@@ -191,6 +203,7 @@ export class LoopController extends EventEmitter {
       lastExitCode: this.lastExitCode,
       lastDuration: this.lastDuration,
       nextRunAt: this.nextRunAt,
+      remainingDelayMs: this.remainingDelayMs,
     };
   }
 
