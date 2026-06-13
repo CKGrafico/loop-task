@@ -6,16 +6,16 @@ const cliPath = "dist/cli.js";
 describe("cli", () => {
   it("shows help output", async () => {
     const result = await execa("node", [cliPath, "--help"]);
-    expect(result.stdout).toContain("loop-task [options] <interval> <command>");
+    expect(result.stdout).toContain("loop-task");
     expect(result.stdout).toContain("--now");
     expect(result.stdout).toContain("--max-runs");
     expect(result.stdout).toContain("--verbose");
-    expect(result.stdout).toContain("Examples:");
+    expect(result.stdout).toContain("start");
   });
 
   it("shows version", async () => {
     const result = await execa("node", [cliPath, "--version"]);
-    expect(result.stdout.trim()).toBe("1.0.0");
+    expect(result.stdout.trim()).toBe("1.1.0");
   });
 
   it("fails with invalid duration", async () => {

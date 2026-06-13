@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { runLoop, executeCommand } from "../src/loop.js";
+import { runLoop, executeCommandForeground } from "../src/loop.js";
 import { Logger } from "../src/logger.js";
 import type { LoopOptions } from "../src/types.js";
 
@@ -32,7 +32,7 @@ describe("executeCommand", () => {
       failed: false,
     } as never);
 
-    const result = await executeCommand("echo", ["hello"], createLogger());
+    const result = await executeCommandForeground("echo", ["hello"], createLogger());
     expect(result.exitCode).toBe(0);
     expect(result.duration).toBeGreaterThanOrEqual(0);
     expect(result.startedAt).toBeInstanceOf(Date);
@@ -44,14 +44,14 @@ describe("executeCommand", () => {
     error.exitCode = 1;
     mockedExeca.mockRejectedValueOnce(error);
 
-    const result = await executeCommand("exit", ["1"], createLogger());
+    const result = await executeCommandForeground("exit", ["1"], createLogger());
     expect(result.exitCode).toBe(1);
   });
 
   it("returns exit code 1 for unknown errors", async () => {
     mockedExeca.mockRejectedValueOnce(new Error("unknown"));
 
-    const result = await executeCommand("bad", [], createLogger());
+    const result = await executeCommandForeground("bad", [], createLogger());
     expect(result.exitCode).toBe(1);
   });
 });

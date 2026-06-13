@@ -22,12 +22,34 @@ npx loop-task 30m npm test
 loop-task [options] <interval> <command>
 ```
 
+Background mode:
+
+```bash
+loop-task start [options] <interval> <command>
+loop-task list
+loop-task status <id>
+loop-task attach <id>
+loop-task pause <id>
+loop-task resume <id>
+loop-task delete <id>
+loop-task logs <id> [--follow]
+loop-task dashboard
+```
+
+When the command you want to run has its own flags, use `--` to stop `loop-task` argument parsing:
+
+```bash
+loop-task start --now 30m -- node -e "console.log('hello')"
+```
+
 ### Basic examples
 
 ```bash
 loop-task 30m npm test
 loop-task 1h --now -- opencode run "Check the plans"
 loop-task 1d node sync.js
+loop-task start --now 30m npm test
+loop-task list
 ```
 
 ### With npx
@@ -48,6 +70,42 @@ Options must come before the interval:
 | `--verbose`       | Show execution details           |
 | `-h, --help`      | Display help                     |
 | `-V, --version`   | Display version                  |
+
+## Background Loops
+
+Use background mode when you want multiple independent loops managed from one CLI session.
+
+### Start a background loop
+
+```bash
+loop-task start --now 30m npm test
+```
+
+### List all loops
+
+```bash
+loop-task list
+```
+
+### Reattach to a loop's output
+
+```bash
+loop-task attach <id>
+```
+
+### Pause, resume, delete
+
+```bash
+loop-task pause <id>
+loop-task resume <id>
+loop-task delete <id>
+```
+
+### Open the TUI dashboard
+
+```bash
+loop-task dashboard
+```
 
 ## Examples
 

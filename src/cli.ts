@@ -1,106 +1,167 @@
 #!/usr/bin/env node
 
+import { Command } from "commander";
+import { createRequire } from "node:module";
 import { parseDuration } from "./duration.js";
 import { Logger } from "./logger.js";
 import { runLoop } from "./loop.js";
 import type { LoopOptions } from "./types.js";
+import {
+  startLoop,
+  listLoops,
+  showStatus,
+  pauseLoop,
+  resumeLoop,
+  deleteLoop,
+  viewLogs,
+  attachLoop,
+} from "./client/commands.js";
+import { launchDashboard } from "./tui/dashboard.js";
 
-const args = process.argv.slice(2);
+const require = createRequire(import.meta.url);
+const packageJson = require("../package.json") as { version: string };
 
-const loopOptions = {
-  immediate: false,
-  maxRuns: null as number | null,
-  verbose: false,
-};
+const program = new Command();
 
-const commandParts: string[] = [];
-let i = 0;
+program
+  .name("loop-task")
+  .description("Run commands on an interval. Manage loops in the background.")
+  .version(packageJson.version, "-V, --version");
 
-while (i < args.length) {
-  const arg = args[i];
-
-  if (arg === "--now") {
-    loopOptions.immediate = true;
-    i++;
-  } else if (arg === "--max-runs") {
-    i++;
-    const n = parseInt(args[i], 10);
-    if (isNaN(n) || n < 1) {
-      console.error("Error: --max-runs must be a positive integer");
-      process.exit(1);
+program
+  .command("start")
+  .description("Start a loop in the background")
+  .argument("<interval>", "Interval between runs (e.g. 30s, 5m, 1h)")
+  .argument("<command...>", "Command to execute")
+  .option("--now", "Run immediately before waiting", false)
+  .option("--max-runs <n>", "Stop after N executions", parseInt)
+  .option("--verbose", "Show execution details", false)
+  .action(
+    async (
+      intervalStr: string,
+      cmdArgs: string[],
+      opts: { now: boolean; maxRuns?: number; verbose: boolean }
+    ) => {
+      const interval = parseDuration(intervalStr);
+      const options: LoopOptions = {
+        interval,
+        command: cmdArgs[0],
+        commandArgs: cmdArgs.slice(1),
+        immediate: opts.now,
+        maxRuns: opts.maxRuns ?? null,
+        verbose: opts.verbose,
+      };
+      await startLoop(options, intervalStr);
     }
-    loopOptions.maxRuns = n;
-    i++;
-  } else if (arg === "--verbose") {
-    loopOptions.verbose = true;
-    i++;
-  } else if (arg === "--help" || arg === "-h") {
-    console.log(`
-Usage:
-  loop-task [options] <interval> <command>
+  );
 
-Examples:
-  loop-task 30m npm test
-  loop-task 1h --now -- opencode run "Check the plans" --model "opencode/big-pickle"
-  loop-task 30s --now -- echo hello
-  loop-task --max-runs 5 5m npm test
+program
+  .command("list")
+  .alias("ls")
+  .description("List all background loops")
+  .action(async () => {
+    await listLoops();
+  });
 
-Options:
-  --now           Run immediately before waiting
-  --max-runs <n>  Stop after N executions
-  --verbose       Show execution details
-  -h, --help      Display help
-  -V, --version   Display version
-`);
-    process.exit(0);
-  } else if (arg === "--version" || arg === "-V") {
-    console.log("1.0.0");
-    process.exit(0);
-  } else if (arg === "--") {
-    i++;
-    commandParts.push(...args.slice(i));
-    break;
-  } else {
-    commandParts.push(arg);
-    i++;
-  }
-}
+program
+  .command("status")
+  .description("Show detailed status of a loop")
+  .argument("<id>", "Loop ID")
+  .action(async (id: string) => {
+    await showStatus(id);
+  });
 
-if (commandParts.length < 2) {
-  console.error("Error: missing required arguments");
-  console.error("Usage: loop-task [options] <interval> <command>");
-  process.exit(1);
-}
+program
+  .command("attach")
+  .description("Attach to a loop's output stream")
+  .argument("<id>", "Loop ID")
+  .action(async (id: string) => {
+    await attachLoop(id);
+  });
 
-const intervalStr = commandParts[0];
-const cmdArgs = commandParts.slice(1);
-const command = cmdArgs[0];
-const commandArgs = cmdArgs.slice(1);
+program
+  .command("pause")
+  .description("Pause a running loop")
+  .argument("<id>", "Loop ID")
+  .action(async (id: string) => {
+    await pauseLoop(id);
+  });
 
-const logger = new Logger(loopOptions.verbose);
+program
+  .command("resume")
+  .description("Resume a paused loop")
+  .argument("<id>", "Loop ID")
+  .action(async (id: string) => {
+    await resumeLoop(id);
+  });
 
-let interval: number;
-try {
-  interval = parseDuration(intervalStr);
-} catch (error: unknown) {
-  const message = error instanceof Error ? error.message : String(error);
-  logger.error(`Error: ${message}`);
-  process.exit(1);
-}
+program
+  .command("delete")
+  .alias("rm")
+  .description("Stop and delete a loop")
+  .argument("<id>", "Loop ID")
+  .action(async (id: string) => {
+    await deleteLoop(id);
+  });
 
-const options: LoopOptions = {
-  interval,
-  command,
-  commandArgs,
-  immediate: loopOptions.immediate,
-  maxRuns: loopOptions.maxRuns,
-  verbose: loopOptions.verbose,
-};
+program
+  .command("logs")
+  .description("View a loop's logs")
+  .argument("<id>", "Loop ID")
+  .option("-f, --follow", "Follow log output", false)
+  .option("-n, --tail <n>", "Number of lines to show", "50")
+  .action(
+    async (
+      id: string,
+      opts: { follow: boolean; tail: string }
+    ) => {
+      await viewLogs(id, opts.follow, parseInt(opts.tail, 10));
+    }
+  );
 
-const controller = new AbortController();
+program
+  .command("dashboard")
+  .description("Launch interactive TUI dashboard")
+  .action(async () => {
+    await launchDashboard();
+  });
 
-process.on("SIGINT", () => controller.abort());
-process.on("SIGTERM", () => controller.abort());
+program
+  .argument("[interval]", "Interval between runs (foreground mode)")
+  .argument("[command...]", "Command to execute")
+  .option("--now", "Run immediately before waiting")
+  .option("--max-runs <n>", "Stop after N executions")
+  .option("--verbose", "Show execution details")
+  .action(
+    async (
+      intervalStr: string | undefined,
+      cmdArgs: string[] | undefined,
+      opts: { now?: boolean; maxRuns?: string; verbose?: boolean }
+    ) => {
+      if (!intervalStr || !cmdArgs || cmdArgs.length === 0) {
+        program.help();
+        return;
+      }
 
-await runLoop(options, logger, controller.signal);
-process.exit(0);
+      const interval = parseDuration(intervalStr);
+      const logger = new Logger(opts.verbose ?? false);
+
+      const options: LoopOptions = {
+        interval,
+        command: cmdArgs[0],
+        commandArgs: cmdArgs.slice(1),
+        immediate: opts.now ?? false,
+        maxRuns: opts.maxRuns ? parseInt(opts.maxRuns, 10) : null,
+        verbose: opts.verbose ?? false,
+      };
+
+      const controller = new AbortController();
+      process.on("SIGINT", () => controller.abort());
+      process.on("SIGTERM", () => controller.abort());
+
+      await runLoop(options, logger, controller.signal);
+      process.exit(0);
+    }
+  );
+
+await program.parseAsync(process.argv);
