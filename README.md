@@ -4,16 +4,21 @@ A cross-platform loop runner with a board-first terminal workflow.
 
 `loop-task` is built around running multiple background loops and managing them from one interactive board.
 
+## Requirements
+
+`loop-task` runs on [Bun](https://bun.sh) (>= 1.2). The interactive board is built
+with [OpenTUI](https://github.com/sst/opentui) + React.
+
 ## Installation
 
 ```bash
-npm install -g loop-task
+bun install -g loop-task
 ```
 
-Or use directly with npx:
+Or run it directly:
 
 ```bash
-npx loop-task
+bunx loop-task
 ```
 
 ## Usage
@@ -170,10 +175,10 @@ Shows start/end timestamps, exit code, execution duration, and next scheduled ru
 ## Development
 
 ```bash
-pnpm install
-pnpm run build
-pnpm run test
-pnpm run lint
+bun install
+bun run typecheck
+bun run lint
+bun run test
 ```
 
 ## License

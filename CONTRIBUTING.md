@@ -2,58 +2,72 @@
 
 Thanks for your interest in contributing!
 
+## Requirements
+
+`loop-task` runs on [Bun](https://bun.sh). The board UI is built with
+[OpenTUI](https://github.com/sst/opentui) + React, which require Bun's runtime.
+Install Bun (>= 1.2) before working on the project.
+
 ## Getting started
 
 ```bash
 git clone https://github.com/your-username/loop-task.git
 cd loop-task
-pnpm install
+bun install
 ```
 
 ## Development
 
 ```bash
-pnpm run dev          # Watch mode build
-pnpm run test:watch   # Watch mode tests
-pnpm run lint         # Lint source and tests
-pnpm run typecheck    # Type check without emitting
+bun run dev           # Run the board with auto-reload
+bun run test:watch    # Watch mode tests
+bun run lint          # Lint source and tests
+bun run typecheck     # Type check without emitting
 ```
 
 ## Product direction
 
-`loop-task` is now board-first:
+`loop-task` is board-first:
 
-- `loop-task` opens the board
+- `loop-task` opens the OpenTUI board
 - `loop-task start ...` creates background loops for scripts and shell workflows
 - `loop-task run ...` is the explicit foreground mode
 
 Loop management actions should prefer the board over adding more top-level CLI commands.
 
-The TUI redesign work should follow the architecture plan in `TUI_ARCHITECTURE.md`.
+## Architecture
+
+- `src/cli.ts` — Commander entry point (Bun shebang)
+- `src/daemon/` — background daemon, IPC server, loop manager, state persistence
+- `src/client/` — IPC client used by the CLI and the board
+- `src/board/` — OpenTUI + React board (`index.tsx`, `App.tsx`, `state.ts`, `daemon.ts`)
+- `src/loop.ts`, `src/loop-config.ts`, `src/duration.ts`, `src/logger.ts` — core loop logic
+
+Bun runs the TypeScript/TSX sources directly; there is no build step.
 
 ## Running the CLI locally
 
 ```bash
-pnpm run build
-node dist/cli.js
-node dist/cli.js start --now 30m -- npm test
-node dist/cli.js run --now --max-runs 1 30s -- echo hello
+bun run src/cli.ts                                   # open the board
+bun run src/cli.ts start --now 30m -- npm test       # background loop
+bun run src/cli.ts run --now --max-runs 1 30s -- echo hello   # foreground
 ```
+
+Set `LOOP_CLI_HOME` to an alternate directory to isolate daemon state
+(used by the test suite).
 
 ## Testing
 
 ```bash
-pnpm run test             # Run tests
-pnpm run test:coverage    # Run tests with coverage
+bun run test              # Run tests
+bun run test:coverage     # Run tests with coverage
 ```
-
-Target: >=90% coverage.
 
 ## Publishing (maintainers)
 
 ```bash
-pnpm run release:dry   # Dry run
-pnpm run release       # Build and publish to npm
+bun run release:dry   # Dry run
+bun run release       # Publish to npm (runs on Bun)
 ```
 
 ## Code style
@@ -69,5 +83,5 @@ pnpm run release       # Build and publish to npm
 1. Fork the repo
 2. Create a feature branch
 3. Make your changes
-4. Ensure `pnpm run lint`, `pnpm run typecheck`, and `pnpm run test` pass
+4. Ensure `bun run lint`, `bun run typecheck`, and `bun run test` pass
 5. Open a PR

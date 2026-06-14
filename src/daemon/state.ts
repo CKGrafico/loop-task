@@ -5,7 +5,9 @@ import crypto from "node:crypto";
 import type { LoopMeta } from "../types.js";
 
 export function getDataDir(): string {
-  return path.join(os.homedir(), ".loop-cli");
+  const override = process.env.LOOP_CLI_HOME;
+  const base = override && override.trim() ? override : os.homedir();
+  return path.join(base, ".loop-cli");
 }
 
 function getLoopsDir(): string {

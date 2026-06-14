@@ -1,4 +1,4 @@
-#!/usr/bin/env node
+#!/usr/bin/env bun
 
 import { Command } from "commander";
 import { createRequire } from "node:module";
@@ -6,7 +6,7 @@ import { Logger } from "./logger.js";
 import { runLoop } from "./loop.js";
 import { buildLoopOptions } from "./loop-config.js";
 import { startLoop } from "./client/commands.js";
-import { launchDashboard } from "./tui/dashboard.js";
+import { launchBoard } from "./board/index.js";
 
 const require = createRequire(import.meta.url);
 const packageJson = require("../package.json") as { version: string };
@@ -69,7 +69,7 @@ program
   );
 
 program.action(async () => {
-  await launchDashboard();
+  await launchBoard();
 });
 
 await program.parseAsync(process.argv);

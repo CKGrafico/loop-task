@@ -6,8 +6,8 @@ import { afterEach, describe, expect, it } from "vitest";
 import { execa } from "execa";
 import type { IpcRequest, IpcResponse } from "../src/types.js";
 
-const cliPath = path.resolve("dist/cli.js");
-const ipcModuleUrl = pathToFileURL(path.resolve("dist/client/ipc.js")).href;
+const cliPath = path.resolve("src/cli.ts");
+const ipcModuleUrl = pathToFileURL(path.resolve("src/client/ipc.ts")).href;
 const tempRoots: string[] = [];
 
 async function makeTestHome(): Promise<string> {
@@ -19,13 +19,12 @@ async function makeTestHome(): Promise<string> {
 function testEnv(home: string): NodeJS.ProcessEnv {
   return {
     ...process.env,
-    USERPROFILE: home,
-    HOME: home,
+    LOOP_CLI_HOME: home,
   };
 }
 
 async function runCli(args: string[], home: string, timeout = 15000) {
-  return execa("node", [cliPath, ...args], {
+  return execa("bun", [cliPath, ...args], {
     env: testEnv(home),
     timeout,
   });
@@ -33,9 +32,8 @@ async function runCli(args: string[], home: string, timeout = 15000) {
 
 async function sendDaemonRequest(home: string, request: IpcRequest): Promise<IpcResponse> {
   const result = await execa(
-    "node",
+    "bun",
     [
-      "--input-type=module",
       "-e",
       `import { sendRequest } from ${JSON.stringify(ipcModuleUrl)}; const response = await sendRequest(${JSON.stringify(request)}); console.log(JSON.stringify(response));`,
     ],
@@ -145,9 +143,8 @@ async function readLogs(home: string, id: string): Promise<string> {
 
 async function attachOnce(home: string, id: string): Promise<string> {
   const result = await execa(
-    "node",
+    "bun",
     [
-      "--input-type=module",
       "-e",
       `import { streamRequest } from ${JSON.stringify(ipcModuleUrl)}; let done = false; const socket = streamRequest({ type: "attach", payload: { id: ${JSON.stringify(id)} } }, (line) => { if (!done && line.includes("bg-loop-output")) { done = true; console.log(line); socket.destroy(); process.exit(0); } }, () => { if (!done) process.exit(1); }, (error) => { console.error(error.message); process.exit(1); }); setTimeout(() => { if (!done) { socket.destroy(); process.exit(1); } }, 10000);`,
     ],

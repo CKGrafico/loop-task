@@ -1,19 +1,20 @@
 {
   "compilerOptions": {
-    "target": "ES2022",
-    "module": "Node16",
-    "moduleResolution": "Node16",
-    "lib": ["ES2022"],
-    "outDir": "dist",
-    "rootDir": "src",
+    "target": "ESNext",
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "lib": ["ESNext", "DOM"],
+    "types": ["bun", "node"],
+    "jsx": "react-jsx",
+    "jsxImportSource": "@opentui/react",
+    "allowImportingTsExtensions": true,
+    "noEmit": true,
     "strict": true,
     "esModuleInterop": true,
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
     "resolveJsonModule": true,
-    "declaration": true,
-    "declarationMap": true,
-    "sourceMap": true
+    "verbatimModuleSyntax": false
   },
   "include": ["src/**/*"],
   "exclude": ["node_modules", "dist", "tests"]

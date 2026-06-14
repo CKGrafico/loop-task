@@ -20,7 +20,7 @@ export function ensureDaemon(): void {
     removeDaemonPid();
   }
 
-  const daemonScript = path.resolve(__dirname, "index.js");
+  const daemonScript = path.resolve(__dirname, "index.ts");
   const child = spawn(process.execPath, [daemonScript], {
     detached: true,
     stdio: "ignore",
