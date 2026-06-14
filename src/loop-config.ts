@@ -25,6 +25,57 @@ export function parseMaxRuns(value: number | string | null | undefined): number 
   return parsed;
 }
 
+export function parseCommandLine(input: string): string[] {
+  const tokens: string[] = [];
+  let current = "";
+  let quote: '"' | "'" | null = null;
+  let hasToken = false;
+
+  for (let i = 0; i < input.length; i += 1) {
+    const char = input[i];
+
+    if (quote) {
+      if (char === quote) {
+        quote = null;
+      } else if (char === "\\" && quote === '"' && i + 1 < input.length) {
+        i += 1;
+        current += input[i];
+      } else {
+        current += char;
+      }
+      continue;
+    }
+
+    if (char === '"' || char === "'") {
+      quote = char;
+      hasToken = true;
+      continue;
+    }
+
+    if (char === " " || char === "\t") {
+      if (hasToken) {
+        tokens.push(current);
+        current = "";
+        hasToken = false;
+      }
+      continue;
+    }
+
+    current += char;
+    hasToken = true;
+  }
+
+  if (quote) {
+    throw new Error("Unbalanced quote in command");
+  }
+
+  if (hasToken) {
+    tokens.push(current);
+  }
+
+  return tokens;
+}
+
 export function buildLoopOptions(
   intervalHuman: string,
   command: string,

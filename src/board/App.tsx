@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { useKeyboard } from "@opentui/react";
+import { useKeyboard, useTerminalDimensions } from "@opentui/react";
 import type net from "node:net";
 import type { LoopMeta } from "../types.js";
-import { buildLoopOptions } from "../loop-config.js";
+import { buildLoopOptions, parseCommandLine } from "../loop-config.js";
 import {
   createLoop,
   deleteLoop,
@@ -19,10 +19,12 @@ import {
   type Filters,
   type SortMode,
 } from "./state.js";
-import { formatCmd, statusColor, timeAgo, timingLabel } from "./format.js";
+import { commandLine, formatCmd, statusColor, timeAgo, timingLabel } from "./format.js";
+import { ToastStack, useToasts } from "./toast.js";
 
 type View = "board" | "detail" | "help" | "create";
 type DaemonStatus = "starting" | "connected" | "error";
+type Mode = "normal" | "search" | "create" | "help" | "detail" | "confirm";
 
 interface ConfirmState {
   message: string;
@@ -31,17 +33,18 @@ interface ConfirmState {
 
 const POLL_MS = 2000;
 
-export function App(): React.ReactNode {
+export function App(props: { onQuit: () => void }): React.ReactNode {
   const [loops, setLoops] = useState<LoopMeta[]>([]);
   const [daemonStatus, setDaemonStatus] = useState<DaemonStatus>("starting");
   const [view, setView] = useState<View>("board");
   const [filters, setFilters] = useState<Filters>(defaultFilters);
   const [sort, setSort] = useState<SortMode>("status");
   const [selectedIndex, setSelectedIndex] = useState(0);
-  const [status, setStatus] = useState("");
   const [searchActive, setSearchActive] = useState(false);
   const [confirm, setConfirm] = useState<ConfirmState | null>(null);
+  const [confirmChoice, setConfirmChoice] = useState(0);
   const [logLines, setLogLines] = useState<string[]>([]);
+  const { toasts, push } = useToasts();
 
   const visible = useMemo(
     () => applyLoopFilters(loops, filters, sort),
@@ -59,9 +62,8 @@ export function App(): React.ReactNode {
       const next = await listLoops();
       setLoops(next);
       setDaemonStatus("connected");
-    } catch (error) {
+    } catch {
       setDaemonStatus("error");
-      setStatus(error instanceof Error ? error.message : String(error));
     }
   }
 
@@ -88,7 +90,7 @@ export function App(): React.ReactNode {
           const next = prev[0]?.startsWith("  Waiting") ? [] : prev;
           return [...next, line].slice(-500);
         }),
-      (error) => setStatus(`Log stream error: ${error.message}`)
+      (error) => push("error", `Log stream error: ${error.message}`)
     );
     logSocket.current = socket;
 
@@ -108,9 +110,9 @@ export function App(): React.ReactNode {
       try {
         await action();
         await refresh();
-        setStatus(label);
+        push("success", label);
       } catch (error) {
-        setStatus(error instanceof Error ? error.message : String(error));
+        push("error", error instanceof Error ? error.message : String(error));
       }
     };
   }
@@ -119,12 +121,24 @@ export function App(): React.ReactNode {
     const name = key.name;
 
     if (confirm) {
-      if (name === "y" || name === "return" || name === "enter") {
+      if (name === "left" || name === "right" || name === "tab") {
+        setConfirmChoice((c) => (c === 1 ? 0 : 1));
+        return;
+      }
+      if (name === "y") {
         const action = confirm.action;
         setConfirm(null);
         void action();
       } else if (name === "n" || name === "escape") {
         setConfirm(null);
+      } else if (name === "return" || name === "enter") {
+        if (confirmChoice === 1) {
+          const action = confirm.action;
+          setConfirm(null);
+          void action();
+        } else {
+          setConfirm(null);
+        }
       }
       return;
     }
@@ -143,9 +157,10 @@ export function App(): React.ReactNode {
       return;
     }
 
-    if (name === "q" || (name === "c" && key.ctrl)) {
+    if (name === "q") {
       logSocket.current?.destroy();
-      process.exit(0);
+      props.onQuit();
+      return;
     }
 
     if (name === "escape") {
@@ -199,16 +214,19 @@ export function App(): React.ReactNode {
     }
 
     if (name === "p") {
+      setConfirmChoice(0);
       setConfirm({
         message: `Pause loop ${selectedId}?`,
         action: runAction(`Paused ${selectedId}`, () => pauseLoop(selectedId)),
       });
     } else if (name === "r") {
+      setConfirmChoice(0);
       setConfirm({
         message: `Resume loop ${selectedId}?`,
         action: runAction(`Resumed ${selectedId}`, () => resumeLoop(selectedId)),
       });
     } else if (name === "d") {
+      setConfirmChoice(0);
       setConfirm({
         message: `Delete loop ${selectedId}?`,
         action: runAction(`Deleted ${selectedId}`, () => deleteLoop(selectedId)),
@@ -223,9 +241,33 @@ export function App(): React.ReactNode {
     paused: loops.filter((l) => l.status === "paused").length,
   };
 
+  const mode: Mode = confirm
+    ? "confirm"
+    : searchActive
+      ? "search"
+      : view === "create"
+        ? "create"
+        : view === "help"
+          ? "help"
+          : view === "detail"
+            ? "detail"
+            : "normal";
+
   return (
     <box style={{ flexDirection: "column", width: "100%", height: "100%" }}>
       <Header daemonStatus={daemonStatus} counts={counts} />
+
+      {view === "board" ? (
+        <FilterBar
+          filters={filters}
+          sort={sort}
+          searchActive={searchActive}
+          onSearch={(q) => {
+            setFilters((prev) => ({ ...prev, query: q }));
+            setSelectedIndex(0);
+          }}
+        />
+      ) : null}
 
       {view === "help" ? (
         <HelpView />
@@ -234,7 +276,7 @@ export function App(): React.ReactNode {
           onCancel={() => setView("board")}
           onCreated={(id) => {
             setView("board");
-            setStatus(`Started ${id}`);
+            push("success", `Started ${id}`);
             void refresh();
           }}
         />
@@ -256,17 +298,13 @@ export function App(): React.ReactNode {
         </box>
       )}
 
-      <Footer
-        view={view}
-        searchActive={searchActive}
-        query={filters.query}
-        confirm={confirm}
-        status={status}
-        onSearch={(q) => {
-          setFilters((prev) => ({ ...prev, query: q }));
-          setSelectedIndex(0);
-        }}
-      />
+      <Footer mode={mode} />
+
+      {confirm ? (
+        <ConfirmModal message={confirm.message} choice={confirmChoice} />
+      ) : null}
+
+      <ToastStack toasts={toasts} />
     </box>
   );
 }
@@ -276,28 +314,77 @@ function Header(props: {
   counts: { total: number; running: number; sleeping: number; paused: number };
 }): React.ReactNode {
   const { daemonStatus, counts } = props;
+  const { width } = useTerminalDimensions();
   const color =
     daemonStatus === "connected"
       ? "#4ade80"
       : daemonStatus === "error"
         ? "#f87171"
         : "#facc15";
+  const symbol = daemonStatus === "connected" ? "✓" : daemonStatus === "error" ? "✗" : "…";
 
   return (
-    <box
-      style={{
-        height: 1,
-        backgroundColor: "#1e3a8a",
-        flexDirection: "row",
-        paddingLeft: 1,
-        paddingRight: 1,
-      }}
-    >
-      <text>
-        <strong>LOOP-TASK BOARD</strong> daemon:<span fg={color}>{daemonStatus}</span>
-        {"  "}loops:{counts.total} running:{counts.running} sleeping:
-        {counts.sleeping} paused:{counts.paused}
-      </text>
+    <box style={{ flexDirection: "column" }}>
+      <box style={{ flexDirection: "row", paddingLeft: 1, paddingRight: 1 }}>
+        <text>
+          <strong fg="#a3e635">loop-task</strong>
+          <span fg="#6b7280">  background task loops</span>
+        </text>
+      </box>
+      <box style={{ flexDirection: "row", paddingLeft: 1, paddingRight: 1 }}>
+        <text>
+          <span fg="#6b7280">Daemon: </span>
+          <span fg={color}>{symbol} {daemonStatus}</span>
+          <span fg="#6b7280">    Loops: </span>
+          <span fg="#e5e7eb">{counts.total}</span>
+          <span fg="#6b7280">    Running: </span>
+          <span fg="#4ade80">{counts.running}</span>
+          <span fg="#6b7280">    Sleeping: </span>
+          <span fg="#38bdf8">{counts.sleeping}</span>
+          <span fg="#6b7280">    Paused: </span>
+          <span fg="#facc15">{counts.paused}</span>
+        </text>
+      </box>
+      <box style={{ height: 1, paddingLeft: 1, paddingRight: 1 }}>
+        <text fg="#374151">{"─".repeat(Math.max(0, width - 2))}</text>
+      </box>
+    </box>
+  );
+}
+
+function FilterBar(props: {
+  filters: Filters;
+  sort: SortMode;
+  searchActive: boolean;
+  onSearch: (query: string) => void;
+}): React.ReactNode {
+  const { filters, sort, searchActive, onSearch } = props;
+
+  return (
+    <box style={{ flexDirection: "row", height: 3, paddingLeft: 1, paddingRight: 1 }}>
+      <box
+        title=" Search / "
+        border
+        style={{ flexGrow: 2, height: 3, marginRight: 1, paddingLeft: 1 }}
+      >
+        {searchActive ? (
+          <input
+            focused
+            placeholder="type to filter, enter to apply"
+            onInput={onSearch}
+          />
+        ) : (
+          <text fg={filters.query ? "#e5e7eb" : "#6b7280"}>
+            {filters.query || "press / to search"}
+          </text>
+        )}
+      </box>
+      <box title=" Status f " border style={{ flexGrow: 1, height: 3, marginRight: 1, paddingLeft: 1 }}>
+        <text fg="#38bdf8">{filters.status}</text>
+      </box>
+      <box title=" Sort s " border style={{ flexGrow: 1, height: 3, paddingLeft: 1 }}>
+        <text fg="#a3e635">{sort}</text>
+      </box>
     </box>
   );
 }
@@ -310,13 +397,22 @@ function Navigator(props: {
   sort: SortMode;
 }): React.ReactNode {
   const { visible, total, selectedIndex, filters, sort } = props;
+  const header =
+    "  " +
+    "STATUS".padEnd(8) +
+    " " +
+    "COMMAND".padEnd(20) +
+    " " +
+    "TIMING".padEnd(12) +
+    " EXIT  RUNS";
 
   return (
     <box
       title={` Loops ${visible.length}/${total}  sort:${sort}  status:${filters.status} `}
       border
-      style={{ width: "45%", flexDirection: "column" }}
+      style={{ width: "62%", flexDirection: "column" }}
     >
+      <text fg="#6b7280">{header}</text>
       {visible.length === 0 ? (
         <text fg="#9ca3af">  No loops match the current view</text>
       ) : (
@@ -331,8 +427,8 @@ function Navigator(props: {
               {isSelected ? "›" : " "} <span fg={statusColor(loop.status)}>
                 {loop.status.padEnd(8)}
               </span>{" "}
-              {formatCmd(loop.command, loop.commandArgs).padEnd(24)}{" "}
-              {timingLabel(loop).padEnd(14)} exit {exit.padEnd(3)} #
+              {formatCmd(loop.command, loop.commandArgs, 20).padEnd(20)}{" "}
+              {timingLabel(loop).padEnd(12)} exit {exit.padEnd(3)} #
               {String(loop.runCount).padStart(3)}
             </text>
           );
@@ -352,7 +448,7 @@ function Inspector(props: { loop: LoopMeta | null }): React.ReactNode {
     );
   }
 
-  const cmd = `${loop.command} ${loop.commandArgs.join(" ")}`.trim();
+  const cmd = commandLine(loop.command, loop.commandArgs);
   const maxRuns = loop.maxRuns !== null ? String(loop.maxRuns) : "unlimited";
 
   return (
@@ -395,7 +491,7 @@ function DetailView(props: {
   logLines: string[];
 }): React.ReactNode {
   const { loop, logLines } = props;
-  const cmd = `${loop.command} ${loop.commandArgs.join(" ")}`.trim();
+  const cmd = commandLine(loop.command, loop.commandArgs);
   const maxRuns = loop.maxRuns !== null ? String(loop.maxRuns) : "unlimited";
 
   return (
@@ -456,35 +552,62 @@ function CreateView(props: {
   onCancel: () => void;
   onCreated: (id: string) => void;
 }): React.ReactNode {
-  const fields = ["interval", "command", "args", "runNow", "maxRuns"] as const;
+  const fields = ["interval", "command", "runNow", "maxRuns"] as const;
   type Field = (typeof fields)[number];
 
   const labels: Record<Field, string> = {
-    interval: "Interval (e.g. 30m)",
+    interval: "Interval",
     command: "Command",
-    args: "Arguments (space separated)",
-    runNow: "Run immediately? (y/n)",
-    maxRuns: "Max runs (blank = unlimited)",
+    runNow: "Run immediately?",
+    maxRuns: "Max runs",
   };
+
+  const hints: Record<Field, string> = {
+    interval: "how often to run · e.g. 30s · 5m · 30m · 1h · 1d",
+    command: "full command line · quote args with spaces",
+    runNow: "run once now then every interval, or wait the first interval",
+    maxRuns: "stop after N runs · leave blank to run forever",
+  };
+
+  const examples: Record<Field, string> = {
+    interval: "30m",
+    command: 'opencode run "search missing translations and translate them, 3 maximum" --model "opencode/big-pickle"',
+    runNow: "",
+    maxRuns: "",
+  };
+
+  const runNowOptions = [
+    { name: "No — wait the first interval", description: "", value: "n" },
+    { name: "Yes — run now, then every interval", description: "", value: "y" },
+  ];
 
   const [values, setValues] = useState<Record<Field, string>>({
     interval: "30m",
     command: "",
-    args: "",
     runNow: "n",
     maxRuns: "",
   });
   const [focusIndex, setFocusIndex] = useState(0);
   const [error, setError] = useState("");
 
+  useKeyboard((key) => {
+    if (key.name !== "tab") return;
+    setFocusIndex((i) => {
+      const next = key.shift ? i - 1 : i + 1;
+      return Math.max(0, Math.min(fields.length - 1, next));
+    });
+  });
+
   function submit(current: Record<Field, string>): void {
     try {
+      const tokens = parseCommandLine(current.command.trim());
+      const [command, ...commandArgs] = tokens;
       const built = buildLoopOptions(
         current.interval.trim(),
-        current.command.trim(),
-        current.args.trim() ? current.args.trim().split(/\s+/) : [],
+        command ?? "",
+        commandArgs,
         {
-          now: current.runNow.trim().toLowerCase().startsWith("y"),
+          now: current.runNow === "y",
           maxRuns: current.maxRuns.trim() || null,
           verbose: false,
         }
@@ -501,82 +624,191 @@ function CreateView(props: {
 
   return (
     <box title=" New Loop " border style={{ flexDirection: "column", flexGrow: 1, padding: 1 }}>
+      <box style={{ flexDirection: "column", marginBottom: 1 }}>
+        <text fg="#9ca3af">Full example of the loop you are building:</text>
+        <text>
+          <span fg="#a3e635">loop-task start 30m --now -- </span>
+          <span fg="#38bdf8">opencode run </span>
+          <span fg="#e5e7eb">&quot;search missing translations and translate them, 3 maximum&quot;</span>
+          <span fg="#38bdf8"> --model </span>
+          <span fg="#e5e7eb">&quot;opencode/big-pickle&quot;</span>
+        </text>
+      </box>
       {fields.map((field, index) => (
         <box key={field} style={{ flexDirection: "column", marginBottom: 1 }}>
-          <text fg={focusIndex === index ? "#38bdf8" : "#9ca3af"}>
-            {labels[field]}
+          <text>
+            <span fg={focusIndex === index ? "#38bdf8" : "#e5e7eb"}>
+              {labels[field].padEnd(18)}
+            </span>
+            <span fg="#6b7280">{hints[field]}</span>
           </text>
-          <box border style={{ height: 3 }}>
-            <input
-              focused={focusIndex === index}
-              placeholder={values[field]}
-              onInput={(value: string) =>
-                setValues((prev) => ({ ...prev, [field]: value }))
-              }
-              onSubmit={() => {
-                if (index < fields.length - 1) {
-                  setFocusIndex(index + 1);
-                } else {
-                  submit(values);
+          {field === "runNow" ? (
+            <box border style={{ height: runNowOptions.length + 2 }}>
+              <select
+                focused={focusIndex === index}
+                options={runNowOptions}
+                selectedIndex={values.runNow === "y" ? 1 : 0}
+                showDescription={false}
+                style={{ flexGrow: 1 }}
+                onChange={(_index: number, option: { value?: string } | null) =>
+                  setValues((prev) => ({ ...prev, runNow: option?.value ?? "n" }))
                 }
-              }}
-            />
-          </box>
+              />
+            </box>
+          ) : (
+            <box border style={{ height: 3 }}>
+              <input
+                focused={focusIndex === index}
+                placeholder={examples[field] ? `e.g. ${examples[field]}` : "(blank)"}
+                onInput={(value: string) =>
+                  setValues((prev) => ({ ...prev, [field]: value }))
+                }
+                onSubmit={() => {
+                  if (index < fields.length - 1) {
+                    setFocusIndex(index + 1);
+                  } else {
+                    submit(values);
+                  }
+                }}
+              />
+            </box>
+          )}
         </box>
       ))}
       <text fg="#9ca3af">
-        Tab/Enter to advance · Enter on last field creates · Esc cancels
+        Tab/Shift+Tab to move · Enter advances or creates · Esc cancels
       </text>
       {error ? <text fg="#f87171">{error}</text> : null}
     </box>
   );
 }
 
-function Footer(props: {
-  view: View;
-  searchActive: boolean;
-  query: string;
-  confirm: ConfirmState | null;
-  status: string;
-  onSearch: (query: string) => void;
-}): React.ReactNode {
-  if (props.confirm) {
-    return (
-      <box style={{ height: 1, backgroundColor: "#7c2d12", paddingLeft: 1 }}>
-        <text>
-          <strong>{props.confirm.message}</strong> <span fg="#4ade80">y</span>
-          es / <span fg="#f87171">n</span>o
-        </text>
-      </box>
-    );
-  }
+function Footer(props: { mode: Mode }): React.ReactNode {
+  const { mode } = props;
 
-  if (props.searchActive) {
-    return (
-      <box style={{ height: 1, flexDirection: "row", paddingLeft: 1 }}>
-        <text fg="#38bdf8">search: </text>
-        <input
-          focused
-          placeholder="type to filter, enter to apply"
-          onInput={props.onSearch}
-        />
-      </box>
-    );
-  }
+  const badge: Record<Mode, { label: string; bg: string }> = {
+    normal: { label: "NORMAL", bg: "#4ade80" },
+    search: { label: "SEARCH", bg: "#38bdf8" },
+    create: { label: "CREATE", bg: "#a3e635" },
+    help: { label: "HELP", bg: "#facc15" },
+    detail: { label: "DETAIL", bg: "#818cf8" },
+    confirm: { label: "CONFIRM", bg: "#f87171" },
+  };
 
-  const hints =
-    props.view === "create"
-      ? "esc cancel"
-      : props.view === "help"
-        ? "h/esc back"
-        : props.view === "detail"
-          ? "esc back · p pause · r resume · d delete · q quit"
-          : "n new · enter detail · p/r/d act · / search · f filter · s sort · h help · q quit";
+  const hints: Record<Mode, [string, string][]> = {
+    normal: [
+      ["n", "new"],
+      ["enter", "detail"],
+      ["p", "pause"],
+      ["r", "resume"],
+      ["d", "delete"],
+      ["/", "search"],
+      ["f", "filter"],
+      ["s", "sort"],
+      ["h", "help"],
+      ["q", "quit"],
+    ],
+    search: [
+      ["enter", "apply"],
+      ["esc", "cancel"],
+    ],
+    create: [
+      ["tab", "next field"],
+      ["enter", "create"],
+      ["esc", "cancel"],
+    ],
+    help: [["h/esc", "back"]],
+    detail: [
+      ["p", "pause"],
+      ["r", "resume"],
+      ["d", "delete"],
+      ["esc", "back"],
+      ["q", "quit"],
+    ],
+    confirm: [
+      ["←/→", "choose"],
+      ["enter", "confirm"],
+      ["y/n", "yes/no"],
+      ["esc", "cancel"],
+    ],
+  };
+
+  const current = badge[mode];
 
   return (
-    <box style={{ height: 1, flexDirection: "row", paddingLeft: 1 }}>
-      <text fg="#9ca3af">{hints}</text>
-      {props.status ? <text fg="#a3e635">  {props.status}</text> : null}
+    <box style={{ flexDirection: "row", height: 1 }}>
+      <box style={{ backgroundColor: current.bg, paddingLeft: 1, paddingRight: 1 }}>
+        <text fg="#0b0b0b"><strong>{current.label}</strong></text>
+      </box>
+      <box style={{ flexGrow: 1, paddingLeft: 1, flexDirection: "row" }}>
+        <text>
+          {hints[mode].map(([k, a], i) => (
+            <span key={k}>
+              {i > 0 ? <span fg="#374151">  </span> : null}
+              <span fg="#38bdf8">{k}</span>
+              <span fg="#6b7280">:{a}</span>
+            </span>
+          ))}
+        </text>
+      </box>
+    </box>
+  );
+}
+
+function ConfirmModal(props: { message: string; choice: number }): React.ReactNode {
+  const { message, choice } = props;
+
+  return (
+    <box
+      style={{
+        position: "absolute",
+        top: 0,
+        left: 0,
+        width: "100%",
+        height: "100%",
+        justifyContent: "center",
+        alignItems: "center",
+        zIndex: 100,
+      }}
+    >
+      <box
+        title=" Confirm "
+        border
+        style={{
+          flexDirection: "column",
+          padding: 1,
+          minWidth: 44,
+          backgroundColor: "#111827",
+        }}
+      >
+        <text>{message}</text>
+        <text> </text>
+        <box style={{ flexDirection: "row", justifyContent: "center" }}>
+          <box
+            style={{
+              backgroundColor: choice === 1 ? "#4ade80" : "#374151",
+              paddingLeft: 3,
+              paddingRight: 3,
+              marginRight: 3,
+            }}
+          >
+            <text fg={choice === 1 ? "#0b0b0b" : "#e5e7eb"}>
+              <strong>Yes</strong>
+            </text>
+          </box>
+          <box
+            style={{
+              backgroundColor: choice === 0 ? "#f87171" : "#374151",
+              paddingLeft: 3,
+              paddingRight: 3,
+            }}
+          >
+            <text fg={choice === 0 ? "#0b0b0b" : "#e5e7eb"}>
+              <strong>No</strong>
+            </text>
+          </box>
+        </box>
+      </box>
     </box>
   );
 }

@@ -1,7 +1,15 @@
 import type { LoopMeta } from "../types.js";
 
+export function quoteArg(arg: string): string {
+  return /[\s"]/.test(arg) ? `"${arg.replace(/"/g, '\\"')}"` : arg;
+}
+
+export function commandLine(command: string, args: string[]): string {
+  return [command, ...args.map(quoteArg)].join(" ").trim();
+}
+
 export function formatCmd(command: string, args: string[], max = 24): string {
-  const full = `${command} ${args.join(" ")}`.trim();
+  const full = commandLine(command, args);
   return full.length > max ? full.slice(0, max - 3) + "..." : full;
 }
 
