@@ -1,10 +1,13 @@
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
+import { pathToFileURL } from "node:url";
 import { afterEach, describe, expect, it } from "vitest";
 import { execa } from "execa";
+import type { IpcRequest, IpcResponse } from "../src/types.js";
 
 const cliPath = path.resolve("dist/cli.js");
+const ipcModuleUrl = pathToFileURL(path.resolve("dist/client/ipc.js")).href;
 const tempRoots: string[] = [];
 
 async function makeTestHome(): Promise<string> {
@@ -28,6 +31,23 @@ async function runCli(args: string[], home: string, timeout = 15000) {
   });
 }
 
+async function sendDaemonRequest(home: string, request: IpcRequest): Promise<IpcResponse> {
+  const result = await execa(
+    "node",
+    [
+      "--input-type=module",
+      "-e",
+      `import { sendRequest } from ${JSON.stringify(ipcModuleUrl)}; const response = await sendRequest(${JSON.stringify(request)}); console.log(JSON.stringify(response));`,
+    ],
+    {
+      env: testEnv(home),
+      timeout: 15000,
+    }
+  );
+
+  return JSON.parse(result.stdout) as IpcResponse;
+}
+
 async function waitFor(
   check: () => Promise<boolean>,
   timeoutMs = 10000,
@@ -47,9 +67,10 @@ async function waitFor(
 
 async function shutdownDaemon(home: string): Promise<void> {
   const pidFile = path.join(home, ".loop-cli", "daemon.pid");
+  let pid: number | null = null;
 
   try {
-    const pid = Number((await fs.readFile(pidFile, "utf-8")).trim());
+    pid = Number((await fs.readFile(pidFile, "utf-8")).trim());
     if (Number.isFinite(pid)) {
       try {
         process.kill(pid, "SIGTERM");
@@ -60,10 +81,82 @@ async function shutdownDaemon(home: string): Promise<void> {
   } catch {
     // daemon never started
   }
+
+  await waitFor(async () => {
+    try {
+      await fs.access(pidFile);
+      return false;
+    } catch {
+      if (pid === null) {
+        return true;
+      }
+
+      try {
+        process.kill(pid, 0);
+        return false;
+      } catch {
+        return true;
+      }
+    }
+  }, 5000, 100).catch(() => undefined);
+}
+
+async function crashDaemon(home: string): Promise<void> {
+  const pidFile = path.join(home, ".loop-cli", "daemon.pid");
+
+  try {
+    const pid = Number((await fs.readFile(pidFile, "utf-8")).trim());
+    if (!Number.isFinite(pid)) {
+      return;
+    }
+
+    if (process.platform === "win32") {
+      await execa("taskkill", ["/pid", String(pid), "/f", "/t"]);
+    } else {
+      process.kill(pid, "SIGKILL");
+    }
+  } catch {
+    // daemon may already be gone
+  }
+
+  await waitFor(async () => {
+    try {
+      const pid = Number((await fs.readFile(pidFile, "utf-8")).trim());
+      process.kill(pid, 0);
+      return false;
+    } catch {
+      return true;
+    }
+  }, 5000, 100).catch(() => undefined);
 }
 
 async function readLogs(home: string, id: string): Promise<string> {
-  const result = await runCli(["logs", id, "--tail", "50"], home);
+  const response = await sendDaemonRequest(home, {
+    type: "logs",
+    payload: { id, follow: false, tail: 50 },
+  });
+
+  if (response.type !== "ok") {
+    throw new Error((response as { message: string }).message);
+  }
+
+  return (response.data as string) ?? "";
+}
+
+async function attachOnce(home: string, id: string): Promise<string> {
+  const result = await execa(
+    "node",
+    [
+      "--input-type=module",
+      "-e",
+      `import { streamRequest } from ${JSON.stringify(ipcModuleUrl)}; let done = false; const socket = streamRequest({ type: "attach", payload: { id: ${JSON.stringify(id)} } }, (line) => { if (!done && line.includes("bg-loop-output")) { done = true; console.log(line); socket.destroy(); process.exit(0); } }, () => { if (!done) process.exit(1); }, (error) => { console.error(error.message); process.exit(1); }); setTimeout(() => { if (!done) { socket.destroy(); process.exit(1); } }, 10000);`,
+    ],
+    {
+      env: testEnv(home),
+      timeout: 15000,
+    }
+  );
+
   return result.stdout;
 }
 
@@ -109,35 +202,57 @@ describe("background cli", () => {
     expect(id).toBeDefined();
 
     await waitFor(async () => {
-      const result = await runCli(["list"], home);
-      return result.stdout.includes(id ?? "");
+      const response = await sendDaemonRequest(home, { type: "list" });
+      if (response.type !== "ok") {
+        return false;
+      }
+      return JSON.stringify(response.data).includes(id ?? "");
     });
 
-    const status = await runCli(["status", id!], home);
-    expect(status.stdout).toContain(`Loop: ${id}`);
-    expect(status.stdout).toContain("Command:");
+    const status = await sendDaemonRequest(home, {
+      type: "status",
+      payload: { id: id! },
+    });
+    expect(status.type).toBe("ok");
+    expect(JSON.stringify(status.data)).toContain(id!);
 
     await waitFor(async () => {
-      const logs = await runCli(["logs", id!, "--tail", "20"], home);
-      return logs.stdout.includes("bg-loop-output");
+      const logs = await readLogs(home, id!);
+      return logs.includes("bg-loop-output");
     });
 
-    const pause = await runCli(["pause", id!], home);
-    expect(pause.stdout).toContain(`Loop ${id} paused.`);
+    const attached = await attachOnce(home, id!);
+    expect(attached).toContain("bg-loop-output");
+
+    const pause = await sendDaemonRequest(home, {
+      type: "pause",
+      payload: { id: id! },
+    });
+    expect(pause.type).toBe("ok");
 
     await waitFor(async () => {
-      const result = await runCli(["status", id!], home);
-      return result.stdout.includes("Status:    paused");
+      const result = await sendDaemonRequest(home, {
+        type: "status",
+        payload: { id: id! },
+      });
+      return JSON.stringify(result.data).includes("paused");
     });
 
-    const resume = await runCli(["resume", id!], home);
-    expect(resume.stdout).toContain(`Loop ${id} resumed.`);
+    const resume = await sendDaemonRequest(home, {
+      type: "resume",
+      payload: { id: id! },
+    });
+    expect(resume.type).toBe("ok");
 
-    const remove = await runCli(["delete", id!], home);
-    expect(remove.stdout).toContain(`Loop ${id} deleted.`);
+    const remove = await sendDaemonRequest(home, {
+      type: "delete",
+      payload: { id: id! },
+    });
+    expect(remove.type).toBe("ok");
 
-    const listed = await runCli(["list"], home);
-    expect(listed.stdout).toContain("No background loops running.");
+    const listed = await sendDaemonRequest(home, { type: "list" });
+    expect(listed.type).toBe("ok");
+    expect(listed.data).toEqual([]);
   }, 15000);
 
   it("preserves paused sleep state across daemon restart", async () => {
@@ -163,12 +278,18 @@ describe("background cli", () => {
 
     await new Promise((resolve) => setTimeout(resolve, 400));
 
-    const pause = await runCli(["pause", id!], home);
-    expect(pause.stdout).toContain(`Loop ${id} paused.`);
+    const pause = await sendDaemonRequest(home, {
+      type: "pause",
+      payload: { id: id! },
+    });
+    expect(pause.type).toBe("ok");
 
     await waitFor(async () => {
-      const result = await runCli(["status", id!], home);
-      return result.stdout.includes("Status:    paused");
+      const result = await sendDaemonRequest(home, {
+        type: "status",
+        payload: { id: id! },
+      });
+      return JSON.stringify(result.data).includes("paused");
     });
 
     const pausedState = await readLoopState(home, id!);
@@ -176,11 +297,15 @@ describe("background cli", () => {
     expect(pausedState.remainingDelayMs).not.toBeNull();
     expect(pausedState.remainingDelayMs).toBeGreaterThan(0);
 
-    await shutdownDaemon(home);
+    await crashDaemon(home);
     await new Promise((resolve) => setTimeout(resolve, 500));
 
-    const restartedStatus = await runCli(["status", id!], home);
-    expect(restartedStatus.stdout).toContain("Status:    paused");
+    const restartedStatus = await sendDaemonRequest(home, {
+      type: "status",
+      payload: { id: id! },
+    });
+    expect(restartedStatus.type).toBe("ok");
+    expect(JSON.stringify(restartedStatus.data)).toContain("paused");
 
     const restartedState = await readLoopState(home, id!);
     expect(restartedState.status).toBe("paused");
@@ -190,15 +315,21 @@ describe("background cli", () => {
     const beforeResumeLogs = await readLogs(home, id!);
     expect(beforeResumeLogs).not.toContain("restart-sensitive-run");
 
-    const resume = await runCli(["resume", id!], home);
-    expect(resume.stdout).toContain(`Loop ${id} resumed.`);
+    const resume = await sendDaemonRequest(home, {
+      type: "resume",
+      payload: { id: id! },
+    });
+    expect(resume.type).toBe("ok");
 
     await waitFor(async () => {
       const logs = await readLogs(home, id!);
       return logs.includes("restart-sensitive-run");
     }, 4000, 250);
 
-    const remove = await runCli(["delete", id!], home);
-    expect(remove.stdout).toContain(`Loop ${id} deleted.`);
+    const remove = await sendDaemonRequest(home, {
+      type: "delete",
+      payload: { id: id! },
+    });
+    expect(remove.type).toBe("ok");
   }, 15000);
 });

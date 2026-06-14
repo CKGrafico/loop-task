@@ -2,31 +2,41 @@ import type { LoopMeta, LoopOptions } from "../types.js";
 import { formatDuration } from "../duration.js";
 import { sendRequest, streamRequest } from "./ipc.js";
 
-export async function startLoop(
+export async function createBackgroundLoop(
   options: LoopOptions,
   intervalHuman: string
-): Promise<void> {
+): Promise<string> {
   const response = await sendRequest({
     type: "start",
     payload: { ...options, intervalHuman },
   });
 
   if (response.type !== "ok") {
-    console.error(`Error: ${(response as { message: string }).message}`);
-    process.exit(1);
+    throw new Error((response as { message: string }).message);
   }
 
-  const data = response.data as { id: string };
+  return (response.data as { id: string }).id;
+}
+
+export async function startLoop(
+  options: LoopOptions,
+  intervalHuman: string
+): Promise<void> {
+  const id = await createBackgroundLoop(options, intervalHuman).catch(
+    (error: unknown) => {
+      const message = error instanceof Error ? error.message : String(error);
+      console.error(`Error: ${message}`);
+      process.exit(1);
+    }
+  );
+
   console.log(`Loop started in background`);
-  console.log(`  ID:       ${data.id}`);
+  console.log(`  ID:       ${id}`);
   console.log(`  Command:  ${options.command} ${options.commandArgs.join(" ")}`);
   console.log(`  Interval: ${intervalHuman}`);
   console.log(`  Status:   running`);
   console.log();
-  console.log(`  loop-task list          # see all loops`);
-  console.log(`  loop-task attach ${data.id}  # view output`);
-  console.log(`  loop-task pause ${data.id}   # pause`);
-  console.log(`  loop-task delete ${data.id}  # remove`);
+  console.log(`  loop-task                # open the board`);
   process.exit(0);
 }
 

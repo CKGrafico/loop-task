@@ -19,11 +19,25 @@ pnpm run lint         # Lint source and tests
 pnpm run typecheck    # Type check without emitting
 ```
 
+## Product direction
+
+`loop-task` is now board-first:
+
+- `loop-task` opens the board
+- `loop-task start ...` creates background loops for scripts and shell workflows
+- `loop-task run ...` is the explicit foreground mode
+
+Loop management actions should prefer the board over adding more top-level CLI commands.
+
+The TUI redesign work should follow the architecture plan in `TUI_ARCHITECTURE.md`.
+
 ## Running the CLI locally
 
 ```bash
 pnpm run build
-node dist/cli.js 30m "echo hello" --now --max-runs 1
+node dist/cli.js
+node dist/cli.js start --now 30m -- npm test
+node dist/cli.js run --now --max-runs 1 30s -- echo hello
 ```
 
 ## Testing
@@ -48,6 +62,7 @@ pnpm run release       # Build and publish to npm
 - ESM only
 - No comments unless necessary
 - Follow existing conventions
+- Prefer the board-first command model when changing product behavior
 
 ## Pull requests
 
