@@ -71,24 +71,22 @@ export class LoopManager {
     const entry = this.loops.get(id);
     if (!entry) return false;
 
-    const runtime = entry.controller.getMeta();
-    await entry.controller.stop();
+    const executionChanged =
+      entry.options.interval !== options.interval ||
+      entry.options.command !== options.command ||
+      entry.options.commandArgs.length !== options.commandArgs.length ||
+      entry.options.commandArgs.some((arg, index) => arg !== options.commandArgs[index]) ||
+      entry.options.immediate !== options.immediate ||
+      entry.options.maxRuns !== options.maxRuns ||
+      entry.options.verbose !== options.verbose ||
+      entry.options.cwd !== options.cwd;
 
-    const logPath = getLogPath(id);
-    const controller = new LoopController(id, options, logPath, {
-      status: "paused",
-      createdAt: runtime.createdAt,
-      runCount: runtime.runCount,
-      lastRunAt: runtime.lastRunAt,
-      lastExitCode: runtime.lastExitCode,
-      lastDuration: runtime.lastDuration,
-      nextRunAt: null,
-      remainingDelayMs: null,
-    });
-    this.loops.set(id, { controller, options, intervalHuman });
-    this.wireEvents(id, controller, options, intervalHuman);
-    controller.start();
-    this.persist(id, controller, options, intervalHuman);
+    Object.assign(entry.options, options);
+    entry.intervalHuman = intervalHuman;
+    if (executionChanged && entry.controller.status !== "paused") {
+      entry.controller.pause();
+    }
+    this.persist(id, entry.controller, entry.options, entry.intervalHuman);
     return true;
   }
 

@@ -25,7 +25,7 @@ import {
 import { commandLine, describeLoop, statusColor, timeAgo, timingLabel, truncate } from "./format.js";
 import { ToastStack, useToasts } from "./toast.js";
 
-type View = "board" | "detail" | "help" | "create";
+type View = "board" | "detail" | "create";
 type DaemonStatus = "starting" | "connected" | "error";
 type Mode = "normal" | "search" | "create" | "help" | "detail" | "confirm";
 
@@ -68,6 +68,7 @@ export function App(props: { onQuit: () => void }): React.ReactNode {
   const [sort, setSort] = useState<SortMode>("status");
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [searchActive, setSearchActive] = useState(false);
+  const [helpOpen, setHelpOpen] = useState(false);
   const [confirm, setConfirm] = useState<ConfirmState | null>(null);
   const [confirmChoice, setConfirmChoice] = useState(0);
   const [editTarget, setEditTarget] = useState<LoopMeta | null>(null);
@@ -171,6 +172,13 @@ export function App(props: { onQuit: () => void }): React.ReactNode {
       return;
     }
 
+    if (helpOpen) {
+      if (name === "h" || name === "escape") {
+        setHelpOpen(false);
+      }
+      return;
+    }
+
     if (searchActive) {
       if (name === "escape" || name === "return" || name === "enter") {
         setSearchActive(false);
@@ -198,7 +206,7 @@ export function App(props: { onQuit: () => void }): React.ReactNode {
     }
 
     if (name === "h") {
-      setView((v) => (v === "help" ? "board" : "help"));
+      setHelpOpen(true);
       return;
     }
 
@@ -250,16 +258,15 @@ export function App(props: { onQuit: () => void }): React.ReactNode {
     }
 
     if (name === "p") {
+      const actionLabel = selected?.status === "paused" ? "Resume" : "Pause";
+      const actionVerb = selected?.status === "paused" ? "Resumed" : "Paused";
+      const action = selected?.status === "paused"
+        ? () => resumeLoop(selectedId)
+        : () => pauseLoop(selectedId);
       setConfirmChoice(0);
       setConfirm({
-        message: `Pause loop ${selectedId}?`,
-        action: runAction(`Paused ${selectedId}`, () => pauseLoop(selectedId)),
-      });
-    } else if (name === "r") {
-      setConfirmChoice(0);
-      setConfirm({
-        message: `Resume loop ${selectedId}?`,
-        action: runAction(`Resumed ${selectedId}`, () => resumeLoop(selectedId)),
+        message: `${actionLabel} loop ${selectedId}?`,
+        action: runAction(`${actionVerb} ${selectedId}`, action),
       });
     } else if (name === "d") {
       setConfirmChoice(0);
@@ -287,16 +294,16 @@ export function App(props: { onQuit: () => void }): React.ReactNode {
     ? "confirm"
     : searchActive
       ? "search"
+      : helpOpen
+        ? "help"
       : view === "create"
         ? "create"
-        : view === "help"
-          ? "help"
-          : view === "detail"
+        : view === "detail"
             ? "detail"
             : "normal";
 
   return (
-    <box style={{ flexDirection: "column", width: "100%", height: "100%" }}>
+    <box style={{ flexDirection: "column", width: "100%", height: "100%", backgroundColor: "#0b0b0b" }}>
       <Header daemonStatus={daemonStatus} counts={counts} />
 
       {view === "board" ? (
@@ -311,47 +318,52 @@ export function App(props: { onQuit: () => void }): React.ReactNode {
         />
       ) : null}
 
-      {view === "help" ? (
-        <HelpView />
-      ) : view === "create" ? (
-        <CreateView
-          mode={editTarget ? "edit" : "create"}
-          editId={editTarget?.id ?? null}
-          initial={createInitialValues(editTarget)}
-          onCancel={() => {
-            setEditTarget(null);
-            setView("board");
-          }}
-          onDone={(updated, id) => {
-            setEditTarget(null);
-            setView("board");
-            push("success", updated ? `Updated ${id} (paused)` : `Started ${id}`);
-            void refresh();
-          }}
-        />
-      ) : view === "detail" && selected ? (
-        <DetailView loop={selected} logLines={logLines} />
-      ) : (
-        <box style={{ flexDirection: "row", flexGrow: 1 }}>
-          <Navigator
-            visible={visible}
-            total={loops.length}
-            selectedIndex={clampedIndex}
-            filters={filters}
-            sort={sort}
+      <box
+        key={view === "create" ? `${view}:${editTarget?.id ?? "new"}` : view}
+        style={{ flexGrow: 1, backgroundColor: "#0b0b0b" }}
+      >
+        {view === "create" ? (
+          <CreateView
+            mode={editTarget ? "edit" : "create"}
+            editId={editTarget?.id ?? null}
+            initial={createInitialValues(editTarget)}
+            onCancel={() => {
+              setEditTarget(null);
+              setView("board");
+            }}
+            onDone={(updated, id) => {
+              setEditTarget(null);
+              setView("board");
+              push("success", updated ? `Updated ${id} (paused)` : `Started ${id}`);
+              void refresh();
+            }}
           />
-          <box style={{ flexDirection: "column", flexGrow: 1 }}>
-            <Inspector loop={selected} />
-            <Timeline logLines={logLines} />
+        ) : view === "detail" && selected ? (
+          <DetailView loop={selected} logLines={logLines} />
+        ) : (
+          <box style={{ flexDirection: "row", flexGrow: 1, backgroundColor: "#0b0b0b" }}>
+            <Navigator
+              visible={visible}
+              total={loops.length}
+              selectedIndex={clampedIndex}
+              filters={filters}
+              sort={sort}
+            />
+            <box style={{ flexDirection: "column", flexGrow: 1, backgroundColor: "#0b0b0b" }}>
+              <Inspector loop={selected} />
+              <Timeline logLines={logLines} />
+            </box>
           </box>
-        </box>
-      )}
+        )}
+      </box>
 
       <Footer mode={mode} />
 
       {confirm ? (
         <ConfirmModal message={confirm.message} choice={confirmChoice} />
       ) : null}
+
+      {helpOpen ? <HelpModal /> : null}
 
       <ToastStack toasts={toasts} />
     </box>
@@ -410,11 +422,11 @@ function FilterBar(props: {
   const { filters, sort, searchActive, onSearch } = props;
 
   return (
-    <box style={{ flexDirection: "row", height: 3, paddingLeft: 1, paddingRight: 1 }}>
+    <box style={{ flexDirection: "row", height: 3, paddingLeft: 1, paddingRight: 1, backgroundColor: "#0b0b0b" }}>
       <box
         title=" Search / "
         border
-        style={{ flexGrow: 2, height: 3, marginRight: 1, paddingLeft: 1 }}
+        style={{ flexGrow: 2, height: 3, marginRight: 1, paddingLeft: 1, backgroundColor: "#0b0b0b" }}
       >
         {searchActive ? (
           <input
@@ -428,10 +440,10 @@ function FilterBar(props: {
           </text>
         )}
       </box>
-      <box title=" Status f " border style={{ flexGrow: 1, height: 3, marginRight: 1, paddingLeft: 1 }}>
+      <box title=" Status f " border style={{ flexGrow: 1, height: 3, marginRight: 1, paddingLeft: 1, backgroundColor: "#0b0b0b" }}>
         <text fg="#38bdf8">{filters.status}</text>
       </box>
-      <box title=" Sort s " border style={{ flexGrow: 1, height: 3, paddingLeft: 1 }}>
+      <box title=" Sort s " border style={{ flexGrow: 1, height: 3, paddingLeft: 1, backgroundColor: "#0b0b0b" }}>
         <text fg="#a3e635">{sort}</text>
       </box>
     </box>
@@ -450,7 +462,7 @@ function Navigator(props: {
     "  " +
     "STATUS".padEnd(8) +
     " " +
-    "DESCRIPTION".padEnd(20) +
+    "DESCRIPTION".padEnd(22) +
     " " +
     "TIMING".padEnd(12) +
     " EXIT  RUNS";
@@ -459,7 +471,7 @@ function Navigator(props: {
     <box
       title={` Loops ${visible.length}/${total}  sort:${sort}  status:${filters.status} `}
       border
-      style={{ width: "62%", flexDirection: "column" }}
+      style={{ width: "55%", flexShrink: 0, flexGrow: 0, flexDirection: "column", backgroundColor: "#0b0b0b" }}
     >
       <text fg="#6b7280">{header}</text>
       {visible.length === 0 ? (
@@ -476,7 +488,7 @@ function Navigator(props: {
               {isSelected ? "›" : " "} <span fg={statusColor(loop.status)}>
                 {loop.status.padEnd(8)}
               </span>{" "}
-              {truncate(describeLoop(loop), 20).padEnd(20)}{" "}
+              {truncate(describeLoop(loop), 22).padEnd(22)}{" "}
               {timingLabel(loop).padEnd(12)} exit {exit.padEnd(3)} #
               {String(loop.runCount).padStart(3)}
             </text>
@@ -491,7 +503,7 @@ function Inspector(props: { loop: LoopMeta | null }): React.ReactNode {
   const { loop } = props;
   if (!loop) {
     return (
-      <box title=" Inspector " border style={{ height: 12 }}>
+      <box title=" Inspector " border style={{ height: 12, backgroundColor: "#0b0b0b" }}>
         <text fg="#9ca3af">  Select a loop to view details</text>
       </box>
     );
@@ -501,7 +513,7 @@ function Inspector(props: { loop: LoopMeta | null }): React.ReactNode {
   const maxRuns = loop.maxRuns !== null ? String(loop.maxRuns) : "unlimited";
 
   return (
-    <box title=" Inspector " border style={{ height: 13, flexDirection: "column" }}>
+    <box title=" Inspector " border style={{ height: 13, flexDirection: "column", backgroundColor: "#0b0b0b" }}>
       <text><strong>ID:       </strong> {loop.id}</text>
       <text><strong>Desc:     </strong> {describeLoop(loop)}</text>
       <text><strong>Command:  </strong> {cmd}</text>
@@ -527,7 +539,7 @@ function Inspector(props: { loop: LoopMeta | null }): React.ReactNode {
 
 function Timeline(props: { logLines: string[] }): React.ReactNode {
   return (
-    <scrollbox title=" Timeline " border style={{ flexGrow: 1 }} stickyScroll stickyStart="bottom">
+    <scrollbox title=" Timeline " border style={{ flexGrow: 1, backgroundColor: "#0b0b0b" }} stickyScroll stickyStart="bottom">
       {props.logLines.length === 0 ? (
         <text fg="#9ca3af">  No output yet.</text>
       ) : (
@@ -546,8 +558,8 @@ function DetailView(props: {
   const maxRuns = loop.maxRuns !== null ? String(loop.maxRuns) : "unlimited";
 
   return (
-    <box style={{ flexDirection: "column", flexGrow: 1 }}>
-      <box title=" Loop Detail " border style={{ flexDirection: "column", height: 16 }}>
+    <box style={{ flexDirection: "column", flexGrow: 1, backgroundColor: "#0b0b0b" }}>
+      <box title=" Loop Detail " border style={{ flexDirection: "column", height: 16, backgroundColor: "#0b0b0b" }}>
         <text><strong>ID:        </strong>{loop.id}</text>
         <text><strong>Desc:      </strong>{describeLoop(loop)}</text>
         <text><strong>Command:   </strong>{cmd}</text>
@@ -564,7 +576,7 @@ function DetailView(props: {
         <text><strong>Next run:  </strong>{loop.nextRunAt ?? "-"}</text>
         <text><strong>PID:       </strong>{loop.pid}</text>
       </box>
-      <scrollbox title=" Live Output " border style={{ flexGrow: 1 }} stickyScroll stickyStart="bottom">
+      <scrollbox title=" Live Output " border style={{ flexGrow: 1, backgroundColor: "#0b0b0b" }} stickyScroll stickyStart="bottom">
         {logLines.map((line, index) => (
           <text key={index}>{line}</text>
         ))}
@@ -573,14 +585,13 @@ function DetailView(props: {
   );
 }
 
-function HelpView(): React.ReactNode {
+function HelpModal(): React.ReactNode {
   const rows: [string, string][] = [
     ["up/down, j/k", "move selection"],
     ["enter", "toggle loop detail"],
     ["n", "create loop"],
     ["e", "edit loop (pauses it)"],
-    ["p", "pause selected loop"],
-    ["r", "resume selected loop"],
+    ["p", "pause/resume selected loop"],
     ["x", "force run selected loop now"],
     ["d", "delete selected loop"],
     ["/", "search loops"],
@@ -592,13 +603,35 @@ function HelpView(): React.ReactNode {
   ];
 
   return (
-    <box title=" Help " border style={{ flexDirection: "column", flexGrow: 1, padding: 1 }}>
-      {rows.map(([keys, desc]) => (
-        <text key={keys}>
-          <span fg="#38bdf8">{keys.padEnd(16)}</span>
-          {desc}
-        </text>
-      ))}
+    <box
+      style={{
+        position: "absolute",
+        top: 0,
+        left: 0,
+        width: "100%",
+        height: "100%",
+        justifyContent: "center",
+        alignItems: "center",
+        zIndex: 90,
+      }}
+    >
+      <box
+        title=" Help "
+        border
+        style={{
+          flexDirection: "column",
+          padding: 1,
+          minWidth: 52,
+          backgroundColor: "#111827",
+        }}
+      >
+        {rows.map(([keys, desc]) => (
+          <text key={keys}>
+            <span fg="#38bdf8">{keys.padEnd(16)}</span>
+            {desc}
+          </text>
+        ))}
+      </box>
     </box>
   );
 }
@@ -610,7 +643,11 @@ function CreateView(props: {
   onCancel: () => void;
   onDone: (updated: boolean, id: string) => void;
 }): React.ReactNode {
-  const fields = createFields;
+  const fields = props.mode === "edit"
+    ? createFields.filter((field) => field !== "runNow")
+    : createFields;
+  const saveIndex = fields.length;
+  const cancelIndex = fields.length + 1;
   type Field = CreateField;
 
   const labels: Record<Field, string> = {
@@ -623,12 +660,12 @@ function CreateView(props: {
   };
 
   const hints: Record<Field, string> = {
-    interval: "how often to run · e.g. 30s · 5m · 30m · 1h · 1d",
-    command: "full command line · quote args with spaces",
-    description: "short label shown in the list · blank uses the command",
-    cwd: "directory the command runs in · must exist at run time",
+    interval: "How often to run, e.g. 30s, 5m, 30m, 1h, 1d",
+    command: "Full command line. Quote args with spaces",
+    description: "Short label shown in the list. Blank uses the command",
+    cwd: "Directory the command runs in. Must exist at run time",
     runNow: "run once now then every interval, or wait the first interval",
-    maxRuns: "stop after N runs · leave blank to run forever",
+    maxRuns: "Stop after N runs. Leave blank to run forever",
   };
 
   const examples: Record<Field, string> = {
@@ -641,24 +678,52 @@ function CreateView(props: {
   };
 
   const runNowOptions = [
-    { name: "No — wait the first interval", description: "", value: "n" },
-    { name: "Yes — run now, then every interval", description: "", value: "y" },
+    { name: "No - wait the first interval", description: "", value: "n" },
+    { name: "Yes - run now, then every interval", description: "", value: "y" },
   ];
 
   const [values, setValues] = useState<Record<Field, string>>(props.initial);
+  const valuesRef = useRef(values);
   const [focusIndex, setFocusIndex] = useState(0);
   const [error, setError] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  function updateValues(next: Record<Field, string>): void {
+    valuesRef.current = next;
+    setValues(next);
+  }
 
   useKeyboard((key) => {
-    if (key.name !== "tab") return;
-    setFocusIndex((i) => {
-      const next = key.shift ? i - 1 : i + 1;
-      return Math.max(0, Math.min(fields.length - 1, next));
-    });
+    if (key.name === "tab") {
+      setFocusIndex((i) => {
+        const next = key.shift ? i - 1 : i + 1;
+        return Math.max(0, Math.min(cancelIndex, next));
+      });
+      return;
+    }
+
+    if ((key.name === "left" || key.name === "right") && focusIndex >= saveIndex) {
+      setFocusIndex(key.name === "left" ? saveIndex : cancelIndex);
+      return;
+    }
+
+    if (key.name === "return" || key.name === "enter") {
+      if (focusIndex === saveIndex) {
+        void submit(valuesRef.current);
+      } else if (focusIndex === cancelIndex) {
+        props.onCancel();
+      }
+    }
   });
 
-  function submit(current: Record<Field, string>): void {
+  async function submit(current: Record<Field, string>): Promise<void> {
+    if (isSubmitting) {
+      return;
+    }
+
     try {
+      setIsSubmitting(true);
+      setError("");
       const cwd = current.cwd.trim();
       if (cwd && !fs.existsSync(cwd)) {
         setError(`Working directory does not exist: ${cwd}`);
@@ -671,7 +736,7 @@ function CreateView(props: {
         command ?? "",
         commandArgs,
         {
-          now: current.runNow === "y",
+          now: props.mode === "create" && current.runNow === "y",
           maxRuns: current.maxRuns.trim() || null,
           verbose: false,
           cwd,
@@ -682,40 +747,38 @@ function CreateView(props: {
         props.mode === "edit" && props.editId
           ? updateLoop(props.editId, built.options, built.intervalHuman)
           : createLoop(built.options, built.intervalHuman);
-      void request
-        .then((id) => props.onDone(props.mode === "edit", id))
-        .catch((e: unknown) =>
-          setError(e instanceof Error ? e.message : String(e))
-        );
+
+      const id = await request;
+      props.onDone(props.mode === "edit", id);
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
+    } finally {
+      setIsSubmitting(false);
     }
   }
 
   const title = props.mode === "edit" ? " Edit Loop (will pause) " : " New Loop ";
 
   return (
-    <box title={title} border style={{ flexDirection: "column", flexGrow: 1, padding: 1 }}>
+    <box title={title} border style={{ flexDirection: "column", flexGrow: 1, padding: 1, backgroundColor: "#0b0b0b" }}>
       <box style={{ flexDirection: "column", marginBottom: 1 }}>
         <text fg="#9ca3af">Full example of the loop you are building:</text>
-        <text>
-          <span fg="#a3e635">loop-task start 30m --now -- </span>
-          <span fg="#38bdf8">opencode run </span>
-          <span fg="#e5e7eb">&quot;search missing translations and translate them, 3 maximum&quot;</span>
-          <span fg="#38bdf8"> --model </span>
-          <span fg="#e5e7eb">&quot;opencode/big-pickle&quot;</span>
-        </text>
+        <text fg="#d1d5db">loop-task start 30m --now -- opencode run "search missing translations and translate them, 3 maximum" --model "opencode/big-pickle"</text>
       </box>
       {fields.map((field, index) => (
         <box key={field} style={{ flexDirection: "column", marginBottom: 1 }}>
-          <text>
-            <span fg={focusIndex === index ? "#38bdf8" : "#e5e7eb"}>
-              {labels[field].padEnd(18)}
-            </span>
-            <span fg="#6b7280">{hints[field]}</span>
-          </text>
+          <box style={{ height: 1, width: "100%", backgroundColor: "#0b0b0b" }}>
+            <text fg={focusIndex === index ? "#38bdf8" : "#e5e7eb"}>{labels[field]}</text>
+          </box>
+          <box style={{ height: 1, width: "100%", backgroundColor: "#0b0b0b" }}>
+            <text fg="#6b7280">{hints[field]}</text>
+          </box>
           {field === "runNow" ? (
-            <box border style={{ height: runNowOptions.length + 2 }}>
+            <box
+              border
+              borderColor={focusIndex === index ? "#38bdf8" : undefined}
+              style={{ height: runNowOptions.length + 2, backgroundColor: "#0b0b0b" }}
+            >
               <select
                 focused={focusIndex === index}
                 options={runNowOptions}
@@ -723,24 +786,28 @@ function CreateView(props: {
                 showDescription={false}
                 style={{ flexGrow: 1 }}
                 onChange={(_index: number, option: { value?: string } | null) =>
-                  setValues((prev) => ({ ...prev, runNow: option?.value ?? "n" }))
+                  updateValues({ ...valuesRef.current, runNow: option?.value ?? "n" })
                 }
               />
             </box>
           ) : (
-            <box border style={{ height: 3 }}>
+            <box
+              border
+              borderColor={focusIndex === index ? "#38bdf8" : undefined}
+              style={{ height: 3, backgroundColor: "#0b0b0b" }}
+            >
               <input
                 focused={focusIndex === index}
-                value={props.initial[field]}
+                value={values[field]}
                 placeholder={examples[field] ? `e.g. ${examples[field]}` : "(blank)"}
                 onInput={(value: string) =>
-                  setValues((prev) => ({ ...prev, [field]: value }))
+                  updateValues({ ...valuesRef.current, [field]: value })
                 }
                 onSubmit={() => {
                   if (index < fields.length - 1) {
                     setFocusIndex(index + 1);
                   } else {
-                    submit(values);
+                    void submit(valuesRef.current);
                   }
                 }}
               />
@@ -748,9 +815,23 @@ function CreateView(props: {
           )}
         </box>
       ))}
-      <text fg="#9ca3af">
-        Tab/Shift+Tab to move · Enter advances or creates · Esc cancels
-      </text>
+      <box style={{ flexDirection: "row", height: 3, marginBottom: 1, backgroundColor: "#0b0b0b" }}>
+        <box
+          border
+          borderColor={focusIndex === saveIndex ? "#38bdf8" : undefined}
+          style={{ width: 14, justifyContent: "center", alignItems: "center", marginRight: 1, backgroundColor: focusIndex === saveIndex ? "#1e3a8a" : "#0b0b0b" }}
+        >
+          <text fg="#e5e7eb"><strong>{isSubmitting ? "Saving..." : props.mode === "edit" ? "Save" : "Create"}</strong></text>
+        </box>
+        <box
+          border
+          borderColor={focusIndex === cancelIndex ? "#38bdf8" : undefined}
+          style={{ width: 14, justifyContent: "center", alignItems: "center", backgroundColor: focusIndex === cancelIndex ? "#374151" : "#0b0b0b" }}
+        >
+          <text fg="#e5e7eb"><strong>Cancel</strong></text>
+        </box>
+      </box>
+      <text fg="#9ca3af">Tab/Shift+Tab to move | Enter advances or activates | Esc cancels</text>
       {error ? <text fg="#f87171">{error}</text> : null}
     </box>
   );
@@ -760,7 +841,7 @@ function Footer(props: { mode: Mode }): React.ReactNode {
   const { mode } = props;
 
   const badge: Record<Mode, { label: string; bg: string }> = {
-    normal: { label: "NORMAL", bg: "#4ade80" },
+    normal: { label: "DASHBOARD", bg: "#4ade80" },
     search: { label: "SEARCH", bg: "#38bdf8" },
     create: { label: "CREATE", bg: "#a3e635" },
     help: { label: "HELP", bg: "#facc15" },
@@ -770,16 +851,7 @@ function Footer(props: { mode: Mode }): React.ReactNode {
 
   const hints: Record<Mode, [string, string][]> = {
     normal: [
-      ["n", "new"],
-      ["e", "edit"],
-      ["enter", "detail"],
-      ["p", "pause"],
-      ["r", "resume"],
-      ["x", "run now"],
-      ["d", "delete"],
       ["/", "search"],
-      ["f", "filter"],
-      ["s", "sort"],
       ["h", "help"],
       ["q", "quit"],
     ],
@@ -794,11 +866,8 @@ function Footer(props: { mode: Mode }): React.ReactNode {
     ],
     help: [["h/esc", "back"]],
     detail: [
-      ["p", "pause"],
-      ["r", "resume"],
-      ["x", "run now"],
-      ["d", "delete"],
-      ["esc", "back"],
+      ["/", "search"],
+      ["h", "help"],
       ["q", "quit"],
     ],
     confirm: [

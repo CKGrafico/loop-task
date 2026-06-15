@@ -2,6 +2,7 @@ import fs from "node:fs";
 import path from "node:path";
 import os from "node:os";
 import crypto from "node:crypto";
+import { fileURLToPath } from "node:url";
 import type { LoopMeta } from "../types.js";
 
 export function getDataDir(): string {
@@ -69,6 +70,59 @@ export function getLogPath(id: string): string {
 
 export function getPidFile(): string {
   return path.join(getDataDir(), "daemon.pid");
+}
+
+function getSignatureFile(): string {
+  return path.join(getDataDir(), "daemon.sig");
+}
+
+export function computeCodeSignature(): string {
+  const srcDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
+  let maxMtimeMs = 0;
+  let totalSize = 0;
+  let count = 0;
+
+  const walk = (dir: string): void => {
+    for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+      const full = path.join(dir, entry.name);
+      if (entry.isDirectory()) {
+        walk(full);
+      } else if (/\.(ts|tsx|js|jsx|json)$/.test(entry.name)) {
+        const stat = fs.statSync(full);
+        maxMtimeMs = Math.max(maxMtimeMs, stat.mtimeMs);
+        totalSize += stat.size;
+        count += 1;
+      }
+    }
+  };
+
+  try {
+    walk(srcDir);
+  } catch {
+    return "unknown";
+  }
+
+  return crypto
+    .createHash("sha1")
+    .update(`${Math.round(maxMtimeMs)}:${totalSize}:${count}`)
+    .digest("hex")
+    .slice(0, 16);
+}
+
+export function readDaemonSignature(): string | null {
+  const file = getSignatureFile();
+  if (!fs.existsSync(file)) return null;
+  return fs.readFileSync(file, "utf-8").trim() || null;
+}
+
+export function writeDaemonSignature(signature: string): void {
+  ensureDirs();
+  fs.writeFileSync(getSignatureFile(), signature);
+}
+
+export function removeDaemonSignature(): void {
+  const file = getSignatureFile();
+  if (fs.existsSync(file)) fs.unlinkSync(file);
 }
 
 export function getSocketPath(): string {
