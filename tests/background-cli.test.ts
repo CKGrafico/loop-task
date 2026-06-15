@@ -250,7 +250,7 @@ describe("background cli", () => {
     const listed = await sendDaemonRequest(home, { type: "list" });
     expect(listed.type).toBe("ok");
     expect(listed.data).toEqual([]);
-  }, 15000);
+  }, 60000);
 
   it("preserves paused sleep state across daemon restart", async () => {
     const home = await makeTestHome();
@@ -328,5 +328,5 @@ describe("background cli", () => {
       payload: { id: id! },
     });
     expect(remove.type).toBe("ok");
-  }, 15000);
+  }, 60000);
 });

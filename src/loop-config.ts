@@ -5,6 +5,8 @@ export interface LoopCommandOptionsInput {
   now?: boolean;
   maxRuns?: number | string | null;
   verbose?: boolean;
+  cwd?: string;
+  description?: string;
 }
 
 export interface BuiltLoopOptions {
@@ -95,6 +97,8 @@ export function buildLoopOptions(
       immediate: input.now ?? false,
       maxRuns: parseMaxRuns(input.maxRuns),
       verbose: input.verbose ?? false,
+      cwd: input.cwd?.trim() ?? "",
+      description: input.description?.trim() ?? "",
     },
   };
 }

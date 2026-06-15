@@ -13,6 +13,14 @@ export function formatCmd(command: string, args: string[], max = 24): string {
   return full.length > max ? full.slice(0, max - 3) + "..." : full;
 }
 
+export function describeLoop(loop: LoopMeta): string {
+  return loop.description?.trim() || commandLine(loop.command, loop.commandArgs);
+}
+
+export function truncate(text: string, max: number): string {
+  return text.length > max ? text.slice(0, max - 3) + "..." : text;
+}
+
 export function timeAgo(iso: string | null): string {
   if (!iso) return "-";
   const diff = Date.now() - new Date(iso).getTime();

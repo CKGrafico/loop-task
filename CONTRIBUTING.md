@@ -40,8 +40,12 @@ Loop management actions should prefer the board over adding more top-level CLI c
 - `src/cli.ts` — Commander entry point (Bun shebang)
 - `src/daemon/` — background daemon, IPC server, loop manager, state persistence
 - `src/client/` — IPC client used by the CLI and the board
-- `src/board/` — OpenTUI + React board (`index.tsx`, `App.tsx`, `state.ts`, `daemon.ts`)
+- `src/board/` — OpenTUI + React board (`index.tsx`, `App.tsx`, `state.ts`, `daemon.ts`, `format.ts`, `toast.tsx`)
 - `src/loop.ts`, `src/loop-config.ts`, `src/duration.ts`, `src/logger.ts` — core loop logic
+
+The daemon IPC server supports `start`, `update`, `list`, `status`, `pause`, `resume`,
+`trigger` (force run), `delete`, `attach`, `logs`, and `shutdown`. The board drives these
+operations; the CLI only exposes `start` and `run`.
 
 Bun runs the TypeScript/TSX sources directly; there is no build step.
 

@@ -26,13 +26,17 @@ program
   .option("--now", "Run immediately before waiting", false)
   .option("--max-runs <n>", "Stop after N executions", parseInt)
   .option("--verbose", "Show execution details", false)
+  .option("--cwd <dir>", "Working directory for the command")
   .action(
     async (
       intervalStr: string,
       cmdArgs: string[],
-      opts: { now: boolean; maxRuns?: number; verbose: boolean }
+      opts: { now: boolean; maxRuns?: number; verbose: boolean; cwd?: string }
     ) => {
-      const built = buildLoopOptions(intervalStr, cmdArgs[0], cmdArgs.slice(1), opts);
+      const built = buildLoopOptions(intervalStr, cmdArgs[0], cmdArgs.slice(1), {
+        ...opts,
+        cwd: opts.cwd ?? process.cwd(),
+      });
       await startLoop(built.options, built.intervalHuman);
     }
   );
@@ -45,11 +49,12 @@ program
   .option("--now", "Run immediately before waiting")
   .option("--max-runs <n>", "Stop after N executions")
   .option("--verbose", "Show execution details")
+  .option("--cwd <dir>", "Working directory for the command")
   .action(
     async (
       intervalStr: string | undefined,
       cmdArgs: string[] | undefined,
-      opts: { now?: boolean; maxRuns?: string; verbose?: boolean }
+      opts: { now?: boolean; maxRuns?: string; verbose?: boolean; cwd?: string }
     ) => {
       if (!intervalStr || !cmdArgs || cmdArgs.length === 0) {
         program.help();
@@ -57,7 +62,10 @@ program
       }
 
       const logger = new Logger(opts.verbose ?? false);
-      const built = buildLoopOptions(intervalStr, cmdArgs[0], cmdArgs.slice(1), opts);
+      const built = buildLoopOptions(intervalStr, cmdArgs[0], cmdArgs.slice(1), {
+        ...opts,
+        cwd: opts.cwd ?? process.cwd(),
+      });
 
       const controller = new AbortController();
       process.on("SIGINT", () => controller.abort());

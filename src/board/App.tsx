@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useKeyboard, useTerminalDimensions } from "@opentui/react";
+import fs from "node:fs";
 import type net from "node:net";
 import type { LoopMeta } from "../types.js";
 import { buildLoopOptions, parseCommandLine } from "../loop-config.js";
@@ -10,6 +11,8 @@ import {
   pauseLoop,
   resumeLoop,
   streamLogs,
+  triggerLoop,
+  updateLoop,
 } from "./daemon.js";
 import {
   applyLoopFilters,
@@ -19,7 +22,7 @@ import {
   type Filters,
   type SortMode,
 } from "./state.js";
-import { commandLine, formatCmd, statusColor, timeAgo, timingLabel } from "./format.js";
+import { commandLine, describeLoop, statusColor, timeAgo, timingLabel, truncate } from "./format.js";
 import { ToastStack, useToasts } from "./toast.js";
 
 type View = "board" | "detail" | "help" | "create";
@@ -33,6 +36,30 @@ interface ConfirmState {
 
 const POLL_MS = 2000;
 
+const createFields = ["interval", "command", "description", "cwd", "runNow", "maxRuns"] as const;
+type CreateField = (typeof createFields)[number];
+
+function createInitialValues(loop: LoopMeta | null): Record<CreateField, string> {
+  if (!loop) {
+    return {
+      interval: "30m",
+      command: "",
+      description: "",
+      cwd: process.cwd(),
+      runNow: "n",
+      maxRuns: "",
+    };
+  }
+  return {
+    interval: loop.intervalHuman,
+    command: commandLine(loop.command, loop.commandArgs),
+    description: loop.description ?? "",
+    cwd: loop.cwd ?? "",
+    runNow: loop.immediate ? "y" : "n",
+    maxRuns: loop.maxRuns !== null ? String(loop.maxRuns) : "",
+  };
+}
+
 export function App(props: { onQuit: () => void }): React.ReactNode {
   const [loops, setLoops] = useState<LoopMeta[]>([]);
   const [daemonStatus, setDaemonStatus] = useState<DaemonStatus>("starting");
@@ -43,6 +70,7 @@ export function App(props: { onQuit: () => void }): React.ReactNode {
   const [searchActive, setSearchActive] = useState(false);
   const [confirm, setConfirm] = useState<ConfirmState | null>(null);
   const [confirmChoice, setConfirmChoice] = useState(0);
+  const [editTarget, setEditTarget] = useState<LoopMeta | null>(null);
   const [logLines, setLogLines] = useState<string[]>([]);
   const { toasts, push } = useToasts();
 
@@ -152,6 +180,7 @@ export function App(props: { onQuit: () => void }): React.ReactNode {
 
     if (view === "create") {
       if (name === "escape") {
+        setEditTarget(null);
         setView("board");
       }
       return;
@@ -174,6 +203,13 @@ export function App(props: { onQuit: () => void }): React.ReactNode {
     }
 
     if (name === "n") {
+      setEditTarget(null);
+      setView("create");
+      return;
+    }
+
+    if (name === "e" && selected) {
+      setEditTarget(selected);
       setView("create");
       return;
     }
@@ -231,6 +267,12 @@ export function App(props: { onQuit: () => void }): React.ReactNode {
         message: `Delete loop ${selectedId}?`,
         action: runAction(`Deleted ${selectedId}`, () => deleteLoop(selectedId)),
       });
+    } else if (name === "x") {
+      setConfirmChoice(0);
+      setConfirm({
+        message: `Force run loop ${selectedId} now?`,
+        action: runAction(`Triggered ${selectedId}`, () => triggerLoop(selectedId)),
+      });
     }
   });
 
@@ -273,10 +315,17 @@ export function App(props: { onQuit: () => void }): React.ReactNode {
         <HelpView />
       ) : view === "create" ? (
         <CreateView
-          onCancel={() => setView("board")}
-          onCreated={(id) => {
+          mode={editTarget ? "edit" : "create"}
+          editId={editTarget?.id ?? null}
+          initial={createInitialValues(editTarget)}
+          onCancel={() => {
+            setEditTarget(null);
             setView("board");
-            push("success", `Started ${id}`);
+          }}
+          onDone={(updated, id) => {
+            setEditTarget(null);
+            setView("board");
+            push("success", updated ? `Updated ${id} (paused)` : `Started ${id}`);
             void refresh();
           }}
         />
@@ -401,7 +450,7 @@ function Navigator(props: {
     "  " +
     "STATUS".padEnd(8) +
     " " +
-    "COMMAND".padEnd(20) +
+    "DESCRIPTION".padEnd(20) +
     " " +
     "TIMING".padEnd(12) +
     " EXIT  RUNS";
@@ -427,7 +476,7 @@ function Navigator(props: {
               {isSelected ? "›" : " "} <span fg={statusColor(loop.status)}>
                 {loop.status.padEnd(8)}
               </span>{" "}
-              {formatCmd(loop.command, loop.commandArgs, 20).padEnd(20)}{" "}
+              {truncate(describeLoop(loop), 20).padEnd(20)}{" "}
               {timingLabel(loop).padEnd(12)} exit {exit.padEnd(3)} #
               {String(loop.runCount).padStart(3)}
             </text>
@@ -452,9 +501,11 @@ function Inspector(props: { loop: LoopMeta | null }): React.ReactNode {
   const maxRuns = loop.maxRuns !== null ? String(loop.maxRuns) : "unlimited";
 
   return (
-    <box title=" Inspector " border style={{ height: 12, flexDirection: "column" }}>
+    <box title=" Inspector " border style={{ height: 13, flexDirection: "column" }}>
       <text><strong>ID:       </strong> {loop.id}</text>
+      <text><strong>Desc:     </strong> {describeLoop(loop)}</text>
       <text><strong>Command:  </strong> {cmd}</text>
+      <text><strong>Dir:      </strong> {loop.cwd || "(inherit)"}</text>
       <text><strong>Interval: </strong> {loop.intervalHuman}</text>
       <text>
         <strong>Status:   </strong>{" "}
@@ -496,9 +547,11 @@ function DetailView(props: {
 
   return (
     <box style={{ flexDirection: "column", flexGrow: 1 }}>
-      <box title=" Loop Detail " border style={{ flexDirection: "column", height: 14 }}>
+      <box title=" Loop Detail " border style={{ flexDirection: "column", height: 16 }}>
         <text><strong>ID:        </strong>{loop.id}</text>
+        <text><strong>Desc:      </strong>{describeLoop(loop)}</text>
         <text><strong>Command:   </strong>{cmd}</text>
+        <text><strong>Dir:       </strong>{loop.cwd || "(inherit)"}</text>
         <text><strong>Interval:  </strong>{loop.intervalHuman}</text>
         <text>
           <strong>Status:    </strong>
@@ -525,8 +578,10 @@ function HelpView(): React.ReactNode {
     ["up/down, j/k", "move selection"],
     ["enter", "toggle loop detail"],
     ["n", "create loop"],
+    ["e", "edit loop (pauses it)"],
     ["p", "pause selected loop"],
     ["r", "resume selected loop"],
+    ["x", "force run selected loop now"],
     ["d", "delete selected loop"],
     ["/", "search loops"],
     ["f", "cycle status filter"],
@@ -549,15 +604,20 @@ function HelpView(): React.ReactNode {
 }
 
 function CreateView(props: {
+  mode: "create" | "edit";
+  editId: string | null;
+  initial: Record<CreateField, string>;
   onCancel: () => void;
-  onCreated: (id: string) => void;
+  onDone: (updated: boolean, id: string) => void;
 }): React.ReactNode {
-  const fields = ["interval", "command", "runNow", "maxRuns"] as const;
-  type Field = (typeof fields)[number];
+  const fields = createFields;
+  type Field = CreateField;
 
   const labels: Record<Field, string> = {
     interval: "Interval",
     command: "Command",
+    description: "Description",
+    cwd: "Working dir",
     runNow: "Run immediately?",
     maxRuns: "Max runs",
   };
@@ -565,6 +625,8 @@ function CreateView(props: {
   const hints: Record<Field, string> = {
     interval: "how often to run · e.g. 30s · 5m · 30m · 1h · 1d",
     command: "full command line · quote args with spaces",
+    description: "short label shown in the list · blank uses the command",
+    cwd: "directory the command runs in · must exist at run time",
     runNow: "run once now then every interval, or wait the first interval",
     maxRuns: "stop after N runs · leave blank to run forever",
   };
@@ -572,6 +634,8 @@ function CreateView(props: {
   const examples: Record<Field, string> = {
     interval: "30m",
     command: 'opencode run "search missing translations and translate them, 3 maximum" --model "opencode/big-pickle"',
+    description: "translate missing strings",
+    cwd: "",
     runNow: "",
     maxRuns: "",
   };
@@ -581,12 +645,7 @@ function CreateView(props: {
     { name: "Yes — run now, then every interval", description: "", value: "y" },
   ];
 
-  const [values, setValues] = useState<Record<Field, string>>({
-    interval: "30m",
-    command: "",
-    runNow: "n",
-    maxRuns: "",
-  });
+  const [values, setValues] = useState<Record<Field, string>>(props.initial);
   const [focusIndex, setFocusIndex] = useState(0);
   const [error, setError] = useState("");
 
@@ -600,6 +659,11 @@ function CreateView(props: {
 
   function submit(current: Record<Field, string>): void {
     try {
+      const cwd = current.cwd.trim();
+      if (cwd && !fs.existsSync(cwd)) {
+        setError(`Working directory does not exist: ${cwd}`);
+        return;
+      }
       const tokens = parseCommandLine(current.command.trim());
       const [command, ...commandArgs] = tokens;
       const built = buildLoopOptions(
@@ -610,10 +674,16 @@ function CreateView(props: {
           now: current.runNow === "y",
           maxRuns: current.maxRuns.trim() || null,
           verbose: false,
+          cwd,
+          description: current.description.trim(),
         }
       );
-      void createLoop(built.options, built.intervalHuman)
-        .then((id) => props.onCreated(id))
+      const request =
+        props.mode === "edit" && props.editId
+          ? updateLoop(props.editId, built.options, built.intervalHuman)
+          : createLoop(built.options, built.intervalHuman);
+      void request
+        .then((id) => props.onDone(props.mode === "edit", id))
         .catch((e: unknown) =>
           setError(e instanceof Error ? e.message : String(e))
         );
@@ -622,8 +692,10 @@ function CreateView(props: {
     }
   }
 
+  const title = props.mode === "edit" ? " Edit Loop (will pause) " : " New Loop ";
+
   return (
-    <box title=" New Loop " border style={{ flexDirection: "column", flexGrow: 1, padding: 1 }}>
+    <box title={title} border style={{ flexDirection: "column", flexGrow: 1, padding: 1 }}>
       <box style={{ flexDirection: "column", marginBottom: 1 }}>
         <text fg="#9ca3af">Full example of the loop you are building:</text>
         <text>
@@ -659,6 +731,7 @@ function CreateView(props: {
             <box border style={{ height: 3 }}>
               <input
                 focused={focusIndex === index}
+                value={props.initial[field]}
                 placeholder={examples[field] ? `e.g. ${examples[field]}` : "(blank)"}
                 onInput={(value: string) =>
                   setValues((prev) => ({ ...prev, [field]: value }))
@@ -698,9 +771,11 @@ function Footer(props: { mode: Mode }): React.ReactNode {
   const hints: Record<Mode, [string, string][]> = {
     normal: [
       ["n", "new"],
+      ["e", "edit"],
       ["enter", "detail"],
       ["p", "pause"],
       ["r", "resume"],
+      ["x", "run now"],
       ["d", "delete"],
       ["/", "search"],
       ["f", "filter"],
@@ -721,6 +796,7 @@ function Footer(props: { mode: Mode }): React.ReactNode {
     detail: [
       ["p", "pause"],
       ["r", "resume"],
+      ["x", "run now"],
       ["d", "delete"],
       ["esc", "back"],
       ["q", "quit"],

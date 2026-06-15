@@ -89,6 +89,8 @@ describe("runLoop", () => {
       immediate: true,
       maxRuns: 2,
       verbose: false,
+      cwd: "",
+      description: "",
     };
 
     const promise = runLoop(options, logger, controller.signal);
@@ -114,6 +116,8 @@ describe("runLoop", () => {
       immediate: false,
       maxRuns: 1,
       verbose: false,
+      cwd: "",
+      description: "",
     };
 
     const promise = runLoop(options, logger, controller.signal);
@@ -142,6 +146,8 @@ describe("runLoop", () => {
       immediate: true,
       maxRuns: 1,
       verbose: false,
+      cwd: "",
+      description: "",
     };
 
     const promise = runLoop(options, logger, controller.signal);
@@ -172,6 +178,8 @@ describe("runLoop", () => {
       immediate: true,
       maxRuns: 2,
       verbose: false,
+      cwd: "",
+      description: "",
     };
 
     const promise = runLoop(options, logger, controller.signal);
@@ -202,6 +210,8 @@ describe("runLoop", () => {
       immediate: true,
       maxRuns: 2,
       verbose: false,
+      cwd: "",
+      description: "",
     };
 
     const promise = runLoop(options, logger, controller.signal);
@@ -227,6 +237,8 @@ describe("runLoop", () => {
       immediate: true,
       maxRuns: null,
       verbose: false,
+      cwd: "",
+      description: "",
     };
 
     const promise = runLoop(options, logger, controller.signal);
@@ -249,6 +261,8 @@ describe("runLoop", () => {
       immediate: true,
       maxRuns: 0,
       verbose: false,
+      cwd: "",
+      description: "",
     };
 
     const promise = runLoop(options, logger, controller.signal);
@@ -275,6 +289,8 @@ describe("runLoop", () => {
       immediate: true,
       maxRuns: 1,
       verbose: true,
+      cwd: "",
+      description: "",
     };
 
     const promise = runLoop(options, verboseLogger, controller.signal);
@@ -293,6 +309,8 @@ describe("runLoop", () => {
       immediate: false,
       maxRuns: 1,
       verbose: false,
+      cwd: "",
+      description: "",
     };
 
     const promise = runLoop(options, logger, controller.signal);

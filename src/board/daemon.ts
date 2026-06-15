@@ -26,6 +26,11 @@ export async function resumeLoop(id: string): Promise<void> {
   expectOk((response as { message?: string }).message ?? "resume failed", response.type);
 }
 
+export async function triggerLoop(id: string): Promise<void> {
+  const response = await sendRequest({ type: "trigger", payload: { id } });
+  expectOk((response as { message?: string }).message ?? "force run failed", response.type);
+}
+
 export async function deleteLoop(id: string): Promise<void> {
   const response = await sendRequest({ type: "delete", payload: { id } });
   expectOk((response as { message?: string }).message ?? "delete failed", response.type);
@@ -38,6 +43,21 @@ export async function createLoop(
   const response = await sendRequest({
     type: "start",
     payload: { ...options, intervalHuman },
+  });
+  if (response.type !== "ok") {
+    throw new Error((response as { message: string }).message);
+  }
+  return (response.data as { id: string }).id;
+}
+
+export async function updateLoop(
+  id: string,
+  options: LoopOptions,
+  intervalHuman: string
+): Promise<string> {
+  const response = await sendRequest({
+    type: "update",
+    payload: { id, ...options, intervalHuman },
   });
   if (response.type !== "ok") {
     throw new Error((response as { message: string }).message);

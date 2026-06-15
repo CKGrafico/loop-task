@@ -82,6 +82,17 @@ export class IpcServer {
         break;
       }
 
+      case "update": {
+        const { id, intervalHuman, ...options } = request.payload;
+        const ok = await this.manager.update(id, options, intervalHuman);
+        if (!ok) {
+          this.send(socket, { type: "error", message: `Loop ${id} not found` });
+        } else {
+          this.send(socket, { type: "ok", data: { id } });
+        }
+        break;
+      }
+
       case "list": {
         const loops = this.manager.list();
         this.send(socket, { type: "ok", data: loops });
@@ -110,6 +121,16 @@ export class IpcServer {
 
       case "resume": {
         const ok = this.manager.resume(request.payload.id);
+        if (!ok) {
+          this.send(socket, { type: "error", message: `Loop ${request.payload.id} not found` });
+        } else {
+          this.send(socket, { type: "ok" });
+        }
+        break;
+      }
+
+      case "trigger": {
+        const ok = this.manager.trigger(request.payload.id);
         if (!ok) {
           this.send(socket, { type: "error", message: `Loop ${request.payload.id} not found` });
         } else {

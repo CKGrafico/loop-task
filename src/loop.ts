@@ -35,16 +35,25 @@ function sleep(ms: number, signal: AbortSignal): Promise<void> {
 async function executeCommand(
   command: string,
   commandArgs: string[],
+  cwd: string,
   logStream: fs.WriteStream
 ): Promise<ExecutionResult> {
   const startedAt = new Date();
   const header = `\n--- Run at ${startedAt.toISOString()} ---\n`;
   logStream.write(header);
 
+  if (cwd && !fs.existsSync(cwd)) {
+    const endedAt = new Date();
+    logStream.write(`[error] working directory does not exist: ${cwd}\n`);
+    logStream.write(`[exit 1 | ${formatDuration(0)}]\n`);
+    return { exitCode: 1, duration: 0, startedAt, endedAt };
+  }
+
   const child: ResultPromise = execa(command, commandArgs, {
     stdout: "pipe",
     stderr: "pipe",
     stdin: "ignore",
+    cwd: cwd || undefined,
   });
 
   child.stdout!.on("data", (chunk: Buffer) => {
@@ -86,6 +95,7 @@ interface LoopControllerState {
 export class LoopController extends EventEmitter {
   private abortController: AbortController;
   private _paused = false;
+  private _forceRun = false;
   private _status: LoopStatus = "running";
   private resumeResolve: (() => void) | null = null;
   private runCount = 0;
@@ -183,6 +193,20 @@ export class LoopController extends EventEmitter {
     }
   }
 
+  triggerNow(): boolean {
+    if (this._status === "stopped") {
+      return false;
+    }
+    this._forceRun = true;
+    this.remainingDelayMs = null;
+    this.nextRunAt = null;
+    if (this._paused) {
+      this.resume();
+    }
+    this.emit("triggered");
+    return true;
+  }
+
   async stop(): Promise<void> {
     this.abortController.abort();
     if (this._paused) this.resume();
@@ -193,7 +217,7 @@ export class LoopController extends EventEmitter {
     this.logStream = null;
   }
 
-  getMeta(): Omit<LoopMeta, "command" | "commandArgs" | "interval" | "intervalHuman" | "immediate" | "maxRuns" | "verbose" | "pid"> {
+  getMeta(): Omit<LoopMeta, "command" | "commandArgs" | "interval" | "intervalHuman" | "immediate" | "maxRuns" | "verbose" | "cwd" | "description" | "pid"> {
     return {
       id: this.id,
       status: this._status,
@@ -219,6 +243,12 @@ export class LoopController extends EventEmitter {
     this.remainingDelayMs = remaining;
 
     while (remaining > 0) {
+      if (this._forceRun) {
+        this.remainingDelayMs = null;
+        this.nextRunAt = null;
+        return true;
+      }
+
       if (this._paused) {
         this._status = "paused";
         this.emit("paused");
@@ -292,6 +322,7 @@ export class LoopController extends EventEmitter {
         }
 
         this._status = "running";
+        this._forceRun = false;
         this.runCount++;
         this.lastRunAt = new Date().toISOString();
         this.nextRunAt = null;
@@ -301,6 +332,7 @@ export class LoopController extends EventEmitter {
         const result = await executeCommand(
           this.options.command,
           this.options.commandArgs,
+          this.options.cwd,
           this.logStream!
         );
 
@@ -332,16 +364,24 @@ export class LoopController extends EventEmitter {
 export async function executeCommandForeground(
   command: string,
   commandArgs: string[],
-  logger: Logger
+  logger: Logger,
+  cwd = ""
 ): Promise<ExecutionResult> {
   const startedAt = new Date();
   logger.debug(`Executing: ${command} ${commandArgs.join(" ")}`);
+
+  if (cwd && !fs.existsSync(cwd)) {
+    logger.error(`Working directory does not exist: ${cwd}`);
+    const endedAt = new Date();
+    return { exitCode: 1, duration: 0, startedAt, endedAt };
+  }
 
   try {
     const result = await execa(command, commandArgs, {
       stdout: "inherit",
       stderr: "inherit",
       stdin: "inherit",
+      cwd: cwd || undefined,
     });
 
     const endedAt = new Date();
@@ -419,7 +459,7 @@ export async function runLoop(
         `\n--- Run ${state.runCount}${options.maxRuns !== null ? `/${options.maxRuns}` : ""} ---`
       );
 
-      const result = await executeCommandForeground(options.command, options.commandArgs, logger);
+      const result = await executeCommandForeground(options.command, options.commandArgs, logger, options.cwd);
       state.running = false;
 
       if (result.exitCode !== 0) {

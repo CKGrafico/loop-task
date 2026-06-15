@@ -28,6 +28,8 @@ export class LoopManager {
         immediate: false,
         maxRuns: meta.maxRuns,
         verbose: meta.verbose,
+        cwd: meta.cwd ?? "",
+        description: meta.description ?? "",
       };
       const logPath = getLogPath(meta.id);
       const controller = new LoopController(meta.id, options, logPath, {
@@ -61,6 +63,35 @@ export class LoopManager {
     return id;
   }
 
+  async update(
+    id: string,
+    options: LoopOptions,
+    intervalHuman: string
+  ): Promise<boolean> {
+    const entry = this.loops.get(id);
+    if (!entry) return false;
+
+    const runtime = entry.controller.getMeta();
+    await entry.controller.stop();
+
+    const logPath = getLogPath(id);
+    const controller = new LoopController(id, options, logPath, {
+      status: "paused",
+      createdAt: runtime.createdAt,
+      runCount: runtime.runCount,
+      lastRunAt: runtime.lastRunAt,
+      lastExitCode: runtime.lastExitCode,
+      lastDuration: runtime.lastDuration,
+      nextRunAt: null,
+      remainingDelayMs: null,
+    });
+    this.loops.set(id, { controller, options, intervalHuman });
+    this.wireEvents(id, controller, options, intervalHuman);
+    controller.start();
+    this.persist(id, controller, options, intervalHuman);
+    return true;
+  }
+
   list(): LoopMeta[] {
     const result: LoopMeta[] = [];
     for (const [id, entry] of this.loops) {
@@ -87,6 +118,14 @@ export class LoopManager {
     const entry = this.loops.get(id);
     if (!entry) return false;
     entry.controller.resume();
+    this.persist(id, entry.controller, entry.options, entry.intervalHuman);
+    return true;
+  }
+
+  trigger(id: string): boolean {
+    const entry = this.loops.get(id);
+    if (!entry) return false;
+    entry.controller.triggerNow();
     this.persist(id, entry.controller, entry.options, entry.intervalHuman);
     return true;
   }
@@ -125,6 +164,7 @@ export class LoopManager {
     controller.on("run:end", persist);
     controller.on("paused", persist);
     controller.on("resumed", persist);
+    controller.on("triggered", persist);
     controller.on("sleeping", persist);
     controller.on("stopped", persist);
   }
@@ -145,6 +185,8 @@ export class LoopManager {
       immediate: options.immediate,
       maxRuns: options.maxRuns,
       verbose: options.verbose,
+      cwd: options.cwd,
+      description: options.description,
       remainingDelayMs: runtime.remainingDelayMs,
       pid: process.pid,
     };
@@ -162,6 +204,8 @@ export class LoopManager {
       immediate: entry.options.immediate,
       maxRuns: entry.options.maxRuns,
       verbose: entry.options.verbose,
+      cwd: entry.options.cwd,
+      description: entry.options.description,
       remainingDelayMs: runtime.remainingDelayMs,
       pid: process.pid,
     };

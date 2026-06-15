@@ -64,28 +64,47 @@ The board is the primary way to work with loops.
 From inside the board you can:
 
 - browse all loops
-- inspect loop details
-- pause and resume loops
-- delete loops
-- attach to live output
+- inspect loop details and live output
 - create new loops interactively
+- edit existing loops (editing pauses the loop)
+- pause and resume loops
+- force run a loop immediately
+- delete loops
+- search, filter by status, and sort
 
 ### Board keymap
 
 ```text
-n      create loop
-Enter  open detail view
-a      open attach view
-p      pause selected loop
-r      resume selected loop
-d      delete selected loop
-/      search loops
-f      cycle status filter
-s      cycle sort mode
-h      help
-Esc    return to board
-q      quit
+↑/↓, j/k  move selection
+Enter     toggle detail view
+n         create loop
+e         edit selected loop (pauses it)
+p         pause selected loop
+r         resume selected loop
+x         force run selected loop now
+d         delete selected loop
+/         search loops
+f         cycle status filter
+s         cycle sort mode
+h         toggle help
+Esc       return to board
+q         quit
 ```
+
+Destructive or schedule-changing actions (pause, resume, force run, delete) prompt a
+confirmation modal; results are shown as toasts.
+
+### Loop fields
+
+When creating or editing a loop you can set:
+
+- **Interval** – how often to run (e.g. `30s`, `5m`, `1h`)
+- **Command** – the full command line (quote args with spaces)
+- **Description** – optional short label shown in the list; blank falls back to the command
+- **Working dir** – directory the command runs in; defaults to the current directory and
+  must exist at run time
+- **Run immediately?** – run once now, then every interval, or wait the first interval
+- **Max runs** – stop after N runs, or leave blank to run forever
 
 ## Start From The CLI Or The Board
 
@@ -120,6 +139,7 @@ These options apply to `start` and `run`:
 | ----------------- | -------------------------------- |
 | `--now`           | Run immediately before waiting   |
 | `--max-runs <n>`  | Stop after N executions          |
+| `--cwd <dir>`     | Working directory for the command (defaults to the current directory) |
 | `--verbose`       | Show execution details           |
 | `-h, --help`      | Display help                     |
 | `-V, --version`   | Display version                  |
@@ -155,6 +175,15 @@ loop-task run --verbose 30m -- npm test
 ```
 
 Shows start/end timestamps, exit code, execution duration, and next scheduled run.
+
+### Run in a specific directory
+
+```bash
+loop-task start 30m --cwd ./packages/api -- npm test
+```
+
+The working directory is checked before every run; if it no longer exists, that run is
+skipped with an error logged to the loop's output instead of executing.
 
 ## Supported intervals
 

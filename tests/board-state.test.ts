@@ -17,6 +17,8 @@ function loop(id: string, values: Partial<LoopMeta> = {}): LoopMeta {
     immediate: false,
     maxRuns: null,
     verbose: false,
+    cwd: "",
+    description: "",
     status: "sleeping",
     createdAt: "2026-06-14T10:00:00.000Z",
     runCount: 0,

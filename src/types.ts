@@ -5,6 +5,8 @@ export interface LoopOptions {
   immediate: boolean;
   maxRuns: number | null;
   verbose: boolean;
+  cwd: string;
+  description: string;
 }
 
 export interface ExecutionResult {
@@ -31,6 +33,8 @@ export interface LoopMeta {
   immediate: boolean;
   maxRuns: number | null;
   verbose: boolean;
+  cwd: string;
+  description: string;
   status: LoopStatus;
   createdAt: string;
   runCount: number;
@@ -44,10 +48,12 @@ export interface LoopMeta {
 
 export type IpcRequest =
   | { type: "start"; payload: LoopOptions & { intervalHuman: string } }
+  | { type: "update"; payload: { id: string } & LoopOptions & { intervalHuman: string } }
   | { type: "list" }
   | { type: "status"; payload: { id: string } }
   | { type: "pause"; payload: { id: string } }
   | { type: "resume"; payload: { id: string } }
+  | { type: "trigger"; payload: { id: string } }
   | { type: "delete"; payload: { id: string } }
   | { type: "attach"; payload: { id: string } }
   | { type: "logs"; payload: { id: string; follow: boolean; tail?: number } }
