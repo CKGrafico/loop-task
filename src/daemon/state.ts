@@ -1,36 +1,29 @@
 import fs from "node:fs";
 import path from "node:path";
-import os from "node:os";
 import crypto from "node:crypto";
 import { fileURLToPath } from "node:url";
 import type { LoopMeta } from "../types.js";
+import { removeIfExists, writeFileAtomic } from "../shared/fs-utils.js";
+import {
+  getLoopsDir,
+  getLogsDir,
+  loopFile,
+  logFile,
+  getPidFile,
+  getSignatureFile,
+  getSocketPath,
+} from "../config/paths.js";
 
-export function getDataDir(): string {
-  const override = process.env.LOOP_CLI_HOME;
-  const base = override && override.trim() ? override : os.homedir();
-  return path.join(base, ".loop-cli");
-}
-
-function getLoopsDir(): string {
-  return path.join(getDataDir(), "loops");
-}
-
-function getLogsDir(): string {
-  return path.join(getDataDir(), "logs");
-}
+export { getDataDir, getPidFile, getSocketPath } from "../config/paths.js";
 
 function ensureDirs(): void {
   fs.mkdirSync(getLoopsDir(), { recursive: true });
   fs.mkdirSync(getLogsDir(), { recursive: true });
 }
 
-function loopFile(id: string): string {
-  return path.join(getLoopsDir(), `${id}.json`);
-}
-
 export function saveLoop(meta: LoopMeta): void {
   ensureDirs();
-  fs.writeFileSync(loopFile(meta.id), JSON.stringify(meta, null, 2));
+  writeFileAtomic(loopFile(meta.id), JSON.stringify(meta, null, 2));
 }
 
 export function loadLoop(id: string): LoopMeta | null {
@@ -57,23 +50,13 @@ export function loadAllLoops(): LoopMeta[] {
 }
 
 export function deleteLoop(id: string): void {
-  const stateFile = loopFile(id);
-  const logFile = path.join(getLogsDir(), `${id}.log`);
-  if (fs.existsSync(stateFile)) fs.unlinkSync(stateFile);
-  if (fs.existsSync(logFile)) fs.unlinkSync(logFile);
+  removeIfExists(loopFile(id));
+  removeIfExists(logFile(id));
 }
 
 export function getLogPath(id: string): string {
   ensureDirs();
-  return path.join(getLogsDir(), `${id}.log`);
-}
-
-export function getPidFile(): string {
-  return path.join(getDataDir(), "daemon.pid");
-}
-
-function getSignatureFile(): string {
-  return path.join(getDataDir(), "daemon.sig");
+  return logFile(id);
 }
 
 export function computeCodeSignature(): string {
@@ -121,32 +104,14 @@ export function writeDaemonSignature(signature: string): void {
 }
 
 export function removeDaemonSignature(): void {
-  const file = getSignatureFile();
-  if (fs.existsSync(file)) fs.unlinkSync(file);
-}
-
-export function getSocketPath(): string {
-  const suffix = crypto
-    .createHash("sha1")
-    .update(getDataDir())
-    .digest("hex")
-    .slice(0, 12);
-
-  if (process.platform === "win32") {
-    return `\\\\.\\pipe\\loop-cli-${os.userInfo().username}-${suffix}`;
-  }
-  return path.join(getDataDir(), `daemon-${suffix}.sock`);
+  removeIfExists(getSignatureFile());
 }
 
 export function removeSocketFile(): void {
   if (process.platform === "win32") {
     return;
   }
-
-  const socketPath = getSocketPath();
-  if (fs.existsSync(socketPath)) {
-    fs.unlinkSync(socketPath);
-  }
+  removeIfExists(getSocketPath());
 }
 
 export function readDaemonPid(): number | null {
@@ -163,8 +128,7 @@ export function writeDaemonPid(pid: number): void {
 }
 
 export function removeDaemonPid(): void {
-  const file = getPidFile();
-  if (fs.existsSync(file)) fs.unlinkSync(file);
+  removeIfExists(getPidFile());
 }
 
 export function isDaemonAlive(pid: number): boolean {

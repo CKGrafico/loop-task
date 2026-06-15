@@ -3,10 +3,11 @@
 import { Command } from "commander";
 import { createRequire } from "node:module";
 import { Logger } from "./logger.js";
-import { runLoop } from "./loop.js";
+import { runLoop } from "./core/foreground-loop.js";
 import { buildLoopOptions } from "./loop-config.js";
 import { startLoop } from "./client/commands.js";
 import { launchBoard } from "./board/index.js";
+import { t } from "./i18n/index.js";
 
 const require = createRequire(import.meta.url);
 const packageJson = require("../package.json") as { version: string };
@@ -15,18 +16,18 @@ const program = new Command();
 
 program
   .name("loop-task")
-  .description("Open the loop board or start loops in the background.")
+  .description(t("cli.programDescription"))
   .version(packageJson.version, "-V, --version");
 
 program
   .command("start")
-  .description("Start a loop in the background")
-  .argument("<interval>", "Interval between runs (e.g. 30s, 5m, 1h)")
-  .argument("<command...>", "Command to execute")
-  .option("--now", "Run immediately before waiting", false)
-  .option("--max-runs <n>", "Stop after N executions", parseInt)
-  .option("--verbose", "Show execution details", false)
-  .option("--cwd <dir>", "Working directory for the command")
+  .description(t("cli.startDescription"))
+  .argument("<interval>", t("cli.argInterval"))
+  .argument("<command...>", t("cli.argCommand"))
+  .option("--now", t("cli.optNow"), false)
+  .option("--max-runs <n>", t("cli.optMaxRuns"), parseInt)
+  .option("--verbose", t("cli.optVerbose"), false)
+  .option("--cwd <dir>", t("cli.optCwd"))
   .action(
     async (
       intervalStr: string,
@@ -43,13 +44,13 @@ program
 
 program
   .command("run")
-  .description("Run a loop in the foreground")
-  .argument("<interval>", "Interval between runs (e.g. 30s, 5m, 1h)")
-  .argument("<command...>", "Command to execute")
-  .option("--now", "Run immediately before waiting")
-  .option("--max-runs <n>", "Stop after N executions")
-  .option("--verbose", "Show execution details")
-  .option("--cwd <dir>", "Working directory for the command")
+  .description(t("cli.runDescription"))
+  .argument("<interval>", t("cli.argInterval"))
+  .argument("<command...>", t("cli.argCommand"))
+  .option("--now", t("cli.optNow"))
+  .option("--max-runs <n>", t("cli.optMaxRuns"))
+  .option("--verbose", t("cli.optVerbose"))
+  .option("--cwd <dir>", t("cli.optCwd"))
   .action(
     async (
       intervalStr: string | undefined,

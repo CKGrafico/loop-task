@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { runLoop, executeCommandForeground } from "../src/loop.js";
+import { runLoop } from "../src/core/foreground-loop.js";
+import { executeCommandForeground } from "../src/core/command-runner.js";
 import { Logger } from "../src/logger.js";
 import type { LoopOptions } from "../src/types.js";
 

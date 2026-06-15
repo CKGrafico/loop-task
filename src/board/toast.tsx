@@ -1,4 +1,5 @@
 import { useCallback, useRef, useState } from "react";
+import { TOAST_MAX, TOAST_TIMEOUT_MS } from "../config/constants.js";
 
 export type ToastKind = "success" | "error" | "info";
 
@@ -7,8 +8,6 @@ export interface Toast {
   kind: ToastKind;
   message: string;
 }
-
-const TOAST_TIMEOUT = 3500;
 
 export function useToasts(): {
   toasts: Toast[];
@@ -31,10 +30,10 @@ export function useToasts(): {
   const push = useCallback(
     (kind: ToastKind, message: string) => {
       const id = (idRef.current += 1);
-      setToasts((prev) => [...prev, { id, kind, message }].slice(-4));
+      setToasts((prev) => [...prev, { id, kind, message }].slice(-TOAST_MAX));
       timers.current.set(
         id,
-        setTimeout(() => dismiss(id), TOAST_TIMEOUT)
+        setTimeout(() => dismiss(id), TOAST_TIMEOUT_MS)
       );
     },
     [dismiss]

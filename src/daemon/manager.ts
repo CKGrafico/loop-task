@@ -1,5 +1,5 @@
 import crypto from "node:crypto";
-import { LoopController } from "../loop.js";
+import { LoopController } from "../core/loop-controller.js";
 import type { LoopOptions, LoopMeta } from "../types.js";
 import {
   saveLoop,
@@ -7,6 +7,7 @@ import {
   deleteLoop as deleteLoopState,
   getLogPath,
 } from "./state.js";
+import { daemonLog } from "./daemon-log.js";
 
 interface StoredLoop {
   controller: LoopController;
@@ -16,9 +17,11 @@ interface StoredLoop {
 
 export class LoopManager {
   private loops = new Map<string, StoredLoop>();
+  private lastSerialized = new Map<string, string>();
 
   init(): void {
     const saved = loadAllLoops();
+    let restarted = 0;
     for (const meta of saved) {
       if (meta.status === "stopped") continue;
       const options: LoopOptions = {
@@ -49,6 +52,10 @@ export class LoopManager {
       });
       this.wireEvents(meta.id, controller, options, meta.intervalHuman);
       controller.start();
+      restarted += 1;
+    }
+    if (restarted > 0) {
+      daemonLog(`restarted ${restarted} loop(s) from persisted state`);
     }
   }
 
@@ -133,6 +140,7 @@ export class LoopManager {
     if (!entry) return false;
     await entry.controller.stop();
     this.loops.delete(id);
+    this.lastSerialized.delete(id);
     deleteLoopState(id);
     return true;
   }
@@ -173,39 +181,38 @@ export class LoopManager {
     options: LoopOptions,
     intervalHuman: string
   ): void {
-    const runtime = controller.getMeta();
-    const meta: LoopMeta = {
-      ...runtime,
-      command: options.command,
-      commandArgs: options.commandArgs,
-      interval: options.interval,
-      intervalHuman,
-      immediate: options.immediate,
-      maxRuns: options.maxRuns,
-      verbose: options.verbose,
-      cwd: options.cwd,
-      description: options.description,
-      remainingDelayMs: runtime.remainingDelayMs,
-      pid: process.pid,
-    };
+    const meta = toMeta(controller, options, intervalHuman);
+    const serialized = JSON.stringify(meta);
+    if (this.lastSerialized.get(id) === serialized) {
+      return;
+    }
+    this.lastSerialized.set(id, serialized);
     saveLoop(meta);
   }
 
   private buildMeta(id: string, entry: StoredLoop): LoopMeta {
-    const runtime = entry.controller.getMeta();
-    return {
-      ...runtime,
-      command: entry.options.command,
-      commandArgs: entry.options.commandArgs,
-      interval: entry.options.interval,
-      intervalHuman: entry.intervalHuman,
-      immediate: entry.options.immediate,
-      maxRuns: entry.options.maxRuns,
-      verbose: entry.options.verbose,
-      cwd: entry.options.cwd,
-      description: entry.options.description,
-      remainingDelayMs: runtime.remainingDelayMs,
-      pid: process.pid,
-    };
+    return toMeta(entry.controller, entry.options, entry.intervalHuman);
   }
+}
+
+function toMeta(
+  controller: LoopController,
+  options: LoopOptions,
+  intervalHuman: string
+): LoopMeta {
+  const runtime = controller.getMeta();
+  return {
+    ...runtime,
+    command: options.command,
+    commandArgs: options.commandArgs,
+    interval: options.interval,
+    intervalHuman,
+    immediate: options.immediate,
+    maxRuns: options.maxRuns,
+    verbose: options.verbose,
+    cwd: options.cwd,
+    description: options.description,
+    remainingDelayMs: runtime.remainingDelayMs,
+    pid: process.pid,
+  };
 }

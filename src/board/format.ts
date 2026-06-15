@@ -1,4 +1,5 @@
 import type { LoopMeta } from "../types.js";
+import { t } from "../i18n/index.js";
 
 export function quoteArg(arg: string): string {
   return /[\s"]/.test(arg) ? `"${arg.replace(/"/g, '\\"')}"` : arg;
@@ -22,16 +23,16 @@ export function truncate(text: string, max: number): string {
 }
 
 export function timeAgo(iso: string | null): string {
-  if (!iso) return "-";
+  if (!iso) return t("format.dash");
   const diff = Date.now() - new Date(iso).getTime();
   const secs = Math.floor(diff / 1000);
-  if (secs < 5) return "just now";
-  if (secs < 60) return `${secs}s ago`;
+  if (secs < 5) return t("format.justNow");
+  if (secs < 60) return t("format.secsAgo", { secs });
   const mins = Math.floor(secs / 60);
-  if (mins < 60) return `${mins}m ago`;
+  if (mins < 60) return t("format.minsAgo", { mins });
   const hrs = Math.floor(mins / 60);
-  if (hrs < 24) return `${hrs}h ago`;
-  return `${Math.floor(hrs / 24)}d ago`;
+  if (hrs < 24) return t("format.hrsAgo", { hrs });
+  return t("format.daysAgo", { days: Math.floor(hrs / 24) });
 }
 
 export function statusColor(status: LoopMeta["status"]): string {
@@ -50,8 +51,8 @@ export function statusColor(status: LoopMeta["status"]): string {
 }
 
 export function timingLabel(loop: LoopMeta): string {
-  if (loop.status === "paused") return "paused";
-  if (loop.nextRunAt) return `next ${timeAgo(loop.nextRunAt)}`;
-  if (loop.lastRunAt) return `last ${timeAgo(loop.lastRunAt)}`;
-  return "new";
+  if (loop.status === "paused") return t("format.timingPaused");
+  if (loop.nextRunAt) return t("format.timingNext", { timeAgo: timeAgo(loop.nextRunAt) });
+  if (loop.lastRunAt) return t("format.timingLast", { timeAgo: timeAgo(loop.lastRunAt) });
+  return t("format.timingNew");
 }

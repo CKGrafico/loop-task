@@ -1,4 +1,5 @@
 import { parseDuration } from "./duration.js";
+import { t } from "./i18n/index.js";
 import type { LoopOptions } from "./types.js";
 
 export interface LoopCommandOptionsInput {
@@ -21,7 +22,7 @@ export function parseMaxRuns(value: number | string | null | undefined): number 
 
   const parsed = typeof value === "number" ? value : parseInt(value, 10);
   if (Number.isNaN(parsed) || parsed < 1) {
-    throw new Error("--max-runs must be a positive integer");
+    throw new Error(t("errors.maxRunsInvalid"));
   }
 
   return parsed;
@@ -68,7 +69,7 @@ export function parseCommandLine(input: string): string[] {
   }
 
   if (quote) {
-    throw new Error("Unbalanced quote in command");
+    throw new Error(t("errors.unbalancedQuote"));
   }
 
   if (hasToken) {
@@ -85,7 +86,7 @@ export function buildLoopOptions(
   input: LoopCommandOptionsInput = {}
 ): BuiltLoopOptions {
   if (!command.trim()) {
-    throw new Error("Command cannot be empty");
+    throw new Error(t("errors.commandEmpty"));
   }
 
   return {

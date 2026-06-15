@@ -10,6 +10,8 @@ import {
   computeCodeSignature,
   getSocketPath,
 } from "./state.js";
+import { t } from "../i18n/index.js";
+import { DAEMON_POLL_MS, DAEMON_SPAWN_TIMEOUT_MS } from "../config/constants.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -33,12 +35,12 @@ function stopDaemon(pid: number): void {
     // already gone
   }
 
-  const deadline = Date.now() + 5000;
+  const deadline = Date.now() + DAEMON_SPAWN_TIMEOUT_MS;
   while (Date.now() < deadline) {
     if (!isDaemonAlive(pid)) {
       break;
     }
-    blockingWait(100);
+    blockingWait(DAEMON_POLL_MS);
   }
 
   if (isDaemonAlive(pid)) {
@@ -75,7 +77,7 @@ export function ensureDaemon(): void {
 
   child.unref();
 
-  const deadline = Date.now() + 5000;
+  const deadline = Date.now() + DAEMON_SPAWN_TIMEOUT_MS;
   while (Date.now() < deadline) {
     const newPid = readDaemonPid();
     if (
@@ -85,10 +87,10 @@ export function ensureDaemon(): void {
     ) {
       return;
     }
-    blockingWait(100);
+    blockingWait(DAEMON_POLL_MS);
   }
 
-  throw new Error("Daemon failed to start within 5 seconds");
+  throw new Error(t("errors.daemonFailedToStart"));
 }
 
 export function getSocket(): string {

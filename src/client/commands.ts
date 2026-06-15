@@ -1,5 +1,6 @@
 import type { LoopMeta, LoopOptions } from "../types.js";
 import { formatDuration } from "../duration.js";
+import { t } from "../i18n/index.js";
 import { sendRequest, streamRequest } from "./ipc.js";
 
 export async function createBackgroundLoop(
@@ -25,18 +26,18 @@ export async function startLoop(
   const id = await createBackgroundLoop(options, intervalHuman).catch(
     (error: unknown) => {
       const message = error instanceof Error ? error.message : String(error);
-      console.error(`Error: ${message}`);
+      console.error(t("cli.error", { message }));
       process.exit(1);
     }
   );
 
-  console.log(`Loop started in background`);
-  console.log(`  ID:       ${id}`);
-  console.log(`  Command:  ${options.command} ${options.commandArgs.join(" ")}`);
-  console.log(`  Interval: ${intervalHuman}`);
-  console.log(`  Status:   running`);
+  console.log(t("cli.startedTitle"));
+  console.log(t("cli.startedId", { id }));
+  console.log(t("cli.startedCommand", { command: `${options.command} ${options.commandArgs.join(" ")}` }));
+  console.log(t("cli.startedInterval", { interval: intervalHuman }));
+  console.log(t("cli.startedStatus"));
   console.log();
-  console.log(`  loop-task                # open the board`);
+  console.log(t("cli.startedHint"));
   process.exit(0);
 }
 
@@ -44,14 +45,14 @@ export async function listLoops(): Promise<void> {
   const response = await sendRequest({ type: "list" });
 
   if (response.type !== "ok") {
-    console.error(`Error: ${(response as { message: string }).message}`);
+    console.error(t("cli.error", { message: (response as { message: string }).message }));
     process.exit(1);
   }
 
   const loops = response.data as LoopMeta[];
 
   if (loops.length === 0) {
-    console.log("No background loops running.");
+    console.log(t("cli.noLoops"));
     return;
   }
 
@@ -62,12 +63,12 @@ export async function listLoops(): Promise<void> {
   const runsW = 6;
 
   const header =
-    pad("ID", idW) +
-    pad("COMMAND", cmdW) +
-    pad("INTERVAL", intW) +
-    pad("STATUS", statusW) +
-    pad("RUNS", runsW) +
-    "LAST EXIT";
+    pad(t("cli.headerId"), idW) +
+    pad(t("cli.headerCommand"), cmdW) +
+    pad(t("cli.headerInterval"), intW) +
+    pad(t("cli.headerStatus"), statusW) +
+    pad(t("cli.headerRuns"), runsW) +
+    t("cli.headerLastExit");
 
   console.log(header);
   console.log("-".repeat(header.length));
@@ -90,29 +91,29 @@ export async function showStatus(id: string): Promise<void> {
   const response = await sendRequest({ type: "status", payload: { id } });
 
   if (response.type !== "ok") {
-    console.error(`Error: ${(response as { message: string }).message}`);
+    console.error(t("cli.error", { message: (response as { message: string }).message }));
     process.exit(1);
   }
 
   const loop = response.data as LoopMeta;
   const cmd = `${loop.command} ${loop.commandArgs.join(" ")}`.trim();
-  const maxRuns = loop.maxRuns !== null ? String(loop.maxRuns) : "unlimited";
+  const maxRuns = loop.maxRuns !== null ? String(loop.maxRuns) : t("cli.unlimited");
 
-  console.log(`Loop: ${loop.id}`);
-  console.log(`  Command:   ${cmd}`);
-  console.log(`  Interval:  ${loop.intervalHuman} (${formatDuration(loop.interval)})`);
-  console.log(`  Status:    ${loop.status}`);
-  console.log(`  Runs:      ${loop.runCount} / ${maxRuns}`);
-  console.log(`  Created:   ${loop.createdAt}`);
+  console.log(t("cli.statusTitle", { id: loop.id }));
+  console.log(t("cli.statusCommand", { command: cmd }));
+  console.log(t("cli.statusInterval", { interval: loop.intervalHuman, duration: formatDuration(loop.interval) }));
+  console.log(t("cli.statusStatus", { status: loop.status }));
+  console.log(t("cli.statusRuns", { runs: loop.runCount, maxRuns }));
+  console.log(t("cli.statusCreated", { created: loop.createdAt }));
 
   if (loop.lastRunAt) {
-    const exitInfo = loop.lastExitCode !== null ? `exit ${loop.lastExitCode}` : "";
+    const exitInfo = loop.lastExitCode !== null ? t("cli.exitInfo", { code: loop.lastExitCode }) : "";
     const durInfo = loop.lastDuration !== null ? formatDuration(loop.lastDuration) : "";
-    console.log(`  Last run:  ${loop.lastRunAt} ${exitInfo} ${durInfo}`.trim());
+    console.log(t("cli.statusLastRun", { lastRun: loop.lastRunAt, exit: exitInfo, duration: durInfo }).trim());
   }
 
   if (loop.nextRunAt) {
-    console.log(`  Next run:  ${loop.nextRunAt}`);
+    console.log(t("cli.statusNextRun", { nextRun: loop.nextRunAt }));
   }
   process.exit(0);
 }
@@ -120,30 +121,30 @@ export async function showStatus(id: string): Promise<void> {
 export async function pauseLoop(id: string): Promise<void> {
   const response = await sendRequest({ type: "pause", payload: { id } });
   if (response.type !== "ok") {
-    console.error(`Error: ${(response as { message: string }).message}`);
+    console.error(t("cli.error", { message: (response as { message: string }).message }));
     process.exit(1);
   }
-  console.log(`Loop ${id} paused.`);
+  console.log(t("cli.paused", { id }));
   process.exit(0);
 }
 
 export async function resumeLoop(id: string): Promise<void> {
   const response = await sendRequest({ type: "resume", payload: { id } });
   if (response.type !== "ok") {
-    console.error(`Error: ${(response as { message: string }).message}`);
+    console.error(t("cli.error", { message: (response as { message: string }).message }));
     process.exit(1);
   }
-  console.log(`Loop ${id} resumed.`);
+  console.log(t("cli.resumed", { id }));
   process.exit(0);
 }
 
 export async function deleteLoop(id: string): Promise<void> {
   const response = await sendRequest({ type: "delete", payload: { id } });
   if (response.type !== "ok") {
-    console.error(`Error: ${(response as { message: string }).message}`);
+    console.error(t("cli.error", { message: (response as { message: string }).message }));
     process.exit(1);
   }
-  console.log(`Loop ${id} deleted.`);
+  console.log(t("cli.deleted", { id }));
   process.exit(0);
 }
 
@@ -158,7 +159,7 @@ export async function viewLogs(
       payload: { id, follow: false, tail },
     });
     if (response.type !== "ok") {
-      console.error(`Error: ${(response as { message: string }).message}`);
+      console.error(t("cli.error", { message: (response as { message: string }).message }));
       process.exit(1);
     }
     const content = response.data as string;
@@ -174,7 +175,7 @@ export async function viewLogs(
     (line) => console.log(line),
     () => process.exit(0),
     (err) => {
-      console.error(`Error: ${err.message}`);
+      console.error(t("cli.error", { message: err.message }));
       process.exit(1);
     }
   );
@@ -186,20 +187,20 @@ export async function viewLogs(
 }
 
 export async function attachLoop(id: string): Promise<void> {
-  console.log(`Attaching to loop ${id}... (Ctrl+C to detach)\n`);
+  console.log(t("cli.attaching", { id }));
 
   const socket = streamRequest(
     { type: "attach", payload: { id } },
     (line) => console.log(line),
     () => process.exit(0),
     (err) => {
-      console.error(`Error: ${err.message}`);
+      console.error(t("cli.error", { message: err.message }));
       process.exit(1);
     }
   );
 
   process.on("SIGINT", () => {
-    console.log("\nDetached.");
+    console.log(t("cli.detached"));
     socket.destroy();
     process.exit(0);
   });

@@ -7,18 +7,27 @@ import {
   removeDaemonSignature,
   computeCodeSignature,
 } from "./state.js";
+import { t } from "../i18n/index.js";
+import { daemonLog } from "./daemon-log.js";
 
 async function main(): Promise<void> {
   const manager = new LoopManager();
-  manager.init();
-
   const server = new IpcServer(manager);
-  await server.listen();
 
+  try {
+    await server.listen();
+  } catch (err) {
+    daemonLog(`listen failed (another daemon already holds the socket): ${String(err)}`);
+    process.exit(0);
+  }
+
+  manager.init();
   writeDaemonPid(process.pid);
   writeDaemonSignature(computeCodeSignature());
+  daemonLog(`started pid=${process.pid}`);
 
   const cleanup = async () => {
+    daemonLog(`shutting down pid=${process.pid}`);
     removeDaemonPid();
     removeDaemonSignature();
     await manager.shutdown();
@@ -29,12 +38,14 @@ async function main(): Promise<void> {
   process.on("SIGINT", cleanup);
   process.on("SIGTERM", cleanup);
   process.on("uncaughtException", (err) => {
-    console.error("Daemon uncaught exception:", err);
+    daemonLog(`uncaught exception: ${String(err)}`);
+    console.error(t("errors.daemonUncaught"), err);
     cleanup();
   });
 }
 
 main().catch((err) => {
-  console.error("Daemon failed to start:", err);
+  daemonLog(`failed to start: ${String(err)}`);
+  console.error(t("errors.daemonFailed"), err);
   process.exit(1);
 });

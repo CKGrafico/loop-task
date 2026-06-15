@@ -1,0 +1,36 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "instructions": [
+    "AGENTS.md"
+  ],
+  "plugin": [
+    "opencode-plugin-openspec@latest",
+    "@different-ai/opencode-browser@latest",
+    "@mohak34/opencode-notifier@latest",
+    "@hueyexe/opencode-ensemble@0.14.1",
+    "@slkiser/opencode-quota@latest"
+  ],
+  "model": "opencode-go/qwen3.7-max",
+  "mcp": {
+    "codegraph": {
+      "type": "local",
+      "command": [
+        "npx",
+        "@colbymchenry/codegraph",
+        "serve",
+        "--mcp"
+      ],
+      "enabled": true
+    },
+    "basic-memory": {
+      "type": "local",
+      "command": [
+        "uvx",
+        "basic-memory",
+        "mcp"
+      ],
+      "enabled": true,
+      "timeout": 120000
+    }
+  }
+}

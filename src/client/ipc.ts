@@ -1,6 +1,8 @@
 import net from "node:net";
 import type { IpcRequest, IpcResponse } from "../types.js";
 import { ensureDaemon, getSocket } from "../daemon/spawner.js";
+import { t } from "../i18n/index.js";
+import { IPC_TIMEOUT_MS } from "../config/constants.js";
 
 export async function sendRequest(request: IpcRequest): Promise<IpcResponse> {
   ensureDaemon();
@@ -29,7 +31,7 @@ export async function sendRequest(request: IpcRequest): Promise<IpcResponse> {
           } catch {
             resolved = true;
             socket.destroy();
-            reject(new Error("Invalid response from daemon"));
+            reject(new Error(t("errors.invalidResponse")));
           }
         }
       }
@@ -38,22 +40,22 @@ export async function sendRequest(request: IpcRequest): Promise<IpcResponse> {
     socket.on("close", () => {
       if (!resolved) {
         resolved = true;
-        reject(new Error("Connection closed before response"));
+        reject(new Error(t("errors.connectionClosed")));
       }
     });
 
     socket.on("error", (err) => {
       if (!resolved) {
         resolved = true;
-        reject(new Error(`Cannot connect to daemon: ${err.message}`));
+        reject(new Error(t("errors.cannotConnect", { message: err.message })));
       }
     });
 
-    socket.setTimeout(10000, () => {
+    socket.setTimeout(IPC_TIMEOUT_MS, () => {
       if (!resolved) {
         resolved = true;
         socket.destroy();
-        reject(new Error("Daemon request timed out"));
+        reject(new Error(t("errors.requestTimedOut")));
       }
     });
   });
@@ -93,7 +95,7 @@ export function streamRequest(
             socket.destroy();
           }
         } catch {
-          onError(new Error("Invalid response from daemon"));
+          onError(new Error(t("errors.invalidResponse")));
           socket.destroy();
         }
       }
@@ -101,7 +103,7 @@ export function streamRequest(
   });
 
   socket.on("error", (err) => {
-    onError(new Error(`Cannot connect to daemon: ${err.message}`));
+    onError(new Error(t("errors.cannotConnect", { message: err.message })));
   });
 
   socket.on("close", () => {

@@ -1,8 +1,13 @@
 import net from "node:net";
 import fs from "node:fs";
-import type { IpcRequest, IpcResponse } from "../types.js";
+import type { IpcRequest } from "../types.js";
 import { LoopManager } from "./manager.js";
 import { getSocketPath, removeSocketFile } from "./state.js";
+import { t } from "../i18n/index.js";
+import { LOG_TAIL_DEFAULT } from "../config/constants.js";
+import { send } from "../ipc/send.js";
+import { tail } from "../shared/tail.js";
+import { streamLogFollow } from "../ipc/handlers/logs-stream.js";
 
 export class IpcServer {
   private server: net.Server;
@@ -55,7 +60,7 @@ export class IpcServer {
             const request = JSON.parse(line) as IpcRequest;
             this.handleRequest(request, socket);
           } catch {
-            this.send(socket, { type: "error", message: "Invalid JSON" });
+            send(socket, { type: "error", message: t("errors.invalidJson") });
           }
         }
       }
@@ -68,6 +73,21 @@ export class IpcServer {
     socket.on("error", () => {
       this.clients.delete(socket);
     });
+  }
+
+  private respondOk(
+    socket: net.Socket,
+    ok: boolean,
+    id: string,
+    data?: unknown
+  ): void {
+    if (!ok) {
+      send(socket, { type: "error", message: t("errors.loopNotFound", { id }) });
+    } else if (data !== undefined) {
+      send(socket, { type: "ok", data });
+    } else {
+      send(socket, { type: "ok" });
+    }
   }
 
   private async handleRequest(
@@ -78,111 +98,57 @@ export class IpcServer {
       case "start": {
         const { intervalHuman, ...options } = request.payload;
         const id = this.manager.start(options, intervalHuman);
-        this.send(socket, { type: "ok", data: { id } });
+        send(socket, { type: "ok", data: { id } });
         break;
       }
 
       case "update": {
         const { id, intervalHuman, ...options } = request.payload;
         const ok = await this.manager.update(id, options, intervalHuman);
-        if (!ok) {
-          this.send(socket, { type: "error", message: `Loop ${id} not found` });
-        } else {
-          this.send(socket, { type: "ok", data: { id } });
-        }
+        this.respondOk(socket, ok, id, ok ? { id } : undefined);
         break;
       }
 
       case "list": {
-        const loops = this.manager.list();
-        this.send(socket, { type: "ok", data: loops });
+        send(socket, { type: "ok", data: this.manager.list() });
         break;
       }
 
       case "status": {
         const meta = this.manager.status(request.payload.id);
-        if (!meta) {
-          this.send(socket, { type: "error", message: `Loop ${request.payload.id} not found` });
-        } else {
-          this.send(socket, { type: "ok", data: meta });
-        }
+        this.respondOk(socket, meta !== null, request.payload.id, meta ?? undefined);
         break;
       }
 
       case "pause": {
-        const ok = this.manager.pause(request.payload.id);
-        if (!ok) {
-          this.send(socket, { type: "error", message: `Loop ${request.payload.id} not found` });
-        } else {
-          this.send(socket, { type: "ok" });
-        }
+        this.respondOk(socket, this.manager.pause(request.payload.id), request.payload.id);
         break;
       }
 
       case "resume": {
-        const ok = this.manager.resume(request.payload.id);
-        if (!ok) {
-          this.send(socket, { type: "error", message: `Loop ${request.payload.id} not found` });
-        } else {
-          this.send(socket, { type: "ok" });
-        }
+        this.respondOk(socket, this.manager.resume(request.payload.id), request.payload.id);
         break;
       }
 
       case "trigger": {
-        const ok = this.manager.trigger(request.payload.id);
-        if (!ok) {
-          this.send(socket, { type: "error", message: `Loop ${request.payload.id} not found` });
-        } else {
-          this.send(socket, { type: "ok" });
-        }
+        this.respondOk(socket, this.manager.trigger(request.payload.id), request.payload.id);
         break;
       }
 
       case "delete": {
         const ok = await this.manager.delete(request.payload.id);
-        if (!ok) {
-          this.send(socket, { type: "error", message: `Loop ${request.payload.id} not found` });
-        } else {
-          this.send(socket, { type: "ok" });
-        }
+        this.respondOk(socket, ok, request.payload.id);
         break;
       }
 
       case "attach":
       case "logs": {
-        const id = request.payload.id;
-        const logPath = this.manager.getLogPath(id);
-        if (!logPath) {
-          this.send(socket, { type: "error", message: `Loop ${id} not found` });
-          return;
-        }
-
-        if (!fs.existsSync(logPath)) {
-          if (request.type === "logs") {
-            this.send(socket, { type: "ok", data: "" });
-          } else {
-            this.send(socket, { type: "error", message: "No logs yet" });
-          }
-          return;
-        }
-
-        const follow = request.type === "attach" || (request.type === "logs" && request.payload.follow);
-        const tail = request.type === "logs" ? (request.payload.tail ?? 50) : 0;
-
-        if (follow) {
-          this.streamLogFollow(logPath, socket, tail);
-        } else {
-          const content = fs.readFileSync(logPath, "utf-8");
-          const lines = content.split("\n");
-          const tailLines = tail > 0 ? lines.slice(-tail) : lines;
-          this.send(socket, { type: "ok", data: tailLines.join("\n") });
-        }
+        this.handleLogs(request, socket);
         break;
       }
 
       case "shutdown": {
-        this.send(socket, { type: "ok" });
+        send(socket, { type: "ok" });
         await this.manager.shutdown();
         await this.close();
         process.exit(0);
@@ -190,66 +156,34 @@ export class IpcServer {
     }
   }
 
-  private streamLogFollow(
-    logPath: string,
-    socket: net.Socket,
-    tailCount: number
+  private handleLogs(
+    request: Extract<IpcRequest, { type: "attach" | "logs" }>,
+    socket: net.Socket
   ): void {
-    if (fs.existsSync(logPath)) {
-      const content = fs.readFileSync(logPath, "utf-8");
-      const lines = content.split("\n");
-      const tailLines = tailCount > 0 ? lines.slice(-tailCount) : lines;
-      for (const line of tailLines) {
-        if (line) {
-          this.send(socket, { type: "data", line });
-        }
-      }
+    const id = request.payload.id;
+    const logPath = this.manager.getLogPath(id);
+    if (!logPath) {
+      send(socket, { type: "error", message: t("errors.loopNotFound", { id }) });
+      return;
     }
 
-    let fileSize = fs.existsSync(logPath) ? fs.statSync(logPath).size : 0;
-
-    const watcher = fs.watch(logPath, (eventType) => {
-      if (eventType === "rename" && !fs.existsSync(logPath)) {
-        watcher.close();
-        this.send(socket, { type: "end" });
-        return;
+    if (!fs.existsSync(logPath)) {
+      if (request.type === "logs") {
+        send(socket, { type: "ok", data: "" });
+      } else {
+        send(socket, { type: "error", message: t("errors.noLogsYet") });
       }
+      return;
+    }
 
-      if (eventType === "change") {
-        try {
-          const stat = fs.statSync(logPath);
-          if (stat.size > fileSize) {
-            const fd = fs.openSync(logPath, "r");
-            const buf = Buffer.alloc(stat.size - fileSize);
-            fs.readSync(fd, buf, 0, buf.length, fileSize);
-            fs.closeSync(fd);
-            fileSize = stat.size;
-            const newContent = buf.toString();
-            for (const line of newContent.split("\n")) {
-              if (line) {
-                this.send(socket, { type: "data", line });
-              }
-            }
-          }
-        } catch {
-          watcher.close();
-          this.send(socket, { type: "end" });
-        }
-      }
-    });
+    const follow = request.type === "attach" || (request.type === "logs" && request.payload.follow);
+    const tailCount = request.type === "logs" ? (request.payload.tail ?? LOG_TAIL_DEFAULT) : 0;
 
-    socket.on("close", () => {
-      watcher.close();
-    });
-
-    socket.on("error", () => {
-      watcher.close();
-    });
-  }
-
-  private send(socket: net.Socket, message: IpcResponse): void {
-    if (!socket.destroyed) {
-      socket.write(JSON.stringify(message) + "\n");
+    if (follow) {
+      streamLogFollow(logPath, socket, tailCount);
+    } else {
+      const content = fs.readFileSync(logPath, "utf-8");
+      send(socket, { type: "ok", data: tail(content, tailCount).join("\n") });
     }
   }
 }

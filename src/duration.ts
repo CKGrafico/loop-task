@@ -1,20 +1,21 @@
 import ms from "ms";
+import { t } from "./i18n/index.js";
 
 export function parseDuration(input: string): number {
   const trimmed = input.trim();
 
   if (!trimmed) {
-    throw new Error("Duration cannot be empty");
+    throw new Error(t("errors.durationEmpty"));
   }
 
   const result = ms(trimmed as unknown as Parameters<typeof ms>[0]);
 
   if (typeof result !== "number" || isNaN(result)) {
-    throw new Error(`Invalid duration: "${input}". Use formats like 10s, 5m, 1h, 1d, 1w`);
+    throw new Error(t("errors.durationInvalid", { input }));
   }
 
   if (result <= 0) {
-    throw new Error(`Duration must be positive, got: "${input}"`);
+    throw new Error(t("errors.durationNotPositive", { input }));
   }
 
   return result;
