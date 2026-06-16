@@ -21,6 +21,15 @@ program
 program
   .command("start")
   .description(t("cli.startDescription"))
+  .action(async () => {
+    const { ensureDaemon } = await import("./daemon/spawner.js");
+    ensureDaemon();
+    console.log(t("cli.daemonStarted"));
+  });
+
+program
+  .command("new")
+  .description(t("cli.newDescription"))
   .argument("<interval>", t("cli.argInterval"))
   .argument("<command...>", t("cli.argCommand"))
   .option("--now", t("cli.optNow"), false)

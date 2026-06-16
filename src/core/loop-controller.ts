@@ -214,7 +214,7 @@ export class LoopController extends EventEmitter {
         }
 
         if (isFirstRun && this.nextRunAt) {
-          const delay = this.remainingDelayMs ?? (new Date(this.nextRunAt).getTime() - Date.now());
+          const delay = Math.max(0, new Date(this.nextRunAt).getTime() - Date.now());
           if (delay > 0) {
             const completed = await this.waitForDelay(delay, signal);
             if (!completed) {

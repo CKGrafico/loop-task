@@ -9,18 +9,19 @@ describe("cli", () => {
     const result = await execa(runtime, [cliPath, "--help"]);
     expect(result.stdout).toContain("loop-task");
     expect(result.stdout).toContain("start");
+    expect(result.stdout).toContain("new");
     expect(result.stdout).toContain("run");
     expect(result.stdout).toContain("Open the loop board");
 
-    const startHelp = await execa(runtime, [cliPath, "start", "--help"]);
-    expect(startHelp.stdout).toContain("--now");
-    expect(startHelp.stdout).toContain("--max-runs");
-    expect(startHelp.stdout).toContain("--verbose");
+    const newHelp = await execa(runtime, [cliPath, "new", "--help"]);
+    expect(newHelp.stdout).toContain("--now");
+    expect(newHelp.stdout).toContain("--max-runs");
+    expect(newHelp.stdout).toContain("--verbose");
   });
 
   it("shows version", async () => {
     const result = await execa(runtime, [cliPath, "--version"]);
-    expect(result.stdout.trim()).toBe("1.2.0");
+    expect(result.stdout).toContain("1.3.0");
   });
 
   it("fails with invalid duration", async () => {

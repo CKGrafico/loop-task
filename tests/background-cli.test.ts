@@ -182,7 +182,7 @@ describe("background cli", () => {
 
     const start = await runCli(
       [
-        "start",
+        "new",
         "--now",
         "250ms",
         "--",
@@ -257,7 +257,7 @@ describe("background cli", () => {
 
     const start = await runCli(
       [
-        "start",
+        "new",
         "--max-runs",
         "1",
         "1500ms",
