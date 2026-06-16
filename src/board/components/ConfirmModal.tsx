@@ -1,7 +1,9 @@
+import { useTerminalDimensions } from "@opentui/react";
 import { t } from "../../i18n/index.js";
 
 export function ConfirmModal(props: { message: string; choice: number; onYes: () => void; onNo: () => void }): React.ReactNode {
   const { message, choice, onYes, onNo } = props;
+  const { width } = useTerminalDimensions();
 
   return (
     <box
@@ -22,7 +24,7 @@ export function ConfirmModal(props: { message: string; choice: number; onYes: ()
         style={{
           flexDirection: "column",
           padding: 1,
-          minWidth: 44,
+          minWidth: Math.min(44, width - 4),
           backgroundColor: "#111827",
         }}
       >
