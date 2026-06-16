@@ -1,5 +1,5 @@
-import { useMemo, useState } from "react";
-import type { LoopMeta } from "../types.js";
+import { useMemo, useRef, useState } from "react";
+import type { LoopMeta, RunRecord } from "../types.js";
 import {
   applyLoopFilters,
   cycleSortMode,
@@ -18,13 +18,17 @@ import { Header } from "./components/Header.js";
 import { FilterBar } from "./components/FilterBar.js";
 import { Navigator } from "./components/Navigator.js";
 import { Inspector } from "./components/Inspector.js";
-import { Timeline } from "./components/Timeline.js";
+import { RunHistory } from "./components/RunHistory.js";
 import { DetailView } from "./components/DetailView.js";
 import { HelpModal } from "./components/HelpModal.js";
 import { Footer } from "./components/Footer.js";
 import { ConfirmModal } from "./components/ConfirmModal.js";
 import { CreateView, createInitialValues } from "./components/CreateForm.js";
+import { LogModal } from "./components/LogModal.js";
+import { fetchRunLog } from "./daemon.js";
 import { useBreakpoint } from "./hooks/useBreakpoint.js";
+
+const BOARD_REFRESH_DELAY_MS = 150;
 
 export function App(props: { onQuit: () => void }): React.ReactNode {
   const { loops, daemonStatus, refresh } = useLoopPolling();
@@ -37,6 +41,10 @@ export function App(props: { onQuit: () => void }): React.ReactNode {
   const [confirm, setConfirm] = useState<ConfirmState | null>(null);
   const [confirmChoice, setConfirmChoice] = useState(0);
   const [editTarget, setEditTarget] = useState<LoopMeta | null>(null);
+  const [selectedRunIndex, setSelectedRunIndex] = useState(0);
+  const [logModalRun, setLogModalRun] = useState<RunRecord | null>(null);
+  const [logModalLines, setLogModalLines] = useState<string[]>([]);
+  const [logModalLoading, setLogModalLoading] = useState(false);
   const { toasts, push } = useToasts();
   const breakpoint = useBreakpoint();
 
@@ -49,7 +57,13 @@ export function App(props: { onQuit: () => void }): React.ReactNode {
   const selected = visible[clampedIndex] ?? null;
   const selectedId = selected?.id ?? null;
 
-  const { logLines, destroy: destroyLogSocket } = useLogStream(
+  const prevSelectedId = useRef<string | null>(null);
+  if (selectedId !== prevSelectedId.current) {
+    prevSelectedId.current = selectedId;
+    setSelectedRunIndex(0);
+  }
+
+  const { destroy: destroyLogSocket } = useLogStream(
     selectedId,
     view,
     (error) => push("error", t("board.logStreamError", { message: error.message }))
@@ -62,12 +76,30 @@ export function App(props: { onQuit: () => void }): React.ReactNode {
     return async () => {
       try {
         await action();
-        await refresh();
+        setTimeout(() => {
+          void refresh();
+        }, BOARD_REFRESH_DELAY_MS);
         push("success", label);
       } catch (error) {
         push("error", error instanceof Error ? error.message : String(error));
       }
     };
+  }
+
+  function handleOpenRunLog(run: RunRecord): void {
+    if (!selectedId) return;
+    setLogModalRun(run);
+    setLogModalLoading(true);
+    setLogModalLines([]);
+    fetchRunLog(selectedId, run.runNumber)
+      .then((log) => {
+        setLogModalLines(log ? log.split("\n") : []);
+        setLogModalLoading(false);
+      })
+      .catch(() => {
+        setLogModalLines([]);
+        setLogModalLoading(false);
+      });
   }
 
   useBoardKeybindings({
@@ -91,6 +123,12 @@ export function App(props: { onQuit: () => void }): React.ReactNode {
     onQuit: props.onQuit,
     destroyLogSocket,
     runAction,
+    logModalRun,
+    setLogModalRun,
+    selectedRunIndex,
+    setSelectedRunIndex,
+    selectedRunCount: selected?.runHistory?.length ?? 0,
+    onOpenRunLog: handleOpenRunLog,
   });
 
   const counts = {
@@ -147,11 +185,18 @@ export function App(props: { onQuit: () => void }): React.ReactNode {
               setEditTarget(null);
               setView("board");
               push("success", updated ? t("board.toastUpdated", { id }) : t("board.toastStarted", { id }));
-              void refresh();
+              setTimeout(() => {
+                void refresh();
+              }, BOARD_REFRESH_DELAY_MS);
             }}
           />
         ) : view === "detail" && selected ? (
-          <DetailView loop={selected} logLines={logLines} />
+          <DetailView
+            loop={selected}
+            selectedRunIndex={selectedRunIndex}
+            onSelectRun={setSelectedRunIndex}
+            onOpenRun={handleOpenRunLog}
+          />
         ) : (
           <box style={{ flexDirection: breakpoint === "narrow" ? "column" : "row", flexGrow: 1, backgroundColor: "#0b0b0b" }}>
             <Navigator
@@ -168,7 +213,12 @@ export function App(props: { onQuit: () => void }): React.ReactNode {
             />
             <box style={{ flexDirection: "column", flexGrow: 1, backgroundColor: "#0b0b0b" }}>
               <Inspector loop={selected} />
-              <Timeline logLines={logLines} />
+              <RunHistory
+                loop={selected}
+                selectedRunIndex={selectedRunIndex}
+                onSelectRun={setSelectedRunIndex}
+                onOpenRun={handleOpenRunLog}
+              />
             </box>
           </box>
         )}
@@ -190,6 +240,15 @@ export function App(props: { onQuit: () => void }): React.ReactNode {
       ) : null}
 
       {helpOpen ? <HelpModal /> : null}
+
+      {logModalRun ? (
+        <LogModal
+          run={logModalRun}
+          logLines={logModalLines}
+          loading={logModalLoading}
+          onClose={() => setLogModalRun(null)}
+        />
+      ) : null}
 
       <ToastStack toasts={toasts} />
     </box>

@@ -79,3 +79,11 @@ export function streamLogs(
     onError
   );
 }
+
+export async function fetchRunLog(id: string, runNumber: number): Promise<string> {
+  const response = await sendRequest({ type: "run-log", payload: { id, runNumber } });
+  if (response.type !== "ok") {
+    throw new Error((response as { message?: string }).message ?? "Failed to fetch run log");
+  }
+  return (response.data as string) ?? "";
+}

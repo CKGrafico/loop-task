@@ -1,6 +1,6 @@
 import { EventEmitter } from "node:events";
 import fs from "node:fs";
-import type { LoopOptions, LoopStatus, LoopMeta } from "../types.js";
+import type { LoopOptions, LoopStatus, LoopMeta, RunRecord } from "../types.js";
 import { sleep } from "../shared/sleep.js";
 import { SLEEP_CHUNK_MS } from "../config/constants.js";
 import { executeCommand } from "./command-runner.js";
@@ -15,6 +15,7 @@ interface LoopControllerState {
   lastDuration?: number | null;
   nextRunAt?: string | null;
   remainingDelayMs?: number | null;
+  runHistory?: RunRecord[];
 }
 
 export class LoopController extends EventEmitter {
@@ -22,6 +23,7 @@ export class LoopController extends EventEmitter {
   private runAbortController: AbortController | null = null;
   private _paused = false;
   private _forceRun = false;
+  private interruptedForForceRun = false;
   private _status: LoopStatus = "running";
   private resumeResolve: (() => void) | null = null;
   private runCount = 0;
@@ -36,6 +38,8 @@ export class LoopController extends EventEmitter {
   private remainingDelayMs: number | null = null;
   private logStream: fs.WriteStream | null = null;
   private loopPromise: Promise<void> | null = null;
+  private runHistory: RunRecord[] = [];
+  private currentRunStartOffset: number = 0;
 
   constructor(
     id: string,
@@ -57,6 +61,7 @@ export class LoopController extends EventEmitter {
     this.remainingDelayMs = state?.remainingDelayMs ?? null;
     this._status = state?.status ?? "running";
     this._paused = state?.status === "paused";
+    this.runHistory = state?.runHistory ?? [];
   }
 
   get status(): LoopStatus {
@@ -100,6 +105,7 @@ export class LoopController extends EventEmitter {
     this.remainingDelayMs = null;
     this.nextRunAt = null;
     if (interruptCurrentRun) {
+      this.interruptedForForceRun = true;
       this.runAbortController?.abort();
     }
     if (this._paused) {
@@ -130,6 +136,7 @@ export class LoopController extends EventEmitter {
       lastDuration: this.lastDuration,
       nextRunAt: this.nextRunAt,
       remainingDelayMs: this.remainingDelayMs,
+      runHistory: this.runHistory,
     };
   }
 
@@ -236,6 +243,8 @@ export class LoopController extends EventEmitter {
         this.emit("run:start", this.runCount);
         this.logStream = rotateLogIfNeeded(this.logPath, this.logStream);
 
+        this.currentRunStartOffset = fs.existsSync(this.logPath) ? fs.statSync(this.logPath).size : 0;
+
         this.runAbortController = new AbortController();
         const result = await executeCommand(
           this.options.command,
@@ -248,6 +257,25 @@ export class LoopController extends EventEmitter {
 
         this.lastExitCode = result.exitCode;
         this.lastDuration = result.duration;
+
+        if (!this.interruptedForForceRun) {
+          const logSize = fs.existsSync(this.logPath) ? fs.statSync(this.logPath).size - this.currentRunStartOffset : 0;
+          this.runHistory.push({
+            runNumber: this.runCount,
+            startedAt: this.lastRunAt,
+            exitCode: result.exitCode,
+            duration: result.duration,
+            logSize: Math.max(0, logSize),
+          });
+          if (this.runHistory.length > 50) {
+            this.runHistory = this.runHistory.slice(-50);
+          }
+        }
+
+        if (this.interruptedForForceRun) {
+          this.runCount = Math.max(0, this.runCount - 1);
+          this.interruptedForForceRun = false;
+        }
         this.emit("run:end", result);
 
         if (signal.aborted) break;

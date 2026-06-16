@@ -174,6 +174,22 @@ describe("LoopController", () => {
     await controller.stop();
   });
 
+  it("triggerNow(true) does not consume the forced rerun when maxRuns would otherwise be exhausted", async () => {
+    mockExecaAbortableRun();
+    mockExecaSuccess();
+    const controller = new LoopController("iiiiiiii", makeOptions({ immediate: true, maxRuns: 1 }), logPath);
+    controller.start();
+
+    await Promise.resolve();
+    controller.triggerNow(true);
+    await vi.runAllTimersAsync();
+
+    expect(controller.getMeta().runCount).toBe(1);
+    expect(controller.status).toBe("stopped");
+    expect(controller.getMeta().lastExitCode).toBe(0);
+    await controller.stop();
+  });
+
   it("emits sleeping at most once per sleep segment", async () => {
     const controller = new LoopController("ffffffff", makeOptions({ immediate: false, interval: 5000, maxRuns: 1 }), logPath);
     let sleepingCount = 0;

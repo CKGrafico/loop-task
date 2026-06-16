@@ -1,6 +1,6 @@
 import type { Dispatch, SetStateAction } from "react";
 import { useKeyboard } from "@opentui/react";
-import type { LoopMeta } from "../../types.js";
+import type { LoopMeta, RunRecord } from "../../types.js";
 import { t } from "../../i18n/index.js";
 import { deleteLoop, pauseLoop, resumeLoop, triggerLoop } from "../daemon.js";
 import { cycleSortMode, cycleStatusFilter, type Filters, type SortMode } from "../state.js";
@@ -27,6 +27,12 @@ export interface BoardKeybindingParams {
   onQuit: () => void;
   destroyLogSocket: () => void;
   runAction: (label: string, action: () => Promise<void>) => () => Promise<void>;
+  logModalRun: RunRecord | null;
+  setLogModalRun: Dispatch<SetStateAction<RunRecord | null>>;
+  selectedRunIndex: number;
+  setSelectedRunIndex: Dispatch<SetStateAction<number>>;
+  selectedRunCount: number;
+  onOpenRunLog: (run: RunRecord) => void;
 }
 
 export function useBoardKeybindings(params: BoardKeybindingParams): void {
@@ -51,6 +57,12 @@ export function useBoardKeybindings(params: BoardKeybindingParams): void {
     onQuit,
     destroyLogSocket,
     runAction,
+    logModalRun,
+    setLogModalRun,
+    selectedRunIndex,
+    setSelectedRunIndex,
+    selectedRunCount,
+    onOpenRunLog,
   } = params;
 
   useKeyboard((key) => {
@@ -75,6 +87,13 @@ export function useBoardKeybindings(params: BoardKeybindingParams): void {
         } else {
           setConfirm(null);
         }
+      }
+      return;
+    }
+
+    if (logModalRun) {
+      if (name === "escape" || name === "q") {
+        setLogModalRun(null);
       }
       return;
     }
@@ -135,6 +154,20 @@ export function useBoardKeybindings(params: BoardKeybindingParams): void {
       }
       if (name === "down" || name === "j") {
         setSelectedIndex((i) => Math.min(visibleCount - 1, i + 1));
+        return;
+      }
+      if (name === "[") {
+        setSelectedRunIndex((i) => Math.min(selectedRunCount - 1, i + 1));
+        return;
+      }
+      if (name === "]") {
+        setSelectedRunIndex((i) => Math.max(0, i - 1));
+        return;
+      }
+      if (name === "o" && selected && selected.runHistory.length > 0) {
+        const runs = selected.runHistory;
+        const idx = Math.min(selectedRunIndex, runs.length - 1);
+        onOpenRunLog(runs[runs.length - 1 - idx]);
         return;
       }
     }

@@ -19,7 +19,7 @@ export async function executeCommand(
   signal?: AbortSignal
 ): Promise<ExecutionResult> {
   const startedAt = new Date();
-  const header = t("loop.runHeader", { timestamp: startedAt.toISOString() });
+  const header = t("loop.runHeader", { timestamp: startedAt.toLocaleString() });
   logStream.write(header);
 
   if (cwd && !fs.existsSync(cwd)) {

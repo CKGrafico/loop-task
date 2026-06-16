@@ -1,4 +1,4 @@
-export const POLL_MS = 2000;
+export const POLL_MS = 1000;
 
 export const TOAST_TIMEOUT_MS = 3500;
 

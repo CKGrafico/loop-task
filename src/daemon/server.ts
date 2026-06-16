@@ -8,6 +8,7 @@ import { LOG_TAIL_DEFAULT } from "../config/constants.js";
 import { send } from "../ipc/send.js";
 import { tail } from "../shared/tail.js";
 import { streamLogFollow } from "../ipc/handlers/logs-stream.js";
+import { splitLogByRuns } from "../core/log-parser.js";
 
 export class IpcServer {
   private server: net.Server;
@@ -141,6 +142,11 @@ export class IpcServer {
         break;
       }
 
+      case "run-log": {
+        this.handleRunLog(request, socket);
+        break;
+      }
+
       case "attach":
       case "logs": {
         this.handleLogs(request, socket);
@@ -154,6 +160,23 @@ export class IpcServer {
         process.exit(0);
       }
     }
+  }
+
+  private handleRunLog(
+    request: Extract<IpcRequest, { type: "run-log" }>,
+    socket: net.Socket
+  ): void {
+    const { id, runNumber } = request.payload;
+    const logPath = this.manager.getLogPath(id);
+    if (!logPath || !fs.existsSync(logPath)) {
+      send(socket, { type: "ok", data: "" });
+      return;
+    }
+
+    const content = fs.readFileSync(logPath, "utf-8");
+    const runs = splitLogByRuns(content);
+    const run = runs.find((r) => r.runNumber === runNumber);
+    send(socket, { type: "ok", data: run ? run.lines.join("\n") : "" });
   }
 
   private handleLogs(

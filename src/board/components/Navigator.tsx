@@ -1,9 +1,9 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useTerminalDimensions } from "@opentui/react";
 import type { LoopMeta } from "../../types.js";
 import { t } from "../../i18n/index.js";
 import type { Filters, SortMode } from "../state.js";
-import { describeLoop, statusColor, timingLabel, truncate } from "../format.js";
+import { describeLoop, statusColor, statusLabel, timingLabel, truncate } from "../format.js";
 import { useHoverState } from "../hooks/useHoverState.js";
 import { HOVER_BG } from "../../config/constants.js";
 import type { Breakpoint } from "../hooks/useBreakpoint.js";
@@ -27,12 +27,13 @@ export function Navigator(props: {
   const { visible, total, selectedIndex, filters, sort, breakpoint, onSelect } = props;
   const { width, height } = useTerminalDimensions();
   const scrollRef = useRef<ScrollBoxRenderable | null>(null);
+  const [, setTick] = useState(0);
 
   const panelWidth = width * (breakpoint === "narrow" ? 1 : 0.55) - 4;
   const panelHeight = height - (breakpoint === "narrow" ? 10 : 7);
 
   const statusW = 8;
-  const exitW = 7;
+  const exitW = 4;
   const runsW = 5;
   const fixedOverhead = 2 + statusW + 1 + 1 + exitW + 1 + runsW;
   const timingW = Math.max(6, Math.min(12, Math.floor((panelWidth - fixedOverhead) * 0.3)));
@@ -52,6 +53,13 @@ export function Navigator(props: {
     const id = `nav-row-${selectedIndex}`;
     scrollRef.current?.scrollChildIntoView(id);
   }, [selectedIndex]);
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setTick((tick) => tick + 1);
+    }, 1000);
+    return () => clearInterval(timer);
+  }, []);
 
   return (
       <box
@@ -114,10 +122,10 @@ function NavigatorRow(props: {
     <box id={id} onMouseDown={() => onSelect(index)} backgroundColor={bg} {...hoverProps}>
       <text>
         {isSelected ? "›" : " "} <span fg={statusColor(loop.status)}>
-          {fit(loop.status, statusW)}
+          {fit(statusLabel(loop.status), statusW)}
         </span>{" "}
         {fit(truncate(describeLoop(loop), descW), descW)}{" "}
-        {fit(timingLabel(loop), timingW)} {fit("exit", 5)} {fit(exit, exitW)} #
+        {fit(timingLabel(loop), timingW)} {fit(exit, exitW)} #
         {String(loop.runCount).padStart(runsW)}
       </text>
     </box>

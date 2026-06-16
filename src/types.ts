@@ -24,6 +24,14 @@ export interface LoopState {
 
 export type LoopStatus = "running" | "paused" | "stopped" | "sleeping";
 
+export interface RunRecord {
+  runNumber: number;
+  startedAt: string;
+  exitCode: number;
+  duration: number;
+  logSize: number;
+}
+
 export interface LoopMeta {
   id: string;
   command: string;
@@ -44,6 +52,7 @@ export interface LoopMeta {
   nextRunAt: string | null;
   remainingDelayMs: number | null;
   pid: number;
+  runHistory: RunRecord[];
 }
 
 export type IpcRequest =
@@ -57,6 +66,7 @@ export type IpcRequest =
   | { type: "delete"; payload: { id: string } }
   | { type: "attach"; payload: { id: string } }
   | { type: "logs"; payload: { id: string; follow: boolean; tail?: number } }
+  | { type: "run-log"; payload: { id: string; runNumber: number } }
   | { type: "shutdown" };
 
 export type IpcResponse =
