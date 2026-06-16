@@ -19,6 +19,7 @@ interface LoopControllerState {
 
 export class LoopController extends EventEmitter {
   private abortController: AbortController;
+  private runAbortController: AbortController | null = null;
   private _paused = false;
   private _forceRun = false;
   private _status: LoopStatus = "running";
@@ -67,10 +68,13 @@ export class LoopController extends EventEmitter {
     this.loopPromise = this.run();
   }
 
-  pause(): void {
+  pause(interruptCurrentRun = false): void {
     if (this._status === "running" || this._status === "sleeping") {
       this._paused = true;
       this._status = "paused";
+      if (interruptCurrentRun && this._status === "paused") {
+        this.runAbortController?.abort();
+      }
       this.emit("paused");
     }
   }
@@ -88,13 +92,16 @@ export class LoopController extends EventEmitter {
     }
   }
 
-  triggerNow(): boolean {
+  triggerNow(interruptCurrentRun = false): boolean {
     if (this._status === "stopped") {
       return false;
     }
     this._forceRun = true;
     this.remainingDelayMs = null;
     this.nextRunAt = null;
+    if (interruptCurrentRun) {
+      this.runAbortController?.abort();
+    }
     if (this._paused) {
       this.resume();
     }
@@ -229,13 +236,15 @@ export class LoopController extends EventEmitter {
         this.emit("run:start", this.runCount);
         this.logStream = rotateLogIfNeeded(this.logPath, this.logStream);
 
+        this.runAbortController = new AbortController();
         const result = await executeCommand(
           this.options.command,
           this.options.commandArgs,
           this.options.cwd,
           this.logStream!,
-          signal
+          AbortSignal.any([signal, this.runAbortController.signal])
         );
+        this.runAbortController = null;
 
         this.lastExitCode = result.exitCode;
         this.lastDuration = result.duration;

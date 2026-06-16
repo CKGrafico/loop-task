@@ -181,7 +181,11 @@ export function useBoardKeybindings(params: BoardKeybindingParams): void {
         action: runAction(t("board.toastDeleted", { id: selectedId }), () => deleteLoop(selectedId)),
       });
     } else if (name === "x") {
-      void runAction(t("board.toastTriggered", { id: selectedId }), () => triggerLoop(selectedId))();
+      setConfirmChoice(0);
+      setConfirm({
+        message: t("board.confirmForceRun", { id: selectedId }),
+        action: runAction(t("board.toastTriggered", { id: selectedId }), () => triggerLoop(selectedId)),
+      });
     }
   });
 }

@@ -22,6 +22,19 @@ function mockExecaSuccess(): void {
   }) as never);
 }
 
+function mockExecaAbortableRun(): void {
+  mockedExeca.mockImplementationOnce(((_command: string, _args: string[], options?: { cancelSignal?: AbortSignal }) => {
+    const child = new Promise((_, reject) => {
+      options?.cancelSignal?.addEventListener("abort", () => {
+        reject({ exitCode: 1 });
+      });
+    }) as never;
+    (child as { stdout: { on: () => void } }).stdout = { on: () => {} };
+    (child as { stderr: { on: () => void } }).stderr = { on: () => {} };
+    return child;
+  }) as never);
+}
+
 function tempLogPath(): string {
   return path.join(os.tmpdir(), `loop-ctrl-${process.pid}-${Math.floor(performance.now())}.log`);
 }
@@ -129,6 +142,35 @@ describe("LoopController", () => {
     await vi.runAllTimersAsync();
 
     expect(controller.getMeta().runCount).toBe(1);
+    await controller.stop();
+  });
+
+  it("pause(true) interrupts an active run and leaves the loop paused", async () => {
+    mockExecaAbortableRun();
+    const controller = new LoopController("gggggggg", makeOptions({ immediate: true }), logPath);
+    controller.start();
+
+    await Promise.resolve();
+    controller.pause(true);
+    await Promise.resolve();
+
+    expect(controller.status).toBe("paused");
+    expect(controller.getMeta().runCount).toBe(1);
+    await controller.stop();
+  });
+
+  it("triggerNow(true) interrupts an active run and starts the next run immediately", async () => {
+    mockExecaAbortableRun();
+    mockExecaSuccess();
+    const controller = new LoopController("hhhhhhhh", makeOptions({ immediate: true, maxRuns: 2 }), logPath);
+    controller.start();
+
+    await Promise.resolve();
+    controller.triggerNow(true);
+    await vi.runAllTimersAsync();
+
+    expect(controller.getMeta().runCount).toBe(2);
+    expect(controller.status).toBe("stopped");
     await controller.stop();
   });
 

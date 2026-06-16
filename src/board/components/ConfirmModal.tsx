@@ -36,17 +36,18 @@ export function ConfirmModal(props: { message: string; choice: number; onYes: ()
           <ConfirmButton
             label={t("board.yes")}
             onMouseDown={onYes}
-            activeBg={choice === 1 ? "#4ade80" : undefined}
-            activeFg={choice === 1 ? "#0b0b0b" : "#e5e7eb"}
-            inactiveBg="#0b0b0b"
-            marginRight={3}
+            borderColor={choice === 1 ? "#38bdf8" : undefined}
+            bgColor={choice === 1 ? "#1e3a8a" : undefined}
+            restBg="#1e3a5f"
+            width={12}
+            marginRight={1}
           />
           <ConfirmButton
             label={t("board.no")}
             onMouseDown={onNo}
-            activeBg={choice === 0 ? "#f87171" : undefined}
-            activeFg={choice === 0 ? "#0b0b0b" : "#e5e7eb"}
-            inactiveBg="#0b0b0b"
+            borderColor={choice === 0 ? "#38bdf8" : undefined}
+            bgColor={choice === 0 ? "#374151" : undefined}
+            width={12}
           />
         </box>
       </box>
@@ -57,25 +58,29 @@ export function ConfirmModal(props: { message: string; choice: number; onYes: ()
 function ConfirmButton(props: {
   label: string;
   onMouseDown: () => void;
-  activeBg?: string;
-  activeFg: string;
-  inactiveBg: string;
+  borderColor?: string;
+  bgColor?: string;
+  restBg?: string;
+  width: number;
   marginRight?: number;
 }): React.ReactNode {
   const { isHovered, hoverProps } = useHoverState();
-  const bg = props.activeBg ?? (isHovered ? HOVER_BG : props.inactiveBg);
+  const bg = props.bgColor ?? (isHovered ? HOVER_BG : props.restBg ?? "#0b0b0b");
   return (
     <box
+      border
       onMouseDown={props.onMouseDown}
+      borderColor={props.borderColor}
       style={{
+        width: props.width,
         backgroundColor: bg,
-        paddingLeft: 3,
-        paddingRight: 3,
+        justifyContent: "center",
+        alignItems: "center",
         marginRight: props.marginRight,
       }}
       {...hoverProps}
     >
-      <text fg={props.activeFg}>
+      <text fg="#e5e7eb">
         <strong>{props.label}</strong>
       </text>
     </box>

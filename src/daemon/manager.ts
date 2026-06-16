@@ -90,7 +90,9 @@ export class LoopManager {
 
     Object.assign(entry.options, options);
     entry.intervalHuman = intervalHuman;
-    if (executionChanged && entry.controller.status !== "paused") {
+    if (entry.controller.status === "running") {
+      entry.controller.pause(true);
+    } else if (executionChanged && entry.controller.status !== "paused") {
       entry.controller.pause();
     }
     this.persist(id, entry.controller, entry.options, entry.intervalHuman);
@@ -130,7 +132,7 @@ export class LoopManager {
   trigger(id: string): boolean {
     const entry = this.loops.get(id);
     if (!entry) return false;
-    entry.controller.triggerNow();
+    entry.controller.triggerNow(true);
     this.persist(id, entry.controller, entry.options, entry.intervalHuman);
     return true;
   }
