@@ -1,4 +1,4 @@
-import { useRef, type Dispatch, type SetStateAction } from "react";
+import type { Dispatch, SetStateAction } from "react";
 import { useKeyboard } from "@opentui/react";
 import type { LoopMeta } from "../../types.js";
 import { t } from "../../i18n/index.js";
@@ -53,8 +53,6 @@ export function useBoardKeybindings(params: BoardKeybindingParams): void {
     runAction,
   } = params;
 
-  const lastEscRef = useRef(0);
-
   useKeyboard((key) => {
     const name = key.name;
 
@@ -107,13 +105,8 @@ export function useBoardKeybindings(params: BoardKeybindingParams): void {
       if (view !== "board") {
         setView("board");
       } else {
-        const now = Date.now();
-        if (now - lastEscRef.current < 1000) {
-          destroyLogSocket();
-          onQuit();
-        } else {
-          lastEscRef.current = now;
-        }
+        destroyLogSocket();
+        onQuit();
       }
       return;
     }
@@ -188,11 +181,7 @@ export function useBoardKeybindings(params: BoardKeybindingParams): void {
         action: runAction(t("board.toastDeleted", { id: selectedId }), () => deleteLoop(selectedId)),
       });
     } else if (name === "x") {
-      setConfirmChoice(0);
-      setConfirm({
-        message: t("board.confirmForceRun", { id: selectedId }),
-        action: runAction(t("board.toastTriggered", { id: selectedId }), () => triggerLoop(selectedId)),
-      });
+      void runAction(t("board.toastTriggered", { id: selectedId }), () => triggerLoop(selectedId))();
     }
   });
 }

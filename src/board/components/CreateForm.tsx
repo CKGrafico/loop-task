@@ -216,6 +216,7 @@ export function CreateView(props: {
         onMouseDown={() => void submit(valuesRef.current)}
         borderColor={focusIndex === saveIndex ? "#38bdf8" : undefined}
         bgColor={focusIndex === saveIndex ? "#1e3a8a" : undefined}
+        restBg="#1e3a5f"
         width={btnWidth}
         marginRight={1}
       />
@@ -238,11 +239,12 @@ function HoverButton(props: {
   onMouseDown: () => void;
   borderColor?: string;
   bgColor?: string;
+  restBg?: string;
   width: number;
   marginRight?: number;
 }): React.ReactNode {
   const { isHovered, hoverProps } = useHoverState();
-  const bg = props.bgColor ?? (isHovered ? HOVER_BG : "#0b0b0b");
+  const bg = props.bgColor ?? (isHovered ? HOVER_BG : props.restBg ?? "#0b0b0b");
   return (
     <box
       border

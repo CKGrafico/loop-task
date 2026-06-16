@@ -97,7 +97,7 @@
   "board.headerStatus": "STATUS",
   "board.headerDescription": "DESCRIPTION",
   "board.headerTiming": "TIMING",
-  "board.headerExitRuns": " EXIT  RUNS",
+  "board.headerExitRuns": "EXIT RUNS",
   "board.navigatorTitle": " Loops {visible}/{total}  sort:{sort}  status:{status} ",
   "board.noMatch": "  No loops match the current view",
   "board.inspectorTitle": " Inspector ",

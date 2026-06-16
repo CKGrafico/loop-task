@@ -38,7 +38,7 @@ export function ConfirmModal(props: { message: string; choice: number; onYes: ()
             onMouseDown={onYes}
             activeBg={choice === 1 ? "#4ade80" : undefined}
             activeFg={choice === 1 ? "#0b0b0b" : "#e5e7eb"}
-            inactiveBg="#374151"
+            inactiveBg="#0b0b0b"
             marginRight={3}
           />
           <ConfirmButton
@@ -46,7 +46,7 @@ export function ConfirmModal(props: { message: string; choice: number; onYes: ()
             onMouseDown={onNo}
             activeBg={choice === 0 ? "#f87171" : undefined}
             activeFg={choice === 0 ? "#0b0b0b" : "#e5e7eb"}
-            inactiveBg="#374151"
+            inactiveBg="#0b0b0b"
           />
         </box>
       </box>

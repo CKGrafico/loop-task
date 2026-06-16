@@ -74,6 +74,7 @@ function matches(loop: LoopMeta, filters: Filters): boolean {
     loop.id,
     loop.command,
     ...loop.commandArgs,
+    loop.description ?? "",
     loop.status,
     loop.intervalHuman,
   ]

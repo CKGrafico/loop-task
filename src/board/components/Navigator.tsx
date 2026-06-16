@@ -57,7 +57,7 @@ export function Navigator(props: {
       <box
         title={t("board.navigatorTitle", { visible: visible.length, total, sort, status: filters.status })}
         border
-        style={{ width: breakpoint === "narrow" ? "100%" : "65%", flexDirection: "column", backgroundColor: "#0b0b0b", overflow: "hidden" }}
+        style={{ width: breakpoint === "narrow" ? "100%" : "55%", flexShrink: 0, flexDirection: "column", backgroundColor: "#0b0b0b", overflow: "hidden" }}
       >
         <text fg="#6b7280">{header}</text>
         {visible.length === 0 ? (
