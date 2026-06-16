@@ -4,6 +4,8 @@ A cross-platform loop runner with a board-first terminal workflow.
 
 `loop-task` is built around running multiple background loops and managing them from one interactive board.
 
+![tempim](https://i.imgur.com/S7D6m0J.png)
+
 ## Requirements
 
 - [Node.js](https://nodejs.org) >= 20 — required for all commands
