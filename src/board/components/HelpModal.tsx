@@ -1,6 +1,8 @@
+import { useTerminalDimensions } from "@opentui/react";
 import { t } from "../../i18n/index.js";
 
 export function HelpModal(): React.ReactNode {
+  const { width } = useTerminalDimensions();
   const rows: [string, string][] = [
     [t("board.helpKeyMove"), t("board.helpMoveSelection")],
     [t("board.helpKeyEnter"), t("board.helpToggleDetail")],
@@ -36,7 +38,7 @@ export function HelpModal(): React.ReactNode {
         style={{
           flexDirection: "column",
           padding: 1,
-          minWidth: 52,
+          minWidth: Math.min(52, width - 4),
           backgroundColor: "#111827",
         }}
       >
