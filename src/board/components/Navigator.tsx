@@ -65,7 +65,7 @@ export function Navigator(props: {
 
   return (
     <box
-      title={t("board.navigatorTitle", { visible: visible.length, total, sort, status: filters.status === "waiting" ? "waiting" : filters.status })}
+      title={t("board.navigatorTitle", { visible: visible.length, total, sort, status: filters.status })}
       border
       borderColor={focused ? "#38bdf8" : undefined}
       style={{ width: breakpoint === "narrow" ? "100%" : "55%", flexShrink: 0, flexDirection: "column", backgroundColor: "#0b0b0b", overflow: "hidden" }}

@@ -34,7 +34,7 @@ export function App(props: { onQuit: () => void }): React.ReactNode {
   const { loops, daemonStatus, refresh } = useLoopPolling();
   const [view, setView] = useState<View>("board");
   const [filters, setFilters] = useState<Filters>(defaultFilters);
-  const [sort, setSort] = useState<SortMode>("status");
+  const [sort, setSort] = useState<SortMode>("description");
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [searchActive, setSearchActive] = useState(false);
   const [helpOpen, setHelpOpen] = useState(false);
@@ -241,6 +241,7 @@ export function App(props: { onQuit: () => void }): React.ReactNode {
         ) : (
           <box style={{ flexDirection: breakpoint === "narrow" ? "column" : "row", flexGrow: 1, backgroundColor: "#0b0b0b" }}>
             <Navigator
+              key={`nav-${visible.length}-${visible[0]?.id ?? ""}`}
               visible={visible}
               total={loops.length}
               selectedIndex={clampedIndex}
@@ -262,8 +263,9 @@ export function App(props: { onQuit: () => void }): React.ReactNode {
               }}
             />
             <box style={{ flexDirection: "column", flexGrow: 1, backgroundColor: "#0b0b0b", overflow: "hidden" }}>
-              <Inspector loop={selected} />
+              <Inspector key={`insp-${selected?.id}-${selected?.status}`} loop={selected} />
               <RunHistory
+                key={`rh-${selected?.id}-${selected?.runHistory?.length ?? 0}`}
                 loop={selected}
                 selectedRunIndex={selectedRunIndex}
                 focused={focusedPanel === "runs"}
@@ -274,6 +276,7 @@ export function App(props: { onQuit: () => void }): React.ReactNode {
                 onOpenRun={handleOpenRunLog}
               />
               <ActionButtons
+                key={`ab-${selected?.id}`}
                 loop={selected}
                 focused={focusedPanel === "actions"}
                 selectedAction={selectedAction}

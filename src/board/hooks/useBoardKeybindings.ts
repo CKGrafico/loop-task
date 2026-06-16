@@ -158,6 +158,16 @@ export function useBoardKeybindings(params: BoardKeybindingParams): void {
       return;
     }
 
+    if (name === "p") {
+      onAction("pause-resume");
+      return;
+    }
+
+    if (name === "delete") {
+      onAction("delete");
+      return;
+    }
+
     if (view === "board") {
       if (name === "left" || name === "right") {
         if (focusedPanel === "actions") {

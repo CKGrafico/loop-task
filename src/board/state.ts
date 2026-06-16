@@ -11,7 +11,7 @@ export type IntervalFilter = "all" | "short" | "medium" | "long";
 
 export type ActivityFilter = "all" | "active" | "stale";
 
-export type SortMode = "status" | "recent" | "created";
+export type SortMode = "description" | "status" | "recent" | "created";
 
 export interface Filters {
   status: StatusFilter;
@@ -47,11 +47,8 @@ function activityBucketOf(loop: LoopMeta): ActivityFilter {
 }
 
 function matches(loop: LoopMeta, filters: Filters): boolean {
-  if (filters.status !== "all") {
-    const displayStatus = loop.status === "waiting" ? "waiting" : loop.status;
-    if (displayStatus !== filters.status) {
-      return false;
-    }
+  if (filters.status !== "all" && loop.status !== filters.status) {
+    return false;
   }
 
   if (
@@ -87,7 +84,15 @@ function matches(loop: LoopMeta, filters: Filters): boolean {
   return haystack.includes(query);
 }
 
+function describeLoop(loop: LoopMeta): string {
+  return loop.description?.trim() || [loop.command, ...loop.commandArgs].join(" ").trim();
+}
+
 function compare(left: LoopMeta, right: LoopMeta, sort: SortMode): number {
+  if (sort === "description") {
+    return describeLoop(left).localeCompare(describeLoop(right));
+  }
+
   if (sort === "created") {
     return right.createdAt.localeCompare(left.createdAt);
   }
@@ -119,7 +124,7 @@ export function applyLoopFilters(
 }
 
 export function cycleSortMode(mode: SortMode): SortMode {
-  return mode === "status" ? "recent" : mode === "recent" ? "created" : "status";
+  return mode === "description" ? "status" : mode === "status" ? "recent" : mode === "recent" ? "created" : "description";
 }
 
 export function cycleStatusFilter(status: StatusFilter): StatusFilter {

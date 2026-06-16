@@ -84,9 +84,10 @@ describe("board state", () => {
   });
 
   it("cycles sort modes", () => {
+    expect(cycleSortMode("description")).toBe("status");
     expect(cycleSortMode("status")).toBe("recent");
     expect(cycleSortMode("recent")).toBe("created");
-    expect(cycleSortMode("created")).toBe("status");
+    expect(cycleSortMode("created")).toBe("description");
   });
 
   it("cycles status filters through every value", () => {
