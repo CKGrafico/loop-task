@@ -1,0 +1,12 @@
+{
+  "dashboardPort": 4747,
+  "mergeOnCleanup": true,
+  "timeoutMs": 1800000,
+  "stallThresholdMs": 300000,
+  "modelsByAgent": {
+    "plan": "opencode-go/qwen3.7-max",
+    "build": "opencode-go/qwen3.6-plus",
+    "explore": "opencode/big-pickle"
+  },
+  "modelAssignment": "default"
+}

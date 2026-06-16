@@ -1,106 +1,102 @@
 #!/usr/bin/env node
 
-import { parseDuration } from "./duration.js";
+import { Command } from "commander";
+import { createRequire } from "node:module";
 import { Logger } from "./logger.js";
-import { runLoop } from "./loop.js";
-import type { LoopOptions } from "./types.js";
+import { runLoop } from "./core/foreground-loop.js";
+import { buildLoopOptions } from "./loop-config.js";
+import { startLoop } from "./client/commands.js";
+import { t } from "./i18n/index.js";
 
-const args = process.argv.slice(2);
+const require = createRequire(import.meta.url);
+const packageJson = require("../package.json") as { version: string };
 
-const loopOptions = {
-  immediate: false,
-  maxRuns: null as number | null,
-  verbose: false,
-};
+const program = new Command();
 
-const commandParts: string[] = [];
-let i = 0;
+program
+  .name("loop-task")
+  .description(t("cli.programDescription"))
+  .version(packageJson.version, "-V, --version");
 
-while (i < args.length) {
-  const arg = args[i];
-
-  if (arg === "--now") {
-    loopOptions.immediate = true;
-    i++;
-  } else if (arg === "--max-runs") {
-    i++;
-    const n = parseInt(args[i], 10);
-    if (isNaN(n) || n < 1) {
-      console.error("Error: --max-runs must be a positive integer");
-      process.exit(1);
+program
+  .command("start")
+  .description(t("cli.startDescription"))
+  .argument("<interval>", t("cli.argInterval"))
+  .argument("<command...>", t("cli.argCommand"))
+  .option("--now", t("cli.optNow"), false)
+  .option("--max-runs <n>", t("cli.optMaxRuns"), parseInt)
+  .option("--verbose", t("cli.optVerbose"), false)
+  .option("--cwd <dir>", t("cli.optCwd"))
+  .action(
+    async (
+      intervalStr: string,
+      cmdArgs: string[],
+      opts: { now: boolean; maxRuns?: number; verbose: boolean; cwd?: string }
+    ) => {
+      const built = buildLoopOptions(intervalStr, cmdArgs[0], cmdArgs.slice(1), {
+        ...opts,
+        cwd: opts.cwd ?? process.cwd(),
+      });
+      await startLoop(built.options, built.intervalHuman);
     }
-    loopOptions.maxRuns = n;
-    i++;
-  } else if (arg === "--verbose") {
-    loopOptions.verbose = true;
-    i++;
-  } else if (arg === "--help" || arg === "-h") {
-    console.log(`
-Usage:
-  loop-task [options] <interval> <command>
+  );
 
-Examples:
-  loop-task 30m npm test
-  loop-task 1h --now -- opencode run "Check the plans" --model "opencode/big-pickle"
-  loop-task 30s --now -- echo hello
-  loop-task --max-runs 5 5m npm test
+program
+  .command("run")
+  .description(t("cli.runDescription"))
+  .argument("<interval>", t("cli.argInterval"))
+  .argument("<command...>", t("cli.argCommand"))
+  .option("--now", t("cli.optNow"))
+  .option("--max-runs <n>", t("cli.optMaxRuns"))
+  .option("--verbose", t("cli.optVerbose"))
+  .option("--cwd <dir>", t("cli.optCwd"))
+  .action(
+    async (
+      intervalStr: string | undefined,
+      cmdArgs: string[] | undefined,
+      opts: { now?: boolean; maxRuns?: string; verbose?: boolean; cwd?: string }
+    ) => {
+      if (!intervalStr || !cmdArgs || cmdArgs.length === 0) {
+        program.help();
+        return;
+      }
 
-Options:
-  --now           Run immediately before waiting
-  --max-runs <n>  Stop after N executions
-  --verbose       Show execution details
-  -h, --help      Display help
-  -V, --version   Display version
-`);
-    process.exit(0);
-  } else if (arg === "--version" || arg === "-V") {
-    console.log("1.0.0");
-    process.exit(0);
-  } else if (arg === "--") {
-    i++;
-    commandParts.push(...args.slice(i));
-    break;
-  } else {
-    commandParts.push(arg);
-    i++;
+      const logger = new Logger(opts.verbose ?? false);
+      const built = buildLoopOptions(intervalStr, cmdArgs[0], cmdArgs.slice(1), {
+        ...opts,
+        cwd: opts.cwd ?? process.cwd(),
+      });
+
+      const controller = new AbortController();
+      process.on("SIGINT", () => controller.abort());
+      process.on("SIGTERM", () => controller.abort());
+
+      await runLoop(built.options, logger, controller.signal);
+      process.exit(0);
+    }
+  );
+
+program.action(async () => {
+  if (!process.execPath.includes("bun")) {
+    const { spawn } = await import("node:child_process");
+    const child = spawn("bun", [process.argv[1]], {
+      stdio: "inherit",
+      env: { ...process.env },
+      shell: true,
+    });
+    child.on("error", () => {
+      console.error(
+        "The board requires the Bun runtime for OpenTUI native FFI.\n" +
+        "Install Bun: npm install -g bun\n" +
+        "Then run: loop-task"
+      );
+      process.exit(1);
+    });
+    child.on("exit", (code) => process.exit(code ?? 0));
+    return;
   }
-}
+  const { launchBoard } = await import("./board/index.js");
+  await launchBoard();
+});
 
-if (commandParts.length < 2) {
-  console.error("Error: missing required arguments");
-  console.error("Usage: loop-task [options] <interval> <command>");
-  process.exit(1);
-}
-
-const intervalStr = commandParts[0];
-const cmdArgs = commandParts.slice(1);
-const command = cmdArgs[0];
-const commandArgs = cmdArgs.slice(1);
-
-const logger = new Logger(loopOptions.verbose);
-
-let interval: number;
-try {
-  interval = parseDuration(intervalStr);
-} catch (error: unknown) {
-  const message = error instanceof Error ? error.message : String(error);
-  logger.error(`Error: ${message}`);
-  process.exit(1);
-}
-
-const options: LoopOptions = {
-  interval,
-  command,
-  commandArgs,
-  immediate: loopOptions.immediate,
-  maxRuns: loopOptions.maxRuns,
-  verbose: loopOptions.verbose,
-};
-
-const controller = new AbortController();
-
-process.on("SIGINT", () => controller.abort());
-process.on("SIGTERM", () => controller.abort());
-
-await runLoop(options, logger, controller.signal);
-process.exit(0);
+await program.parseAsync(process.argv);

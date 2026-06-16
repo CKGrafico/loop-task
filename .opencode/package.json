@@ -1,0 +1,9 @@
+{
+  "dependencies": {
+    "@different-ai/opencode-browser": "latest",
+    "@hueyexe/opencode-ensemble": "0.14.1",
+    "@opencode-ai/plugin": "1.16.2",
+    "@slkiser/opencode-quota": "latest",
+    "opencode-plugin-openspec": "latest"
+  }
+}

@@ -1,26 +1,31 @@
 import { describe, it, expect } from "vitest";
 import { execa } from "execa";
 
-const cliPath = "dist/cli.js";
+const cliPath = "dist/entry.js";
+const runtime = "node";
 
 describe("cli", () => {
   it("shows help output", async () => {
-    const result = await execa("node", [cliPath, "--help"]);
-    expect(result.stdout).toContain("loop-task [options] <interval> <command>");
-    expect(result.stdout).toContain("--now");
-    expect(result.stdout).toContain("--max-runs");
-    expect(result.stdout).toContain("--verbose");
-    expect(result.stdout).toContain("Examples:");
+    const result = await execa(runtime, [cliPath, "--help"]);
+    expect(result.stdout).toContain("loop-task");
+    expect(result.stdout).toContain("start");
+    expect(result.stdout).toContain("run");
+    expect(result.stdout).toContain("Open the loop board");
+
+    const startHelp = await execa(runtime, [cliPath, "start", "--help"]);
+    expect(startHelp.stdout).toContain("--now");
+    expect(startHelp.stdout).toContain("--max-runs");
+    expect(startHelp.stdout).toContain("--verbose");
   });
 
   it("shows version", async () => {
-    const result = await execa("node", [cliPath, "--version"]);
-    expect(result.stdout.trim()).toBe("1.0.0");
+    const result = await execa(runtime, [cliPath, "--version"]);
+    expect(result.stdout.trim()).toBe("1.2.0");
   });
 
   it("fails with invalid duration", async () => {
     try {
-      await execa("node", [cliPath, "abc", "echo", "hello"]);
+      await execa(runtime, [cliPath, "run", "abc", "echo", "hello"]);
       expect.unreachable("should have thrown");
     } catch (error: unknown) {
       const e = error as { stderr: string; exitCode: number };
@@ -31,27 +36,30 @@ describe("cli", () => {
 
   it("fails with negative duration", async () => {
     try {
-      await execa("node", [cliPath, "-1h", "echo", "hello"]);
+      await execa(runtime, [cliPath, "run", "--", "-1h", "echo", "hello"]);
       expect.unreachable("should have thrown");
     } catch (error: unknown) {
       const e = error as { stderr: string; exitCode: number };
       expect(e.exitCode).not.toBe(0);
+      expect(e.stderr).toContain("Duration must be positive");
     }
   });
 
   it("fails with missing arguments", async () => {
     try {
-      await execa("node", [cliPath]);
+      await execa(runtime, [cliPath, "run"]);
       expect.unreachable("should have thrown");
     } catch (error: unknown) {
-      const e = error as { exitCode: number };
+      const e = error as { exitCode: number; stderr: string };
       expect(e.exitCode).not.toBe(0);
+      expect(e.stderr).toContain("missing required argument");
     }
   });
 
   it("runs with max-runs 1 and now", async () => {
-    const result = await execa("node", [
+    const result = await execa(runtime, [
       cliPath,
+      "run",
       "--now",
       "--max-runs",
       "1",
@@ -65,8 +73,9 @@ describe("cli", () => {
   });
 
   it("runs with verbose mode", async () => {
-    const result = await execa("node", [
+    const result = await execa(runtime, [
       cliPath,
+      "run",
       "--verbose",
       "--now",
       "--max-runs",

@@ -1,0 +1,6 @@
+{
+  "enabledProviders": "auto",
+  "formatStyle": "singleWindow",
+  "percentDisplayMode": "used",
+  "showSessionTokens": true
+}
