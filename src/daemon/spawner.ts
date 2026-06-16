@@ -75,7 +75,9 @@ export function ensureDaemon(): void {
     __filename.endsWith(".ts") ? "index.ts" : "index.js"
   );
   const args = __filename.endsWith(".ts")
-    ? ["--import", "tsx", daemonScript]
+    ? process.execPath.includes("bun")
+      ? [daemonScript]
+      : ["--import", "tsx", daemonScript]
     : [daemonScript];
   const child = spawn(process.execPath, args, {
     detached: true,

@@ -223,12 +223,18 @@ node dist/entry.js start --now 30m -- npm test    # background loop
 node dist/entry.js run --now --max-runs 1 10s -- echo hello  # foreground loop
 ```
 
-Run the board locally (auto-delegates to Bun):
+Run the board locally:
+
+```bash
+bun run dev       # board
+bun run dev:watch # board with auto-reload (can be less stable for TUI input)
+npm run start     # built app entrypoint
+```
+
+If you want to run the built CLI instead:
 
 ```bash
 node dist/entry.js
-# or
-bun run dev       # with auto-reload
 ```
 
 Quality gates:

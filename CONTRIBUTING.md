@@ -24,8 +24,9 @@ Node is the runtime for the CLI and daemon. The board requires Bun's native FFI.
 ## Development
 
 ```bash
-bun run dev           # Run the board with auto-reload (tsx watch)
-bun run start         # Run built CLI (node dist/entry.js)
+bun run dev           # Run the board
+bun run dev:watch     # Run the board with auto-reload (can be less stable for TUI input)
+npm run start         # Run the built app entrypoint
 bun run test:watch    # Watch mode tests
 bun run lint          # Lint source and tests
 bun run typecheck     # Type check without emitting

@@ -13,9 +13,10 @@
   "scripts": {
     "build": "tsc -p tsconfig.build.json && node -e \"require('fs').copyFileSync('src/entry.js','dist/entry.js'); require('fs').copyFileSync('src/esm-loader.js','dist/esm-loader.js')\"",
     "prepublishOnly": "npm run build",
-    "start": "node dist/cli.js",
-    "dev": "tsx watch src/cli.ts",
-    "board": "node dist/cli.js",
+    "start": "node dist/entry.js",
+    "dev": "bun src/cli.ts",
+    "dev:watch": "bun --watch src/cli.ts",
+    "board": "node dist/entry.js",
     "test": "vitest run --exclude '**/background-cli.test.ts'",
     "test:all": "vitest run",
     "test:watch": "vitest",
