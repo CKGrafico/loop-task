@@ -22,7 +22,7 @@ export interface LoopState {
   shuttingDown: boolean;
 }
 
-export type LoopStatus = "running" | "paused" | "stopped" | "sleeping";
+export type LoopStatus = "running" | "paused" | "stopped" | "waiting";
 
 export interface RunRecord {
   runNumber: number;

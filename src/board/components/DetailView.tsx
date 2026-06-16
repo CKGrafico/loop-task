@@ -53,6 +53,7 @@ export function DetailView(props: {
       <RunHistory
         loop={loop}
         selectedRunIndex={selectedRunIndex}
+        focused
         onSelectRun={onSelectRun}
         onOpenRun={onOpenRun}
       />

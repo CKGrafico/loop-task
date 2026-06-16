@@ -5,7 +5,7 @@ import type { DaemonStatus } from "../types.js";
 
 export function Header(props: {
   daemonStatus: DaemonStatus;
-  counts: { total: number; running: number; sleeping: number; paused: number };
+  counts: { total: number; running: number; waiting: number; paused: number };
 }): React.ReactNode {
   const { daemonStatus, counts } = props;
   const { width } = useTerminalDimensions();
@@ -36,8 +36,8 @@ export function Header(props: {
               <span fg="#e5e7eb">{counts.total}</span>
               <span fg="#6b7280">{t("board.runningLabel")}</span>
               <span fg="#4ade80">{counts.running}</span>
-              <span fg="#6b7280">{t("board.sleepingLabel")}</span>
-              <span fg="#38bdf8">{counts.sleeping}</span>
+              <span fg="#6b7280">{t("board.waitingLabel")}</span>
+              <span fg="#38bdf8">{counts.waiting}</span>
               <span fg="#6b7280">{t("board.pausedLabel")}</span>
               <span fg="#facc15">{counts.paused}</span>
             </>

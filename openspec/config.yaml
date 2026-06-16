@@ -27,7 +27,7 @@ context: |
       board/daemon.ts is the typed IPC bridge. Polls `list` every 2s and
       streams live logs.
     - src/core/ — LoopController (EventEmitter state machine:
-      running/sleeping/paused/stopped), command-runner (execa),
+      running/waiting/paused/stopped), command-runner (execa),
       foreground-loop, log-rotator.
     - src/ipc/ — JSON-lines send + live log-follow handler.
     - src/config/ — constants.ts (all magic numbers) + paths.ts.

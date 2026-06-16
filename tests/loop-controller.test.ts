@@ -16,8 +16,8 @@ const mockedExeca = vi.mocked(execa);
 function mockExecaSuccess(): void {
   mockedExeca.mockImplementation((() => {
     const child = Promise.resolve({ exitCode: 0, stdout: "", stderr: "", failed: false }) as never;
-    (child as { stdout: { on: () => void } }).stdout = { on: () => {} };
-    (child as { stderr: { on: () => void } }).stderr = { on: () => {} };
+    (child as { stdout: { on: () => void } }).stdout = { on: () => { } };
+    (child as { stderr: { on: () => void } }).stderr = { on: () => { } };
     return child;
   }) as never);
 }
@@ -29,8 +29,8 @@ function mockExecaAbortableRun(): void {
         reject({ exitCode: 1 });
       });
     }) as never;
-    (child as { stdout: { on: () => void } }).stdout = { on: () => {} };
-    (child as { stderr: { on: () => void } }).stderr = { on: () => {} };
+    (child as { stdout: { on: () => void } }).stdout = { on: () => { } };
+    (child as { stderr: { on: () => void } }).stderr = { on: () => { } };
     return child;
   }) as never);
 }
@@ -90,7 +90,7 @@ describe("LoopController", () => {
 
     await vi.advanceTimersByTimeAsync(100);
     expect(controller.getMeta().runCount).toBe(0);
-    expect(controller.status).toBe("sleeping");
+    expect(controller.status).toBe("waiting");
 
     await vi.advanceTimersByTimeAsync(5000);
     await vi.runAllTimersAsync();
@@ -190,18 +190,18 @@ describe("LoopController", () => {
     await controller.stop();
   });
 
-  it("emits sleeping at most once per sleep segment", async () => {
+  it("emits waiting at most once per sleep segment", async () => {
     const controller = new LoopController("ffffffff", makeOptions({ immediate: false, interval: 5000, maxRuns: 1 }), logPath);
-    let sleepingCount = 0;
-    controller.on("sleeping", () => {
-      sleepingCount += 1;
+    let waitingCount = 0;
+    controller.on("waiting", () => {
+      waitingCount += 1;
     });
     controller.start();
 
     await vi.advanceTimersByTimeAsync(5000);
     await vi.runAllTimersAsync();
 
-    expect(sleepingCount).toBe(1);
+    expect(waitingCount).toBe(1);
     await controller.stop();
   });
 });

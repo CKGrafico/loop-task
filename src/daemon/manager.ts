@@ -44,6 +44,7 @@ export class LoopManager {
         lastDuration: meta.lastDuration,
         nextRunAt: meta.nextRunAt,
         remainingDelayMs: meta.remainingDelayMs,
+        runHistory: meta.runHistory,
       });
       this.loops.set(meta.id, {
         controller,
@@ -173,7 +174,7 @@ export class LoopManager {
     controller.on("paused", persist);
     controller.on("resumed", persist);
     controller.on("triggered", persist);
-    controller.on("sleeping", persist);
+    controller.on("waiting", persist);
     controller.on("stopped", persist);
   }
 

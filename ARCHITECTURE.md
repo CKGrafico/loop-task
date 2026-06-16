@@ -203,7 +203,7 @@ flowchart TB
 ### 3.3 Shared Libraries / Common Code
 
 - **`src/core/` (loop engine):** `LoopController` is an `EventEmitter`-based state
-  machine (`running`/`sleeping`/`paused`/`stopped`) handling intervals, immediate
+  machine (`running`/`waiting`/`paused`/`stopped`) handling intervals, immediate
   runs, pause/resume, force-run, max-runs, and abortable sleeps in `SLEEP_CHUNK_MS`
   slices. `command-runner.ts` wraps `execa`. `log-rotator.ts` does size-based
   rotation. Used by both the daemon and the foreground runner.
@@ -505,7 +505,7 @@ npm run release       # npm publish
 | **Code-signature daemon restart** | `daemon/state.ts#computeCodeSignature`, `spawner.ts` | Guarantees a freshly edited CLI never talks to a stale daemon during development. Tradeoff: signature is mtime/size/count based, not content-hash — theoretically coarse. |
 | **Socket-bind-before-init single-flight** | `daemon/index.ts:17-24` | Race-free single daemon instance; losers exit cleanly. Tradeoff: relies on OS bind exclusivity semantics. |
 | **OpenTUI + React for the board** | `board/*`, `tsconfig.json` `jsxImportSource` | Familiar component/hook model for a rich terminal UI. Tradeoff: early-stage (0.4.x) dependency; UI largely untested. |
-| **Per-loop EventEmitter state machine** | `core/loop-controller.ts` | Cleanly models running/sleeping/paused/stopped with pause/resume/trigger and abortable sleeps. Tradeoff: concurrency reasoning concentrated in one class. |
+| **Per-loop EventEmitter state machine** | `core/loop-controller.ts` | Cleanly models running/waiting/paused/stopped with pause/resume/trigger and abortable sleeps. Tradeoff: concurrency reasoning concentrated in one class. |
 | **Centralized i18n + constants** | `i18n/en.json` (231 keys), `config/constants.ts` | All strings and magic numbers in one place for consistency and future localization. |
 | **OpenSpec workflow scaffolding** | `openspec/` (`config.yaml`, empty `specs/`) | Structured change planning is available but not yet populated. |
 
@@ -584,7 +584,7 @@ empty (`.gitkeep` only), and `DESIGN.md` is an unpopulated placeholder.
 | **Loop** | A configured recurring task: a command + interval + options, identified by an 8-char id |
 | **Board** | The interactive OpenTUI/React terminal UI (default `loop-task` command) |
 | **Daemon** | The long-lived background process (`src/daemon/`) that owns all loops |
-| **LoopController** | Per-loop state machine in `core/loop-controller.ts` (running/sleeping/paused/stopped) |
+| **LoopController** | Per-loop state machine in `core/loop-controller.ts` (running/waiting/paused/stopped) |
 | **LoopManager** | Daemon component that owns all `LoopController` instances and persistence |
 | **IPC** | Inter-Process Communication: newline-delimited JSON over a Unix socket / Windows named pipe |
 | **`IpcRequest` / `IpcResponse`** | Discriminated-union message types defining the client↔daemon protocol (`src/types.ts`) |

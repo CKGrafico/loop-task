@@ -74,7 +74,7 @@ export class LoopController extends EventEmitter {
   }
 
   pause(interruptCurrentRun = false): void {
-    if (this._status === "running" || this._status === "sleeping") {
+    if (this._status === "running" || this._status === "waiting") {
       this._paused = true;
       this._status = "paused";
       if (interruptCurrentRun && this._status === "paused") {
@@ -88,7 +88,7 @@ export class LoopController extends EventEmitter {
     if (this._paused && this.resumeResolve) {
       this._paused = false;
       if (this.remainingDelayMs !== null) {
-        this._status = "sleeping";
+        this._status = "waiting";
         this.nextRunAt = new Date(Date.now() + this.remainingDelayMs).toISOString();
       }
       this.resumeResolve();
@@ -171,9 +171,9 @@ export class LoopController extends EventEmitter {
       }
 
       if (!announced) {
-        this._status = "sleeping";
+        this._status = "waiting";
         this.nextRunAt = new Date(Date.now() + remaining).toISOString();
-        this.emit("sleeping");
+        this.emit("waiting");
         announced = true;
       }
 
@@ -251,7 +251,8 @@ export class LoopController extends EventEmitter {
           this.options.commandArgs,
           this.options.cwd,
           this.logStream!,
-          AbortSignal.any([signal, this.runAbortController.signal])
+          AbortSignal.any([signal, this.runAbortController.signal]),
+          this.runCount
         );
         this.runAbortController = null;
 
@@ -275,6 +276,7 @@ export class LoopController extends EventEmitter {
         if (this.interruptedForForceRun) {
           this.runCount = Math.max(0, this.runCount - 1);
           this.interruptedForForceRun = false;
+          this._forceRun = true;
         }
         this.emit("run:end", result);
 

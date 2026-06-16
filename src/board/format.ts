@@ -54,7 +54,7 @@ export function statusColor(status: LoopMeta["status"]): string {
       return "#4ade80";
     case "paused":
       return "#facc15";
-    case "sleeping":
+    case "waiting":
       return "#38bdf8";
     case "stopped":
       return "#f87171";
@@ -71,7 +71,7 @@ export function timingLabel(loop: LoopMeta): string {
 }
 
 export function statusLabel(status: LoopMeta["status"]): string {
-  return status === "sleeping" ? "waiting" : status;
+  return status === "waiting" ? "waiting" : status;
 }
 
 export function formatFileSize(bytes: number): string {

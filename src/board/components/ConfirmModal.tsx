@@ -36,17 +36,14 @@ export function ConfirmModal(props: { message: string; choice: number; onYes: ()
           <ConfirmButton
             label={t("board.yes")}
             onMouseDown={onYes}
-            borderColor={choice === 1 ? "#38bdf8" : undefined}
-            bgColor={choice === 1 ? "#1e3a8a" : undefined}
-            restBg="#1e3a5f"
+            selected={choice === 1}
             width={12}
             marginRight={1}
           />
           <ConfirmButton
             label={t("board.no")}
             onMouseDown={onNo}
-            borderColor={choice === 0 ? "#38bdf8" : undefined}
-            bgColor={choice === 0 ? "#374151" : undefined}
+            selected={choice === 0}
             width={12}
           />
         </box>
@@ -58,19 +55,18 @@ export function ConfirmModal(props: { message: string; choice: number; onYes: ()
 function ConfirmButton(props: {
   label: string;
   onMouseDown: () => void;
-  borderColor?: string;
-  bgColor?: string;
-  restBg?: string;
+  selected: boolean;
   width: number;
   marginRight?: number;
 }): React.ReactNode {
   const { isHovered, hoverProps } = useHoverState();
-  const bg = props.bgColor ?? (isHovered ? HOVER_BG : props.restBg ?? "#0b0b0b");
+  const bg = props.selected ? "#1e3a8a" : isHovered ? HOVER_BG : undefined;
+  const borderColor = props.selected ? "#38bdf8" : undefined;
   return (
     <box
       border
       onMouseDown={props.onMouseDown}
-      borderColor={props.borderColor}
+      borderColor={borderColor}
       style={{
         width: props.width,
         backgroundColor: bg,

@@ -16,10 +16,11 @@ export async function executeCommand(
   commandArgs: string[],
   cwd: string,
   logStream: fs.WriteStream,
-  signal?: AbortSignal
+  signal?: AbortSignal,
+  runNumber?: number
 ): Promise<ExecutionResult> {
   const startedAt = new Date();
-  const header = t("loop.runHeader", { timestamp: startedAt.toLocaleString() });
+  const header = t("loop.runHeader", { timestamp: startedAt.toLocaleString(), runNumber: runNumber ?? 0 });
   logStream.write(header);
 
   if (cwd && !fs.existsSync(cwd)) {

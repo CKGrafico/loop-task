@@ -19,7 +19,7 @@ function loop(id: string, values: Partial<LoopMeta> = {}): LoopMeta {
     verbose: false,
     cwd: "",
     description: "",
-    status: "sleeping",
+    status: "waiting",
     createdAt: "2026-06-14T10:00:00.000Z",
     runCount: 0,
     lastRunAt: null,
@@ -91,8 +91,8 @@ describe("board state", () => {
 
   it("cycles status filters through every value", () => {
     expect(cycleStatusFilter("all")).toBe("running");
-    expect(cycleStatusFilter("running")).toBe("sleeping");
-    expect(cycleStatusFilter("sleeping")).toBe("paused");
+    expect(cycleStatusFilter("running")).toBe("waiting");
+    expect(cycleStatusFilter("waiting")).toBe("paused");
     expect(cycleStatusFilter("paused")).toBe("stopped");
     expect(cycleStatusFilter("stopped")).toBe("all");
   });

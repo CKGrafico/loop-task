@@ -10,7 +10,7 @@ import {
 } from "./state.js";
 import { ToastStack, useToasts } from "./toast.js";
 import { t } from "../i18n/index.js";
-import type { ConfirmState, Mode, View } from "./types.js";
+import type { ConfirmState, Mode, PanelFocus, View } from "./types.js";
 import { useLoopPolling } from "./hooks/useLoopPolling.js";
 import { useLogStream } from "./hooks/useLogStream.js";
 import { useBoardKeybindings } from "./hooks/useBoardKeybindings.js";
@@ -19,13 +19,13 @@ import { FilterBar } from "./components/FilterBar.js";
 import { Navigator } from "./components/Navigator.js";
 import { Inspector } from "./components/Inspector.js";
 import { RunHistory } from "./components/RunHistory.js";
-import { DetailView } from "./components/DetailView.js";
+import { ActionButtons } from "./components/ActionButtons.js";
 import { HelpModal } from "./components/HelpModal.js";
 import { Footer } from "./components/Footer.js";
 import { ConfirmModal } from "./components/ConfirmModal.js";
 import { CreateView, createInitialValues } from "./components/CreateForm.js";
 import { LogModal } from "./components/LogModal.js";
-import { fetchRunLog } from "./daemon.js";
+import { fetchRunLog, deleteLoop, pauseLoop, resumeLoop, triggerLoop } from "./daemon.js";
 import { useBreakpoint } from "./hooks/useBreakpoint.js";
 
 const BOARD_REFRESH_DELAY_MS = 150;
@@ -42,6 +42,8 @@ export function App(props: { onQuit: () => void }): React.ReactNode {
   const [confirmChoice, setConfirmChoice] = useState(0);
   const [editTarget, setEditTarget] = useState<LoopMeta | null>(null);
   const [selectedRunIndex, setSelectedRunIndex] = useState(0);
+  const [selectedAction, setSelectedAction] = useState(0);
+  const [focusedPanel, setFocusedPanel] = useState<PanelFocus>("loops");
   const [logModalRun, setLogModalRun] = useState<RunRecord | null>(null);
   const [logModalLines, setLogModalLines] = useState<string[]>([]);
   const [logModalLoading, setLogModalLoading] = useState(false);
@@ -102,6 +104,46 @@ export function App(props: { onQuit: () => void }): React.ReactNode {
       });
   }
 
+  function handleAction(action: string): void {
+    if (!selected || !selectedId) return;
+    switch (action) {
+      case "pause-resume": {
+        const actionLabel = selected.status === "paused" ? t("board.actionResume") : t("board.actionPause");
+        const actionVerb = selected.status === "paused" ? t("board.actionResumed") : t("board.actionPaused");
+        const actionFn = selected.status === "paused"
+          ? () => resumeLoop(selectedId)
+          : () => pauseLoop(selectedId);
+        setConfirmChoice(0);
+        setConfirm({
+          message: t("board.confirmPauseResume", { action: actionLabel, id: selectedId }),
+          action: runAction(t("board.toastActionId", { verb: actionVerb, id: selectedId }), actionFn),
+        });
+        break;
+      }
+      case "run": {
+        setConfirmChoice(0);
+        setConfirm({
+          message: t("board.confirmForceRun", { id: selectedId }),
+          action: runAction(t("board.toastTriggered", { id: selectedId }), () => triggerLoop(selectedId)),
+        });
+        break;
+      }
+      case "edit": {
+        setEditTarget(selected);
+        setView("create");
+        break;
+      }
+      case "delete": {
+        setConfirmChoice(0);
+        setConfirm({
+          message: t("board.confirmDelete", { id: selectedId }),
+          action: runAction(t("board.toastDeleted", { id: selectedId }), () => deleteLoop(selectedId)),
+        });
+        break;
+      }
+    }
+  }
+
   useBoardKeybindings({
     confirm,
     confirmChoice,
@@ -115,26 +157,29 @@ export function App(props: { onQuit: () => void }): React.ReactNode {
     setView,
     setEditTarget,
     selected,
-    selectedId,
     visibleCount: visible.length,
     setSelectedIndex,
     setFilters,
     setSort,
     onQuit: props.onQuit,
     destroyLogSocket,
-    runAction,
     logModalRun,
     setLogModalRun,
     selectedRunIndex,
     setSelectedRunIndex,
     selectedRunCount: selected?.runHistory?.length ?? 0,
+    focusedPanel,
+    setFocusedPanel,
+    selectedAction,
+    setSelectedAction,
+    onAction: handleAction,
     onOpenRunLog: handleOpenRunLog,
   });
 
   const counts = {
     total: loops.length,
     running: loops.filter((l) => l.status === "running").length,
-    sleeping: loops.filter((l) => l.status === "sleeping").length,
+    waiting: loops.filter((l) => l.status === "waiting").length,
     paused: loops.filter((l) => l.status === "paused").length,
   };
 
@@ -144,11 +189,9 @@ export function App(props: { onQuit: () => void }): React.ReactNode {
       ? "search"
       : helpOpen
         ? "help"
-      : view === "create"
-        ? "create"
-        : view === "detail"
-            ? "detail"
-            : "normal";
+        : view === "create"
+          ? "create"
+          : "normal";
 
   return (
     <box style={{ flexDirection: "column", width: "100%", height: "100%", backgroundColor: "#0b0b0b" }}>
@@ -159,12 +202,17 @@ export function App(props: { onQuit: () => void }): React.ReactNode {
           filters={filters}
           sort={sort}
           searchActive={searchActive}
+          focusedPanel={focusedPanel}
           onSearch={(q) => {
             setFilters((prev) => ({ ...prev, query: q }));
             setSelectedIndex(0);
           }}
           onStatusCycle={() => setFilters((prev) => ({ ...prev, status: cycleStatusFilter(prev.status) }))}
           onSortCycle={() => setSort(cycleSortMode(sort))}
+          onNewLoop={() => {
+            setEditTarget(null);
+            setView("create");
+          }}
         />
       ) : null}
 
@@ -190,13 +238,6 @@ export function App(props: { onQuit: () => void }): React.ReactNode {
               }, BOARD_REFRESH_DELAY_MS);
             }}
           />
-        ) : view === "detail" && selected ? (
-          <DetailView
-            loop={selected}
-            selectedRunIndex={selectedRunIndex}
-            onSelectRun={setSelectedRunIndex}
-            onOpenRun={handleOpenRunLog}
-          />
         ) : (
           <box style={{ flexDirection: breakpoint === "narrow" ? "column" : "row", flexGrow: 1, backgroundColor: "#0b0b0b" }}>
             <Navigator
@@ -206,18 +247,37 @@ export function App(props: { onQuit: () => void }): React.ReactNode {
               filters={filters}
               sort={sort}
               breakpoint={breakpoint}
+              focused={focusedPanel === "loops"}
               onSelect={(index) => {
                 setSelectedIndex(index);
-                setView((v) => (v === "detail" ? "board" : "detail"));
+                setFocusedPanel("loops");
+              }}
+              onActivate={(index) => {
+                setSelectedIndex(index);
+                const loop = visible[index];
+                if (loop) {
+                  setEditTarget(loop);
+                  setView("create");
+                }
               }}
             />
-            <box style={{ flexDirection: "column", flexGrow: 1, backgroundColor: "#0b0b0b" }}>
+            <box style={{ flexDirection: "column", flexGrow: 1, backgroundColor: "#0b0b0b", overflow: "hidden" }}>
               <Inspector loop={selected} />
               <RunHistory
                 loop={selected}
                 selectedRunIndex={selectedRunIndex}
-                onSelectRun={setSelectedRunIndex}
+                focused={focusedPanel === "runs"}
+                onSelectRun={(index) => {
+                  setSelectedRunIndex(index);
+                  setFocusedPanel("runs");
+                }}
                 onOpenRun={handleOpenRunLog}
+              />
+              <ActionButtons
+                loop={selected}
+                focused={focusedPanel === "actions"}
+                selectedAction={selectedAction}
+                onAction={handleAction}
               />
             </box>
           </box>

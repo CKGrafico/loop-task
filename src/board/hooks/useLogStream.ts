@@ -18,7 +18,7 @@ export function useLogStream(
     logSocket.current = null;
     setLogLines([]);
 
-    if (!selectedId || (view !== "board" && view !== "detail")) {
+    if (!selectedId || view !== "board") {
       return;
     }
 

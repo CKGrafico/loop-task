@@ -3,7 +3,7 @@ import type { LoopMeta } from "../types.js";
 export type StatusFilter =
   | "all"
   | "running"
-  | "sleeping"
+  | "waiting"
   | "paused"
   | "stopped";
 
@@ -29,7 +29,7 @@ export const defaultFilters: Filters = {
 
 const statusOrder: Record<LoopMeta["status"], number> = {
   running: 0,
-  sleeping: 1,
+  waiting: 1,
   paused: 2,
   stopped: 3,
 };
@@ -47,8 +47,11 @@ function activityBucketOf(loop: LoopMeta): ActivityFilter {
 }
 
 function matches(loop: LoopMeta, filters: Filters): boolean {
-  if (filters.status !== "all" && loop.status !== filters.status) {
-    return false;
+  if (filters.status !== "all") {
+    const displayStatus = loop.status === "waiting" ? "waiting" : loop.status;
+    if (displayStatus !== filters.status) {
+      return false;
+    }
   }
 
   if (
@@ -124,8 +127,8 @@ export function cycleStatusFilter(status: StatusFilter): StatusFilter {
     case "all":
       return "running";
     case "running":
-      return "sleeping";
-    case "sleeping":
+      return "waiting";
+    case "waiting":
       return "paused";
     case "paused":
       return "stopped";

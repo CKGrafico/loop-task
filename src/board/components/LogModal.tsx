@@ -34,22 +34,12 @@ export function LogModal(props: {
         border
         style={{
           flexDirection: "column",
-          minWidth: Math.min(70, width - 4),
+          minWidth: Math.min(60, width - 4),
           width: Math.min(width - 4, 100),
           height: Math.min(height - 4, 30),
           backgroundColor: "#111827",
         }}
       >
-        <box style={{ flexDirection: "row", backgroundColor: "#111827" }}>
-          <text>
-            <span fg={iconColor}>{icon}</span>{" "}
-            <span fg="#9ca3af">{formatRunTime(run.startedAt)}</span>
-            {"  "}
-            <span fg="#9ca3af">{formatRunDuration(run.duration)}</span>
-            {"  "}
-            <span fg={success ? "#4ade80" : "#f87171"}>exit {run.exitCode}</span>
-          </text>
-        </box>
         <scrollbox style={{ flexGrow: 1, backgroundColor: "#0b0b0b" }}>
           {loading ? (
             <text fg="#9ca3af">{t("board.logModalLoading")}</text>
@@ -59,7 +49,12 @@ export function LogModal(props: {
             logLines.map((line, i) => <text key={i}>{line}</text>)
           )}
         </scrollbox>
-        <box style={{ flexDirection: "row", justifyContent: "center", backgroundColor: "#111827" }}>
+        <box style={{ flexDirection: "row", justifyContent: "space-between", backgroundColor: "#111827" }}>
+          <text>
+            <span fg={iconColor}>{icon}</span>{" "}
+            <span fg="#9ca3af">{formatRunDuration(run.duration)}</span>{" "}
+            <span fg={success ? "#4ade80" : "#f87171"}>exit {run.exitCode}</span>
+          </text>
           <text fg="#6b7280">{t("board.logModalEscClose")}</text>
         </box>
       </box>

@@ -214,17 +214,14 @@ export function CreateView(props: {
       <HoverButton
         label={isSubmitting ? t("board.saving") : props.mode === "edit" ? t("board.save") : t("board.create")}
         onMouseDown={() => void submit(valuesRef.current)}
-        borderColor={focusIndex === saveIndex ? "#38bdf8" : undefined}
-        bgColor={focusIndex === saveIndex ? "#1e3a8a" : undefined}
-        restBg="#1e3a5f"
+        selected={focusIndex === saveIndex}
         width={btnWidth}
         marginRight={1}
       />
       <HoverButton
         label={t("board.cancel")}
         onMouseDown={props.onCancel}
-        borderColor={focusIndex === cancelIndex ? "#38bdf8" : undefined}
-        bgColor={focusIndex === cancelIndex ? "#374151" : undefined}
+        selected={focusIndex === cancelIndex}
         width={btnWidth}
       />
       </box>
@@ -237,19 +234,18 @@ export function CreateView(props: {
 function HoverButton(props: {
   label: string;
   onMouseDown: () => void;
-  borderColor?: string;
-  bgColor?: string;
-  restBg?: string;
+  selected: boolean;
   width: number;
   marginRight?: number;
 }): React.ReactNode {
   const { isHovered, hoverProps } = useHoverState();
-  const bg = props.bgColor ?? (isHovered ? HOVER_BG : props.restBg ?? "#0b0b0b");
+  const bg = props.selected ? "#1e3a8a" : isHovered ? HOVER_BG : undefined;
+  const borderColor = props.selected ? "#38bdf8" : undefined;
   return (
     <box
       border
       onMouseDown={props.onMouseDown}
-      borderColor={props.borderColor}
+      borderColor={borderColor}
       style={{ width: props.width, justifyContent: "center", alignItems: "center", marginRight: props.marginRight, backgroundColor: bg }}
       {...hoverProps}
     >

@@ -5,17 +5,14 @@ export function HelpModal(): React.ReactNode {
   const { width } = useTerminalDimensions();
   const rows: [string, string][] = [
     [t("board.helpKeyMove"), t("board.helpMoveSelection")],
-    [t("board.helpKeyEnter"), t("board.helpToggleDetail")],
+    [t("board.helpKeyEnter"), t("board.helpEdit")],
     [t("board.helpKeyN"), t("board.helpCreate")],
-    [t("board.helpKeyE"), t("board.helpEdit")],
-    [t("board.helpKeyP"), t("board.helpPauseResume")],
-    [t("board.helpKeyX"), t("board.helpForceRun")],
-    [t("board.helpKeyD"), t("board.helpDelete")],
+    ["r", t("board.helpForceRun")],
+    ["←/→", t("board.helpSwitchPanel")],
     [t("board.helpKeySlash"), t("board.helpSearch")],
     [t("board.helpKeyF"), t("board.helpCycleFilter")],
     [t("board.helpKeyS"), t("board.helpCycleSort")],
     [t("board.helpKeyH"), t("board.helpToggleHelp")],
-    [t("board.helpKeyEsc"), t("board.helpBack")],
     [t("board.helpKeyEsc"), t("board.helpQuit")],
   ];
 

@@ -1,6 +1,6 @@
 import type { LoopMeta } from "../../types.js";
 import { t } from "../../i18n/index.js";
-import { commandLine, describeLoop, statusColor, timeAgo } from "../format.js";
+import { commandLine, describeLoop, statusColor, statusLabel, timeAgo } from "../format.js";
 
 export function Inspector(props: { loop: LoopMeta | null }): React.ReactNode {
   const { loop } = props;
@@ -24,7 +24,7 @@ export function Inspector(props: { loop: LoopMeta | null }): React.ReactNode {
       <text><strong>{t("board.fieldInterval")}</strong> {loop.intervalHuman}</text>
       <text>
         <strong>{t("board.fieldStatus")}</strong>{" "}
-        <span fg={statusColor(loop.status)}>{loop.status}</span>
+        <span fg={statusColor(loop.status)}>{statusLabel(loop.status)}</span>
       </text>
       <text><strong>{t("board.fieldRuns")}</strong> {loop.runCount} / {maxRuns}</text>
       <text><strong>{t("board.fieldLastRun")}</strong> {timeAgo(loop.lastRunAt)}</text>
