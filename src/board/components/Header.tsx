@@ -1,4 +1,5 @@
 import { useTerminalDimensions } from "@opentui/react";
+import { HEADER_COMPACT_WIDTH } from "../../config/constants.js";
 import { t } from "../../i18n/index.js";
 import type { DaemonStatus } from "../types.js";
 import { HEADER_COMPACT_WIDTH } from "../../config/constants.js";
