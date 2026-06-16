@@ -2,6 +2,8 @@ import { useMemo, useState } from "react";
 import type { LoopMeta } from "../types.js";
 import {
   applyLoopFilters,
+  cycleSortMode,
+  cycleStatusFilter,
   defaultFilters,
   type Filters,
   type SortMode,
@@ -121,6 +123,8 @@ export function App(props: { onQuit: () => void }): React.ReactNode {
             setFilters((prev) => ({ ...prev, query: q }));
             setSelectedIndex(0);
           }}
+          onStatusCycle={() => setFilters((prev) => ({ ...prev, status: cycleStatusFilter(prev.status) }))}
+          onSortCycle={() => setSort((prev) => cycleSortMode(prev))}
         />
       ) : null}
 
