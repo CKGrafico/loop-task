@@ -1,7 +1,19 @@
+import { useEffect, useRef } from "react";
+import { useTerminalDimensions } from "@opentui/react";
 import type { LoopMeta } from "../../types.js";
 import { t } from "../../i18n/index.js";
 import type { Filters, SortMode } from "../state.js";
 import { describeLoop, statusColor, timingLabel, truncate } from "../format.js";
+import { useHoverState } from "../hooks/useHoverState.js";
+import { HOVER_BG } from "../../config/constants.js";
+import type { Breakpoint } from "../hooks/useBreakpoint.js";
+import type { ScrollBoxRenderable } from "@opentui/core";
+
+function fit(text: string, width: number): string {
+  if (width <= 0) return "";
+  if (text.length <= width) return text.padEnd(width);
+  return truncate(text, width);
+}
 
 export function Navigator(props: {
   visible: LoopMeta[];
@@ -9,45 +21,105 @@ export function Navigator(props: {
   selectedIndex: number;
   filters: Filters;
   sort: SortMode;
+  breakpoint: Breakpoint;
   onSelect: (index: number) => void;
 }): React.ReactNode {
-  const { visible, total, selectedIndex, filters, sort, onSelect } = props;
+  const { visible, total, selectedIndex, filters, sort, breakpoint, onSelect } = props;
+  const { width, height } = useTerminalDimensions();
+  const scrollRef = useRef<ScrollBoxRenderable | null>(null);
+
+  const panelWidth = width * (breakpoint === "narrow" ? 1 : 0.55) - 4;
+  const panelHeight = height - (breakpoint === "narrow" ? 10 : 7);
+
+  const statusW = 8;
+  const exitW = 7;
+  const runsW = 5;
+  const fixedOverhead = 2 + statusW + 1 + 1 + exitW + 1 + runsW;
+  const timingW = Math.max(6, Math.min(12, Math.floor((panelWidth - fixedOverhead) * 0.3)));
+  const descW = Math.max(4, panelWidth - fixedOverhead - timingW);
+
   const header =
     "  " +
-    t("board.headerStatus").padEnd(8) +
+    fit(t("board.headerStatus"), statusW) +
     " " +
-    t("board.headerDescription").padEnd(22) +
+    fit(t("board.headerDescription"), descW) +
     " " +
-    t("board.headerTiming").padEnd(12) +
-    t("board.headerExitRuns");
+    fit(t("board.headerTiming"), timingW) +
+    " " +
+    fit(t("board.headerExitRuns"), exitW + 1 + runsW);
+
+  useEffect(() => {
+    const id = `nav-row-${selectedIndex}`;
+    scrollRef.current?.scrollChildIntoView(id);
+  }, [selectedIndex]);
 
   return (
       <box
         title={t("board.navigatorTitle", { visible: visible.length, total, sort, status: filters.status })}
         border
-        style={{ width: "55%", flexDirection: "column", backgroundColor: "#0b0b0b", overflow: "hidden" }}
+        style={{ width: breakpoint === "narrow" ? "100%" : "65%", flexDirection: "column", backgroundColor: "#0b0b0b", overflow: "hidden" }}
       >
         <text fg="#6b7280">{header}</text>
         {visible.length === 0 ? (
           <text fg="#9ca3af">{t("board.noMatch")}</text>
         ) : (
-          visible.map((loop, index) => {
-            const isSelected = index === selectedIndex;
-            const exit = loop.lastExitCode === null ? "-" : String(loop.lastExitCode);
-            return (
-              <box key={loop.id} onMouseDown={() => onSelect(index)} backgroundColor={isSelected ? "#1e3a8a" : undefined}>
-                <text>
-                  {isSelected ? "›" : " "} <span fg={statusColor(loop.status)}>
-                    {loop.status.padEnd(8)}
-                  </span>{" "}
-                  {truncate(describeLoop(loop), 22).padEnd(22)}{" "}
-                  {timingLabel(loop).padEnd(12)} exit {exit.padEnd(3)} #
-                  {String(loop.runCount).padStart(3)}
-                </text>
-              </box>
-            );
-          })
+          <scrollbox
+            ref={scrollRef}
+            style={{ flexGrow: 1, maxHeight: panelHeight, backgroundColor: "#0b0b0b" }}
+          >
+            {visible.map((loop, index) => {
+              const isSelected = index === selectedIndex;
+              const exit = loop.lastExitCode === null ? "-" : String(loop.lastExitCode);
+              return (
+                <NavigatorRow
+                  key={loop.id}
+                  id={`nav-row-${index}`}
+                  loop={loop}
+                  index={index}
+                  isSelected={isSelected}
+                  exit={exit}
+                  statusW={statusW}
+                  descW={descW}
+                  timingW={timingW}
+                  exitW={exitW}
+                  runsW={runsW}
+                  onSelect={onSelect}
+                />
+              );
+            })}
+          </scrollbox>
         )}
       </box>
+  );
+}
+
+function NavigatorRow(props: {
+  id: string;
+  loop: LoopMeta;
+  index: number;
+  isSelected: boolean;
+  exit: string;
+  statusW: number;
+  descW: number;
+  timingW: number;
+  exitW: number;
+  runsW: number;
+  onSelect: (index: number) => void;
+}): React.ReactNode {
+  const { id, loop, index, isSelected, exit, statusW, descW, timingW, exitW, runsW, onSelect } = props;
+  const { isHovered, hoverProps } = useHoverState();
+  const bg = isSelected ? "#1e3a8a" : isHovered ? HOVER_BG : undefined;
+
+  return (
+    <box id={id} onMouseDown={() => onSelect(index)} backgroundColor={bg} {...hoverProps}>
+      <text>
+        {isSelected ? "›" : " "} <span fg={statusColor(loop.status)}>
+          {fit(loop.status, statusW)}
+        </span>{" "}
+        {fit(truncate(describeLoop(loop), descW), descW)}{" "}
+        {fit(timingLabel(loop), timingW)} {fit("exit", 5)} {fit(exit, exitW)} #
+        {String(loop.runCount).padStart(runsW)}
+      </text>
+    </box>
   );
 }

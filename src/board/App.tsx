@@ -2,6 +2,8 @@ import { useMemo, useState } from "react";
 import type { LoopMeta } from "../types.js";
 import {
   applyLoopFilters,
+  cycleSortMode,
+  cycleStatusFilter,
   defaultFilters,
   type Filters,
   type SortMode,
@@ -22,6 +24,7 @@ import { HelpModal } from "./components/HelpModal.js";
 import { Footer } from "./components/Footer.js";
 import { ConfirmModal } from "./components/ConfirmModal.js";
 import { CreateView, createInitialValues } from "./components/CreateForm.js";
+import { useBreakpoint } from "./hooks/useBreakpoint.js";
 
 export function App(props: { onQuit: () => void }): React.ReactNode {
   const { loops, daemonStatus, refresh } = useLoopPolling();
@@ -35,6 +38,7 @@ export function App(props: { onQuit: () => void }): React.ReactNode {
   const [confirmChoice, setConfirmChoice] = useState(0);
   const [editTarget, setEditTarget] = useState<LoopMeta | null>(null);
   const { toasts, push } = useToasts();
+  const breakpoint = useBreakpoint();
 
   const visible = useMemo(
     () => applyLoopFilters(loops, filters, sort),
@@ -121,6 +125,8 @@ export function App(props: { onQuit: () => void }): React.ReactNode {
             setFilters((prev) => ({ ...prev, query: q }));
             setSelectedIndex(0);
           }}
+          onStatusCycle={() => setFilters((prev) => ({ ...prev, status: cycleStatusFilter(prev.status) }))}
+          onSortCycle={() => setSort(cycleSortMode(sort))}
         />
       ) : null}
 
@@ -147,13 +153,14 @@ export function App(props: { onQuit: () => void }): React.ReactNode {
         ) : view === "detail" && selected ? (
           <DetailView loop={selected} logLines={logLines} />
         ) : (
-          <box style={{ flexDirection: "row", flexGrow: 1, backgroundColor: "#0b0b0b" }}>
+          <box style={{ flexDirection: breakpoint === "narrow" ? "column" : "row", flexGrow: 1, backgroundColor: "#0b0b0b" }}>
             <Navigator
               visible={visible}
               total={loops.length}
               selectedIndex={clampedIndex}
               filters={filters}
               sort={sort}
+              breakpoint={breakpoint}
               onSelect={(index) => {
                 setSelectedIndex(index);
                 setView((v) => (v === "detail" ? "board" : "detail"));

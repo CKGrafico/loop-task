@@ -20,7 +20,7 @@ describe("cli", () => {
 
   it("shows version", async () => {
     const result = await execa(runtime, [cliPath, "--version"]);
-    expect(result.stdout.trim()).toBe("1.1.0");
+    expect(result.stdout.trim()).toBe("1.2.0");
   });
 
   it("fails with invalid duration", async () => {

@@ -1,4 +1,4 @@
-import type { Dispatch, SetStateAction } from "react";
+import { useRef, type Dispatch, type SetStateAction } from "react";
 import { useKeyboard } from "@opentui/react";
 import type { LoopMeta } from "../../types.js";
 import { t } from "../../i18n/index.js";
@@ -53,6 +53,8 @@ export function useBoardKeybindings(params: BoardKeybindingParams): void {
     runAction,
   } = params;
 
+  const lastEscRef = useRef(0);
+
   useKeyboard((key) => {
     const name = key.name;
 
@@ -101,14 +103,18 @@ export function useBoardKeybindings(params: BoardKeybindingParams): void {
       return;
     }
 
-    if (name === "q") {
-      destroyLogSocket();
-      onQuit();
-      return;
-    }
-
     if (name === "escape") {
-      if (view !== "board") setView("board");
+      if (view !== "board") {
+        setView("board");
+      } else {
+        const now = Date.now();
+        if (now - lastEscRef.current < 1000) {
+          destroyLogSocket();
+          onQuit();
+        } else {
+          lastEscRef.current = now;
+        }
+      }
       return;
     }
 

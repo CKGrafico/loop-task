@@ -17,7 +17,7 @@ export function Footer(props: { mode: Mode }): React.ReactNode {
     normal: [
       [t("board.hintKeySlash"), t("board.hintSearch")],
       [t("board.hintKeyH"), t("board.hintHelp")],
-      [t("board.hintKeyQ"), t("board.hintQuit")],
+      [t("board.hintKeyEsc"), t("board.hintQuit")],
     ],
     search: [
       [t("board.hintKeyEnter"), t("board.hintApply")],
@@ -32,7 +32,7 @@ export function Footer(props: { mode: Mode }): React.ReactNode {
     detail: [
       [t("board.hintKeySlash"), t("board.hintSearch")],
       [t("board.hintKeyH"), t("board.hintHelp")],
-      [t("board.hintKeyQ"), t("board.hintQuit")],
+      [t("board.hintKeyEsc"), t("board.hintQuit")],
     ],
     confirm: [
       [t("board.hintKeyArrows"), t("board.hintChoose")],

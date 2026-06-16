@@ -19,3 +19,9 @@ export const DAEMON_POLL_MS = 100;
 export const IPC_TIMEOUT_MS = 10000;
 
 export const LOG_TAIL_DEFAULT = 50;
+
+export const BOARD_BREAKPOINT_WIDTH = 80;
+
+export const HEADER_COMPACT_WIDTH = 60;
+
+export const HOVER_BG = "#1e3a5f";
