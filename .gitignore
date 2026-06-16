@@ -4,6 +4,3 @@ coverage/
 *.tsbuildinfo
 .DS_Store
 Thumbs.db
-bun.lock
-/test-tmp
-/test-tmp2
