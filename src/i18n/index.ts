@@ -1,4 +1,4 @@
-import en from "./en.json";
+import en from "./en.json" with { type: "json" };
 
 export type I18nKey = keyof typeof en;
 

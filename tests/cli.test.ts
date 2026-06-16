@@ -1,8 +1,8 @@
 import { describe, it, expect } from "vitest";
 import { execa } from "execa";
 
-const cliPath = "src/cli.ts";
-const runtime = "bun";
+const cliPath = "dist/entry.js";
+const runtime = "node";
 
 describe("cli", () => {
   it("shows help output", async () => {

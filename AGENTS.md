@@ -2,7 +2,7 @@
 
 ## loop-task
 
-A cross-platform CLI that repeatedly runs a shell command at a human-readable interval. TypeScript/ESM, Bun runtime (>=1.2), OpenTUI + React board interface.
+A cross-platform CLI that repeatedly runs a shell command at a human-readable interval. TypeScript/ESM, Node runtime (>=20) for CLI/daemon, Bun required for OpenTUI board.
 
 ### Quick start
 
@@ -19,16 +19,23 @@ Gate order: `typecheck` → `lint` → `test`.
 
 | Script | Effect |
 |--------|--------|
-| `bun run dev` | Watch mode with auto-reload (`bun --watch src/cli.ts`) |
-| `bun run test` | `vitest run` |
-| `bun run test:watch` | `vitest` (watch mode) |
-| `bun run test:coverage` | Coverage with v8 (90% threshold, excludes `cli.ts`, `types.ts`, `daemon/index.ts`, `tui/**`) |
-| `bun run lint` | `eslint src/ tests/` |
-| `bun run release` | `bun publish` (no build step — ships `src/` directly) |
+| `npm run build` | `tsc -p tsconfig.build.json` + copy `entry.js`/`esm-loader.js` to `dist/` |
+| `npm run dev` | Watch mode with auto-reload (`tsx watch src/cli.ts`) |
+| `npm run start` | Run built CLI (`node dist/entry.js`) |
+| `npm run test` | `vitest run` |
+| `npm run test:watch` | `vitest` (watch mode) |
+| `npm run test:coverage` | Coverage with v8 |
+| `npm run lint` | `eslint src/ tests/` |
+| `npm run release` | `npm publish` (build runs via `prepublishOnly`) |
+
+Use `bun run <script>` as the script runner (e.g. `bun run dev`, `bun run test`).
+Use `npm run <script>` only for publish (`npm run release`).
 
 ### Architecture
 
-- `src/cli.ts` — Commander entry point (Bun shebang, no build step)
+- `src/cli.ts` — Commander entry point (Node shebang, dynamic import for board)
+- `src/entry.js` — Node entry wrapper (registers ESM loader, imports `cli.js`)
+- `src/esm-loader.js` — Custom Node ESM loader (fixes upstream extensionless imports)
 - `src/daemon/` — Background daemon, IPC server, loop manager, state persistence (atomic writes)
 - `src/client/` — IPC client consumed by CLI and board
 - `src/board/` — OpenTUI + React TUI (`index.tsx`, `App.tsx` container + `components/`, `hooks/`)
@@ -39,8 +46,9 @@ Gate order: `typecheck` → `lint` → `test`.
 
 ### Key quirks
 
-- **No build step.** Bun runs `.ts`/`.tsx` directly.
-- `bun link` / `bun run src/cli.ts` for local testing. CLI: `start` (background daemon), `run` (foreground), `board` (TUI, default).
+- **Build step required.** `tsc -p tsconfig.build.json` emits `dist/` for npm distribution. `tsconfig.json` (noEmit) stays for type checking during dev.
+- **Board requires Bun.** OpenTUI uses native FFI only available in Bun. `start` and `run` work under Node; board shows a helpful error under Node.
+- `npm run dev` / `tsx watch src/cli.ts` for local development. CLI: `start` (background daemon), `run` (foreground), `board` (TUI, default — requires Bun).
 - `LOOP_CLI_HOME` env var isolates daemon state directory (used by test suite).
 - Pre-existing test issues:
   - `tests/cli.test.ts`: version assertion (`1.1.0`) out of sync with package (`1.2.0`).
@@ -48,6 +56,7 @@ Gate order: `typecheck` → `lint` → `test`.
 - Daemon single-flight guard: socket binds before `manager.init`; losing racers exit(0) cleanly.
 - All IPC operations driven by the board; CLI only exposes `start` and `run`.
 - RTK prefix required for shell commands (see below).
+- ESM loader (`esm-loader.js`) fixes `react-reconciler/constants` extensionless imports from `@opentui/react`.
 
 ### Agents
 

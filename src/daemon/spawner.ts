@@ -13,7 +13,8 @@ import {
 import { t } from "../i18n/index.js";
 import { DAEMON_POLL_MS, DAEMON_SPAWN_TIMEOUT_MS } from "../config/constants.js";
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 let cachedSignature: string | null = null;
 
@@ -69,8 +70,14 @@ export function ensureDaemon(): void {
     removeDaemonSignature();
   }
 
-  const daemonScript = path.resolve(__dirname, "index.ts");
-  const child = spawn(process.execPath, [daemonScript], {
+  const daemonScript = path.resolve(
+    __dirname,
+    __filename.endsWith(".ts") ? "index.ts" : "index.js"
+  );
+  const args = __filename.endsWith(".ts")
+    ? ["--import", "tsx", daemonScript]
+    : [daemonScript];
+  const child = spawn(process.execPath, args, {
     detached: true,
     stdio: "ignore",
   });

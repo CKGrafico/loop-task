@@ -36,6 +36,10 @@ export function getDaemonLogFile(): string {
   return path.join(getDataDir(), "daemon.log");
 }
 
+export function getBoardLogFile(): string {
+  return path.join(getDataDir(), "board.log");
+}
+
 export function getSocketPath(): string {
   const suffix = crypto
     .createHash("sha1")

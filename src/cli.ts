@@ -1,4 +1,4 @@
-#!/usr/bin/env bun
+#!/usr/bin/env node
 
 import { Command } from "commander";
 import { createRequire } from "node:module";
@@ -6,7 +6,6 @@ import { Logger } from "./logger.js";
 import { runLoop } from "./core/foreground-loop.js";
 import { buildLoopOptions } from "./loop-config.js";
 import { startLoop } from "./client/commands.js";
-import { launchBoard } from "./board/index.js";
 import { t } from "./i18n/index.js";
 
 const require = createRequire(import.meta.url);
@@ -78,6 +77,25 @@ program
   );
 
 program.action(async () => {
+  if (!process.execPath.includes("bun")) {
+    const { spawn } = await import("node:child_process");
+    const child = spawn("bun", [process.argv[1]], {
+      stdio: "inherit",
+      env: { ...process.env },
+      shell: true,
+    });
+    child.on("error", () => {
+      console.error(
+        "The board requires the Bun runtime for OpenTUI native FFI.\n" +
+        "Install Bun: npm install -g bun\n" +
+        "Then run: loop-task"
+      );
+      process.exit(1);
+    });
+    child.on("exit", (code) => process.exit(code ?? 0));
+    return;
+  }
+  const { launchBoard } = await import("./board/index.js");
   await launchBoard();
 });
 

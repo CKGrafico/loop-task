@@ -5,3 +5,6 @@ coverage/
 .DS_Store
 Thumbs.db
 tasks.md
+bun.lock
+/test-tmp
+/test-tmp2

@@ -6,7 +6,7 @@ import { afterEach, describe, expect, it } from "vitest";
 import { execa } from "execa";
 import type { IpcRequest, IpcResponse } from "../src/types.js";
 
-const cliPath = path.resolve("src/cli.ts");
+const cliPath = path.resolve("dist/entry.js");
 const ipcModuleUrl = pathToFileURL(path.resolve("src/client/ipc.ts")).href;
 const tempRoots: string[] = [];
 
@@ -24,7 +24,7 @@ function testEnv(home: string): NodeJS.ProcessEnv {
 }
 
 async function runCli(args: string[], home: string, timeout = 15000) {
-  return execa("bun", [cliPath, ...args], {
+  return execa("node", [cliPath, ...args], {
     env: testEnv(home),
     timeout,
   });
@@ -32,7 +32,7 @@ async function runCli(args: string[], home: string, timeout = 15000) {
 
 async function sendDaemonRequest(home: string, request: IpcRequest): Promise<IpcResponse> {
   const result = await execa(
-    "bun",
+    "node",
     [
       "-e",
       `import { sendRequest } from ${JSON.stringify(ipcModuleUrl)}; const response = await sendRequest(${JSON.stringify(request)}); console.log(JSON.stringify(response));`,
@@ -143,7 +143,7 @@ async function readLogs(home: string, id: string): Promise<string> {
 
 async function attachOnce(home: string, id: string): Promise<string> {
   const result = await execa(
-    "bun",
+    "node",
     [
       "-e",
       `import { streamRequest } from ${JSON.stringify(ipcModuleUrl)}; let done = false; const socket = streamRequest({ type: "attach", payload: { id: ${JSON.stringify(id)} } }, (line) => { if (!done && line.includes("bg-loop-output")) { done = true; console.log(line); socket.destroy(); process.exit(0); } }, () => { if (!done) process.exit(1); }, (error) => { console.error(error.message); process.exit(1); }); setTimeout(() => { if (!done) { socket.destroy(); process.exit(1); } }, 10000);`,

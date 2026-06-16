@@ -1,14 +1,15 @@
 ---
 name: project-guardrails
-description: Project-specific guardrails for loop-task (the loop-cli repo). Covers the Bun/TypeScript toolchain, the required verification gates, daemon/IPC and board conventions, i18n and constants rules, and known test quirks. Load when implementing or reviewing any change in this repository.
+description: Project-specific guardrails for loop-task (the loop-cli repo). Covers the Node/Bun/TypeScript toolchain, the required verification gates, daemon/IPC and board conventions, i18n and constants rules, and known test quirks. Load when implementing or reviewing any change in this repository.
 license: MIT
 ---
 
 ## Toolchain
 
-- Runtime is **Bun (>=1.2)**, NOT Node. There is **no build step** — Bun runs `.ts`/`.tsx` directly.
-- TypeScript **strict mode**, **ESM only**. Use `.js` import specifiers for local TS modules (e.g. `./logger.js`) — `allowImportingTsExtensions` resolution maps them.
-- Never add a bundler, transpile step, or `dist/` output. `bun publish` ships `src/` directly.
+- CLI and daemon run under **Node (>=20)**. The board requires **Bun (>=1.2)** for OpenTUI native FFI.
+- TypeScript **strict mode**, **ESM only**. Use `.js` import specifiers for local TS modules (e.g. `./logger.js`) — `allowImportingTsExtensions` resolution maps them in dev.
+- Build step: `tsc -p tsconfig.build.json` emits `dist/` for npm distribution. `tsconfig.json` (noEmit) stays for type checking during dev.
+- `src/entry.js` registers the ESM loader then imports `cli.js`. `src/esm-loader.js` fixes upstream extensionless imports from `@opentui/react`.
 - Prefix every CLI command with `rtk` (see AGENTS.md). Light read-only commands (`cat`, `ls`, `Get-Content`) are exempt.
 
 ## Verification gates (in order)
@@ -16,12 +17,13 @@ license: MIT
 Always run before claiming done:
 
 ```bash
-bun run typecheck   # tsc --noEmit
-bun run lint        # eslint src/ tests/
-bun run test        # vitest run
+npm run typecheck   # tsc --noEmit
+npm run lint        # eslint src/ tests/
+npm run test        # vitest run
+npm run build       # tsc -p tsconfig.build.json + copy entry.js/esm-loader.js
 ```
 
-Gate order is `typecheck` → `lint` → `test`. The board TUI cannot be verified headless — rely on the gates plus unit tests that assert exact output strings.
+Gate order is `typecheck` → `lint` → `test` → `build`. The board TUI cannot be verified headless — rely on the gates plus unit tests that assert exact output strings.
 
 ## Known test quirks (do NOT "fix" by editing assertions blindly)
 

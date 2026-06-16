@@ -14,8 +14,8 @@ Expert knowledge for testing JavaScript/TypeScript projects using Vitest - a bla
 ### Installation
 
 ```bash
-# Using Bun (recommended)
-bun add -d vitest
+# Using npm
+npm add -d vitest
 
 # Using npm
 npm install -D vitest
@@ -44,29 +44,29 @@ export default defineConfig({
 ## Running Tests
 
 ```bash
-# Run all tests (prefer bun)
-bun test
+# Run all tests
+npm test
 
 # Watch mode (default)
-bun test --watch
+npm test -- --watch
 
 # Run once (CI mode)
-bun test --run
+npm test
 
 # With coverage
-bun test --coverage
+npm run test:coverage
 
 # Specific file
-bun test src/utils/math.test.ts
+npx vitest run src/utils/math.test.ts
 
 # Pattern matching
-bun test --grep="calculates sum"
+npx vitest run --grep="calculates sum"
 
 # UI mode (interactive)
-bun test --ui
+npx vitest --ui
 
 # Verbose output
-bun test --reporter=verbose
+npx vitest run --reporter=verbose
 ```
 
 ## Writing Tests
@@ -191,14 +191,14 @@ it('mocks dates', () => {
 
 ```bash
 # Generate coverage report
-bun test --coverage
+npx vitest run --coverage
 
 # HTML report
-bun test --coverage --coverage.reporter=html
+npx vitest run --coverage --coverage.reporter=html
 open coverage/index.html
 
 # Check against thresholds
-bun test --coverage --coverage.thresholds.lines=90
+npx vitest run --coverage --coverage.thresholds.lines=90
 ```
 
 ## Integration Testing

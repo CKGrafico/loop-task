@@ -21,8 +21,8 @@ transport** (Unix domain socket on POSIX, named pipe on Windows):
   create, inspect, and manage loops, driving the daemon entirely over IPC.
 
 The architecture is deliberately **filesystem-backed and serverless** (no network
-services, no database): all state lives under `~/.loop-cli`. There is **no build
-step** — Bun executes the TypeScript/TSX source directly.
+services, no database): all state lives under `~/.loop-cli`. The build step compiles
+TypeScript to `dist/` for npm distribution; the board requires Bun for OpenTUI native FFI.
 
 Major architectural style: **multi-process, event-driven, message-passing** (JSON
 lines over a socket), with a state-machine core per loop.
@@ -34,7 +34,9 @@ lines over a socket), with a state-machine core per loop.
 ```text
 loop-cli/
 ├── src/
-│   ├── cli.ts                  # Commander entry point (Bun shebang); routes start/run/board
+│   ├── cli.ts                  # Commander entry point (Node shebang); routes start/run/board
+│   ├── entry.js                # Node entry wrapper (registers ESM loader, imports cli.js)
+│   ├── esm-loader.js           # Custom Node ESM loader (fixes upstream extensionless imports)
 │   ├── types.ts                # Shared domain + IPC message types (LoopOptions, LoopMeta, IpcRequest/Response)
 │   ├── duration.ts             # Parse/format human intervals (uses `ms`)
 │   ├── logger.ts               # Foreground logger (verbose/info/error)
@@ -92,7 +94,7 @@ loop-cli/
 ├── openspec/                   # OpenSpec change/spec workflow (specs currently empty)
 ├── .opencode/                  # OpenCode agent configuration (agents, MCP, plugins)
 ├── .agents/                    # Agent skills + source-roots.json
-├── package.json                # Scripts, deps, bin entry (loop-task → src/cli.ts)
+├── package.json                # Scripts, deps, bin entry (loop-task → dist/entry.js)
 ├── tsconfig.json               # Strict ESM, jsxImportSource @opentui/react
 ├── vitest.config.ts            # Coverage config (90% thresholds)
 ├── eslint.config.js            # typescript-eslint recommended
@@ -164,8 +166,8 @@ flowchart TB
   `src/board/hooks/*` (polling, log streaming, keybindings),
   `src/board/daemon.ts` (typed IPC bridge), `src/board/state.ts`,
   `src/board/format.ts`.
-- **Technologies:** OpenTUI (`@opentui/core`, `@opentui/react` 0.4.x), React 19,
-  Bun. JSX renders to terminal renderables (`<box>`, `<text>`, `<scrollbox>`,
+  - **Technologies:** OpenTUI (`@opentui/core`, `@opentui/react` 0.4.x), React 19,
+  Bun (native FFI). JSX renders to terminal renderables (`<box>`, `<text>`, `<scrollbox>`,
   `<input>`, `<select>`).
 - **Inputs:** Keyboard events (`useBoardKeybindings`), mouse `onMouseDown` on
   actionable boxes (Navigator rows, Save/Cancel, Yes/No), daemon poll data.
@@ -181,7 +183,7 @@ flowchart TB
 - **Key files:** `src/daemon/index.ts`, `src/daemon/server.ts` (`IpcServer`),
   `src/daemon/manager.ts` (`LoopManager`), `src/daemon/state.ts`,
   `src/daemon/spawner.ts`.
-- **Technologies:** Node/Bun `net` server, `child_process` (daemon spawn),
+- **Technologies:** Node `net` server, `child_process` (daemon spawn),
   filesystem persistence.
 - **Inputs:** Newline-delimited JSON `IpcRequest` messages
   (`start`, `update`, `list`, `status`, `pause`, `resume`, `trigger`,
@@ -220,7 +222,7 @@ flowchart TB
 
 - **Responsibility:** Argument parsing and the three execution modes.
 - **Key file:** `src/cli.ts` (Commander v13). Entry registered as the `loop-task`
-  bin pointing at `src/cli.ts` (Bun shebang, no compile).
+  bin pointing at `dist/entry.js` (Node shebang, build step compiles TS to JS).
 - **Modes:**
   - `loop-task` (default) → `launchBoard()` (TUI).
   - `loop-task start <interval> -- <cmd>` → `startLoop()` → background daemon.
@@ -337,7 +339,8 @@ Runtime npm dependencies: `@opentui/core`, `@opentui/react`, `commander`,
 
 | Technology | Role | Architectural relevance |
 |------------|------|-------------------------|
-| **Bun ≥ 1.2** | Runtime + package manager + test host | Executes `.ts`/`.tsx` directly — **no build step**; ships `src/` as-is on publish |
+| **Bun ≥ 1.2** | Runtime for board (OpenTUI FFI) | Required only for the board; CLI and daemon run under Node |
+| **Node ≥ 20** | Primary runtime + package manager host | Executes built JS from `dist/`; npm distribution target |
 | **TypeScript (strict, ESM)** | Language | Strict typing of the domain model and IPC contract (`src/types.ts`) as the cross-process source of truth |
 | **OpenTUI (`@opentui/core` + `@opentui/react`) 0.4.x** | Terminal UI engine | Enables a React-based board with flex layout, keyboard + mouse events in the terminal |
 | **React 19** | UI component model | Declarative board components/hooks; `jsxImportSource: @opentui/react` |
@@ -352,14 +355,15 @@ Runtime npm dependencies: `@opentui/core`, `@opentui/react`, `commander`,
 
 ## 8. Deployment & Infrastructure
 
-- **Build artifacts:** None. `package.json` `files: ["src"]` ships TypeScript
-  source; the `loop-task` bin points directly at `src/cli.ts`. There is **no
-  compile/transpile step** (`AGENTS.md`: "No build step").
-- **Distribution:** Published to npm via `bun publish` (`bun run release`;
-  dry-run via `release:dry`). Installed globally (`bun install -g loop-task`) or
-  run ad hoc (`bunx`/`npx loop-task`).
-- **Runtime requirement:** Bun ≥ 1.2 (`engines.bun`). End users run commands via
-  Bun; daemon is spawned with `process.execPath`.
+- **Build artifacts:** `dist/` compiled from `tsc -p tsconfig.build.json`. `package.json`
+  `files: ["dist"]` ships built JS; the `loop-task` bin points at `dist/entry.js`.
+  `entry.js` registers the ESM loader (fixes upstream extensionless imports) then
+  imports `cli.js`.
+- **Distribution:** Published to npm via `npm publish` (`npm run release`;
+  dry-run via `release:dry`). Installed globally (`npm install -g loop-task`) or
+  run ad hoc (`npx loop-task`).
+- **Runtime requirement:** Node ≥ 20 (`engines.node`) for CLI and daemon. Board
+  requires Bun for OpenTUI native FFI. Daemon is spawned with `process.execPath`.
 - **Environment config:** `LOOP_CLI_HOME` overrides the state directory (used by
   the test suite to isolate daemon state).
 - **Containerization:** None — no `Dockerfile` present.
@@ -442,22 +446,23 @@ Runtime npm dependencies: `@opentui/core`, `@opentui/react`, `commander`,
 
 ```bash
 # Install dependencies
-bun install
+npm install
 
 # Quality gates (run in this order)
-bun run typecheck     # tsc --noEmit
-bun run lint          # eslint src/ tests/
-bun run test          # vitest run
+npm run typecheck     # tsc --noEmit
+npm run lint          # eslint src/ tests/
+npm run test          # vitest run
+npm run build         # tsc -p tsconfig.build.json + copy entry.js/esm-loader.js
 
 # Run locally
-bun run dev           # bun --watch src/cli.ts  (auto-reload)
-bun run src/cli.ts    # invoke the CLI directly
-# or: bun link  →  loop-task
+npm run dev           # tsx watch src/cli.ts  (auto-reload)
+node dist/entry.js    # invoke the built CLI
+# or: npm link  →  loop-task
 
 # Coverage / release
-bun run test:coverage # v8 coverage with 90% thresholds
-bun run release:dry   # bun publish --dry-run
-bun run release       # bun publish
+npm run test:coverage # v8 coverage
+npm run release:dry   # npm publish --dry-run
+npm run release       # npm publish
 ```
 
 - Isolate daemon state during manual testing with `LOOP_CLI_HOME=/tmp/loop-test`.
@@ -496,7 +501,7 @@ bun run release       # bun publish
 |----------|----------|----------------------|
 | **Client–daemon over local IPC** | `daemon/server.ts`, `client/ipc.ts`, `types.ts` IPC unions | Loops must outlive the short-lived CLI and be managed from many entrypoints (CLI + board). Tradeoff: added process-lifecycle complexity (spawn, single-flight, restart). |
 | **Filesystem state, no database** | `daemon/state.ts`, `config/paths.ts` | Zero-dependency persistence for a local tool; human-inspectable JSON/logs. Tradeoff: no querying, no schema migrations, manual corruption handling. |
-| **No build step (ship TS source)** | `package.json` `bin`/`files`, `AGENTS.md` | Simplicity and fast iteration on Bun. Tradeoff: hard dependency on Bun ≥ 1.2 at the end user's machine. |
+| **No build step (ship TS source)** | `package.json` `bin`/`files`, `AGENTS.md` | ~~Simplicity and fast iteration on Bun.~~ Now uses `tsc -p tsconfig.build.json` to emit `dist/` for Node/npm distribution. Board still requires Bun for OpenTUI FFI. |
 | **Code-signature daemon restart** | `daemon/state.ts#computeCodeSignature`, `spawner.ts` | Guarantees a freshly edited CLI never talks to a stale daemon during development. Tradeoff: signature is mtime/size/count based, not content-hash — theoretically coarse. |
 | **Socket-bind-before-init single-flight** | `daemon/index.ts:17-24` | Race-free single daemon instance; losers exit cleanly. Tradeoff: relies on OS bind exclusivity semantics. |
 | **OpenTUI + React for the board** | `board/*`, `tsconfig.json` `jsxImportSource` | Familiar component/hook model for a rich terminal UI. Tradeoff: early-stage (0.4.x) dependency; UI largely untested. |
@@ -508,8 +513,8 @@ bun run release       # bun publish
 
 ## 15. Constraints, Risks, and Technical Debt
 
-- **Bun lock-in:** No build artifacts means end users must have Bun ≥ 1.2; the
-  README's `npx loop-task` path still requires Bun-executable source at runtime.
+- **Bun board dependency:** The interactive board requires Bun for OpenTUI native FFI.
+  `start` and `run` work under Node; the board shows a helpful error under Node.
 - **Cross-platform IPC fragility:** Windows named-pipe IPC has documented test
   timeouts; `fs.watch`-based log following has platform-dependent reliability.
 - **Stale/ drifted tests & coverage config:** `cli.test.ts` version assertion is
@@ -525,9 +530,8 @@ bun run release       # bun publish
   breaking persisted `loops/*.json`; corrupted files are silently skipped.
 - **Coarse code signature:** Restart detection keys on mtime/size/count, not
   content hashes.
-- **Repository dist directory:** A `dist/` directory exists in the repo though the
-  package ships `src/` — its purpose is *not evident from the repository* and may
-  be stale.
+- **Repository dist directory:** `dist/` is the build output from `tsc -p tsconfig.build.json`,
+  plus `entry.js` and `esm-loader.js` copied from `src/`. It is gitignored.
 - **TODOs:** No `TODO`/`FIXME` markers were surfaced in the reviewed source files.
 
 ---
@@ -562,13 +566,13 @@ empty (`.gitkeep` only), and `DESIGN.md` is an unpopulated placeholder.
 | **Version** | 1.2.0 |
 | **Primary language** | TypeScript (strict, ESM) + TSX (React) |
 | **Project type** | CLI tool + interactive terminal UI + background daemon |
-| **Runtime** | Bun ≥ 1.2 |
+| **Runtime** | Node ≥ 20 (CLI/daemon); Bun ≥ 1.2 (board) |
 | **UI stack** | OpenTUI (`@opentui/core` / `@opentui/react` 0.4.x) + React 19 |
 | **Persistence** | Local filesystem under `~/.loop-cli` (overridable via `LOOP_CLI_HOME`) |
 | **License** | MIT |
 | **Author / Maintainer** | Quique Fdez Guerra |
 | **Date of review** | 2026-06-15 |
-| **Build step** | None (ships `src/`) |
+| **Build step** | `tsc -p tsconfig.build.json` → `dist/` |
 | **CI/CD** | None present |
 
 ---

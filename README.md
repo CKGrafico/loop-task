@@ -6,39 +6,45 @@ A cross-platform loop runner with a board-first terminal workflow.
 
 ## Requirements
 
-`loop-task` runs on [Bun](https://bun.sh) (>= 1.2). The interactive board is built
-with [OpenTUI](https://github.com/sst/opentui) + React.
+- [Node.js](https://nodejs.org) >= 20 — required for all commands
+- [Bun](https://bun.sh) >= 1.2 — required for the interactive board (`loop-task` with no args)
+
+Install Bun with:
+
+```bash
+npm install -g bun
+```
 
 ## Installation
 
 ```bash
-bun install -g loop-task
+npm install -g loop-task
 ```
 
 Or run it directly:
 
 ```bash
-bunx loop-task
+npx loop-task
 ```
 
 ## Usage
 
 ```bash
-loop-task
-loop-task start [options] <interval> -- <command>
-loop-task run [options] <interval> -- <command>
+loop-task                                    # open the interactive board (requires Bun)
+loop-task start [options] <interval> -- <command>   # background loop
+loop-task run [options] <interval> -- <command>      # foreground loop
 ```
 
 ## Command Model
 
 - `loop-task`
-Opens the interactive board.
+Opens the interactive board. Requires Bun to be installed.
 
 - `loop-task start ...`
-Creates a background loop without opening the board. This is the script-friendly entrypoint.
+Creates a background loop without opening the board. Works with Node only.
 
 - `loop-task run ...`
-Runs a loop in the foreground. Use this when you explicitly want the old single-loop terminal behavior.
+Runs a loop in the foreground. Works with Node only.
 
 All ongoing management actions happen in the board itself.
 
@@ -203,11 +209,35 @@ skipped with an error logged to the loop's output instead of executing.
 
 ## Development
 
+Requires [Bun](https://bun.sh) (>= 1.2) for package management and the board, and [Node.js](https://nodejs.org) (>= 20) for the CLI and daemon.
+
 ```bash
 bun install
-bun run typecheck
-bun run lint
-bun run test
+npm run build
+```
+
+Run the CLI locally:
+
+```bash
+node dist/entry.js start --now 30m -- npm test    # background loop
+node dist/entry.js run --now --max-runs 1 10s -- echo hello  # foreground loop
+```
+
+Run the board locally (auto-delegates to Bun):
+
+```bash
+node dist/entry.js
+# or
+bun run dev       # with auto-reload
+```
+
+Quality gates:
+
+```bash
+npm run typecheck
+npm run lint
+npm run test
+npm run build
 ```
 
 ## License
