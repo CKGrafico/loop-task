@@ -5,7 +5,7 @@ import { cycleSortMode, cycleStatusFilter, type Filters, type SortMode } from ".
 import type { ConfirmState, PanelFocus, View } from "../types.js";
 
 const PANEL_ORDER: PanelFocus[] = ["search", "status", "sort", "new", "loops", "runs", "actions"];
-const ACTION_COUNT = 4;
+const ACTION_COUNT = 5;
 
 function nextPanel(current: PanelFocus, direction: "left" | "right"): PanelFocus {
   const idx = PANEL_ORDER.indexOf(current);
@@ -163,6 +163,11 @@ export function useBoardKeybindings(params: BoardKeybindingParams): void {
       return;
     }
 
+    if (name === "x") {
+      onAction("stop-play");
+      return;
+    }
+
     if (name === "delete") {
       onAction("delete");
       return;
@@ -242,7 +247,7 @@ export function useBoardKeybindings(params: BoardKeybindingParams): void {
           return;
         }
         if (name === "return" || name === "enter") {
-          const actionKeys = ["pause-resume", "run", "edit", "delete"];
+          const actionKeys = ["pause-resume", "stop-play", "run", "edit", "delete"];
           onAction(actionKeys[selectedAction] ?? "edit");
           return;
         }

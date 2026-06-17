@@ -131,6 +131,16 @@ export class IpcServer {
         break;
       }
 
+      case "stop-loop": {
+        this.respondOk(socket, this.manager.stopLoop(request.payload.id), request.payload.id);
+        break;
+      }
+
+      case "play-loop": {
+        this.respondOk(socket, this.manager.playLoop(request.payload.id), request.payload.id);
+        break;
+      }
+
       case "trigger": {
         this.respondOk(socket, this.manager.trigger(request.payload.id), request.payload.id);
         break;
@@ -144,6 +154,11 @@ export class IpcServer {
 
       case "run-log": {
         this.handleRunLog(request, socket);
+        break;
+      }
+
+      case "run-log-stream": {
+        this.handleRunLogStream(request, socket);
         break;
       }
 
@@ -177,6 +192,83 @@ export class IpcServer {
     const runs = splitLogByRuns(content);
     const run = runs.find((r) => r.runNumber === runNumber);
     send(socket, { type: "ok", data: run ? run.lines.join("\n") : "" });
+  }
+
+  private handleRunLogStream(
+    request: Extract<IpcRequest, { type: "run-log-stream" }>,
+    socket: net.Socket
+  ): void {
+    const { id, runNumber } = request.payload;
+    const meta = this.manager.status(id);
+    if (!meta) {
+      send(socket, { type: "error", message: t("errors.loopNotFound", { id }) });
+      return;
+    }
+    const record = meta.runHistory.find((r) => r.runNumber === runNumber);
+    if (!record) {
+      send(socket, { type: "ok", data: "" });
+      return;
+    }
+
+    const logPath = this.manager.getLogPath(id);
+    if (!logPath || !fs.existsSync(logPath)) {
+      send(socket, { type: "ok", data: "" });
+      return;
+    }
+
+    const offset = record.logOffset;
+    const stat = fs.statSync(logPath);
+
+    if (stat.size > offset) {
+      const fd = fs.openSync(logPath, "r");
+      const buf = Buffer.alloc(stat.size - offset);
+      fs.readSync(fd, buf, 0, buf.length, offset);
+      fs.closeSync(fd);
+      for (const line of buf.toString().split("\n")) {
+        if (line) {
+          send(socket, { type: "data", line });
+        }
+      }
+    }
+
+    if (record.status === "completed") {
+      send(socket, { type: "end" });
+      return;
+    }
+
+    let fileSize = stat.size;
+
+    const watcher = fs.watch(logPath, (eventType) => {
+      if (eventType === "rename" && !fs.existsSync(logPath)) {
+        watcher.close();
+        send(socket, { type: "end" });
+        return;
+      }
+
+      if (eventType === "change") {
+        try {
+          const s = fs.statSync(logPath);
+          if (s.size > fileSize) {
+            const fd = fs.openSync(logPath, "r");
+            const buf = Buffer.alloc(s.size - fileSize);
+            fs.readSync(fd, buf, 0, buf.length, fileSize);
+            fs.closeSync(fd);
+            fileSize = s.size;
+            for (const line of buf.toString().split("\n")) {
+              if (line) {
+                send(socket, { type: "data", line });
+              }
+            }
+          }
+        } catch {
+          watcher.close();
+          send(socket, { type: "end" });
+        }
+      }
+    });
+
+    socket.on("close", () => watcher.close());
+    socket.on("error", () => watcher.close());
   }
 
   private handleLogs(

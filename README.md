@@ -76,8 +76,7 @@ loop-task new --now 1h -- npm test
 loop-task run --max-runs 5 5m -- npm test
 
 # Agent workflow — schedule an AI task every 30 minutes
-loop-task new 30m --now -- opencode run "find and fix lint issues"
-
+loop-task new 30m --now -- opencode run "search missing translations and translate them, 3 maximum" --model "opencode/big-pickle"
 # Run in a specific directory
 loop-task new 30m --cwd ./packages/api -- npm test
 
@@ -109,7 +108,7 @@ f           cycle status filter
 s           cycle sort mode
 ←/→         switch between panels
 h           toggle help
-Esc         quit
+esc         quit
 ```
 
 Destructive actions (pause, force run, delete) prompt a confirmation before executing.

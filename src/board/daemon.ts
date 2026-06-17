@@ -28,6 +28,16 @@ export async function resumeLoop(id: string): Promise<void> {
   expectOk((response as { message?: string }).message ?? t("errors.resumeFailed"), response.type);
 }
 
+export async function stopLoop(id: string): Promise<void> {
+  const response = await sendRequest({ type: "stop-loop", payload: { id } });
+  expectOk((response as { message?: string }).message ?? "Stop failed", response.type);
+}
+
+export async function playLoop(id: string): Promise<void> {
+  const response = await sendRequest({ type: "play-loop", payload: { id } });
+  expectOk((response as { message?: string }).message ?? "Play failed", response.type);
+}
+
 export async function triggerLoop(id: string): Promise<void> {
   const response = await sendRequest({ type: "trigger", payload: { id } });
   expectOk((response as { message?: string }).message ?? t("errors.forceRunFailed"), response.type);
@@ -86,4 +96,19 @@ export async function fetchRunLog(id: string, runNumber: number): Promise<string
     throw new Error((response as { message?: string }).message ?? "Failed to fetch run log");
   }
   return (response.data as string) ?? "";
+}
+
+export function streamRunLog(
+  id: string,
+  runNumber: number,
+  onLine: (line: string) => void,
+  onEnd: () => void,
+  onError: (error: Error) => void
+): net.Socket {
+  return streamRequest(
+    { type: "run-log-stream", payload: { id, runNumber } },
+    onLine,
+    onEnd,
+    onError
+  );
 }

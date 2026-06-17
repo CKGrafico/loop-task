@@ -95,9 +95,10 @@ function RunRow(props: {
   const { isHovered, hoverProps } = useHoverState();
   const bg = isSelected ? (focused ? "#1e3a8a" : "#1e2a4a") : isHovered ? HOVER_BG : undefined;
 
-  const success = run.exitCode === 0;
-  const icon = success ? "✓" : "✗";
-  const iconColor = success ? "#4ade80" : "#f87171";
+  const isRunning = run.status === "running";
+  const success = isRunning ? true : run.exitCode === 0;
+  const icon = isRunning ? "⟳" : success ? "✓" : "✗";
+  const iconColor = isRunning ? "#facc15" : success ? "#4ade80" : "#f87171";
 
   return (
     <box
@@ -110,7 +111,7 @@ function RunRow(props: {
         {" "}
         <span fg="#9ca3af">{fit(formatRunTime(run.startedAt), timeW)}</span>{" "}
         <span fg={iconColor}>{icon}</span>{" "}
-        {fit(formatRunDuration(run.duration), durW)}{" "}
+        {fit(isRunning ? "…" : formatRunDuration(run.duration), durW)}{" "}
         {fit(formatFileSize(run.logSize), sizeW)}
       </text>
     </box>

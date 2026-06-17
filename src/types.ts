@@ -22,7 +22,9 @@ export interface LoopState {
   shuttingDown: boolean;
 }
 
-export type LoopStatus = "running" | "paused" | "stopped" | "waiting";
+export type LoopStatus = "running" | "paused" | "idle" | "stopped" | "waiting";
+
+export type RunStatus = "running" | "completed";
 
 export interface RunRecord {
   runNumber: number;
@@ -30,6 +32,8 @@ export interface RunRecord {
   exitCode: number;
   duration: number;
   logSize: number;
+  status: RunStatus;
+  logOffset: number;
 }
 
 export interface LoopMeta {
@@ -62,11 +66,14 @@ export type IpcRequest =
   | { type: "status"; payload: { id: string } }
   | { type: "pause"; payload: { id: string } }
   | { type: "resume"; payload: { id: string } }
+  | { type: "stop-loop"; payload: { id: string } }
+  | { type: "play-loop"; payload: { id: string } }
   | { type: "trigger"; payload: { id: string } }
   | { type: "delete"; payload: { id: string } }
   | { type: "attach"; payload: { id: string } }
   | { type: "logs"; payload: { id: string; follow: boolean; tail?: number } }
   | { type: "run-log"; payload: { id: string; runNumber: number } }
+  | { type: "run-log-stream"; payload: { id: string; runNumber: number } }
   | { type: "shutdown" };
 
 export type IpcResponse =

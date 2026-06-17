@@ -5,6 +5,7 @@ export type StatusFilter =
   | "running"
   | "waiting"
   | "paused"
+  | "idle"
   | "stopped";
 
 export type IntervalFilter = "all" | "short" | "medium" | "long";
@@ -31,7 +32,8 @@ const statusOrder: Record<LoopMeta["status"], number> = {
   running: 0,
   waiting: 1,
   paused: 2,
-  stopped: 3,
+  idle: 3,
+  stopped: 4,
 };
 
 function intervalBucketOf(interval: number): IntervalFilter {
@@ -136,6 +138,8 @@ export function cycleStatusFilter(status: StatusFilter): StatusFilter {
     case "waiting":
       return "paused";
     case "paused":
+      return "idle";
+    case "idle":
       return "stopped";
     default:
       return "all";

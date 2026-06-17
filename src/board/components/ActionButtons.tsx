@@ -20,10 +20,13 @@ export function ActionButtons(props: {
   }
 
   const isPaused = loop.status === "paused";
+  const isIdle = loop.status === "idle";
   const pauseResumeLabel = isPaused ? t("board.actionResume") : t("board.actionPause");
+  const stopPlayLabel = isIdle ? t("board.actionPlay") : t("board.actionStop");
 
   const actions = [
     { key: "pause-resume", label: pauseResumeLabel },
+    { key: "stop-play", label: stopPlayLabel },
     { key: "run", label: t("board.actionRun") },
     { key: "edit", label: t("board.actionEdit") },
     { key: "delete", label: t("board.actionDelete") },

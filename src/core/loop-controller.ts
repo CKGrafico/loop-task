@@ -23,6 +23,7 @@ export class LoopController extends EventEmitter {
   private runAbortController: AbortController | null = null;
   private _paused = false;
   private _forceRun = false;
+  private _resetSchedule = false;
   private interruptedForForceRun = false;
   private _status: LoopStatus = "running";
   private resumeResolve: (() => void) | null = null;
@@ -60,8 +61,10 @@ export class LoopController extends EventEmitter {
     this.nextRunAt = state?.nextRunAt ?? null;
     this.remainingDelayMs = state?.remainingDelayMs ?? null;
     this._status = state?.status ?? "running";
-    this._paused = state?.status === "paused";
-    this.runHistory = state?.runHistory ?? [];
+    this._paused = state?.status === "paused" || state?.status === "idle";
+    this.runHistory = (state?.runHistory ?? []).map((r) =>
+      r.status === "running" ? { ...r, status: "completed" as const } : r
+    ).map((r) => ({ ...r, logOffset: r.logOffset ?? 0 }));
   }
 
   get status(): LoopStatus {
@@ -84,8 +87,21 @@ export class LoopController extends EventEmitter {
     }
   }
 
+  stopLoop(interruptCurrentRun = false): void {
+    if (this._status === "running" || this._status === "waiting" || this._status === "paused") {
+      this._paused = true;
+      this._status = "idle";
+      this.remainingDelayMs = null;
+      this.nextRunAt = null;
+      if (interruptCurrentRun) {
+        this.runAbortController?.abort();
+      }
+      this.emit("stopped");
+    }
+  }
+
   resume(): void {
-    if (this._paused && this.resumeResolve) {
+    if (this._status === "paused" && this._paused && this.resumeResolve) {
       this._paused = false;
       if (this.remainingDelayMs !== null) {
         this._status = "waiting";
@@ -95,6 +111,17 @@ export class LoopController extends EventEmitter {
       this.resumeResolve = null;
       this.emit("resumed");
     }
+  }
+
+  playLoop(): void {
+    if (this._status !== "idle") return;
+    this._resetSchedule = true;
+    if (this._paused && this.resumeResolve) {
+      this._paused = false;
+      this.resumeResolve();
+      this.resumeResolve = null;
+    }
+    this.emit("resumed");
   }
 
   triggerNow(interruptCurrentRun = false): boolean {
@@ -141,7 +168,8 @@ export class LoopController extends EventEmitter {
   }
 
   private async waitForResume(): Promise<void> {
-    this._status = "paused";
+    const savedStatus = this._status;
+    this._status = savedStatus === "idle" ? "idle" : "paused";
     return new Promise<void>((resolve) => {
       this.resumeResolve = resolve;
     });
@@ -159,14 +187,28 @@ export class LoopController extends EventEmitter {
         return true;
       }
 
+      if (this._resetSchedule) {
+        this._resetSchedule = false;
+        remaining = ms;
+        this.remainingDelayMs = remaining;
+        announced = false;
+      }
+
       if (this._paused) {
-        this._status = "paused";
+        if (this._status !== "idle") {
+          this._status = "paused";
+        }
         this.emit("paused");
         await this.waitForResume();
         announced = false;
         if (signal.aborted) {
           this.remainingDelayMs = null;
           return false;
+        }
+        if (this._resetSchedule) {
+          this._resetSchedule = false;
+          remaining = ms;
+          this.remainingDelayMs = remaining;
         }
       }
 
@@ -245,6 +287,16 @@ export class LoopController extends EventEmitter {
 
         this.currentRunStartOffset = fs.existsSync(this.logPath) ? fs.statSync(this.logPath).size : 0;
 
+        this.runHistory.push({
+          runNumber: this.runCount,
+          startedAt: this.lastRunAt,
+          exitCode: -1,
+          duration: 0,
+          logSize: 0,
+          status: "running",
+          logOffset: this.currentRunStartOffset,
+        });
+
         this.runAbortController = new AbortController();
         const result = await executeCommand(
           this.options.command,
@@ -261,13 +313,23 @@ export class LoopController extends EventEmitter {
 
         if (!this.interruptedForForceRun) {
           const logSize = fs.existsSync(this.logPath) ? fs.statSync(this.logPath).size - this.currentRunStartOffset : 0;
-          this.runHistory.push({
-            runNumber: this.runCount,
-            startedAt: this.lastRunAt,
-            exitCode: result.exitCode,
-            duration: result.duration,
-            logSize: Math.max(0, logSize),
-          });
+          const runningRecord = this.runHistory.find((r) => r.runNumber === this.runCount);
+          if (runningRecord) {
+            runningRecord.exitCode = result.exitCode;
+            runningRecord.duration = result.duration;
+            runningRecord.logSize = Math.max(0, logSize);
+            runningRecord.status = "completed";
+          } else {
+            this.runHistory.push({
+              runNumber: this.runCount,
+              startedAt: this.lastRunAt,
+              exitCode: result.exitCode,
+              duration: result.duration,
+              logSize: Math.max(0, logSize),
+              status: "completed",
+              logOffset: this.currentRunStartOffset,
+            });
+          }
           if (this.runHistory.length > 50) {
             this.runHistory = this.runHistory.slice(-50);
           }

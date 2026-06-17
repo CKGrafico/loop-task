@@ -93,7 +93,7 @@ export class LoopManager {
     entry.intervalHuman = intervalHuman;
     if (entry.controller.status === "running") {
       entry.controller.pause(true);
-    } else if (executionChanged && entry.controller.status !== "paused") {
+    } else if (executionChanged && entry.controller.status !== "paused" && entry.controller.status !== "idle") {
       entry.controller.pause();
     }
     this.persist(id, entry.controller, entry.options, entry.intervalHuman);
@@ -126,6 +126,22 @@ export class LoopManager {
     const entry = this.loops.get(id);
     if (!entry) return false;
     entry.controller.resume();
+    this.persist(id, entry.controller, entry.options, entry.intervalHuman);
+    return true;
+  }
+
+  stopLoop(id: string): boolean {
+    const entry = this.loops.get(id);
+    if (!entry) return false;
+    entry.controller.stopLoop();
+    this.persist(id, entry.controller, entry.options, entry.intervalHuman);
+    return true;
+  }
+
+  playLoop(id: string): boolean {
+    const entry = this.loops.get(id);
+    if (!entry) return false;
+    entry.controller.playLoop();
     this.persist(id, entry.controller, entry.options, entry.intervalHuman);
     return true;
   }

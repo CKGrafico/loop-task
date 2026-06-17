@@ -1,20 +1,54 @@
+import { useEffect, useRef, useState } from "react";
+import type net from "node:net";
 import { useTerminalDimensions } from "@opentui/react";
 import type { RunRecord } from "../../types.js";
 import { t } from "../../i18n/index.js";
 import { formatRunDuration, formatRunTime } from "../format.js";
+import { streamRunLog } from "../daemon.js";
+import { LOG_LINES_MAX } from "../../config/constants.js";
 
 export function LogModal(props: {
+  loopId: string | null;
   run: RunRecord;
   logLines: string[];
   loading: boolean;
   onClose: () => void;
 }): React.ReactNode {
-  const { run, logLines, loading } = props;
+  const { loopId, run, logLines: staticLines, loading } = props;
   const { width, height } = useTerminalDimensions();
+  const isRunning = run.status === "running";
 
-  const success = run.exitCode === 0;
-  const icon = success ? "✓" : "✗";
-  const iconColor = success ? "#4ade80" : "#f87171";
+  const [streamLines, setStreamLines] = useState<string[]>([]);
+  const socketRef = useRef<net.Socket | null>(null);
+
+  useEffect(() => {
+    if (!isRunning || !loopId) return;
+    setStreamLines([t("board.logWaiting")]);
+    const socket = streamRunLog(
+      loopId,
+      run.runNumber,
+      (line) =>
+        setStreamLines((prev) => {
+          const next = prev[0] === t("board.logWaiting") ? [] : prev;
+          return [...next, line].slice(-LOG_LINES_MAX);
+        }),
+      () => {},
+      () => {}
+    );
+    socketRef.current = socket;
+    return () => {
+      socket.destroy();
+      if (socketRef.current === socket) {
+        socketRef.current = null;
+      }
+    };
+  }, [isRunning, loopId, run.runNumber]);
+
+  const logLines = isRunning ? streamLines : staticLines;
+
+  const success = isRunning ? true : run.exitCode === 0;
+  const icon = isRunning ? "⟳" : success ? "✓" : "✗";
+  const iconColor = isRunning ? "#facc15" : success ? "#4ade80" : "#f87171";
 
   return (
     <box
@@ -41,7 +75,7 @@ export function LogModal(props: {
         }}
       >
         <scrollbox style={{ flexGrow: 1, backgroundColor: "#0b0b0b" }}>
-          {loading ? (
+          {loading && !isRunning ? (
             <text fg="#9ca3af">{t("board.logModalLoading")}</text>
           ) : logLines.length === 0 ? (
             <text fg="#9ca3af">{t("board.logModalEmpty")}</text>
@@ -52,8 +86,14 @@ export function LogModal(props: {
         <box style={{ flexDirection: "row", justifyContent: "space-between", backgroundColor: "#111827" }}>
           <text>
             <span fg={iconColor}>{icon}</span>{" "}
-            <span fg="#9ca3af">{formatRunDuration(run.duration)}</span>{" "}
-            <span fg={success ? "#4ade80" : "#f87171"}>exit {run.exitCode}</span>
+            {isRunning ? (
+              <span fg="#facc15">{t("board.logModalRunning")}</span>
+            ) : (
+              <>
+                <span fg="#9ca3af">{formatRunDuration(run.duration)}</span>{" "}
+                <span fg={success ? "#4ade80" : "#f87171"}>exit {run.exitCode}</span>
+              </>
+            )}
           </text>
           <text fg="#6b7280">{t("board.logModalEscClose")}</text>
         </box>

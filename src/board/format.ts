@@ -54,6 +54,8 @@ export function statusColor(status: LoopMeta["status"]): string {
       return "#4ade80";
     case "paused":
       return "#facc15";
+    case "idle":
+      return "#fb923c";
     case "waiting":
       return "#38bdf8";
     case "stopped":
@@ -65,6 +67,7 @@ export function statusColor(status: LoopMeta["status"]): string {
 
 export function timingLabel(loop: LoopMeta): string {
   if (loop.status === "paused") return t("format.timingPaused");
+  if (loop.status === "idle") return t("format.timingIdle");
   if (loop.nextRunAt) return t("format.timingNext", { timeAgo: timeUntil(loop.nextRunAt) });
   if (loop.lastRunAt) return t("format.timingLast", { timeAgo: timeAgo(loop.lastRunAt) });
   return t("format.timingNew");

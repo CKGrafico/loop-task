@@ -25,7 +25,7 @@ import { Footer } from "./components/Footer.js";
 import { ConfirmModal } from "./components/ConfirmModal.js";
 import { CreateView, createInitialValues } from "./components/CreateForm.js";
 import { LogModal } from "./components/LogModal.js";
-import { fetchRunLog, deleteLoop, pauseLoop, resumeLoop, triggerLoop } from "./daemon.js";
+import { fetchRunLog, deleteLoop, pauseLoop, resumeLoop, stopLoop, playLoop, triggerLoop } from "./daemon.js";
 import { useBreakpoint } from "./hooks/useBreakpoint.js";
 
 const BOARD_REFRESH_DELAY_MS = 150;
@@ -91,6 +91,11 @@ export function App(props: { onQuit: () => void }): React.ReactNode {
   function handleOpenRunLog(run: RunRecord): void {
     if (!selectedId) return;
     setLogModalRun(run);
+    if (run.status === "running") {
+      setLogModalLoading(false);
+      setLogModalLines([]);
+      return;
+    }
     setLogModalLoading(true);
     setLogModalLines([]);
     fetchRunLog(selectedId, run.runNumber)
@@ -118,6 +123,24 @@ export function App(props: { onQuit: () => void }): React.ReactNode {
           message: t("board.confirmPauseResume", { action: actionLabel, id: selectedId }),
           action: runAction(t("board.toastActionId", { verb: actionVerb, id: selectedId }), actionFn),
         });
+        break;
+      }
+      case "stop-play": {
+        if (selected.status === "idle") {
+          const actionFn = () => playLoop(selectedId);
+          setConfirmChoice(0);
+          setConfirm({
+            message: t("board.confirmPlay", { id: selectedId }),
+            action: runAction(t("board.toastPlayed", { id: selectedId }), actionFn),
+          });
+        } else {
+          const actionFn = () => stopLoop(selectedId);
+          setConfirmChoice(0);
+          setConfirm({
+            message: t("board.confirmStop", { id: selectedId }),
+            action: runAction(t("board.toastStopped", { id: selectedId }), actionFn),
+          });
+        }
         break;
       }
       case "run": {
@@ -181,6 +204,7 @@ export function App(props: { onQuit: () => void }): React.ReactNode {
     running: loops.filter((l) => l.status === "running").length,
     waiting: loops.filter((l) => l.status === "waiting").length,
     paused: loops.filter((l) => l.status === "paused").length,
+    idle: loops.filter((l) => l.status === "idle").length,
   };
 
   const mode: Mode = confirm
@@ -306,6 +330,7 @@ export function App(props: { onQuit: () => void }): React.ReactNode {
 
       {logModalRun ? (
         <LogModal
+          loopId={selectedId}
           run={logModalRun}
           logLines={logModalLines}
           loading={logModalLoading}
