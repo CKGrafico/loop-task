@@ -24,6 +24,10 @@ export async function runLoop(
   process.on("SIGINT", onSignal);
   process.on("SIGTERM", onSignal);
 
+  const command = options.command;
+  const commandArgs = options.commandArgs;
+  const cwd = options.cwd;
+
   try {
     let isFirstRun = true;
 
@@ -60,7 +64,7 @@ export async function runLoop(
         })
       );
 
-      const result = await executeCommandForeground(options.command, options.commandArgs, logger, options.cwd);
+      const result = await executeCommandForeground(command, commandArgs, logger, cwd);
       state.running = false;
 
       if (result.exitCode !== 0) {

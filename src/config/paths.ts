@@ -12,12 +12,20 @@ export function getLoopsDir(): string {
   return path.join(getDataDir(), "loops");
 }
 
+export function getTasksDir(): string {
+  return path.join(getDataDir(), "tasks");
+}
+
 export function getLogsDir(): string {
   return path.join(getDataDir(), "logs");
 }
 
 export function loopFile(id: string): string {
   return path.join(getLoopsDir(), `${id}.json`);
+}
+
+export function taskFile(id: string): string {
+  return path.join(getTasksDir(), `${id}.json`);
 }
 
 export function logFile(id: string): string {

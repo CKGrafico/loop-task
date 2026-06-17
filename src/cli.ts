@@ -42,8 +42,10 @@ program
       cmdArgs: string[],
       opts: { now: boolean; maxRuns?: number; verbose: boolean; cwd?: string }
     ) => {
-      const built = buildLoopOptions(intervalStr, cmdArgs[0], cmdArgs.slice(1), {
+      const built = buildLoopOptions(intervalStr, {
         ...opts,
+        command: cmdArgs[0],
+        commandArgs: cmdArgs.slice(1),
         cwd: opts.cwd ?? process.cwd(),
       });
       await startLoop(built.options, built.intervalHuman);
@@ -71,8 +73,10 @@ program
       }
 
       const logger = new Logger(opts.verbose ?? false);
-      const built = buildLoopOptions(intervalStr, cmdArgs[0], cmdArgs.slice(1), {
+      const built = buildLoopOptions(intervalStr, {
         ...opts,
+        command: cmdArgs[0],
+        commandArgs: cmdArgs.slice(1),
         cwd: opts.cwd ?? process.cwd(),
       });
 

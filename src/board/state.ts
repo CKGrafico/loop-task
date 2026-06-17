@@ -125,23 +125,26 @@ export function applyLoopFilters(
     .sort((left, right) => compare(left, right, sort));
 }
 
+const SORT_CYCLE: Record<SortMode, SortMode> = {
+  description: "status",
+  status: "recent",
+  recent: "created",
+  created: "description",
+};
+
 export function cycleSortMode(mode: SortMode): SortMode {
-  return mode === "description" ? "status" : mode === "status" ? "recent" : mode === "recent" ? "created" : "description";
+  return SORT_CYCLE[mode];
 }
 
+const STATUS_CYCLE: Record<StatusFilter, StatusFilter> = {
+  all: "running",
+  running: "waiting",
+  waiting: "paused",
+  paused: "idle",
+  idle: "stopped",
+  stopped: "all",
+};
+
 export function cycleStatusFilter(status: StatusFilter): StatusFilter {
-  switch (status) {
-    case "all":
-      return "running";
-    case "running":
-      return "waiting";
-    case "waiting":
-      return "paused";
-    case "paused":
-      return "idle";
-    case "idle":
-      return "stopped";
-    default:
-      return "all";
-  }
+  return STATUS_CYCLE[status];
 }

@@ -7,6 +7,7 @@ export function HelpModal(): React.ReactNode {
     [t("board.helpKeyMove"), t("board.helpMoveSelection")],
     [t("board.helpKeyEnter"), t("board.helpEdit")],
     [t("board.helpKeyN"), t("board.helpCreate")],
+    ["t", t("board.helpCreateTask")],
     ["p", t("board.helpPauseResume")],
     ["x", t("board.helpStopPlay")],
     ["r", t("board.helpForceRun")],

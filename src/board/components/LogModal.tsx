@@ -49,6 +49,7 @@ export function LogModal(props: {
   const success = isRunning ? true : run.exitCode === 0;
   const icon = isRunning ? "⟳" : success ? "✓" : "✗";
   const iconColor = isRunning ? "#facc15" : success ? "#4ade80" : "#f87171";
+  const chainLabel = run.chainName ? ` → ${run.chainName}` : "";
 
   return (
     <box
@@ -64,7 +65,7 @@ export function LogModal(props: {
       }}
     >
       <box
-        title={t("board.logModalTitle", { icon, time: formatRunTime(run.startedAt) })}
+        title={`${t("board.logModalTitle", { icon, time: formatRunTime(run.startedAt) })}${chainLabel}`}
         border
         style={{
           flexDirection: "column",

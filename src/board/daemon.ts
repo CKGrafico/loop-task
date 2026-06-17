@@ -1,5 +1,5 @@
 import type net from "node:net";
-import type { LoopMeta, LoopOptions } from "../types.js";
+import type { LoopMeta, LoopOptions, TaskDefinition } from "../types.js";
 import { sendRequest, streamRequest } from "../client/ipc.js";
 import { t } from "../i18n/index.js";
 import { LOG_TAIL_DEFAULT } from "../config/constants.js";
@@ -111,4 +111,33 @@ export function streamRunLog(
     onEnd,
     onError
   );
+}
+
+export async function listTasks(): Promise<TaskDefinition[]> {
+  const response = await sendRequest({ type: "task-list" });
+  if (response.type !== "ok") {
+    throw new Error((response as { message: string }).message);
+  }
+  return response.data as TaskDefinition[];
+}
+
+export async function createTask(payload: Omit<TaskDefinition, "createdAt">): Promise<TaskDefinition> {
+  const response = await sendRequest({ type: "task-create", payload });
+  if (response.type !== "ok") {
+    throw new Error((response as { message: string }).message);
+  }
+  return response.data as TaskDefinition;
+}
+
+export async function updateTask(id: string, payload: Omit<TaskDefinition, "id" | "createdAt">): Promise<TaskDefinition> {
+  const response = await sendRequest({ type: "task-update", payload: { id, ...payload } });
+  if (response.type !== "ok") {
+    throw new Error((response as { message: string }).message);
+  }
+  return response.data as TaskDefinition;
+}
+
+export async function deleteTask(id: string): Promise<void> {
+  const response = await sendRequest({ type: "task-delete", payload: { id } });
+  expectOk((response as { message?: string }).message ?? "Task delete failed", response.type);
 }

@@ -2,6 +2,7 @@ import net from "node:net";
 import fs from "node:fs";
 import type { IpcRequest } from "../types.js";
 import { LoopManager } from "./manager.js";
+import { TaskManager } from "./task-manager.js";
 import { getSocketPath, removeSocketFile } from "./state.js";
 import { t } from "../i18n/index.js";
 import { LOG_TAIL_DEFAULT } from "../config/constants.js";
@@ -13,11 +14,13 @@ import { splitLogByRuns } from "../core/log-parser.js";
 export class IpcServer {
   private server: net.Server;
   private manager: LoopManager;
+  private taskManager: TaskManager;
   private socketPath: string;
   private clients = new Set<net.Socket>();
 
-  constructor(manager: LoopManager) {
+  constructor(manager: LoopManager, taskManager: TaskManager) {
     this.manager = manager;
+    this.taskManager = taskManager;
     this.socketPath = getSocketPath();
     this.server = net.createServer((socket) => this.handleConnection(socket));
   }
@@ -165,6 +168,35 @@ export class IpcServer {
       case "attach":
       case "logs": {
         this.handleLogs(request, socket);
+        break;
+      }
+
+      case "task-create": {
+        const task = this.taskManager.create(request.payload);
+        send(socket, { type: "ok", data: task });
+        break;
+      }
+
+      case "task-update": {
+        const updated = this.taskManager.update(request.payload.id, request.payload);
+        this.respondOk(socket, updated !== null, request.payload.id, updated ?? undefined);
+        break;
+      }
+
+      case "task-list": {
+        send(socket, { type: "ok", data: this.taskManager.list() });
+        break;
+      }
+
+      case "task-get": {
+        const task = this.taskManager.get(request.payload.id);
+        this.respondOk(socket, task !== null, request.payload.id, task ?? undefined);
+        break;
+      }
+
+      case "task-delete": {
+        const ok = this.taskManager.delete(request.payload.id);
+        this.respondOk(socket, ok, request.payload.id);
         break;
       }
 

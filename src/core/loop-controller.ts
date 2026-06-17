@@ -1,10 +1,13 @@
 import { EventEmitter } from "node:events";
 import fs from "node:fs";
-import type { LoopOptions, LoopStatus, LoopMeta, RunRecord } from "../types.js";
+import crypto from "node:crypto";
+import type { LoopOptions, LoopStatus, LoopMeta, RunRecord, TaskDefinition } from "../types.js";
 import { sleep } from "../shared/sleep.js";
 import { SLEEP_CHUNK_MS } from "../config/constants.js";
 import { executeCommand } from "./command-runner.js";
 import { rotateLogIfNeeded } from "./log-rotator.js";
+
+export type TaskResolver = (taskId: string) => TaskDefinition | null;
 
 interface LoopControllerState {
   status?: LoopStatus;
@@ -36,6 +39,7 @@ export class LoopController extends EventEmitter {
   private readonly id: string;
   private readonly options: LoopOptions;
   private readonly logPath: string;
+  private readonly taskResolver: TaskResolver;
   private remainingDelayMs: number | null = null;
   private logStream: fs.WriteStream | null = null;
   private loopPromise: Promise<void> | null = null;
@@ -46,12 +50,14 @@ export class LoopController extends EventEmitter {
     id: string,
     options: LoopOptions,
     logPath: string,
+    taskResolver: TaskResolver,
     state?: LoopControllerState
   ) {
     super();
     this.id = id;
     this.options = options;
     this.logPath = logPath;
+    this.taskResolver = taskResolver;
     this.abortController = new AbortController();
     this.createdAt = state?.createdAt ?? new Date().toISOString();
     this.runCount = state?.runCount ?? 0;
@@ -155,6 +161,7 @@ export class LoopController extends EventEmitter {
   getMeta(): Omit<LoopMeta, "command" | "commandArgs" | "interval" | "intervalHuman" | "immediate" | "maxRuns" | "verbose" | "cwd" | "description" | "pid"> {
     return {
       id: this.id,
+      taskId: this.options.taskId,
       status: this._status,
       createdAt: this.createdAt,
       runCount: this.runCount,
@@ -298,10 +305,14 @@ export class LoopController extends EventEmitter {
         });
 
         this.runAbortController = new AbortController();
+        const task = this.options.taskId ? this.taskResolver(this.options.taskId) : null;
+        const command = task?.command ?? this.options.command;
+        const commandArgs = task?.commandArgs ?? this.options.commandArgs;
+        const cwd = task?.cwd ?? this.options.cwd;
         const result = await executeCommand(
-          this.options.command,
-          this.options.commandArgs,
-          this.options.cwd,
+          command,
+          commandArgs,
+          cwd,
           this.logStream!,
           AbortSignal.any([signal, this.runAbortController.signal]),
           this.runCount
@@ -330,6 +341,52 @@ export class LoopController extends EventEmitter {
               logOffset: this.currentRunStartOffset,
             });
           }
+
+          const chainTargetId = result.exitCode === 0 ? task?.onSuccessTaskId : task?.onFailureTaskId;
+          if (chainTargetId) {
+            const chainTask = this.taskResolver(chainTargetId);
+            if (chainTask) {
+              const chainGroupId = crypto.randomUUID().slice(0, 8);
+              const mainRecord = this.runHistory[this.runHistory.length - 1];
+              if (mainRecord) mainRecord.chainGroupId = chainGroupId;
+
+              const chainStartedAt = new Date().toISOString();
+              const chainOffset = fs.existsSync(this.logPath) ? fs.statSync(this.logPath).size : 0;
+              this.runHistory.push({
+                runNumber: this.runCount,
+                startedAt: chainStartedAt,
+                exitCode: -1,
+                duration: 0,
+                logSize: 0,
+                status: "running",
+                logOffset: chainOffset,
+                chainGroupId,
+                chainName: chainTask.name,
+              });
+
+              const chainResult = await executeCommand(
+                chainTask.command,
+                chainTask.commandArgs,
+                chainTask.cwd,
+                this.logStream!,
+                signal,
+                this.runCount
+              );
+
+              const chainLogSize = fs.existsSync(this.logPath) ? fs.statSync(this.logPath).size - chainOffset : 0;
+              const chainRecord = this.runHistory.find((r) => r.chainGroupId === chainGroupId && r.status === "running");
+              if (chainRecord) {
+                chainRecord.exitCode = chainResult.exitCode;
+                chainRecord.duration = chainResult.duration;
+                chainRecord.logSize = Math.max(0, chainLogSize);
+                chainRecord.status = "completed";
+              }
+
+              this.lastExitCode = chainResult.exitCode;
+              this.lastDuration = (this.lastDuration ?? 0) + chainResult.duration;
+            }
+          }
+
           if (this.runHistory.length > 50) {
             this.runHistory = this.runHistory.slice(-50);
           }

@@ -8,12 +8,12 @@ export function FilterBar(props: {
   sort: SortMode;
   searchActive: boolean;
   focusedPanel: string;
-  onSearch: (query: string) => void;
   onStatusCycle: () => void;
   onSortCycle: () => void;
+  onViewTasks: () => void;
   onNewLoop: () => void;
 }): React.ReactNode {
-  const { filters, sort, searchActive, focusedPanel, onSearch, onStatusCycle, onSortCycle, onNewLoop } = props;
+  const { filters, sort, searchActive, focusedPanel, onStatusCycle, onSortCycle, onViewTasks, onNewLoop } = props;
 
   const statusDisplay = filters.status === "waiting" ? "waiting" : filters.status;
 
@@ -23,14 +23,10 @@ export function FilterBar(props: {
         title={t("board.searchTitle")}
         border
         borderColor={focusedPanel === "search" ? "#38bdf8" : undefined}
-        style={{ flexGrow: 2, height: 3, marginRight: 1, paddingLeft: 1, backgroundColor: focusedPanel === "search" ? "#1e2a4a" : "#0b0b0b" }}
+        style={{ flexGrow: 1, height: 3, marginRight: 1, paddingLeft: 1, backgroundColor: focusedPanel === "search" ? "#1e2a4a" : "#0b0b0b" }}
       >
         {searchActive ? (
-          <input
-            focused
-            placeholder={t("board.searchPlaceholder")}
-            onInput={onSearch}
-          />
+          <text fg={filters.query ? "#e5e7eb" : "#6b7280"}>{filters.query || t("board.searchPlaceholder")}▎</text>
         ) : (
           <text fg={filters.query ? "#e5e7eb" : "#6b7280"}>
             {filters.query || t("board.searchEmpty")}
@@ -52,6 +48,15 @@ export function FilterBar(props: {
         focused={focusedPanel === "sort"}
         onMouseDown={onSortCycle}
         marginRight={1}
+      />
+      <ClickableBadge
+        title={t("board.viewTasksTitle")}
+        text={t("board.viewTasksLabel")}
+        textColor="#a78bfa"
+        focused={focusedPanel === "tasks"}
+        onMouseDown={onViewTasks}
+        marginRight={1}
+        narrow
       />
       <ClickableBadge
         title={t("board.newLoopTitle")}

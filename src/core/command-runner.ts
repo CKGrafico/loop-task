@@ -36,6 +36,7 @@ export async function executeCommand(
     stdin: "ignore",
     cwd: cwd || undefined,
     cancelSignal: signal,
+    shell: true,
   });
 
   child.stdout!.on("data", (chunk: Buffer) => {
@@ -81,6 +82,7 @@ export async function executeCommandForeground(
       stderr: "inherit",
       stdin: "inherit",
       cwd: cwd || undefined,
+      shell: true,
     });
 
     const endedAt = new Date();

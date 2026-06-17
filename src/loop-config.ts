@@ -6,8 +6,11 @@ export interface LoopCommandOptionsInput {
   now?: boolean;
   maxRuns?: number | string | null;
   verbose?: boolean;
-  cwd?: string;
   description?: string;
+  taskId?: string | null;
+  command?: string;
+  commandArgs?: string[];
+  cwd?: string;
 }
 
 export interface BuiltLoopOptions {
@@ -81,25 +84,33 @@ export function parseCommandLine(input: string): string[] {
 
 export function buildLoopOptions(
   intervalHuman: string,
-  command: string,
-  commandArgs: string[],
   input: LoopCommandOptionsInput = {}
 ): BuiltLoopOptions {
-  if (!command.trim()) {
+  const command = input.command ?? "";
+  const commandArgs = input.commandArgs ?? [];
+  const taskId = input.taskId ?? null;
+
+  if (!taskId && !command.trim()) {
     throw new Error(t("errors.commandEmpty"));
+  }
+
+  const description = input.description?.trim() ?? "";
+  if (!description) {
+    throw new Error(t("errors.descriptionEmpty"));
   }
 
   return {
     intervalHuman,
     options: {
       interval: parseDuration(intervalHuman),
+      taskId,
       command,
       commandArgs,
+      cwd: input.cwd ?? "",
       immediate: input.now ?? false,
       maxRuns: parseMaxRuns(input.maxRuns),
       verbose: input.verbose ?? false,
-      cwd: input.cwd?.trim() ?? "",
-      description: input.description?.trim() ?? "",
+      description,
     },
   };
 }

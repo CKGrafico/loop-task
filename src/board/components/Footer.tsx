@@ -8,6 +8,7 @@ export function Footer(props: { mode: Mode }): React.ReactNode {
     normal: { label: t("board.badgeNormal"), bg: "#4ade80" },
     search: { label: t("board.badgeSearch"), bg: "#38bdf8" },
     create: { label: t("board.badgeCreate"), bg: "#a3e635" },
+    task: { label: t("board.badgeTask"), bg: "#a78bfa" },
     help: { label: t("board.badgeHelp"), bg: "#facc15" },
     confirm: { label: t("board.badgeConfirm"), bg: "#f87171" },
   };
@@ -15,16 +16,20 @@ export function Footer(props: { mode: Mode }): React.ReactNode {
   const hints: Record<Mode, [string, string][]> = {
     normal: [
       ["←/→", t("board.hintSwitchPanel")],
-      [t("board.hintKeyEnter"), t("board.hintOpenRun")],
-      [t("board.hintKeySlash"), t("board.hintSearch")],
-      [t("board.hintKeyH"), t("board.hintHelp")],
-      [t("board.hintKeyEsc"), t("board.hintQuit")],
+      ["/", t("board.hintSearch")],
+      ["h", t("board.hintHelp")],
+      ["esc", t("board.hintQuit")],
     ],
     search: [
       [t("board.hintKeyEnter"), t("board.hintApply")],
       [t("board.hintKeyEsc"), t("board.hintCancel")],
     ],
     create: [
+      [t("board.hintKeyTab"), t("board.hintNextField")],
+      [t("board.hintKeyEnter"), t("board.hintCreate")],
+      [t("board.hintKeyEsc"), t("board.hintCancel")],
+    ],
+    task: [
       [t("board.hintKeyTab"), t("board.hintNextField")],
       [t("board.hintKeyEnter"), t("board.hintCreate")],
       [t("board.hintKeyEsc"), t("board.hintCancel")],

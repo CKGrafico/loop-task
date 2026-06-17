@@ -1,6 +1,7 @@
 import crypto from "node:crypto";
 import { LoopController } from "../core/loop-controller.js";
 import type { LoopOptions, LoopMeta } from "../types.js";
+import { TaskManager } from "./task-manager.js";
 import {
   saveLoop,
   loadAllLoops,
@@ -18,24 +19,43 @@ interface StoredLoop {
 export class LoopManager {
   private loops = new Map<string, StoredLoop>();
   private lastSerialized = new Map<string, string>();
+  private taskManager: TaskManager;
+
+  constructor(taskManager: TaskManager) {
+    this.taskManager = taskManager;
+  }
+
+  private taskResolver = (taskId: string) => this.taskManager.get(taskId);
 
   init(): void {
     const saved = loadAllLoops();
     let restarted = 0;
+    let migrated = 0;
     for (const meta of saved) {
       if (meta.status === "stopped") continue;
+
+      let taskId = meta.taskId;
+      if (!taskId && meta.command) {
+        const task = this.taskManager.createInline(meta.command, meta.commandArgs, meta.cwd ?? "");
+        taskId = task.id;
+        meta.taskId = taskId;
+        saveLoop(meta);
+        migrated += 1;
+      }
+
       const options: LoopOptions = {
         interval: meta.interval,
+        taskId: taskId ?? null,
         command: meta.command,
         commandArgs: meta.commandArgs,
+        cwd: meta.cwd ?? "",
         immediate: false,
         maxRuns: meta.maxRuns,
         verbose: meta.verbose,
-        cwd: meta.cwd ?? "",
         description: meta.description ?? "",
       };
       const logPath = getLogPath(meta.id);
-      const controller = new LoopController(meta.id, options, logPath, {
+      const controller = new LoopController(meta.id, options, logPath, this.taskResolver, {
         status: meta.status,
         createdAt: meta.createdAt,
         runCount: meta.runCount,
@@ -55,6 +75,9 @@ export class LoopManager {
       controller.start();
       restarted += 1;
     }
+    if (migrated > 0) {
+      daemonLog(`migrated ${migrated} loop(s) to task model`);
+    }
     if (restarted > 0) {
       daemonLog(`restarted ${restarted} loop(s) from persisted state`);
     }
@@ -63,7 +86,7 @@ export class LoopManager {
   start(options: LoopOptions, intervalHuman: string): string {
     const id = crypto.randomUUID().slice(0, 8);
     const logPath = getLogPath(id);
-    const controller = new LoopController(id, options, logPath);
+    const controller = new LoopController(id, options, logPath, this.taskResolver);
     this.loops.set(id, { controller, options, intervalHuman });
     controller.start();
     this.wireEvents(id, controller, options, intervalHuman);
@@ -81,13 +104,10 @@ export class LoopManager {
 
     const executionChanged =
       entry.options.interval !== options.interval ||
-      entry.options.command !== options.command ||
-      entry.options.commandArgs.length !== options.commandArgs.length ||
-      entry.options.commandArgs.some((arg, index) => arg !== options.commandArgs[index]) ||
+      entry.options.taskId !== options.taskId ||
       entry.options.immediate !== options.immediate ||
       entry.options.maxRuns !== options.maxRuns ||
-      entry.options.verbose !== options.verbose ||
-      entry.options.cwd !== options.cwd;
+      entry.options.verbose !== options.verbose;
 
     Object.assign(entry.options, options);
     entry.intervalHuman = intervalHuman;
@@ -200,7 +220,7 @@ export class LoopManager {
     options: LoopOptions,
     intervalHuman: string
   ): void {
-    const meta = toMeta(controller, options, intervalHuman);
+    const meta = this.toMeta(controller, options, intervalHuman);
     const serialized = JSON.stringify(meta);
     if (this.lastSerialized.get(id) === serialized) {
       return;
@@ -210,28 +230,29 @@ export class LoopManager {
   }
 
   private buildMeta(id: string, entry: StoredLoop): LoopMeta {
-    return toMeta(entry.controller, entry.options, entry.intervalHuman);
+    return this.toMeta(entry.controller, entry.options, entry.intervalHuman);
   }
-}
 
-function toMeta(
-  controller: LoopController,
-  options: LoopOptions,
-  intervalHuman: string
-): LoopMeta {
-  const runtime = controller.getMeta();
-  return {
-    ...runtime,
-    command: options.command,
-    commandArgs: options.commandArgs,
-    interval: options.interval,
-    intervalHuman,
-    immediate: options.immediate,
-    maxRuns: options.maxRuns,
-    verbose: options.verbose,
-    cwd: options.cwd,
-    description: options.description,
-    remainingDelayMs: runtime.remainingDelayMs,
-    pid: process.pid,
-  };
+  private toMeta(
+    controller: LoopController,
+    options: LoopOptions,
+    intervalHuman: string
+  ): LoopMeta {
+    const runtime = controller.getMeta();
+    const task = options.taskId ? this.taskManager.get(options.taskId) : null;
+    return {
+      ...runtime,
+      command: task?.command ?? options.command,
+      commandArgs: task?.commandArgs ?? options.commandArgs,
+      cwd: task?.cwd ?? options.cwd,
+      interval: options.interval,
+      intervalHuman,
+      immediate: options.immediate,
+      maxRuns: options.maxRuns,
+      verbose: options.verbose,
+      description: options.description,
+      remainingDelayMs: runtime.remainingDelayMs,
+      pid: process.pid,
+    };
+  }
 }

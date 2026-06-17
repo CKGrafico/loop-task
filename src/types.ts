@@ -1,11 +1,23 @@
-export interface LoopOptions {
-  interval: number;
+export interface TaskDefinition {
+  id: string;
+  name: string;
   command: string;
   commandArgs: string[];
+  cwd: string;
+  onSuccessTaskId: string | null;
+  onFailureTaskId: string | null;
+  createdAt: string;
+}
+
+export interface LoopOptions {
+  interval: number;
+  taskId: string | null;
+  command: string;
+  commandArgs: string[];
+  cwd: string;
   immediate: boolean;
   maxRuns: number | null;
   verbose: boolean;
-  cwd: string;
   description: string;
 }
 
@@ -34,10 +46,13 @@ export interface RunRecord {
   logSize: number;
   status: RunStatus;
   logOffset: number;
+  chainGroupId?: string;
+  chainName?: string;
 }
 
 export interface LoopMeta {
   id: string;
+  taskId: string | null;
   command: string;
   commandArgs: string[];
   interval: number;
@@ -74,6 +89,11 @@ export type IpcRequest =
   | { type: "logs"; payload: { id: string; follow: boolean; tail?: number } }
   | { type: "run-log"; payload: { id: string; runNumber: number } }
   | { type: "run-log-stream"; payload: { id: string; runNumber: number } }
+  | { type: "task-create"; payload: Omit<TaskDefinition, "createdAt"> }
+  | { type: "task-update"; payload: { id: string } & Omit<TaskDefinition, "id" | "createdAt"> }
+  | { type: "task-list" }
+  | { type: "task-get"; payload: { id: string } }
+  | { type: "task-delete"; payload: { id: string } }
   | { type: "shutdown" };
 
 export type IpcResponse =

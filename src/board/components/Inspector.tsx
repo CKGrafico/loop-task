@@ -20,6 +20,7 @@ export function Inspector(props: { loop: LoopMeta | null }): React.ReactNode {
       <text><strong>{t("board.fieldId")}</strong> {loop.id}</text>
       <text><strong>{t("board.fieldDesc")}</strong> {describeLoop(loop)}</text>
       <text><strong>{t("board.fieldCommand")}</strong> {cmd}</text>
+      <text><strong>{t("board.fieldTask")}</strong> {loop.taskId}</text>
       <text><strong>{t("board.fieldDir")}</strong> {loop.cwd || t("board.inherit")}</text>
       <text><strong>{t("board.fieldInterval")}</strong> {loop.intervalHuman}</text>
       <text>

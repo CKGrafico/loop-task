@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useMemo } from "react";
 import { useTerminalDimensions } from "@opentui/react";
 import type { LoopMeta, RunRecord } from "../../types.js";
 import { t } from "../../i18n/index.js";
@@ -6,6 +6,52 @@ import { formatFileSize, formatRunDuration, formatRunTime } from "../format.js";
 import { useHoverState } from "../hooks/useHoverState.js";
 import { HOVER_BG } from "../../config/constants.js";
 import type { ScrollBoxRenderable } from "@opentui/core";
+
+interface GroupedRun {
+  runs: RunRecord[];
+  startedAt: string;
+  totalDuration: number;
+  totalLogSize: number;
+  allSuccess: boolean;
+  isRunning: boolean;
+  chainName: string | null;
+}
+
+function groupRuns(runs: RunRecord[]): GroupedRun[] {
+  const groups: GroupedRun[] = [];
+  let i = 0;
+  while (i < runs.length) {
+    const current = runs[i];
+    if (current.chainGroupId) {
+      const group = runs.filter((r) => r.chainGroupId === current.chainGroupId);
+      const first = group[0];
+      const allSuccess = group.every((r) => r.status === "completed" && r.exitCode === 0);
+      const isRunning = group.some((r) => r.status === "running");
+      groups.push({
+        runs: group,
+        startedAt: first.startedAt,
+        totalDuration: group.reduce((s, r) => s + r.duration, 0),
+        totalLogSize: group.reduce((s, r) => s + r.logSize, 0),
+        allSuccess,
+        isRunning,
+        chainName: group.find((r) => r.chainName)?.chainName ?? null,
+      });
+      i += group.length;
+    } else {
+      groups.push({
+        runs: [current],
+        startedAt: current.startedAt,
+        totalDuration: current.duration,
+        totalLogSize: current.logSize,
+        allSuccess: current.status === "completed" && current.exitCode === 0,
+        isRunning: current.status === "running",
+        chainName: null,
+      });
+      i++;
+    }
+  }
+  return groups;
+}
 
 function fit(text: string, width: number): string {
   if (width <= 0) return "";
@@ -24,6 +70,7 @@ export function RunHistory(props: {
   const { height } = useTerminalDimensions();
   const scrollRef = useRef<ScrollBoxRenderable | null>(null);
   const runs = loop?.runHistory ?? [];
+  const grouped = useMemo(() => groupRuns(runs), [runs]);
 
   useEffect(() => {
     const id = `run-row-${selectedRunIndex}`;
@@ -46,13 +93,13 @@ export function RunHistory(props: {
 
   return (
     <box
-      title={t("board.runHistoryTitle")}
+      title={t("board.runHistoryTitleHint")}
       border
       borderColor={focused ? "#38bdf8" : undefined}
       style={{ flexDirection: "column", flexGrow: 1, backgroundColor: "#0b0b0b", overflow: "hidden" }}
     >
       <text fg="#6b7280">{header}</text>
-      {runs.length === 0 ? (
+      {grouped.length === 0 ? (
         <text fg="#9ca3af">{t("board.runHistoryEmpty")}</text>
       ) : (
         <scrollbox
@@ -60,18 +107,16 @@ export function RunHistory(props: {
           ref={scrollRef}
           style={{ flexGrow: 1, maxHeight: panelHeight, backgroundColor: "#0b0b0b" }}
         >
-          {[...runs].reverse().map((run, revIndex) => (
-            <RunRow
-              key={run.runNumber}
+          {[...grouped].reverse().map((group, revIndex) => (
+            <GroupRow
+              key={group.runs[0].runNumber + (group.chainName ?? "")}
               id={`run-row-${revIndex}`}
-              run={run}
-              isSelected={revIndex === selectedRunIndex}
-              focused={focused}
+              group={group}
+              isSelected={focused && revIndex === selectedRunIndex}
               timeW={timeW}
               durW={durW}
               sizeW={sizeW}
-              onSelect={onSelectRun}
-              onOpen={onOpenRun}
+              onOpen={() => onOpenRun(group.runs[0])}
             />
           ))}
         </scrollbox>
@@ -80,39 +125,39 @@ export function RunHistory(props: {
   );
 }
 
-function RunRow(props: {
+function GroupRow(props: {
   id: string;
-  run: RunRecord;
+  group: GroupedRun;
   isSelected: boolean;
-  focused: boolean;
   timeW: number;
   durW: number;
   sizeW: number;
-  onSelect: (index: number) => void;
-  onOpen: (run: RunRecord) => void;
+  onOpen: () => void;
 }): React.ReactNode {
-  const { id, run, isSelected, focused, timeW, durW, sizeW, onOpen } = props;
+  const { id, group, isSelected, timeW, durW, sizeW, onOpen } = props;
   const { isHovered, hoverProps } = useHoverState();
-  const bg = isSelected ? (focused ? "#1e3a8a" : "#1e2a4a") : isHovered ? HOVER_BG : undefined;
+  const bg = isSelected ? "#1e3a8a" : isHovered ? HOVER_BG : undefined;
 
-  const isRunning = run.status === "running";
-  const success = isRunning ? true : run.exitCode === 0;
-  const icon = isRunning ? "⟳" : success ? "✓" : "✗";
-  const iconColor = isRunning ? "#facc15" : success ? "#4ade80" : "#f87171";
+  const icon = group.isRunning ? "⟳" : group.allSuccess ? "✓" : "✗";
+  const iconColor = group.isRunning ? "#facc15" : group.allSuccess ? "#4ade80" : "#f87171";
+  const label = group.chainName
+    ? `→ ${group.chainName}`
+    : "";
 
   return (
     <box
       id={id}
-      onMouseDown={() => onOpen(run)}
+      onMouseDown={onOpen}
       backgroundColor={bg}
       {...hoverProps}
     >
       <text>
         {" "}
-        <span fg="#9ca3af">{fit(formatRunTime(run.startedAt), timeW)}</span>{" "}
+        <span fg="#9ca3af">{fit(formatRunTime(group.startedAt), timeW)}</span>{" "}
         <span fg={iconColor}>{icon}</span>{" "}
-        {fit(isRunning ? "…" : formatRunDuration(run.duration), durW)}{" "}
-        {fit(formatFileSize(run.logSize), sizeW)}
+        {label ? <span fg="#a78bfa">{fit(label, 12)}</span> : null}{" "}
+        {fit(group.isRunning ? "…" : formatRunDuration(group.totalDuration), durW)}{" "}
+        {fit(formatFileSize(group.totalLogSize), sizeW)}
       </text>
     </box>
   );

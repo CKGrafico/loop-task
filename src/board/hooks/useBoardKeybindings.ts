@@ -1,16 +1,188 @@
 import type { Dispatch, SetStateAction } from "react";
 import { useKeyboard } from "@opentui/react";
-import type { LoopMeta, RunRecord } from "../../types.js";
+import type { LoopMeta, RunRecord, TaskDefinition } from "../../types.js";
 import { cycleSortMode, cycleStatusFilter, type Filters, type SortMode } from "../state.js";
 import type { ConfirmState, PanelFocus, View } from "../types.js";
 
-const PANEL_ORDER: PanelFocus[] = ["search", "status", "sort", "new", "loops", "runs", "actions"];
+const PANEL_ORDER: PanelFocus[] = ["search", "status", "sort", "tasks", "new", "loops", "runs", "actions"];
 const ACTION_COUNT = 5;
+const ACTION_KEYS = ["pause-resume", "stop-play", "run", "edit", "delete"] as const;
+
+const PANEL_LEFT: Record<PanelFocus, PanelFocus> = {
+  search: "loops",
+  status: "search",
+  sort: "status",
+  tasks: "sort",
+  new: "tasks",
+  loops: "new",
+  runs: "loops",
+  actions: "runs",
+};
+
+const PANEL_RIGHT: Record<PanelFocus, PanelFocus> = {
+  search: "status",
+  status: "sort",
+  sort: "tasks",
+  tasks: "new",
+  new: "loops",
+  loops: "runs",
+  runs: "actions",
+  actions: "search",
+};
 
 function nextPanel(current: PanelFocus, direction: "left" | "right"): PanelFocus {
-  const idx = PANEL_ORDER.indexOf(current);
-  return PANEL_ORDER[(idx + (direction === "right" ? 1 : PANEL_ORDER.length - 1)) % PANEL_ORDER.length];
+  return direction === "left" ? PANEL_LEFT[current] : PANEL_RIGHT[current];
 }
+
+const CONFIRM_KEYS: Record<string, (p: ConfirmParams) => void> = {
+  left: (p) => p.setConfirmChoice((c) => (c === 1 ? 0 : 1)),
+  right: (p) => p.setConfirmChoice((c) => (c === 1 ? 0 : 1)),
+  tab: (p) => p.setConfirmChoice((c) => (c === 1 ? 0 : 1)),
+  y: (p) => { const a = p.confirm.action; p.setConfirm(null); void a(); },
+  n: (p) => p.setConfirm(null),
+  escape: (p) => p.setConfirm(null),
+  return: (p) => {
+    if (p.confirmChoice === 1) { const a = p.confirm.action; p.setConfirm(null); void a(); }
+    else p.setConfirm(null);
+  },
+  enter: (p) => {
+    if (p.confirmChoice === 1) { const a = p.confirm.action; p.setConfirm(null); void a(); }
+    else p.setConfirm(null);
+  },
+};
+
+interface ConfirmParams {
+  confirm: ConfirmState;
+  confirmChoice: number;
+  setConfirm: Dispatch<SetStateAction<ConfirmState | null>>;
+  setConfirmChoice: Dispatch<SetStateAction<number>>;
+}
+
+const VIEW_ESCAPE: Record<string, (p: ViewEscapeParams) => void> = {
+  create: (p) => { p.setEditTarget(null); p.setView("board"); },
+  "task-create": (p) => { p.setEditTask(null); p.setView("board"); },
+  "task-edit": (p) => { p.setEditTask(null); p.setView("board"); },
+  "task-list": (p) => p.setView(p.returnView ?? "board"),
+};
+
+interface ViewEscapeParams {
+  setEditTarget: Dispatch<SetStateAction<LoopMeta | null>>;
+  setEditTask: Dispatch<SetStateAction<TaskDefinition | null>>;
+  setView: Dispatch<SetStateAction<View>>;
+  returnView?: View;
+}
+
+interface OverlayParams {
+  setLogModalRun: Dispatch<SetStateAction<RunRecord | null>>;
+  setHelpOpen: Dispatch<SetStateAction<boolean>>;
+  setSearchActive: Dispatch<SetStateAction<boolean>>;
+  setFocusedPanel: Dispatch<SetStateAction<PanelFocus>>;
+}
+
+const OVERLAY_DISMISS: Record<string, (p: OverlayParams, overlay: string) => boolean> = {
+  log: (p) => { p.setLogModalRun(null); return true; },
+  help: (p) => { p.setHelpOpen(false); return true; },
+  search: (p, key) => {
+    p.setSearchActive(false);
+    p.setFocusedPanel(key === "return" || key === "enter" ? "loops" : "search");
+    return true;
+  },
+};
+
+const GLOBAL_KEYS: Record<string, (p: GlobalKeyParams) => void> = {
+  escape: (p) => { p.destroyLogSocket(); p.onQuit(); },
+  h: (p) => p.setHelpOpen(true),
+  n: (p) => { p.setEditTarget(null); p.setView("create"); },
+  t: (p) => { p.setEditTask(null); p.setView("task-create"); },
+  r: (p) => p.onAction("run"),
+  p: (p) => p.onAction("pause-resume"),
+  x: (p) => p.onAction("stop-play"),
+  delete: (p) => p.onAction("delete"),
+};
+
+interface GlobalKeyParams {
+  destroyLogSocket: () => void;
+  onQuit: () => void;
+  setHelpOpen: Dispatch<SetStateAction<boolean>>;
+  setEditTarget: Dispatch<SetStateAction<LoopMeta | null>>;
+  setEditTask: Dispatch<SetStateAction<TaskDefinition | null>>;
+  setView: Dispatch<SetStateAction<View>>;
+  onAction: (action: string) => void;
+}
+
+interface PanelHandlerParams {
+  setSearchActive: Dispatch<SetStateAction<boolean>>;
+  setFilters: Dispatch<SetStateAction<Filters>>;
+  setSort: Dispatch<SetStateAction<SortMode>>;
+  setEditTarget: Dispatch<SetStateAction<LoopMeta | null>>;
+  setView: Dispatch<SetStateAction<View>>;
+  setSelectedIndex: Dispatch<SetStateAction<number>>;
+  setSelectedRunIndex: Dispatch<SetStateAction<number>>;
+  setFocusedPanel: Dispatch<SetStateAction<PanelFocus>>;
+  selectedRunCount: number;
+  selected: LoopMeta | null;
+  selectedRunIndex: number;
+  setSelectedAction: Dispatch<SetStateAction<number>>;
+  selectedAction: number;
+  onAction: (action: string) => void;
+  onOpenRunLog: (run: RunRecord) => void;
+  setTaskListReturnView?: Dispatch<SetStateAction<View>>;
+  refreshTasks?: () => Promise<void>;
+}
+
+type PanelKeyHandler = (key: string, p: PanelHandlerParams) => boolean;
+
+const panelHandlers: Record<PanelFocus, PanelKeyHandler> = {
+  search: (key, p) => {
+    if (key === "return" || key === "enter") { p.setSearchActive(true); return true; }
+    return false;
+  },
+  status: (key, p) => {
+    if (key === "return" || key === "enter") { p.setFilters((prev) => ({ ...prev, status: cycleStatusFilter(prev.status) })); return true; }
+    return false;
+  },
+  sort: (key, p) => {
+    if (key === "return" || key === "enter") { p.setSort((prev) => cycleSortMode(prev)); return true; }
+    return false;
+  },
+  new: (key, p) => {
+    if (key === "return" || key === "enter") { p.setEditTarget(null); p.setView("create"); return true; }
+    return false;
+  },
+  tasks: (key, p) => {
+    if (key === "return" || key === "enter") { p.setTaskListReturnView?.("board"); p.refreshTasks?.(); p.setView("task-list"); return true; }
+    return false;
+  },
+  loops: (key, p) => {
+    if (key === "up" || key === "k") { p.setSelectedIndex((i) => Math.max(0, i - 1)); return true; }
+    if (key === "down" || key === "j") { p.setSelectedIndex((i) => Math.min(p.selected ? p.selected.runHistory.length - 1 : 0, i + 1)); return true; }
+    if (key === "return" || key === "enter") { p.setFocusedPanel("actions"); return true; }
+    return false;
+  },
+  runs: (key, p) => {
+    if (key === "up" || key === "k") { p.setSelectedRunIndex((i) => Math.max(0, i - 1)); return true; }
+    if (key === "down" || key === "j") { p.setSelectedRunIndex((i) => Math.min(p.selectedRunCount - 1, i + 1)); return true; }
+    if ((key === "return" || key === "enter") && p.selected && p.selected.runHistory.length > 0) {
+      const runs = p.selected.runHistory;
+      const idx = Math.min(p.selectedRunIndex, runs.length - 1);
+      p.onOpenRunLog(runs[runs.length - 1 - idx]);
+      return true;
+    }
+    return false;
+  },
+  actions: (key, p) => {
+    if (key === "up" || key === "k") { p.setSelectedAction((i) => Math.max(0, i - 1)); return true; }
+    if (key === "down" || key === "j") { p.setSelectedAction((i) => Math.min(ACTION_COUNT - 1, i + 1)); return true; }
+    if (key === "return" || key === "enter") { p.onAction(ACTION_KEYS[p.selectedAction] ?? "edit"); return true; }
+    return false;
+  },
+};
+
+const BOARD_SHORTCUTS: Record<string, (p: PanelHandlerParams) => void> = {
+  "/": (p) => p.setSearchActive(true),
+  f: (p) => p.setFilters((prev) => ({ ...prev, status: cycleStatusFilter(prev.status) })),
+  s: (p) => p.setSort((prev) => cycleSortMode(prev)),
+};
 
 export interface BoardKeybindingParams {
   confirm: ConfirmState | null;
@@ -24,6 +196,7 @@ export interface BoardKeybindingParams {
   view: View;
   setView: Dispatch<SetStateAction<View>>;
   setEditTarget: Dispatch<SetStateAction<LoopMeta | null>>;
+  setEditTask: Dispatch<SetStateAction<TaskDefinition | null>>;
   selected: LoopMeta | null;
   visibleCount: number;
   setSelectedIndex: Dispatch<SetStateAction<number>>;
@@ -42,6 +215,9 @@ export interface BoardKeybindingParams {
   setSelectedAction: Dispatch<SetStateAction<number>>;
   onAction: (action: string) => void;
   onOpenRunLog: (run: RunRecord) => void;
+  returnView?: View;
+  setTaskListReturnView?: Dispatch<SetStateAction<View>>;
+  refreshTasks?: () => Promise<void>;
 }
 
 export function useBoardKeybindings(params: BoardKeybindingParams): void {
@@ -57,6 +233,7 @@ export function useBoardKeybindings(params: BoardKeybindingParams): void {
     view,
     setView,
     setEditTarget,
+    setEditTask,
     selected,
     visibleCount,
     setSelectedIndex,
@@ -75,198 +252,106 @@ export function useBoardKeybindings(params: BoardKeybindingParams): void {
     setSelectedAction,
     onAction,
     onOpenRunLog,
+    returnView,
+    setTaskListReturnView,
+    refreshTasks,
   } = params;
 
   useKeyboard((key) => {
     const name = key.name;
 
     if (confirm) {
-      if (name === "left" || name === "right" || name === "tab") {
-        setConfirmChoice((c) => (c === 1 ? 0 : 1));
-        return;
-      }
-      if (name === "y") {
-        const action = confirm.action;
-        setConfirm(null);
-        void action();
-      } else if (name === "n" || name === "escape") {
-        setConfirm(null);
-      } else if (name === "return" || name === "enter") {
-        if (confirmChoice === 1) {
-          const action = confirm.action;
-          setConfirm(null);
-          void action();
-        } else {
-          setConfirm(null);
-        }
-      }
+      CONFIRM_KEYS[name]?.({ confirm, confirmChoice, setConfirm, setConfirmChoice });
       return;
     }
 
-    if (logModalRun) {
-      if (name === "escape" || name === "q") {
-        setLogModalRun(null);
-      }
+    if (logModalRun && (name === "escape" || name === "q")) {
+      OVERLAY_DISMISS.log({ setLogModalRun, setHelpOpen, setSearchActive, setFocusedPanel }, name);
       return;
     }
+    if (logModalRun) return;
 
-    if (helpOpen) {
-      if (name === "h" || name === "escape") {
-        setHelpOpen(false);
-      }
+    if (helpOpen && (name === "h" || name === "escape")) {
+      OVERLAY_DISMISS.help({ setLogModalRun, setHelpOpen, setSearchActive, setFocusedPanel }, name);
+      return;
+    }
+    if (helpOpen) return;
+
+    if (searchActive && (name === "escape" || name === "return" || name === "enter")) {
+      OVERLAY_DISMISS.search({ setLogModalRun, setHelpOpen, setSearchActive, setFocusedPanel }, name);
       return;
     }
 
     if (searchActive) {
-      if (name === "escape") {
+      if (name === "left") {
         setSearchActive(false);
-        setFocusedPanel("search");
-      } else if (name === "return" || name === "enter") {
-        setSearchActive(false);
-        setFocusedPanel("loops");
+        setFocusedPanel("actions");
+        setSelectedAction(ACTION_COUNT - 1);
+        return;
+      }
+      if (name === "backspace") {
+        setFilters((prev) => ({ ...prev, query: prev.query.slice(0, -1) }));
+        return;
+      }
+      if (key.sequence && key.sequence.length === 1 && key.sequence >= " " && key.sequence <= "~") {
+        setFilters((prev) => ({ ...prev, query: prev.query + key.sequence }));
+        return;
       }
       return;
     }
 
-    if (view === "create") {
-      if (name === "escape") {
-        setEditTarget(null);
-        setView("board");
-      }
-      return;
-    }
-
-    if (name === "escape") {
-      destroyLogSocket();
-      onQuit();
-      return;
-    }
-
-    if (name === "h") {
-      setHelpOpen(true);
-      return;
-    }
-
-    if (name === "n") {
-      setEditTarget(null);
-      setView("create");
-      return;
-    }
-
-    if (name === "r") {
-      onAction("run");
-      return;
-    }
-
-    if (name === "p") {
-      onAction("pause-resume");
-      return;
-    }
-
-    if (name === "x") {
-      onAction("stop-play");
-      return;
-    }
-
-    if (name === "delete") {
-      onAction("delete");
-      return;
-    }
-
-    if (view === "board") {
-      if (name === "left" || name === "right") {
-        if (focusedPanel === "actions") {
+    if (name === "left" || name === "right") {
+      if (focusedPanel === "actions") {
+        if (name === "left" && selectedAction === 0) {
+          setFocusedPanel((p) => nextPanel(p, "left"));
+        } else if (name === "right" && selectedAction === ACTION_COUNT - 1) {
+          setFocusedPanel((p) => nextPanel(p, "right"));
+        } else {
           setSelectedAction((i) =>
             name === "right"
               ? Math.min(ACTION_COUNT - 1, i + 1)
               : Math.max(0, i - 1)
           );
+        }
+      } else {
+        const next = nextPanel(focusedPanel, name === "right" ? "right" : "left");
+        if (next === "actions") {
+          setFocusedPanel("actions");
+          setSelectedAction(0);
         } else {
-          setFocusedPanel((p) => nextPanel(p, name === "right" ? "right" : "left"));
+          setFocusedPanel(next);
         }
-        return;
       }
+      return;
+    }
 
-      if (focusedPanel === "search") {
-        if (name === "return" || name === "enter") {
-          setSearchActive(true);
-          return;
-        }
-      } else if (focusedPanel === "status") {
-        if (name === "return" || name === "enter") {
-          setFilters((prev) => ({ ...prev, status: cycleStatusFilter(prev.status) }));
-          return;
-        }
-      } else if (focusedPanel === "sort") {
-        if (name === "return" || name === "enter") {
-          setSort((prev) => cycleSortMode(prev));
-          return;
-        }
-      } else if (focusedPanel === "new") {
-        if (name === "return" || name === "enter") {
-          setEditTarget(null);
-          setView("create");
-          return;
-        }
-      } else if (focusedPanel === "loops") {
-        if (name === "up" || name === "k") {
-          setSelectedIndex((i) => Math.max(0, i - 1));
-          return;
-        }
-        if (name === "down" || name === "j") {
-          setSelectedIndex((i) => Math.min(visibleCount - 1, i + 1));
-          return;
-        }
-        if ((name === "return" || name === "enter") && selected) {
-          setEditTarget(selected);
-          setView("create");
-          return;
-        }
-      } else if (focusedPanel === "runs") {
-        if (name === "up" || name === "k") {
-          setSelectedRunIndex((i) => Math.max(0, i - 1));
-          return;
-        }
-        if (name === "down" || name === "j") {
-          setSelectedRunIndex((i) => Math.min(selectedRunCount - 1, i + 1));
-          return;
-        }
-        if ((name === "return" || name === "enter") && selected && selected.runHistory.length > 0) {
-          const runs = selected.runHistory;
-          const idx = Math.min(selectedRunIndex, runs.length - 1);
-          onOpenRunLog(runs[runs.length - 1 - idx]);
-          return;
-        }
-      } else if (focusedPanel === "actions") {
-        if (name === "up" || name === "k") {
-          setSelectedAction((i) => Math.max(0, i - 1));
-          return;
-        }
-        if (name === "down" || name === "j") {
-          setSelectedAction((i) => Math.min(ACTION_COUNT - 1, i + 1));
-          return;
-        }
-        if (name === "return" || name === "enter") {
-          const actionKeys = ["pause-resume", "stop-play", "run", "edit", "delete"];
-          onAction(actionKeys[selectedAction] ?? "edit");
-          return;
-        }
-      }
+    if (view !== "board" && name === "escape") {
+      VIEW_ESCAPE[view]?.({ setEditTarget, setEditTask, setView, returnView });
+      return;
+    }
+    if (view !== "board") return;
 
-      if (name === "/") {
-        setSearchActive(true);
-        return;
-      }
+    const globalHandler = GLOBAL_KEYS[name];
+    if (globalHandler) {
+      globalHandler({ destroyLogSocket, onQuit, setHelpOpen, setEditTarget, setEditTask, setView, onAction });
+      return;
+    }
 
-      if (name === "f") {
-        setFilters((prev) => ({ ...prev, status: cycleStatusFilter(prev.status) }));
-        return;
-      }
+    const panelHandler = panelHandlers[focusedPanel];
+    if (panelHandler?.(name, {
+      setSearchActive, setFilters, setSort, setEditTarget, setView,
+      setSelectedIndex, setSelectedRunIndex, setFocusedPanel, selectedRunCount, selected,
+      selectedRunIndex, setSelectedAction, selectedAction, onAction, onOpenRunLog,
+      setTaskListReturnView, refreshTasks,
+    })) return;
 
-      if (name === "s") {
-        setSort((prev) => cycleSortMode(prev));
-        return;
-      }
+    const shortcut = BOARD_SHORTCUTS[name];
+    if (shortcut) {
+      shortcut({
+        setSearchActive, setFilters, setSort, setEditTarget, setView,
+        setSelectedIndex, setSelectedRunIndex, setFocusedPanel, selectedRunCount, selected,
+        selectedRunIndex, setSelectedAction, selectedAction, onAction, onOpenRunLog,
+      });
     }
   });
 }

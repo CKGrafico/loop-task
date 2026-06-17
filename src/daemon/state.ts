@@ -2,12 +2,14 @@ import fs from "node:fs";
 import path from "node:path";
 import crypto from "node:crypto";
 import { fileURLToPath } from "node:url";
-import type { LoopMeta } from "../types.js";
+import type { LoopMeta, TaskDefinition } from "../types.js";
 import { removeIfExists, writeFileAtomic } from "../shared/fs-utils.js";
 import {
   getLoopsDir,
+  getTasksDir,
   getLogsDir,
   loopFile,
+  taskFile,
   logFile,
   getPidFile,
   getSignatureFile,
@@ -52,6 +54,39 @@ export function loadAllLoops(): LoopMeta[] {
 export function deleteLoop(id: string): void {
   removeIfExists(loopFile(id));
   removeIfExists(logFile(id));
+}
+
+export function saveTask(task: TaskDefinition): void {
+  const dir = getTasksDir();
+  fs.mkdirSync(dir, { recursive: true });
+  writeFileAtomic(taskFile(task.id), JSON.stringify(task, null, 2));
+}
+
+export function loadTask(id: string): TaskDefinition | null {
+  const file = taskFile(id);
+  if (!fs.existsSync(file)) return null;
+  const raw = fs.readFileSync(file, "utf-8");
+  return JSON.parse(raw) as TaskDefinition;
+}
+
+export function loadAllTasks(): TaskDefinition[] {
+  const dir = getTasksDir();
+  fs.mkdirSync(dir, { recursive: true });
+  const files = fs.readdirSync(dir).filter((f) => f.endsWith(".json"));
+  const tasks: TaskDefinition[] = [];
+  for (const file of files) {
+    try {
+      const raw = fs.readFileSync(path.join(dir, file), "utf-8");
+      tasks.push(JSON.parse(raw) as TaskDefinition);
+    } catch {
+      // skip corrupted files
+    }
+  }
+  return tasks.sort((a, b) => a.createdAt.localeCompare(b.createdAt));
+}
+
+export function deleteTask(id: string): void {
+  removeIfExists(taskFile(id));
 }
 
 export function getLogPath(id: string): string {

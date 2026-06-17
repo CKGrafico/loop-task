@@ -1,4 +1,5 @@
 import { LoopManager } from "./manager.js";
+import { TaskManager } from "./task-manager.js";
 import { IpcServer } from "./server.js";
 import {
   writeDaemonPid,
@@ -11,8 +12,10 @@ import { t } from "../i18n/index.js";
 import { daemonLog } from "./daemon-log.js";
 
 async function main(): Promise<void> {
-  const manager = new LoopManager();
-  const server = new IpcServer(manager);
+  const taskManager = new TaskManager();
+  taskManager.init();
+  const manager = new LoopManager(taskManager);
+  const server = new IpcServer(manager, taskManager);
 
   try {
     await server.listen();

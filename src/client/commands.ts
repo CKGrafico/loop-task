@@ -33,7 +33,7 @@ export async function startLoop(
 
   console.log(t("cli.startedTitle"));
   console.log(t("cli.startedId", { id }));
-  console.log(t("cli.startedCommand", { command: `${options.command} ${options.commandArgs.join(" ")}` }));
+  console.log(t("cli.startedCommand", { command: options.command }));
   console.log(t("cli.startedInterval", { interval: intervalHuman }));
   console.log(t("cli.startedStatus"));
   console.log();

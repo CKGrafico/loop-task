@@ -43,13 +43,40 @@ npm install -g bun
 
 `start`, `new`, and `run` work with Node alone. The board auto-delegates to Bun when needed.
 
+## Concepts
+
+### Loops
+
+A **loop** is a schedule — it defines *when* something runs. Loops trigger **tasks**.
+
+| Field | Description |
+| ----- | ----------- |
+| **Interval** | How often to run (`30s`, `5m`, `1h`, `1d`, `1w`) |
+| **Task** | Inline command or a reference to a previously defined task |
+| **Description** | Optional label shown in the list; defaults to the task name |
+| **Run immediately?** | Run once now, then every interval, or wait the first interval |
+| **Max runs** | Stop after N runs, or leave blank to run forever |
+
+### Tasks
+
+A **task** is an executable unit — it defines *what* runs. Tasks can chain to other tasks on success or failure.
+
+| Field | Description |
+| ----- | ----------- |
+| **Name** | A short label for the task |
+| **Command** | The full command line |
+| **On success** | Optional task to run when this one exits with code 0 |
+| **On failure** | Optional task to run when this one exits with a non-zero code |
+
+Tasks are reusable — the same task can be referenced by multiple loops or by other tasks' success/failure chains.
+
 ## Commands
 
 | Command | Description |
 | ------- | ----------- |
 | `loop-task` | Open the interactive board (requires Bun) |
 | `loop-task start` | Start the background daemon, restore persisted loops |
-| `loop-task new <interval> -- <command>` | Create a background loop |
+| `loop-task new <interval> -- <command>` | Create a background loop (creates an inline task) |
 | `loop-task run <interval> -- <command>` | Run a loop in the foreground |
 
 ### Options (for `new` and `run`)
@@ -92,7 +119,7 @@ loop-task new 30m -- node -e "console.log('hello')"
 
 ## The board
 
-The board is the primary way to manage loops. It shows all loops, their status, run history, and logs in a single terminal interface.
+The board is the primary way to manage loops and tasks. It shows all loops, their status, run history, and logs in a single terminal interface.
 
 ### Board controls
 
@@ -100,7 +127,9 @@ The board is the primary way to manage loops. It shows all loops, their status, 
 ↑/↓, j/k    move selection
 Enter       edit selected loop
 n           create a new loop
+t           create a new task
 p           pause / resume selected loop
+x           stop / play selected loop (resets schedule)
 r           force run selected loop now
 del         delete selected loop
 /           search loops
@@ -113,35 +142,28 @@ esc         quit
 
 Destructive actions (pause, force run, delete) prompt a confirmation before executing.
 
-### Loop fields
+### Pause vs Stop
 
-When creating or editing a loop:
-
-| Field | Description |
-| ----- | ----------- |
-| **Interval** | How often to run (`30s`, `5m`, `1h`, `1d`, `1w`) |
-| **Command** | The full command line |
-| **Description** | Optional label shown in the list; defaults to the command |
-| **Working dir** | Directory the command runs in; defaults to current directory |
-| **Run immediately?** | Run once now, then every interval, or wait the first interval |
-| **Max runs** | Stop after N runs, or leave blank to run forever |
+- **Pause** (`p`) — temporarily halts the loop. Resuming continues the original schedule (e.g., a loop that runs every 6h at :00 paused at 12:00 and resumed at 14:00 will still fire at 16:00).
+- **Stop** (`x`) — halts the loop and clears the schedule. Playing starts a fresh interval from now (e.g., the same loop stopped at 12:00 and played at 14:00 will fire at 20:00).
 
 ## How it works
 
 ```
-loop-task (board) ──IPC──► daemon ──► loop 1 (background process)
-                          ├──► loop 2
-                          └──► loop 3
+loop-task (board) ──IPC──► daemon ──► loop 1 ──► task (command)
+                           ├──► loop 2 ──► task ──► on-success task
+                           └──► loop 3 ──► task ──► on-failure task
 ```
 
-- The **daemon** is a background process that manages all loops. It starts automatically when you run `loop-task start` or any command that needs it.
+- The **daemon** is a background process that manages all loops and tasks. It starts automatically when you run `loop-task start` or any command that needs it.
 - The **board** is a terminal UI that connects to the daemon via IPC.
-- Loops **persist to disk** — they survive daemon restarts and system reboots. When the daemon starts, it restores all loops and accounts for elapsed time.
+- **Loops** define schedules and reference tasks. **Tasks** define commands and optional success/failure chains.
+- Loops and tasks **persist to disk** — they survive daemon restarts and system reboots. When the daemon starts, it restores all loops and accounts for elapsed time.
 
 ### Lifecycle
 
 1. `loop-task start` or `loop-task new ...` spawns the daemon if not running
-2. The daemon creates a loop and persists its state to disk
+2. The daemon creates a loop and a task, and persists their state to disk
 3. `loop-task` opens the board for interactive management
 4. Closing the board or terminal does **not** stop loops — the daemon keeps running
 5. After a reboot, `loop-task start` restores all persisted loops with correct timing
@@ -160,7 +182,7 @@ loop-task (board) ──IPC──► daemon ──► loop 1 (background process
 
 - **No overlapping** — waits for the command to finish before starting the next interval
 - **Resilient** — continues looping even if a command exits with a non-zero code
-- **Persistent** — loop state is saved after every run; survives restarts
+- **Persistent** — loop and task state is saved after every run; survives restarts
 - **Graceful shutdown** — background loops are daemon-managed; foreground loops finish the current execution on Ctrl+C
 
 ## Development

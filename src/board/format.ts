@@ -48,21 +48,16 @@ export function timeUntil(iso: string | null): string {
   return t("format.daysAhead", { days: Math.floor(hrs / 24) });
 }
 
+const STATUS_COLORS: Record<LoopMeta["status"], string> = {
+  running: "#4ade80",
+  waiting: "#38bdf8",
+  paused: "#facc15",
+  idle: "#fb923c",
+  stopped: "#f87171",
+};
+
 export function statusColor(status: LoopMeta["status"]): string {
-  switch (status) {
-    case "running":
-      return "#4ade80";
-    case "paused":
-      return "#facc15";
-    case "idle":
-      return "#fb923c";
-    case "waiting":
-      return "#38bdf8";
-    case "stopped":
-      return "#f87171";
-    default:
-      return "#ffffff";
-  }
+  return STATUS_COLORS[status] ?? "#ffffff";
 }
 
 export function timingLabel(loop: LoopMeta): string {

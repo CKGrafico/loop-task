@@ -38,6 +38,7 @@ Gate order is `typecheck` → `lint` → `test` → `build`. The board TUI canno
 - Feature folders, small files, reuse shared helpers in `src/shared/` (`sleep`, `tail`, `writeFileAtomic`, `removeIfExists`).
 - **No user-facing string literals.** All strings live in `src/i18n/en.json`, accessed via `t(key, params?)`. Keys are typed (`I18nKey`); typecheck enforces validity.
 - **No inline magic numbers.** Add to `src/config/constants.ts` (POLL_MS, TOAST_TIMEOUT, etc.) and import.
+- **No nested if/else chains for dispatch.** When code branches on a string or enum value (view, status, key name, panel, action), use a dictionary/map lookup instead of stacked `if`/`else if` or `switch`/`case`. This applies to keybinding handlers, view routing, status-to-color mappings, cycle transitions, and action resolution. Nesting a second conditional inside a first (e.g. `if (view === "x") { if (key === "escape") { … } }`) is an anti-pattern — use `Record<Key, Handler>` dicts instead. Linear guard clauses (early returns with no nesting) are fine.
 
 ## Product / architecture rules
 
