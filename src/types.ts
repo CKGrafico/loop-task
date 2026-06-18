@@ -1,3 +1,12 @@
+export interface Project {
+  id: string;
+  name: string;
+  color: string;
+  createdAt: string;
+  isSystem: boolean;
+  isDefault: boolean;
+}
+
 export interface TaskDefinition {
   id: string;
   name: string;
@@ -19,6 +28,7 @@ export interface LoopOptions {
   maxRuns: number | null;
   verbose: boolean;
   description: string;
+  projectId: string;
 }
 
 export interface ExecutionResult {
@@ -75,6 +85,7 @@ export interface LoopMeta {
   maxRunsReached: boolean;
   runHistory: RunRecord[];
   skippedCount: number;
+  projectId: string;
 }
 
 export type IpcRequest =
@@ -97,6 +108,10 @@ export type IpcRequest =
   | { type: "task-list" }
   | { type: "task-get"; payload: { id: string } }
   | { type: "task-delete"; payload: { id: string } }
+  | { type: "project-list" }
+  | { type: "project-create"; payload: { name: string; color: string } }
+  | { type: "project-update"; payload: { id: string; name: string } }
+  | { type: "project-delete"; payload: { id: string } }
   | { type: "shutdown" };
 
 export type IpcResponse =

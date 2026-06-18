@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { LoopMeta, RunRecord, TaskDefinition } from "../types.js";
+import type { Project } from "../types.js";
 import {
   applyLoopFilters,
   cycleSortMode,
@@ -26,12 +27,13 @@ import { Footer } from "./components/Footer.js";
 import { ConfirmModal } from "./components/ConfirmModal.js";
 import { CreateView, createInitialValues } from "./components/CreateForm.js";
 import { TaskForm } from "./components/TaskForm.js";
-import { TaskNavigator, TaskInspector, TaskActionButtons, TASK_ACTION_COUNT, TASK_ACTION_KEYS, nextTaskPanel, type TaskPanelFocus } from "./components/TaskBrowser.js";
+import { TaskNavigator, TaskInspector, TaskActionButtons, type TaskPanelFocus } from "./components/TaskBrowser.js";
 import { TaskFilterBar } from "./components/TaskFilterBar.js";
 import { LogModal } from "./components/LogModal.js";
-import { fetchRunLog, deleteLoop, pauseLoop, resumeLoop, stopLoop, playLoop, triggerLoop, listTasks, deleteTask } from "./daemon.js";
+import { ProjectsModal } from "./components/ProjectsModal.js";
+import { ProjectsPage } from "./components/ProjectsPage.js";
+import { fetchRunLog, deleteLoop, pauseLoop, resumeLoop, stopLoop, playLoop, triggerLoop, listTasks, deleteTask, listProjects } from "./daemon.js";
 import { useBreakpoint } from "./hooks/useBreakpoint.js";
-import { commandLine } from "./format.js";
 
 const BOARD_REFRESH_DELAY_MS = 150;
 
@@ -40,6 +42,7 @@ const VIEW_TO_MODE: Partial<Record<View, Mode>> = {
   "task-create": "task",
   "task-edit": "task",
   "task-list": "task",
+  projects: "projects",
 };
 
 function resolveMode(confirm: ConfirmState | null, searchActive: boolean, helpOpen: boolean, view: View): Mode {
@@ -83,12 +86,18 @@ export function App(props: { onQuit: () => void }): React.ReactNode {
   const [taskSearchActive, setTaskSearchActive] = useState(false);
   const [taskQuery, setTaskQuery] = useState("");
 
+  const [projects, setProjects] = useState<Project[]>([]);
+  const [currentProjectId, setCurrentProjectId] = useState<string>(() => {
+    try { return localStorage.getItem("loop-current-project") ?? "default"; } catch { return "default"; }
+  });
+  const [projectsModalOpen, setProjectsModalOpen] = useState(false);
+
   const { toasts, push } = useToasts();
   const breakpoint = useBreakpoint();
 
   const visible = useMemo(
-    () => applyLoopFilters(loops, filters, sort),
-    [loops, filters, sort]
+    () => applyLoopFilters(loops.filter((l) => (l.projectId ?? "default") === currentProjectId), filters, sort),
+    [loops, filters, sort, currentProjectId]
   );
 
   const clampedIndex = Math.min(selectedIndex, Math.max(0, visible.length - 1));
@@ -126,6 +135,16 @@ export function App(props: { onQuit: () => void }): React.ReactNode {
   }
 
   useState(() => { void refreshTasks(); });
+
+  async function refreshProjects(): Promise<void> {
+    try { setProjects(await listProjects()); } catch { /* ignore */ }
+  }
+
+  useState(() => { void refreshProjects(); });
+
+  useEffect(() => {
+    try { localStorage.setItem("loop-current-project", currentProjectId); } catch {}
+  }, [currentProjectId]);
 
   function runAction(label: string, action: () => Promise<void>): () => Promise<void> {
     return async () => {
@@ -385,6 +404,7 @@ export function App(props: { onQuit: () => void }): React.ReactNode {
           onSortCycle={() => setSort(cycleSortMode(sort))}
           onViewTasks={() => { setTaskListReturnView("board"); void refreshTasks(); setView("task-list"); }}
           onNewLoop={() => { setEditTarget(null); setView("create"); }}
+          onManageProjects={() => setView("projects")}
         />
       ) : view === "task-list" ? (
         <TaskFilterBar
@@ -442,6 +462,13 @@ export function App(props: { onQuit: () => void }): React.ReactNode {
               />
             </box>
           </box>
+        ) : view === "projects" ? (
+          <ProjectsPage
+            projects={projects}
+            loops={loops}
+            onClose={() => setView("board")}
+            onRefresh={refreshProjects}
+          />
         ) : (
           <box style={{ flexDirection: breakpoint === "narrow" ? "column" : "row", flexGrow: 1, backgroundColor: "#0b0b0b" }}>
             <Navigator
@@ -452,6 +479,7 @@ export function App(props: { onQuit: () => void }): React.ReactNode {
               sort={sort}
               breakpoint={breakpoint}
               focused={focusedPanel === "loops"}
+              projects={projects}
               onSelect={(index) => { setSelectedIndex(index); setFocusedPanel("loops"); }}
               onActivate={(index) => { setSelectedIndex(index); const loop = visible[index]; if (loop) { setEditTarget(loop); setView("create"); } }}
             />
@@ -495,6 +523,16 @@ export function App(props: { onQuit: () => void }): React.ReactNode {
           logLines={logModalLines}
           loading={logModalLoading}
           onClose={() => setLogModalRun(null)}
+        />
+      ) : null}
+
+      {projectsModalOpen ? (
+        <ProjectsModal
+          projects={projects}
+          loops={loops}
+          currentProjectId={currentProjectId}
+          onSelect={(id) => { setCurrentProjectId(id); setProjectsModalOpen(false); }}
+          onClose={() => setProjectsModalOpen(false)}
         />
       ) : null}
 

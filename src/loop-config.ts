@@ -111,6 +111,7 @@ export function buildLoopOptions(
       maxRuns: parseMaxRuns(input.maxRuns),
       verbose: input.verbose ?? false,
       description,
+      projectId: "default",
     },
   };
 }

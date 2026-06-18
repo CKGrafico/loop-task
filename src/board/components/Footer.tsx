@@ -11,6 +11,7 @@ export function Footer(props: { mode: Mode }): React.ReactNode {
     task: { label: t("board.badgeTask"), bg: "#a78bfa" },
     help: { label: t("board.badgeHelp"), bg: "#facc15" },
     confirm: { label: t("board.badgeConfirm"), bg: "#f87171" },
+    projects: { label: t("project.projectsLabel"), bg: "#34d399" },
   };
 
   const hints: Record<Mode, [string, string][]> = {
@@ -40,6 +41,12 @@ export function Footer(props: { mode: Mode }): React.ReactNode {
       [t("board.hintKeyEnter"), t("board.hintConfirm")],
       [t("board.hintKeyYN"), t("board.hintYesNo")],
       [t("board.hintKeyEsc"), t("board.hintCancel")],
+    ],
+    projects: [
+      ["n", t("project.keyNewHint")],
+      ["e", t("project.keyEditHint")],
+      ["d", t("project.keyDeleteHint")],
+      [t("board.hintKeyEsc"), t("board.hintBack")],
     ],
   };
 

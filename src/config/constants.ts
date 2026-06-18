@@ -25,3 +25,14 @@ export const BOARD_BREAKPOINT_WIDTH = 80;
 export const HEADER_COMPACT_WIDTH = 60;
 
 export const HOVER_BG = "#1e3a5f";
+
+export const PROJECT_COLORS: Record<string, string> = {
+  white: "#ffffff",
+  cyan: "#06b6d4",
+  green: "#4ade80",
+  yellow: "#facc15",
+  orange: "#fb923c",
+  pink: "#f472b6",
+};
+
+export const PROJECT_COLOR_KEYS = Object.keys(PROJECT_COLORS) as Array<keyof typeof PROJECT_COLORS>;

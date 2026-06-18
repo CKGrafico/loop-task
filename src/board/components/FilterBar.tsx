@@ -12,8 +12,9 @@ export function FilterBar(props: {
   onSortCycle: () => void;
   onViewTasks: () => void;
   onNewLoop: () => void;
+  onManageProjects?: () => void;
 }): React.ReactNode {
-  const { filters, sort, searchActive, focusedPanel, onStatusCycle, onSortCycle, onViewTasks, onNewLoop } = props;
+  const { filters, sort, searchActive, focusedPanel, onStatusCycle, onSortCycle, onViewTasks, onNewLoop, onManageProjects } = props;
 
   const statusDisplay = filters.status === "waiting" ? "waiting" : filters.status;
 
@@ -58,6 +59,17 @@ export function FilterBar(props: {
         marginRight={1}
         narrow
       />
+      {onManageProjects ? (
+        <ClickableBadge
+          title={t("project.projectsTitle")}
+          text={t("project.projectsLabel")}
+          textColor="#34d399"
+          focused={focusedPanel === "projects"}
+          onMouseDown={onManageProjects}
+          marginRight={1}
+          narrow
+        />
+      ) : null}
       <ClickableBadge
         title={t("board.newLoopTitle")}
         text={t("board.newLoopLabel")}

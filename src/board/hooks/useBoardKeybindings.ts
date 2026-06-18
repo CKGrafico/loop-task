@@ -17,6 +17,7 @@ const PANEL_LEFT: Record<PanelFocus, PanelFocus> = {
   loops: "new",
   runs: "loops",
   actions: "runs",
+  projects: "new",
 };
 
 const PANEL_RIGHT: Record<PanelFocus, PanelFocus> = {
@@ -28,6 +29,7 @@ const PANEL_RIGHT: Record<PanelFocus, PanelFocus> = {
   loops: "runs",
   runs: "actions",
   actions: "search",
+  projects: "loops",
 };
 
 function nextPanel(current: PanelFocus, direction: "left" | "right"): PanelFocus {
@@ -63,6 +65,7 @@ const VIEW_ESCAPE: Record<string, (p: ViewEscapeParams) => void> = {
   "task-create": (p) => { p.setEditTask(null); p.setView("board"); },
   "task-edit": (p) => { p.setEditTask(null); p.setView("board"); },
   "task-list": (p) => p.setView(p.returnView ?? "board"),
+  projects: (p) => p.setView("board"),
 };
 
 interface ViewEscapeParams {
@@ -180,6 +183,7 @@ const panelHandlers: Record<PanelFocus, PanelKeyHandler> = {
     if (key === "return" || key === "enter") { p.onAction(keys[p.selectedAction] ?? "edit"); return true; }
     return false;
   },
+  projects: () => false,
 };
 
 const BOARD_SHORTCUTS: Record<string, (p: PanelHandlerParams) => void> = {
