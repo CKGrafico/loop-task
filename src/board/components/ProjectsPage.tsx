@@ -107,8 +107,6 @@ export function ProjectsPage(props: {
 
   return (
     <box
-      title={t("project.projectsTitle")}
-      border
       style={{ flexDirection: "row", flexGrow: 1, backgroundColor: "#0b0b0b" }}
     >
       <box
