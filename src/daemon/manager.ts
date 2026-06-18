@@ -2,6 +2,7 @@ import crypto from "node:crypto";
 import { LoopController } from "../core/loop-controller.js";
 import type { LoopOptions, LoopMeta } from "../types.js";
 import { TaskManager } from "./task-manager.js";
+import { ProjectManager } from "./projects.js";
 import {
   saveLoop,
   loadAllLoops,
@@ -20,14 +21,19 @@ export class LoopManager {
   private loops = new Map<string, StoredLoop>();
   private lastSerialized = new Map<string, string>();
   private taskManager: TaskManager;
+  private projectManager: ProjectManager;
 
-  constructor(taskManager: TaskManager) {
+  constructor(taskManager: TaskManager, projectManager?: ProjectManager) {
     this.taskManager = taskManager;
+    this.projectManager = projectManager || new ProjectManager();
   }
 
   private taskResolver = (taskId: string) => this.taskManager.get(taskId);
 
   init(): void {
+    // Initialize projects first
+    this.projectManager.init();
+
     const saved = loadAllLoops();
     let restarted = 0;
     let migrated = 0;
