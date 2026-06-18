@@ -488,12 +488,8 @@ function FormRow(props: {
                 key={opt.value}
                 onMouseDown={() => updateValues({ ...valuesRef.current, project: opt.value })}
                 style={{ backgroundColor: isActive ? "#1e3a8a" : undefined, paddingLeft: 1, paddingRight: 1, marginRight: 1 }}
-                {...hoverProps}
               >
-                <text fg={isActive ? "#ffffff" : "#9ca3af"}>
-                  <text fg={opt.color}>● </text>
-                  <text fg={isActive ? "#ffffff" : "#9ca3af"}>{opt.name}</text>
-                </text>
+                <text fg={isActive ? "#ffffff" : "#9ca3af"}>{`● ${opt.name}`}</text>
               </box>
             );
           })}
