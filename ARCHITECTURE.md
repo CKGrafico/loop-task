@@ -225,12 +225,17 @@ flowchart TB
   bin pointing at `dist/entry.js` (Node shebang, build step compiles TS to JS).
 - **Modes:**
   - `loop-task` (default) → `launchBoard()` (TUI).
-  - `loop-task start <interval> -- <cmd>` → `startLoop()` → background daemon.
+  - `loop-task start` → spawns/restores the background daemon.
+  - `loop-task new <interval> -- <cmd>` → `startLoop()` → background loop.
   - `loop-task run <interval> -- <cmd>` → `runLoop()` → foreground, blocking,
     Ctrl+C-aware.
+  - `loop-task project list|new|rename|color|delete` → project management over
+    the daemon RPC (`client/commands.ts` project handlers).
 - **Inputs:** `<interval>`, `<command...>`, options `--now`, `--max-runs`,
-  `--verbose`, `--cwd`. `--` stops loop-task option parsing so the target command
-  keeps its own flags.
+  `--verbose`, `--cwd`, `--project <name|id>`. `--` stops loop-task option parsing
+  so the target command keeps its own flags. Project names resolve to ids via
+  `resolveProjectId` (exact id, then case-insensitive name); colors resolve via
+  `resolveColor` (named palette or `#rrggbb`).
 - **Outputs:** Console summaries (via `client/commands.ts`) or the rendered board.
 
 ---
@@ -477,7 +482,7 @@ npm run release       # npm publish
 ```
 
 - Isolate daemon state during manual testing with `LOOP_CLI_HOME=/tmp/loop-test`.
-- CLI surfaces: `start` (background), `run` (foreground), default (board TUI).
+- CLI surfaces: `new` (background loop), `start` (daemon), `run` (foreground), `project` (project management), default (board TUI).
 - The `.opencode/` and `.agents/` directories configure AI-agent tooling
   (agents, skills, MCP servers) and are not part of the shipped package.
 
