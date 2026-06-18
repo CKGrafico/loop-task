@@ -31,7 +31,7 @@ export function Navigator(props: {
   const scrollRef = useRef<ScrollBoxRenderable | null>(null);
   const [, setTick] = useState(0);
 
-  const panelWidth = width * (breakpoint === "narrow" ? 1 : 0.55) - 4;
+  const panelWidth = width * (breakpoint === "narrow" ? 1 : 0.605) - 4;
   const panelHeight = height - (breakpoint === "narrow" ? 10 : 7);
 
   const statusW = 8;
@@ -77,9 +77,9 @@ export function Navigator(props: {
       title={t("board.navigatorTitle", { visible: visible.length, total, sort, status: filters.status })}
       border
       borderColor={focused ? "#38bdf8" : undefined}
-      style={{ width: breakpoint === "narrow" ? "100%" : "55%", flexShrink: 0, flexDirection: "column", backgroundColor: "#0b0b0b", overflow: "hidden" }}
+      style={{ width: breakpoint === "narrow" ? "100%" : "60.5%", flexShrink: 0, flexDirection: "column", backgroundColor: "#0b0b0b", overflow: "hidden" }}
     >
-      <text fg="#6b7280">{header}</text>
+      <text fg="#6b7280" style={{ height: 1, overflow: "hidden" }}>{header}</text>
       {visible.length === 0 ? (
         <text fg="#9ca3af">{t("board.noMatch")}</text>
       ) : (
@@ -149,15 +149,15 @@ function NavigatorRow(props: {
     lastClickRef.current = now;
   }
 
+  const rowText = `${isSelected ? "›" : " "} ${fit(truncate(describeLoop(loop), descW), descW)} ${fit(statusLabel(loop.status), statusW)} ${fit(sinceLabel(loop), sinceW)} ${fit(timingLabel(loop), timingW)} ${fit(exit, exitW)} #${String(loop.runCount).padStart(runsW)} ${fit(loop.skippedCount > 0 ? String(loop.skippedCount) : "-", skpW)}`;
+  const statusFg = statusColor(loop.status);
+  const statusStart = 2 + descW + 1;
+  const statusEnd = statusStart + statusW;
+
   return (
-    <box id={id} onMouseDown={handleClick} backgroundColor={bg} {...hoverProps}>
-      <text>
-        {isSelected ? "›" : " "}{" "}
-        {fit(truncate(describeLoop(loop), descW), descW)} <span fg={statusColor(loop.status)}>
-          {fit(statusLabel(loop.status), statusW)}
-        </span>{" "}
-        {fit(sinceLabel(loop), sinceW)} {fit(timingLabel(loop), timingW)}         {fit(exit, exitW)} #
-        {String(loop.runCount).padStart(runsW)} {fit(loop.skippedCount > 0 ? String(loop.skippedCount) : "-", skpW)}
+    <box id={id} onMouseDown={handleClick} backgroundColor={bg} style={{ height: 1, overflow: "hidden" }} {...hoverProps}>
+      <text fg="#e5e7eb">
+        {rowText.slice(0, statusStart)}<span fg={statusFg}>{rowText.slice(statusStart, statusEnd)}</span>{rowText.slice(statusEnd)}
       </text>
     </box>
   );

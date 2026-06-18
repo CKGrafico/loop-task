@@ -6,7 +6,7 @@
   "modelsByAgent": {
     "plan": "github-copilot/claude-sonnet-4.6",
     "build": "github-copilot/claude-sonnet-4.6",
-    "fast": "github-copilot/claude-sonnet-4.6"
+    "fast": "github-copilot/claude-haiku-4.5"
   },
   "modelAssignment": "default"
 }
