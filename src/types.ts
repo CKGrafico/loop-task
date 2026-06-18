@@ -64,15 +64,17 @@ export interface LoopMeta {
   description: string;
   status: LoopStatus;
   createdAt: string;
-  runCount: number;
   sessionStartedAt: string | null;
+  runCount: number;
   lastRunAt: string | null;
   lastExitCode: number | null;
   lastDuration: number | null;
   nextRunAt: string | null;
   remainingDelayMs: number | null;
   pid: number;
+  maxRunsReached: boolean;
   runHistory: RunRecord[];
+  skippedCount: number;
 }
 
 export type IpcRequest =

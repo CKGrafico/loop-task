@@ -149,12 +149,9 @@ export function App(props: { onQuit: () => void }): React.ReactNode {
     }
     setLogModalLoading(true);
     setLogModalLines([]);
-    const runsToFetch = run.chainGroupId
-      ? (selected?.runHistory ?? []).filter((r) => r.chainGroupId === run.chainGroupId)
-      : [run];
-    Promise.all(runsToFetch.map((r) => fetchRunLog(selectedId, r.runNumber)))
-      .then((logs) => {
-        setLogModalLines(logs.flatMap((log) => (log ? log.split("\n") : [])));
+    fetchRunLog(selectedId, run.runNumber)
+      .then((log) => {
+        setLogModalLines(log ? log.split("\n") : []);
         setLogModalLoading(false);
       })
       .catch(() => {

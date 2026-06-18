@@ -37,11 +37,12 @@ export function Navigator(props: {
   const statusW = 8;
   const exitW = 2;
   const runsW = 5;
-  const nonVar = 2 + 1 + statusW + 1 + 1 + 1 + exitW + 1 + 1 + runsW;
+  const skpW = 4;
+  const nonVar = 2 + 1 + statusW + 1 + 1 + 1 + exitW + 1 + 1 + runsW + 1 + skpW;
   const avail = Math.floor(panelWidth) - nonVar;
+  const descW = Math.min(22, Math.max(6, Math.round(avail * 0.30)));
   const sinceW = Math.min(14, Math.max(8, Math.round(avail * 0.35)));
-  const timingW = Math.min(12, Math.max(6, Math.round(avail * 0.25)));
-  const descW = Math.max(6, avail - sinceW - timingW);
+  const timingW = Math.max(6, avail - descW - sinceW);
 
   const header =
     "  " +
@@ -55,7 +56,9 @@ export function Navigator(props: {
     " " +
     fit("EX", exitW) +
     " " +
-    "#" + fit(t("board.headerRuns"), runsW);
+    "#" + fit(t("board.headerRuns"), runsW) +
+    " " +
+    fit(t("board.headerSkipped"), skpW);
 
   useEffect(() => {
     const id = `nav-row-${selectedIndex}`;
@@ -102,6 +105,7 @@ export function Navigator(props: {
                 timingW={timingW}
                 exitW={exitW}
                 runsW={runsW}
+                skpW={skpW}
                 onSelect={onSelect}
                 onActivate={onActivate}
               />
@@ -126,10 +130,11 @@ function NavigatorRow(props: {
   timingW: number;
   exitW: number;
   runsW: number;
+  skpW: number;
   onSelect: (index: number) => void;
   onActivate: (index: number) => void;
 }): React.ReactNode {
-  const { id, loop, index, isSelected, focused, exit, statusW, sinceW, descW, timingW, exitW, runsW, onSelect, onActivate } = props;
+  const { id, loop, index, isSelected, focused, exit, statusW, sinceW, descW, timingW, exitW, runsW, skpW, onSelect, onActivate } = props;
   const { isHovered, hoverProps } = useHoverState();
   const bg = isSelected ? (focused ? "#1e3a8a" : "#1e2a4a") : isHovered ? HOVER_BG : undefined;
   const lastClickRef = useRef(0);
@@ -151,8 +156,8 @@ function NavigatorRow(props: {
         {fit(truncate(describeLoop(loop), descW), descW)} <span fg={statusColor(loop.status)}>
           {fit(statusLabel(loop.status), statusW)}
         </span>{" "}
-        {fit(sinceLabel(loop), sinceW)} {fit(timingLabel(loop), timingW)} {fit(exit, exitW)} #
-        {String(loop.runCount).padStart(runsW)}
+        {fit(sinceLabel(loop), sinceW)} {fit(timingLabel(loop), timingW)}         {fit(exit, exitW)} #
+        {String(loop.runCount).padStart(runsW)} {fit(loop.skippedCount > 0 ? String(loop.skippedCount) : "-", skpW)}
       </text>
     </box>
   );

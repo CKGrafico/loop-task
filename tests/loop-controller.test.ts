@@ -79,7 +79,7 @@ describe("LoopController", () => {
 
     const meta = controller.getMeta();
     expect(meta.runCount).toBe(1);
-    expect(controller.status).toBe("stopped");
+    expect(controller.status).toBe("paused");
     expect(meta.lastExitCode).toBe(0);
     await controller.stop();
   });
@@ -159,34 +159,53 @@ describe("LoopController", () => {
     await controller.stop();
   });
 
-  it("triggerNow(true) interrupts an active run and starts the next run immediately", async () => {
+  it("triggerNow returns false when loop is running", async () => {
     mockExecaAbortableRun();
-    mockExecaSuccess();
-    const controller = new LoopController("hhhhhhhh", makeOptions({ immediate: true, maxRuns: 2 }), logPath);
+    const controller = new LoopController("hhhhhhhh", makeOptions({ immediate: true }), logPath);
     controller.start();
 
     await Promise.resolve();
-    controller.triggerNow(true);
-    await vi.runAllTimersAsync();
+    expect(controller.status).toBe("running");
 
-    expect(controller.getMeta().runCount).toBe(2);
-    expect(controller.status).toBe("stopped");
+    const result = controller.triggerNow();
+    expect(result).toBe(false);
+    expect(controller.getMeta().runCount).toBe(1);
+
     await controller.stop();
   });
 
-  it("triggerNow(true) does not consume the forced rerun when maxRuns would otherwise be exhausted", async () => {
-    mockExecaAbortableRun();
-    mockExecaSuccess();
-    const controller = new LoopController("iiiiiiii", makeOptions({ immediate: true, maxRuns: 1 }), logPath);
+  it("triggerNow with maxRuns=1 runs once and pauses", async () => {
+    const controller = new LoopController("iiiiiiii", makeOptions({ immediate: false, interval: 60000, maxRuns: 1 }), logPath);
     controller.start();
 
-    await Promise.resolve();
-    controller.triggerNow(true);
+    await vi.advanceTimersByTimeAsync(300);
+    expect(controller.status).toBe("waiting");
+
+    controller.triggerNow();
     await vi.runAllTimersAsync();
 
     expect(controller.getMeta().runCount).toBe(1);
-    expect(controller.status).toBe("stopped");
+    expect(controller.status).toBe("paused");
     expect(controller.getMeta().lastExitCode).toBe(0);
+    await controller.stop();
+  });
+
+  it("triggerNow multiple times produces multiple runs", async () => {
+    const controller = new LoopController("jjjjjjjj", makeOptions({ immediate: true, interval: 10000, maxRuns: 3 }), logPath);
+    controller.start();
+
+    await vi.advanceTimersByTimeAsync(50);
+    expect(controller.getMeta().runCount).toBe(1);
+
+    controller.triggerNow();
+    await vi.advanceTimersByTimeAsync(210);
+    expect(controller.getMeta().runCount).toBe(2);
+
+    controller.triggerNow();
+    await vi.advanceTimersByTimeAsync(210);
+    expect(controller.getMeta().runCount).toBe(3);
+
+    expect(controller.getMeta().runHistory.length).toBe(3);
     await controller.stop();
   });
 

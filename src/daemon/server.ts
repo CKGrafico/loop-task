@@ -9,7 +9,7 @@ import { LOG_TAIL_DEFAULT } from "../config/constants.js";
 import { send } from "../ipc/send.js";
 import { tail } from "../shared/tail.js";
 import { streamLogFollow } from "../ipc/handlers/logs-stream.js";
-import { splitLogByRuns } from "../core/log-parser.js";
+
 
 export class IpcServer {
   private server: net.Server;
@@ -140,11 +140,23 @@ export class IpcServer {
       }
 
       case "play-loop": {
+        if (this.manager.isMaxRunsBlocked(request.payload.id)) {
+          send(socket, { type: "error", message: t("errors.maxRunsReached") });
+          break;
+        }
         this.respondOk(socket, this.manager.playLoop(request.payload.id), request.payload.id);
         break;
       }
 
       case "trigger": {
+        if (this.manager.isMaxRunsBlocked(request.payload.id)) {
+          send(socket, { type: "error", message: t("errors.maxRunsReached") });
+          break;
+        }
+        if (this.manager.isRunning(request.payload.id)) {
+          send(socket, { type: "error", message: t("errors.triggerWhileRunning") });
+          break;
+        }
         this.respondOk(socket, this.manager.trigger(request.payload.id), request.payload.id);
         break;
       }
@@ -220,10 +232,32 @@ export class IpcServer {
       return;
     }
 
-    const content = fs.readFileSync(logPath, "utf-8");
-    const runs = splitLogByRuns(content);
-    const run = runs.find((r) => r.runNumber === runNumber);
-    send(socket, { type: "ok", data: run ? run.lines.join("\n") : "" });
+    const meta = this.manager.status(id);
+    if (!meta) {
+      send(socket, { type: "ok", data: "" });
+      return;
+    }
+
+    const records = meta.runHistory
+      .filter((r) => r.runNumber === runNumber)
+      .sort((a, b) => a.logOffset - b.logOffset);
+
+    if (records.length === 0) {
+      send(socket, { type: "ok", data: "" });
+      return;
+    }
+
+    const buffer = fs.readFileSync(logPath);
+    const allSorted = meta.runHistory.slice().sort((a, b) => a.logOffset - b.logOffset);
+
+    const parts = records.map((record) => {
+      const start = record.logOffset;
+      const idx = allSorted.indexOf(record);
+      const end = idx < allSorted.length - 1 ? allSorted[idx + 1].logOffset : buffer.length;
+      return buffer.toString("utf-8", start, end);
+    });
+
+    send(socket, { type: "ok", data: parts.join("") });
   }
 
   private handleRunLogStream(

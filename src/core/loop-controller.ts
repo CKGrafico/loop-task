@@ -13,6 +13,7 @@ interface LoopControllerState {
   status?: LoopStatus;
   createdAt?: string;
   runCount?: number;
+  maxRunsReached?: boolean;
   sessionStartedAt?: string | null;
   lastRunAt?: string | null;
   lastExitCode?: number | null;
@@ -20,6 +21,7 @@ interface LoopControllerState {
   nextRunAt?: string | null;
   remainingDelayMs?: number | null;
   runHistory?: RunRecord[];
+  skippedCount?: number;
 }
 
 export class LoopController extends EventEmitter {
@@ -27,9 +29,10 @@ export class LoopController extends EventEmitter {
   private runAbortController: AbortController | null = null;
   private _paused = false;
   private _forceRun = false;
+  private _savedRemainingMs: number | null = null;
   private _resetSchedule = false;
-  private interruptedForForceRun = false;
   private _stopAfterRun = false;
+  private _maxRunsReached = false;
   private _status: LoopStatus = "running";
   private resumeResolve: (() => void) | null = null;
   private runCount = 0;
@@ -48,6 +51,7 @@ export class LoopController extends EventEmitter {
   private sessionStartedAt: string | null = null;
   private runHistory: RunRecord[] = [];
   private currentRunStartOffset: number = 0;
+  private skippedCount = 0;
 
   constructor(
     id: string,
@@ -64,6 +68,7 @@ export class LoopController extends EventEmitter {
     this.abortController = new AbortController();
     this.createdAt = state?.createdAt ?? new Date().toISOString();
     this.runCount = state?.runCount ?? 0;
+    this._maxRunsReached = state?.maxRunsReached ?? false;
     this.sessionStartedAt = state?.sessionStartedAt ?? null;
     this.lastRunAt = state?.lastRunAt ?? null;
     this.lastExitCode = state?.lastExitCode ?? null;
@@ -75,6 +80,7 @@ export class LoopController extends EventEmitter {
     this.runHistory = (state?.runHistory ?? []).map((r) =>
       r.status === "running" ? { ...r, status: "completed" as const } : r
     ).map((r) => ({ ...r, logOffset: r.logOffset ?? 0 }));
+    this.skippedCount = state?.skippedCount ?? 0;
   }
 
   get status(): LoopStatus {
@@ -82,6 +88,9 @@ export class LoopController extends EventEmitter {
   }
 
   start(): void {
+    this.skippedCount = 0;
+    this.logStream?.end();
+    this.abortController = new AbortController();
     this.logStream = fs.createWriteStream(this.logPath, { flags: "a" });
     this.loopPromise = this.run();
     if (this.sessionStartedAt === null) {
@@ -127,43 +136,39 @@ export class LoopController extends EventEmitter {
     }
   }
 
-  playLoop(): void {
-    if (this._status !== "idle" && this._status !== "stopped") return;
+  playLoop(): boolean {
+    if (this._status !== "idle" && this._status !== "stopped") return false;
+    if (this._maxRunsReached) return false;
     if (this.options.maxRuns !== null && this.runCount >= this.options.maxRuns) {
-      this.runCount = 0;
+      this._maxRunsReached = true;
+      return false;
     }
     this.sessionStartedAt = new Date().toISOString();
     this._resetSchedule = true;
     this._paused = false;
     this._status = "waiting";
+    this.nextRunAt = new Date(Date.now() + this.options.interval).toISOString();
     if (this.resumeResolve) {
       this.resumeResolve();
       this.resumeResolve = null;
     }
-    if (!this.loopPromise) {
-      this.start();
-    }
+    this.start();
     this.emit("resumed");
+    return true;
   }
 
-  triggerNow(interruptCurrentRun = false): boolean {
-    const isStopped = this._status === "stopped";
-    if (isStopped && this.options.maxRuns !== null && this.runCount >= this.options.maxRuns) {
-      this.runCount = 0;
-    }
+  triggerNow(): boolean {
+    if (this._status === "running") return false;
+    if (this._maxRunsReached) return false;
+    const needsStart = this._status === "stopped" || this._status === "idle";
+    this._savedRemainingMs = this.remainingDelayMs;
     this._forceRun = true;
-    this.remainingDelayMs = null;
-    this.nextRunAt = null;
-    if (isStopped) {
+    if (needsStart) {
       this._stopAfterRun = true;
       this._paused = false;
       this._status = "running";
-      if (!this.loopPromise) this.start();
+      this.start();
     } else {
-      if (interruptCurrentRun) {
-        this.interruptedForForceRun = true;
-        this.runAbortController?.abort();
-      }
       if (this._paused) this.resume();
     }
     this.emit("triggered");
@@ -186,6 +191,7 @@ export class LoopController extends EventEmitter {
       taskId: this.options.taskId,
       status: this._status,
       createdAt: this.createdAt,
+      maxRunsReached: this._maxRunsReached,
       sessionStartedAt: this.sessionStartedAt,
       runCount: this.runCount,
       lastRunAt: this.lastRunAt,
@@ -194,7 +200,20 @@ export class LoopController extends EventEmitter {
       nextRunAt: this.nextRunAt,
       remainingDelayMs: this.remainingDelayMs,
       runHistory: this.runHistory,
+      skippedCount: this.skippedCount,
     };
+  }
+
+  clearMaxRunsReached(): void {
+    this._maxRunsReached = false;
+    this._paused = false;
+    this._status = "idle";
+    this.remainingDelayMs = null;
+    this.nextRunAt = null;
+  }
+
+  isMaxRunsReached(): boolean {
+    return this._maxRunsReached;
   }
 
   private async waitForResume(): Promise<void> {
@@ -212,6 +231,7 @@ export class LoopController extends EventEmitter {
 
     while (remaining > 0) {
       if (this._forceRun) {
+        this._savedRemainingMs = remaining;
         this.remainingDelayMs = null;
         this.nextRunAt = null;
         return true;
@@ -275,8 +295,10 @@ export class LoopController extends EventEmitter {
     try {
       while (!signal.aborted) {
         if (this.options.maxRuns !== null && this.runCount >= this.options.maxRuns) {
-          this._status = "stopped";
-          this.emit("stopped");
+          this._maxRunsReached = true;
+          this._paused = true;
+          this._status = "paused";
+          this.emit("paused");
           return;
         }
 
@@ -311,6 +333,7 @@ export class LoopController extends EventEmitter {
         this._forceRun = false;
         this.runCount++;
         this.lastRunAt = new Date().toISOString();
+        const runStartedAtMs = Date.now();
         if (this.sessionStartedAt === null) {
           this.sessionStartedAt = this.lastRunAt;
         }
@@ -348,88 +371,84 @@ export class LoopController extends EventEmitter {
         this.lastExitCode = result.exitCode;
         this.lastDuration = result.duration;
 
-        if (!this.interruptedForForceRun) {
-          const logSize = fs.existsSync(this.logPath) ? fs.statSync(this.logPath).size - this.currentRunStartOffset : 0;
-          const runningRecord = this.runHistory.find((r) => r.runNumber === this.runCount);
-          if (runningRecord) {
-            runningRecord.exitCode = result.exitCode;
-            runningRecord.duration = result.duration;
-            runningRecord.logSize = Math.max(0, logSize);
-            runningRecord.status = "completed";
-          } else {
+        const logSize = fs.existsSync(this.logPath) ? fs.statSync(this.logPath).size - this.currentRunStartOffset : 0;
+        const runningRecord = this.runHistory.find((r) => r.runNumber === this.runCount);
+        if (runningRecord) {
+          runningRecord.exitCode = result.exitCode;
+          runningRecord.duration = result.duration;
+          runningRecord.logSize = Math.max(0, logSize);
+          runningRecord.status = "completed";
+        } else {
+          this.runHistory.push({
+            runNumber: this.runCount,
+            startedAt: this.lastRunAt,
+            exitCode: result.exitCode,
+            duration: result.duration,
+            logSize: Math.max(0, logSize),
+            status: "completed",
+            logOffset: this.currentRunStartOffset,
+          });
+        }
+
+        const chainTargetId = result.exitCode === 0 ? task?.onSuccessTaskId : task?.onFailureTaskId;
+        if (chainTargetId) {
+          const chainTask = this.taskResolver(chainTargetId);
+          if (chainTask) {
+            const chainGroupId = crypto.randomUUID().slice(0, 8);
+            const mainRecord = this.runHistory[this.runHistory.length - 1];
+            if (mainRecord) mainRecord.chainGroupId = chainGroupId;
+
+            const chainStartedAt = new Date().toISOString();
+            const chainOffset = fs.existsSync(this.logPath) ? fs.statSync(this.logPath).size : 0;
             this.runHistory.push({
               runNumber: this.runCount,
-              startedAt: this.lastRunAt,
-              exitCode: result.exitCode,
-              duration: result.duration,
-              logSize: Math.max(0, logSize),
-              status: "completed",
-              logOffset: this.currentRunStartOffset,
+              startedAt: chainStartedAt,
+              exitCode: -1,
+              duration: 0,
+              logSize: 0,
+              status: "running",
+              logOffset: chainOffset,
+              chainGroupId,
+              chainName: chainTask.name,
             });
-          }
 
-          const chainTargetId = result.exitCode === 0 ? task?.onSuccessTaskId : task?.onFailureTaskId;
-          if (chainTargetId) {
-            const chainTask = this.taskResolver(chainTargetId);
-            if (chainTask) {
-              const chainGroupId = crypto.randomUUID().slice(0, 8);
-              const mainRecord = this.runHistory[this.runHistory.length - 1];
-              if (mainRecord) mainRecord.chainGroupId = chainGroupId;
+            const chainResult = await executeCommand(
+              chainTask.command,
+              chainTask.commandArgs,
+              chainTask.cwd,
+              this.logStream!,
+              signal,
+              this.runCount
+            );
 
-              const chainStartedAt = new Date().toISOString();
-              const chainOffset = fs.existsSync(this.logPath) ? fs.statSync(this.logPath).size : 0;
-              this.runHistory.push({
-                runNumber: this.runCount,
-                startedAt: chainStartedAt,
-                exitCode: -1,
-                duration: 0,
-                logSize: 0,
-                status: "running",
-                logOffset: chainOffset,
-                chainGroupId,
-                chainName: chainTask.name,
-              });
-
-              const chainResult = await executeCommand(
-                chainTask.command,
-                chainTask.commandArgs,
-                chainTask.cwd,
-                this.logStream!,
-                signal,
-                this.runCount
-              );
-
-              const chainLogSize = fs.existsSync(this.logPath) ? fs.statSync(this.logPath).size - chainOffset : 0;
-              const chainRecord = this.runHistory.find((r) => r.chainGroupId === chainGroupId && r.status === "running");
-              if (chainRecord) {
-                chainRecord.exitCode = chainResult.exitCode;
-                chainRecord.duration = chainResult.duration;
-                chainRecord.logSize = Math.max(0, chainLogSize);
-                chainRecord.status = "completed";
-              }
-
-              this.lastExitCode = chainResult.exitCode;
-              this.lastDuration = (this.lastDuration ?? 0) + chainResult.duration;
+            const chainLogSize = fs.existsSync(this.logPath) ? fs.statSync(this.logPath).size - chainOffset : 0;
+            const chainRecord = this.runHistory.find((r) => r.chainGroupId === chainGroupId && r.status === "running");
+            if (chainRecord) {
+              chainRecord.exitCode = chainResult.exitCode;
+              chainRecord.duration = chainResult.duration;
+              chainRecord.logSize = Math.max(0, chainLogSize);
+              chainRecord.status = "completed";
             }
-          }
 
-          if (this.runHistory.length > 50) {
-            this.runHistory = this.runHistory.slice(-50);
+            this.lastExitCode = chainResult.exitCode;
+            this.lastDuration = (this.lastDuration ?? 0) + chainResult.duration;
           }
         }
 
-        if (this.interruptedForForceRun) {
-          this.runCount = Math.max(0, this.runCount - 1);
-          this.interruptedForForceRun = false;
-          this._forceRun = true;
+        if (this.runHistory.length > 50) {
+          this.runHistory = this.runHistory.slice(-50);
         }
         this.emit("run:end", result);
 
         if (signal.aborted) break;
 
         if (this.options.maxRuns !== null && this.runCount >= this.options.maxRuns) {
-          this._status = "stopped";
-          this.emit("stopped");
+          this._maxRunsReached = true;
+          this._paused = true;
+          this._status = "paused";
+          this.remainingDelayMs = null;
+          this.nextRunAt = null;
+          this.emit("paused");
           return;
         }
 
@@ -443,13 +462,31 @@ export class LoopController extends EventEmitter {
           return;
         }
 
-        const completed = await this.waitForDelay(this.options.interval, signal);
-        if (!completed) {
-          break;
+        const saved = this._savedRemainingMs;
+        this._savedRemainingMs = null;
+        if (saved !== null) {
+          const remaining = Math.max(0, saved - result.duration);
+          if (remaining > 0) {
+            const completed = await this.waitForDelay(remaining, signal);
+            if (!completed) break;
+          }
+        } else {
+          const nextSlotMs = runStartedAtMs + this.options.interval;
+          const overrunMs = Date.now() - nextSlotMs;
+          if (overrunMs >= 0) {
+            const missed = Math.floor(overrunMs / this.options.interval) + 1;
+            this.skippedCount += missed;
+            const adjustedDelay = this.options.interval - (overrunMs % this.options.interval);
+            const completed = await this.waitForDelay(adjustedDelay, signal);
+            if (!completed) break;
+          } else {
+            const completed = await this.waitForDelay(this.options.interval, signal);
+            if (!completed) break;
+          }
         }
       }
     } finally {
-      if (this._status !== "stopped" && this._status !== "idle") {
+      if (this._status !== "stopped" && this._status !== "idle" && this._status !== "paused" && !this._maxRunsReached) {
         this._status = "stopped";
       }
     }

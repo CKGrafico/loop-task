@@ -301,6 +301,7 @@ export function CreateView(props: {
                 runNowOptions={runNowOptions}
                 selectedTaskName={selectedTaskName}
                 fields={filteredFields}
+                onChooseTask={props.onChooseTask}
                 style={{ width: "50%", paddingRight: 1 }}
               />
               {rightField ? (
@@ -320,6 +321,7 @@ export function CreateView(props: {
                   runNowOptions={runNowOptions}
                   selectedTaskName={selectedTaskName}
                   fields={filteredFields}
+                  onChooseTask={props.onChooseTask}
                   style={{ width: "50%" }}
                 />
               ) : (
@@ -389,9 +391,10 @@ function FormRow(props: {
   runNowOptions: { name: string; description: string; value: string }[];
   selectedTaskName: string | null;
   fields: readonly CreateField[];
+  onChooseTask: () => void;
   style?: { width?: number | `${number}%` | "auto"; flexGrow?: number; marginRight?: number; paddingRight?: number };
 }): React.ReactNode {
-  const { field, index, focusIndex, values, valuesRef, updateValues, setFocusIndex, submit, labels, hints, examples, taskModeOptions, runNowOptions, selectedTaskName, fields, style } = props;
+  const { field, index, focusIndex, values, valuesRef, updateValues, setFocusIndex, submit, labels, hints, examples, taskModeOptions, runNowOptions, selectedTaskName, fields, onChooseTask, style } = props;
   const { isHovered, hoverProps } = useHoverState();
   const isFocused = focusIndex === index;
 
@@ -430,6 +433,7 @@ function FormRow(props: {
           border
           borderColor={isFocused ? "#38bdf8" : undefined}
           style={{ height: 3, flexDirection: "row", backgroundColor: "#0b0b0b", alignItems: "center", paddingLeft: 1 }}
+          onMouseDown={() => { setFocusIndex(index); onChooseTask(); }}
         >
           <text fg={values.taskId ? "#4ade80" : "#9ca3af"}>
             {values.taskId

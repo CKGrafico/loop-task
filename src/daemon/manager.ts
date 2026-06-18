@@ -111,8 +111,14 @@ export class LoopManager {
       entry.options.maxRuns !== options.maxRuns ||
       entry.options.verbose !== options.verbose;
 
+    const maxRunsChanged = entry.options.maxRuns !== options.maxRuns;
+
     Object.assign(entry.options, options);
     entry.intervalHuman = intervalHuman;
+
+    if (maxRunsChanged) {
+      entry.controller.clearMaxRunsReached();
+    }
     if (entry.controller.status === "running") {
       entry.controller.pause(true);
     } else if (executionChanged && entry.controller.status !== "paused" && entry.controller.status !== "idle") {
@@ -163,17 +169,31 @@ export class LoopManager {
   playLoop(id: string): boolean {
     const entry = this.loops.get(id);
     if (!entry) return false;
-    entry.controller.playLoop();
-    this.persist(id, entry.controller, entry.options, entry.intervalHuman);
-    return true;
+    const ok = entry.controller.playLoop();
+    if (ok) {
+      this.persist(id, entry.controller, entry.options, entry.intervalHuman);
+    }
+    return ok;
   }
 
   trigger(id: string): boolean {
     const entry = this.loops.get(id);
     if (!entry) return false;
-    entry.controller.triggerNow(true);
-    this.persist(id, entry.controller, entry.options, entry.intervalHuman);
-    return true;
+    const ok = entry.controller.triggerNow();
+    if (ok) {
+      this.persist(id, entry.controller, entry.options, entry.intervalHuman);
+    }
+    return ok;
+  }
+
+  isMaxRunsBlocked(id: string): boolean {
+    const entry = this.loops.get(id);
+    return !!entry?.controller.isMaxRunsReached();
+  }
+
+  isRunning(id: string): boolean {
+    const entry = this.loops.get(id);
+    return entry?.controller.status === "running";
   }
 
   async delete(id: string): Promise<boolean> {
