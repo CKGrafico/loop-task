@@ -89,7 +89,7 @@ export function App(props: { onQuit: () => void }): React.ReactNode {
   const [projects, setProjects] = useState<Project[]>([]);
   const createProjectTriggerRef = useRef<(() => void) | null>(null);
   const [currentProjectId, setCurrentProjectId] = useState<string>(() => {
-    try { return localStorage.getItem("loop-current-project") ?? "default"; } catch { return "default"; }
+    try { return localStorage.getItem("loop-current-project") ?? "all"; } catch { return "all"; }
   });
   const [projectsModalOpen, setProjectsModalOpen] = useState(false);
 
