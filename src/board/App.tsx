@@ -96,7 +96,10 @@ export function App(props: { onQuit: () => void }): React.ReactNode {
   const breakpoint = useBreakpoint();
 
   const visible = useMemo(
-    () => applyLoopFilters(loops.filter((l) => (l.projectId ?? "default") === currentProjectId), filters, sort),
+    () => applyLoopFilters(
+      currentProjectId === "all" ? loops : loops.filter((l) => (l.projectId ?? "default") === currentProjectId),
+      filters, sort
+    ),
     [loops, filters, sort, currentProjectId]
   );
 
@@ -418,7 +421,7 @@ export function App(props: { onQuit: () => void }): React.ReactNode {
           onStatusCycle={() => setFilters((prev) => ({ ...prev, status: cycleStatusFilter(prev.status) }))}
           onSortCycle={() => setSort(cycleSortMode(sort))}
           onSelectProject={() => setProjectsModalOpen(true)}
-          currentProjectName={projects.find(p => p.id === currentProjectId)?.name ?? "Default"}
+          currentProjectName={currentProjectId === "all" ? t("project.showAll") : (projects.find(p => p.id === currentProjectId)?.name ?? "Default")}
         />
       ) : view === "task-list" ? (
         <TaskFilterBar

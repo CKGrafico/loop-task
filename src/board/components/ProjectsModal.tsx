@@ -3,6 +3,8 @@ import { useKeyboard, useTerminalDimensions } from "@opentui/react";
 import type { LoopMeta, Project } from "../../types.js";
 import { t } from "../../i18n/index.js";
 
+const ALL_ID = "all";
+
 export function ProjectsModal(props: {
   projects: Project[];
   loops: LoopMeta[];
@@ -14,15 +16,18 @@ export function ProjectsModal(props: {
   const { width } = useTerminalDimensions();
 
   const [query, setQuery] = useState("");
-  const [selectedIndex, setSelectedIndex] = useState(() => {
-    const idx = projects.findIndex((p) => p.id === currentProjectId);
-    return Math.max(0, idx);
-  });
+
+  // "Show All" synthetic entry always first, then real projects sorted alphabetically
+  const sorted = [...projects].sort((a, b) => a.name.localeCompare(b.name));
+  const allEntry = { id: ALL_ID, name: t("project.showAll"), color: "#6b7280", isSystem: false, isDefault: false, createdAt: "" };
+  const entries = [allEntry, ...sorted];
 
   const filtered = query
-    ? projects.filter((p) => p.name.toLowerCase().startsWith(query.toLowerCase()))
-    : projects;
+    ? entries.filter((p) => p.id === ALL_ID || p.name.toLowerCase().startsWith(query.toLowerCase()))
+    : entries;
 
+  const initialIndex = Math.max(0, filtered.findIndex((p) => p.id === currentProjectId));
+  const [selectedIndex, setSelectedIndex] = useState(initialIndex);
   const clampedIndex = Math.min(selectedIndex, Math.max(0, filtered.length - 1));
 
   useKeyboard((key) => {
@@ -35,8 +40,8 @@ export function ProjectsModal(props: {
       return;
     }
     if (key.name === "return" || key.name === "enter") {
-      const project = filtered[clampedIndex];
-      if (project) onSelect(project.id);
+      const entry = filtered[clampedIndex];
+      if (entry) onSelect(entry.id);
       return;
     }
     if (key.name === "escape") {
@@ -85,22 +90,24 @@ export function ProjectsModal(props: {
         {filtered.length === 0 ? (
           <text fg="#9ca3af">No projects match</text>
         ) : (
-          filtered.map((project, index) => {
+          filtered.map((entry, index) => {
             const isSelected = index === clampedIndex;
-            const loopCount = loops.filter((l) => (l.projectId ?? "default") === project.id).length;
             const bg = isSelected ? "#1e3a8a" : undefined;
+            const loopCount = entry.id === ALL_ID
+              ? loops.length
+              : loops.filter((l) => (l.projectId ?? "default") === entry.id).length;
             return (
               <box
-                key={project.id}
+                key={entry.id}
                 backgroundColor={bg}
-                onMouseDown={() => onSelect(project.id)}
+                onMouseDown={() => onSelect(entry.id)}
                 style={{ height: 1 }}
               >
                 <text>
                   {isSelected ? "› " : "  "}
-                  <span fg={project.color}>●</span>
-                  {` ${project.name} `}
-                  <span fg="#6b7280">{`(${loopCount} loops)`}</span>
+                  <span fg={entry.color}>●</span>
+                  {` ${entry.name} `}
+                  <span fg="#6b7280">{`(${loopCount})`}</span>
                 </text>
               </box>
             );

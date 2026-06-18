@@ -330,6 +330,8 @@
   "project.filterTitle": " Project r ",
   "project.newProjectLabel": "+ New Project",
   "project.manageLabel": "View Projects",
+  "project.showAll": "Show All",
+  "project.showAllLoops": "All loops",
   "project.manageTitle": "",
   "project.createTitle": " New Project ",
   "project.editTitle": " Edit Project ",
