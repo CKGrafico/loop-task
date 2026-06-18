@@ -135,10 +135,6 @@
 - [x] 15.1 Run typecheck: `rtk bun run typecheck` — zero errors <!-- agent: development-engineer, modeltype: fast -->
 - [ ] 15.2 Run lint: `rtk bun run lint` — zero warnings <!-- agent: development-engineer, modeltype: fast -->
 - [ ] 15.3 Run tests: `rtk bun run test` — all passing, ≥90% coverage <!-- agent: development-engineer, modeltype: build -->
-- [ ] 15.4 Manual board test: create, view, rename, delete projects; verify loops move to Default <!-- agent: development-engineer, modeltype: build -->
-- [ ] 15.5 Manual board test: verify color bullets render correctly <!-- agent: development-engineer, modeltype: build -->
-- [ ] 15.6 Manual board test: verify project filter persists in localStorage <!-- agent: development-engineer, modeltype: build -->
-- [ ] 15.7 Verify Windows daemon IPC works (projects RPC over named pipe) <!-- agent: development-engineer, modeltype: build -->
 
 ## 16. Documentation & Changelog
 

@@ -1,7 +1,7 @@
 import { useRef, useState } from "react";
 import { useKeyboard, useTerminalDimensions } from "@opentui/react";
 import fs from "node:fs";
-import type { LoopMeta, TaskDefinition } from "../../types.js";
+import type { LoopMeta, Project } from "../../types.js";
 import { buildLoopOptions, parseCommandLine } from "../../loop-config.js";
 import { t } from "../../i18n/index.js";
 import { commandLine } from "../format.js";
@@ -13,10 +13,10 @@ export const TASK_MODE_INLINE = "inline";
 export const TASK_MODE_EXISTING = "existing";
 type TaskMode = typeof TASK_MODE_INLINE | typeof TASK_MODE_EXISTING;
 
-export const createFields = ["interval", "taskMode", "command", "cwd", "taskId", "description", "runNow", "maxRuns"] as const;
+export const createFields = ["interval", "taskMode", "command", "cwd", "taskId", "description", "runNow", "maxRuns", "project"] as const;
 export type CreateField = (typeof createFields)[number];
 
-export function createInitialValues(loop: LoopMeta | null): Record<CreateField, string> {
+export function createInitialValues(loop: LoopMeta | null, currentProjectId?: string): Record<CreateField, string> {
   if (!loop) {
     return {
       interval: "30m",
@@ -27,6 +27,7 @@ export function createInitialValues(loop: LoopMeta | null): Record<CreateField, 
       description: "",
       runNow: "n",
       maxRuns: "",
+      project: currentProjectId ?? "default",
     };
   }
   return {
@@ -38,6 +39,7 @@ export function createInitialValues(loop: LoopMeta | null): Record<CreateField, 
     description: loop.description ?? "",
     runNow: loop.immediate ? "y" : "n",
     maxRuns: loop.maxRuns !== null ? String(loop.maxRuns) : "",
+    project: loop.projectId ?? currentProjectId ?? "default",
   };
 }
 export function CreateView(props: {
@@ -46,11 +48,16 @@ export function CreateView(props: {
   initial: Record<CreateField, string>;
   selectedTaskId: string | null;
   selectedTaskName: string | null;
+  projects?: Project[];
+  currentProjectId?: string;
   onCancel: () => void;
   onDone: (updated: boolean, id: string, description: string) => void;
   onChooseTask: () => void;
 }): React.ReactNode {
-  const [values, setValues] = useState<Record<CreateField, string>>(props.initial);
+  const [values, setValues] = useState<Record<CreateField, string>>({
+    ...props.initial,
+    project: props.currentProjectId ?? props.initial.project ?? "default",
+  });
   const valuesRef = useRef(values);
   const [focusIndex, setFocusIndex] = useState(0);
   const [error, setError] = useState("");
@@ -154,6 +161,19 @@ export function CreateView(props: {
         props.onCancel();
       }
     }
+
+    if (key.name === "up" || key.name === "down") {
+      const field = filteredFields[focusIndex];
+      if (field === "project" && projectOptions.length > 1) {
+        const currentIdx = projectOptions.findIndex((p) => p.value === valuesRef.current.project);
+        const nextIdx = key.name === "down"
+          ? (currentIdx + 1) % projectOptions.length
+          : (currentIdx - 1 + projectOptions.length) % projectOptions.length;
+        const next = projectOptions[nextIdx];
+        if (next) updateValues({ ...valuesRef.current, project: next.value });
+        return;
+      }
+    }
   });
 
   async function submit(current: Record<CreateField, string>): Promise<void> {
@@ -188,6 +208,7 @@ export function CreateView(props: {
           commandArgs,
           cwd,
         });
+        built.options.projectId = current.project || "default";
 
         const request =
           props.mode === "edit" && props.editId
@@ -212,6 +233,7 @@ export function CreateView(props: {
           description: current.description.trim(),
           taskId: current.taskId,
         });
+        built.options.projectId = current.project || "default";
 
         const request =
           props.mode === "edit" && props.editId
@@ -237,6 +259,7 @@ export function CreateView(props: {
     description: t("board.labelDescription"),
     runNow: t("board.labelRunNow"),
     maxRuns: t("board.labelMaxRuns"),
+    project: t("project.projectsLabel"),
   };
 
   const hints: Record<CreateField, string> = {
@@ -248,6 +271,7 @@ export function CreateView(props: {
     description: t("board.hintDescription"),
     runNow: t("board.hintRunNow"),
     maxRuns: t("board.hintMaxRuns"),
+    project: t("project.hintColor"),
   };
 
   const examples: Record<CreateField, string> = {
@@ -259,6 +283,7 @@ export function CreateView(props: {
     description: t("board.exampleDescription"),
     runNow: "",
     maxRuns: "",
+    project: "",
   };
 
   const taskModeOptions = [
@@ -270,6 +295,10 @@ export function CreateView(props: {
     { name: t("board.runNowNo"), description: "", value: "n" },
     { name: t("board.runNowYes"), description: "", value: "y" },
   ];
+
+  const projectOptions = (props.projects ?? []).length > 0
+    ? props.projects!.map((p) => ({ name: p.name, value: p.id, color: p.color }))
+    : [{ name: "Default", value: "default", color: "#ffffff" }];
 
   const title = props.mode === "edit" ? t("board.editTitle") : t("board.createTitle");
 
@@ -299,6 +328,7 @@ export function CreateView(props: {
                 examples={examples}
                 taskModeOptions={taskModeOptions}
                 runNowOptions={runNowOptions}
+                projectOptions={projectOptions}
                 selectedTaskName={selectedTaskName}
                 fields={filteredFields}
                 onChooseTask={props.onChooseTask}
@@ -319,6 +349,7 @@ export function CreateView(props: {
                   examples={examples}
                   taskModeOptions={taskModeOptions}
                   runNowOptions={runNowOptions}
+                  projectOptions={projectOptions}
                   selectedTaskName={selectedTaskName}
                   fields={filteredFields}
                   onChooseTask={props.onChooseTask}
@@ -389,17 +420,19 @@ function FormRow(props: {
   examples: Record<CreateField, string>;
   taskModeOptions: { name: string; description: string; value: string }[];
   runNowOptions: { name: string; description: string; value: string }[];
+  projectOptions: { name: string; value: string; color: string }[];
   selectedTaskName: string | null;
   fields: readonly CreateField[];
   onChooseTask: () => void;
   style?: { width?: number | `${number}%` | "auto"; flexGrow?: number; marginRight?: number; paddingRight?: number };
 }): React.ReactNode {
-  const { field, index, focusIndex, values, valuesRef, updateValues, setFocusIndex, submit, labels, hints, examples, taskModeOptions, runNowOptions, selectedTaskName, fields, onChooseTask, style } = props;
+  const { field, index, focusIndex, values, valuesRef, updateValues, setFocusIndex, submit, labels, hints, examples, taskModeOptions, runNowOptions, projectOptions, selectedTaskName, fields, onChooseTask, style } = props;
   const { isHovered, hoverProps } = useHoverState();
   const isFocused = focusIndex === index;
 
   const isToggleField = field === "taskMode" || field === "runNow";
   const isTaskButton = field === "taskId";
+  const isProjectField = field === "project";
 
   const toggleOptions = field === "taskMode" ? taskModeOptions : runNowOptions;
   const toggleValue = field === "taskMode" ? values.taskMode : values.runNow;
@@ -440,6 +473,30 @@ function FormRow(props: {
               ? t("board.selectedTask", { name: selectedTaskName ?? values.taskId })
               : t("board.chooseTask")}
           </text>
+        </box>
+      ) : isProjectField ? (
+        <box
+          border
+          borderColor={isFocused ? "#38bdf8" : undefined}
+          style={{ height: 3, flexDirection: "row", backgroundColor: "#0b0b0b", alignItems: "center", paddingLeft: 1 }}
+          onMouseDown={() => setFocusIndex(index)}
+        >
+          {projectOptions.map((opt) => {
+            const isActive = values.project === opt.value;
+            return (
+              <box
+                key={opt.value}
+                onMouseDown={() => updateValues({ ...valuesRef.current, project: opt.value })}
+                style={{ backgroundColor: isActive ? "#1e3a8a" : undefined, paddingLeft: 1, paddingRight: 1, marginRight: 1 }}
+                {...hoverProps}
+              >
+                <text fg={isActive ? "#ffffff" : "#9ca3af"}>
+                  <text fg={opt.color}>● </text>
+                  <text fg={isActive ? "#ffffff" : "#9ca3af"}>{opt.name}</text>
+                </text>
+              </box>
+            );
+          })}
         </box>
       ) : (
         <box

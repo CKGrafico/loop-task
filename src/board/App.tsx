@@ -425,9 +425,11 @@ export function App(props: { onQuit: () => void }): React.ReactNode {
           <CreateView
             mode={editTarget ? "edit" : "create"}
             editId={editTarget?.id ?? null}
-            initial={createInitialValues(editTarget)}
+            initial={createInitialValues(editTarget, currentProjectId)}
             selectedTaskId={pendingTaskSelection?.id ?? null}
             selectedTaskName={pendingTaskSelection?.name ?? null}
+            projects={projects}
+            currentProjectId={currentProjectId}
             onCancel={cancelCreate}
             onDone={onCreateDone}
             onChooseTask={handleChooseTask}

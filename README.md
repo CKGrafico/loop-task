@@ -70,6 +70,25 @@ A **task** is an executable unit — it defines *what* runs. Tasks can chain to 
 
 Tasks are reusable — the same task can be referenced by multiple loops or by other tasks' success/failure chains.
 
+### Projects
+
+A **project** is an organizational scope for loops. Every loop belongs to exactly one project. The board shows only loops in the currently selected project.
+
+| Field | Description |
+| ----- | ----------- |
+| **Name** | A short label for the project |
+| **Color** | One of six colors: white, cyan, orange, green, red, yellow |
+
+Key behaviors:
+- **Default project** — always present, cannot be renamed or deleted. New loops are assigned here when no other project is selected.
+- **Color bullets** — each loop in the navigator displays a colored bullet (●) matching its project color.
+- **Project filter** — the board shows only loops belonging to the currently active project. The selection persists across sessions via `localStorage`.
+
+To use projects from the board:
+- Press `c` to open the **Project selector** (switch between projects)
+- Click **Manage Projects** in the filter bar (or use the keyboard shortcut) to open the **Manage Projects** page
+- From the Manage Projects page: `n` creates a new project, `e` renames the selected project, `d` deletes it, `Esc` returns to the board
+
 ## Commands
 
 | Command | Description |
