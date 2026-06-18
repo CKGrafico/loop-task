@@ -428,9 +428,6 @@ export function App(props: { onQuit: () => void }): React.ReactNode {
           query={taskQuery}
           searchActive={taskSearchActive}
           focusedPanel={taskFocusedPanel}
-          onNewTask={handleCreateTask}
-          showViewLoops={taskListReturnView === "board"}
-          onViewLoops={() => setView("board")}
         />
       ) : null}
 
