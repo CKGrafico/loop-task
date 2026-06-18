@@ -138,6 +138,7 @@ interface PanelHandlerParams {
   onViewTasks?: () => void;
   onViewProjects?: () => void;
   onAddLoop?: () => void;
+  onSelectProject?: () => void;
 }
 
 type PanelKeyHandler = (key: string, p: PanelHandlerParams) => boolean;
@@ -198,6 +199,9 @@ const panelHandlers: Record<PanelFocus, PanelKeyHandler> = {
 const BOARD_SHORTCUTS: Record<string, (p: PanelHandlerParams) => void> = {
   "/": (p) => p.setSearchActive(true),
   o: (p) => p.setSort((prev) => cycleSortMode(prev)),
+  x: (p) => p.setFilters((prev) => ({ ...prev, status: cycleStatusFilter(prev.status) })),
+  r: (p) => p.onSelectProject?.(),
+  c: (p) => p.onSelectProject?.(),
 };
 
 export interface BoardKeybindingParams {
@@ -238,6 +242,7 @@ export interface BoardKeybindingParams {
   onViewTasks?: () => void;
   onViewProjects?: () => void;
   onAddLoop?: () => void;
+  onSelectProject?: () => void;
 }
 
 export function useBoardKeybindings(params: BoardKeybindingParams): void {
@@ -279,6 +284,7 @@ export function useBoardKeybindings(params: BoardKeybindingParams): void {
     onViewTasks,
     onViewProjects,
     onAddLoop,
+    onSelectProject,
   } = params;
 
   useKeyboard((key) => {
@@ -382,6 +388,7 @@ export function useBoardKeybindings(params: BoardKeybindingParams): void {
         setSearchActive, setFilters, setSort, setEditTarget, setView,
         setSelectedIndex, setSelectedRunIndex, setFocusedPanel, selectedRunCount, selected,
         selectedRunIndex, setSelectedAction, selectedAction, onAction, onOpenRunLog,
+        onSelectProject,
       });
     }
   });

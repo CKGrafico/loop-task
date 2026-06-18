@@ -1,7 +1,7 @@
 import { useTerminalDimensions } from "@opentui/react";
 import { HEADER_COMPACT_WIDTH } from "../../config/constants.js";
 import { t } from "../../i18n/index.js";
-import type { DaemonStatus } from "../types.js";
+import type { DaemonStatus, View } from "../types.js";
 import { useHoverState } from "../hooks/useHoverState.js";
 import { HOVER_BG } from "../../config/constants.js";
 
@@ -27,12 +27,16 @@ function ActionButton(props: {
 export function Header(props: {
   daemonStatus: DaemonStatus;
   counts: { total: number; running: number; waiting: number; paused: number; idle: number };
+  view: View;
   focusedPanel?: string;
+  onViewLoops?: () => void;
   onViewTasks?: () => void;
   onViewProjects?: () => void;
   onAddLoop?: () => void;
+  onAddTask?: () => void;
+  onAddProject?: () => void;
 }): React.ReactNode {
-  const { daemonStatus, counts, focusedPanel, onViewTasks, onViewProjects, onAddLoop } = props;
+  const { daemonStatus, counts, view, focusedPanel, onViewLoops, onViewTasks, onViewProjects, onAddLoop, onAddTask, onAddProject } = props;
   const { width } = useTerminalDimensions();
   const compact = width < HEADER_COMPACT_WIDTH;
   const color =
@@ -42,6 +46,31 @@ export function Header(props: {
         ? "#f87171"
         : "#facc15";
   const symbol = daemonStatus === "connected" ? "✓" : daemonStatus === "error" ? "✗" : "…";
+
+  // Derive the 3 action buttons based on current view
+  type Btn = { label: string; color: string; panel: string; action: (() => void) | undefined };
+  let buttons: [Btn, Btn, Btn];
+
+  if (view === "projects") {
+    buttons = [
+      { label: t("board.viewLoopsLabel"),    color: "#38bdf8", panel: "header-tasks",    action: onViewLoops },
+      { label: t("board.viewTasksLabel"),    color: "#a78bfa", panel: "header-projects", action: onViewTasks },
+      { label: t("project.newProjectLabel"), color: "#4ade80", panel: "header-new",      action: onAddProject },
+    ];
+  } else if (view === "task-list") {
+    buttons = [
+      { label: t("project.manageLabel"),    color: "#34d399", panel: "header-tasks",    action: onViewProjects },
+      { label: t("board.viewLoopsLabel"),   color: "#38bdf8", panel: "header-projects", action: onViewLoops },
+      { label: t("board.taskActionNew"),    color: "#4ade80", panel: "header-new",      action: onAddTask },
+    ];
+  } else {
+    // board (default)
+    buttons = [
+      { label: t("project.manageLabel"),    color: "#34d399", panel: "header-tasks",    action: onViewProjects },
+      { label: t("board.viewTasksLabel"),   color: "#a78bfa", panel: "header-projects", action: onViewTasks },
+      { label: t("board.newLoopLabel"),     color: "#4ade80", panel: "header-new",      action: onAddLoop },
+    ];
+  }
 
   return (
     <box style={{ flexDirection: "column" }}>
@@ -72,9 +101,17 @@ export function Header(props: {
             )}
           </text>
         </box>
-        {onViewTasks ? <ActionButton label={t("board.viewTasksLabel")} textColor="#a78bfa" focused={focusedPanel === "header-tasks"} onMouseDown={onViewTasks} /> : null}
-        {onViewProjects ? <ActionButton label={t("project.manageLabel")} textColor="#34d399" focused={focusedPanel === "header-projects"} onMouseDown={onViewProjects} /> : null}
-        {onAddLoop ? <ActionButton label={t("board.newLoopLabel")} textColor="#4ade80" focused={focusedPanel === "header-new"} onMouseDown={onAddLoop} /> : null}
+        {buttons.map((btn) =>
+          btn.action ? (
+            <ActionButton
+              key={btn.panel}
+              label={btn.label}
+              textColor={btn.color}
+              focused={focusedPanel === btn.panel}
+              onMouseDown={btn.action}
+            />
+          ) : null
+        )}
       </box>
       <box style={{ height: 1, paddingLeft: 1, paddingRight: 1 }}>
         <text fg="#374151">{"─".repeat(Math.max(0, width - 2))}</text>

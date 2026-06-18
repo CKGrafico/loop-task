@@ -361,6 +361,7 @@ export function App(props: { onQuit: () => void }): React.ReactNode {
     onViewTasks: () => { setTaskListReturnView("board"); void refreshTasks(); setView("task-list"); },
     onViewProjects: () => setView("projects"),
     onAddLoop: () => { setEditTarget(null); setView("create"); },
+    onSelectProject: () => setProjectsModalOpen(true),
   });
 
   useTaskKeybindings({
@@ -398,10 +399,14 @@ export function App(props: { onQuit: () => void }): React.ReactNode {
       <Header
         daemonStatus={daemonStatus}
         counts={counts}
+        view={view}
         focusedPanel={focusedPanel}
+        onViewLoops={() => setView("board")}
         onViewTasks={() => { setTaskListReturnView("board"); void refreshTasks(); setView("task-list"); }}
         onViewProjects={() => setView("projects")}
         onAddLoop={() => { setEditTarget(null); setView("create"); }}
+        onAddTask={() => { setEditTask(null); setView("task-create"); }}
+        onAddProject={() => setView("projects")}
       />
 
       {view === "board" ? (
