@@ -65,18 +65,17 @@ interface ConfirmParams {
 }
 
 const VIEW_ESCAPE: Record<string, (p: ViewEscapeParams) => void> = {
-  create: (p) => { p.setEditTarget(null); p.setView("board"); },
-  "task-create": (p) => { p.setEditTask(null); p.setView("board"); },
-  "task-edit": (p) => { p.setEditTask(null); p.setView("board"); },
-  "task-list": (p) => p.setView(p.returnView ?? "board"),
-  projects: (p) => p.setView("board"),
+  create: (p) => { p.setEditTarget(null); p.onBack(); },
+  "task-create": (p) => { p.setEditTask(null); p.onBack(); },
+  "task-edit": (p) => { p.setEditTask(null); p.onBack(); },
+  "task-list": (p) => p.onBack(),
+  projects: (p) => p.onBack(),
 };
 
 interface ViewEscapeParams {
   setEditTarget: Dispatch<SetStateAction<LoopMeta | null>>;
   setEditTask: Dispatch<SetStateAction<TaskDefinition | null>>;
-  setView: Dispatch<SetStateAction<View>>;
-  returnView?: View;
+  onBack: () => void;
 }
 
 interface OverlayParams {
@@ -99,8 +98,8 @@ const OVERLAY_DISMISS: Record<string, (p: OverlayParams, overlay: string) => boo
 const GLOBAL_KEYS: Record<string, (p: GlobalKeyParams) => void> = {
   escape: (p) => { p.destroyLogSocket(); p.onQuit(); },
   h: (p) => p.setHelpOpen(true),
-  n: (p) => { p.setEditTarget(null); p.setView("create"); },
-  t: (p) => { p.setEditTask(null); p.setView("task-create"); },
+  n: (p) => { p.setEditTarget(null); p.push("create"); },
+  t: (p) => { p.setEditTask(null); p.push("task-create"); },
   e: (p) => p.onAction("edit"),
   d: (p) => p.onAction("delete"),
   delete: (p) => p.onAction("delete"),
@@ -115,7 +114,7 @@ interface GlobalKeyParams {
   setHelpOpen: Dispatch<SetStateAction<boolean>>;
   setEditTarget: Dispatch<SetStateAction<LoopMeta | null>>;
   setEditTask: Dispatch<SetStateAction<TaskDefinition | null>>;
-  setView: Dispatch<SetStateAction<View>>;
+  push: (view: View) => void;
   onAction: (action: string) => void;
 }
 
@@ -124,7 +123,7 @@ interface PanelHandlerParams {
   setFilters: Dispatch<SetStateAction<Filters>>;
   setSort: Dispatch<SetStateAction<SortMode>>;
   setEditTarget: Dispatch<SetStateAction<LoopMeta | null>>;
-  setView: Dispatch<SetStateAction<View>>;
+  push: (view: View) => void;
   setSelectedIndex: Dispatch<SetStateAction<number>>;
   setSelectedRunIndex: Dispatch<SetStateAction<number>>;
   setFocusedPanel: Dispatch<SetStateAction<PanelFocus>>;
@@ -135,7 +134,6 @@ interface PanelHandlerParams {
   selectedAction: number;
   onAction: (action: string) => void;
   onOpenRunLog: (run: RunRecord) => void;
-  setTaskListReturnView?: Dispatch<SetStateAction<View>>;
   refreshTasks?: () => Promise<void>;
   onViewTasks?: () => void;
   onViewProjects?: () => void;
@@ -220,7 +218,8 @@ export interface BoardKeybindingParams {
   searchActive: boolean;
   setSearchActive: Dispatch<SetStateAction<boolean>>;
   view: View;
-  setView: Dispatch<SetStateAction<View>>;
+  push: (view: View) => void;
+  pop: () => void;
   setEditTarget: Dispatch<SetStateAction<LoopMeta | null>>;
   setEditTask: Dispatch<SetStateAction<TaskDefinition | null>>;
   selected: LoopMeta | null;
@@ -242,8 +241,6 @@ export interface BoardKeybindingParams {
   setSelectedAction: Dispatch<SetStateAction<number>>;
   onAction: (action: string) => void;
   onOpenRunLog: (run: RunRecord) => void;
-  returnView?: View;
-  setTaskListReturnView?: Dispatch<SetStateAction<View>>;
   refreshTasks?: () => Promise<void>;
   onViewTasks?: () => void;
   onViewProjects?: () => void;
@@ -262,7 +259,8 @@ export function useBoardKeybindings(params: BoardKeybindingParams): void {
     searchActive,
     setSearchActive,
     view,
-    setView,
+    push,
+    pop,
     setEditTarget,
     setEditTask,
     selected,
@@ -284,8 +282,6 @@ export function useBoardKeybindings(params: BoardKeybindingParams): void {
     setSelectedAction,
     onAction,
     onOpenRunLog,
-    returnView,
-    setTaskListReturnView,
     refreshTasks,
     onViewTasks,
     onViewProjects,
@@ -369,29 +365,29 @@ export function useBoardKeybindings(params: BoardKeybindingParams): void {
     }
 
     if (view !== "board" && name === "escape") {
-      VIEW_ESCAPE[view]?.({ setEditTarget, setEditTask, setView, returnView });
+      VIEW_ESCAPE[view]?.({ setEditTarget, setEditTask, onBack: pop });
       return;
     }
     if (view !== "board") return;
 
     const globalHandler = GLOBAL_KEYS[name];
     if (globalHandler) {
-      globalHandler({ destroyLogSocket, onQuit, setHelpOpen, setEditTarget, setEditTask, setView, onAction });
+      globalHandler({ destroyLogSocket, onQuit, setHelpOpen, setEditTarget, setEditTask, push, onAction });
       return;
     }
 
     const panelHandler = panelHandlers[focusedPanel];
     if (panelHandler?.(name, {
-      setSearchActive, setFilters, setSort, setEditTarget, setView,
+      setSearchActive, setFilters, setSort, setEditTarget, push,
       setSelectedIndex, setSelectedRunIndex, setFocusedPanel, selectedRunCount, selected,
       selectedRunIndex, setSelectedAction, selectedAction, onAction, onOpenRunLog,
-      setTaskListReturnView, refreshTasks, onViewTasks, onViewProjects, onAddLoop,
+      refreshTasks, onViewTasks, onViewProjects, onAddLoop,
     })) return;
 
     const shortcut = BOARD_SHORTCUTS[name];
     if (shortcut) {
       shortcut({
-        setSearchActive, setFilters, setSort, setEditTarget, setView,
+        setSearchActive, setFilters, setSort, setEditTarget, push,
         setSelectedIndex, setSelectedRunIndex, setFocusedPanel, selectedRunCount, selected,
         selectedRunIndex, setSelectedAction, selectedAction, onAction, onOpenRunLog,
         onSelectProject,

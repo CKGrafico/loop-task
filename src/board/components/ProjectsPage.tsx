@@ -13,10 +13,14 @@ export function ProjectsPage(props: {
   loops: LoopMeta[];
   onClose: () => void;
   onRefresh: () => Promise<void>;
+  onOpenCreate?: (trigger: () => void) => void;
 }): React.ReactNode {
-  const { projects, loops, onClose, onRefresh } = props;
+  const { projects, loops, onClose, onRefresh, onOpenCreate } = props;
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [subModal, setSubModal] = useState<SubModal>("none");
+
+  // Expose create trigger to parent via callback
+  useState(() => { onOpenCreate?.(() => setSubModal("create")); });
 
   const clampedIndex = Math.min(selectedIndex, Math.max(0, projects.length - 1));
   const selectedProject = projects[clampedIndex] ?? null;

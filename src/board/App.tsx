@@ -34,6 +34,7 @@ import { ProjectsModal } from "./components/ProjectsModal.js";
 import { ProjectsPage } from "./components/ProjectsPage.js";
 import { fetchRunLog, deleteLoop, pauseLoop, resumeLoop, stopLoop, playLoop, triggerLoop, listTasks, deleteTask, listProjects } from "./daemon.js";
 import { useBreakpoint } from "./hooks/useBreakpoint.js";
+import { useRouter } from "./router.js";
 
 const BOARD_REFRESH_DELAY_MS = 150;
 
@@ -60,7 +61,7 @@ function viewKey(view: View, editTarget: LoopMeta | null, editTask: TaskDefiniti
 
 export function App(props: { onQuit: () => void }): React.ReactNode {
   const { loops, daemonStatus, refresh } = useLoopPolling();
-  const [view, setView] = useState<View>("board");
+  const { view, stack, push, replace, pop } = useRouter("board");
   const [filters, setFilters] = useState<Filters>(defaultFilters);
   const [sort, setSort] = useState<SortMode>("description");
   const [selectedIndex, setSelectedIndex] = useState(0);
@@ -71,7 +72,6 @@ export function App(props: { onQuit: () => void }): React.ReactNode {
   const [editTarget, setEditTarget] = useState<LoopMeta | null>(null);
   const [editTask, setEditTask] = useState<TaskDefinition | null>(null);
   const [pendingTaskSelection, setPendingTaskSelection] = useState<{ id: string; name: string } | null>(null);
-  const [taskListReturnView, setTaskListReturnView] = useState<View>("board");
   const [selectedRunIndex, setSelectedRunIndex] = useState(0);
   const [selectedAction, setSelectedAction] = useState(0);
   const [focusedPanel, setFocusedPanel] = useState<PanelFocus>("loops");
@@ -87,12 +87,13 @@ export function App(props: { onQuit: () => void }): React.ReactNode {
   const [taskQuery, setTaskQuery] = useState("");
 
   const [projects, setProjects] = useState<Project[]>([]);
+  const createProjectTriggerRef = useRef<(() => void) | null>(null);
   const [currentProjectId, setCurrentProjectId] = useState<string>(() => {
     try { return localStorage.getItem("loop-current-project") ?? "default"; } catch { return "default"; }
   });
   const [projectsModalOpen, setProjectsModalOpen] = useState(false);
 
-  const { toasts, push } = useToasts();
+  const { toasts, push: pushToast } = useToasts();
   const breakpoint = useBreakpoint();
 
   const visible = useMemo(
@@ -121,7 +122,7 @@ export function App(props: { onQuit: () => void }): React.ReactNode {
   const { destroy: destroyLogSocket } = useLogStream(
     selectedId,
     view,
-    (error) => push("error", t("board.logStreamError", { message: error.message }))
+    (error) => pushToast("error", t("board.logStreamError", { message: error.message }))
   );
 
   const filteredTasks = useMemo(() => {
@@ -154,9 +155,9 @@ export function App(props: { onQuit: () => void }): React.ReactNode {
       try {
         await action();
         setTimeout(() => { void refresh(); }, BOARD_REFRESH_DELAY_MS);
-        push("success", label);
+        pushToast("success", label);
       } catch (error) {
-        push("error", error instanceof Error ? error.message : String(error));
+        pushToast("error", error instanceof Error ? error.message : String(error));
       }
     };
   }
@@ -192,7 +193,7 @@ export function App(props: { onQuit: () => void }): React.ReactNode {
 
     if (action === "edit") {
       setEditTarget(selected);
-      setView("create");
+      push("create");
       return;
     }
 
@@ -264,16 +265,16 @@ export function App(props: { onQuit: () => void }): React.ReactNode {
     if (!selectedTask) return;
 
     if (action === "select") {
-      if (taskListReturnView === "board") return;
+      if (!stack.includes("create") && !stack.includes("task-edit")) return;
       setPendingTaskSelection({ id: selectedTask.id, name: selectedTask.name });
-      setView(taskListReturnView);
-      push("success", t("board.toastTaskSelected", { desc: selectedTask.name }));
+      pop();
+      pushToast("success", t("board.toastTaskSelected", { desc: selectedTask.name }));
       return;
     }
 
     if (action === "edit") {
       setEditTask(selectedTask);
-      setView("task-edit");
+      push("task-edit");
       return;
     }
 
@@ -285,45 +286,39 @@ export function App(props: { onQuit: () => void }): React.ReactNode {
           await deleteTask(selectedTask.id);
           await refreshTasks();
           setTaskSelectedIndex((i) => Math.max(0, i - 1));
-          push("success", t("board.toastTaskDeleted", { desc: selectedTask.name }));
+          pushToast("success", t("board.toastTaskDeleted", { desc: selectedTask.name }));
         },
       });
     }
   }
 
-  const cancelCreate = () => { setEditTarget(null); setPendingTaskSelection(null); setView("board"); };
-  const cancelTask = () => { setEditTask(null); setView(taskListReturnView === "task-list" ? "task-list" : "board"); };
-  const cancelTaskList = () => setView(taskListReturnView);
-
-  function openTaskList(returnTo: View): void {
-    setTaskListReturnView(returnTo);
-    void refreshTasks();
-    setView("task-list");
-  }
+  const cancelCreate = () => { setEditTarget(null); setPendingTaskSelection(null); pop(); };
+  const cancelTask = () => { setEditTask(null); pop(); };
+  const cancelTaskList = () => pop();
 
   function handleChooseTask(): void {
-    openTaskList("create");
+    void refreshTasks();
+    push("task-list");
   }
 
   function handleCreateTask(): void {
-    setTaskListReturnView("task-list");
     setEditTask(null);
-    setView("task-create");
+    push("task-create");
   }
 
   const onCreateDone = (updated: boolean, _id: string, desc: string) => {
     setEditTarget(null);
     setPendingTaskSelection(null);
-    setView("board");
-    push("success", updated ? t("board.toastUpdated", { desc }) : t("board.toastStarted", { desc }));
+    pop();
+    pushToast("success", updated ? t("board.toastUpdated", { desc }) : t("board.toastStarted", { desc }));
     setTimeout(() => { void refresh(); }, BOARD_REFRESH_DELAY_MS);
   };
 
   const onTaskDone = (updated: boolean, id: string) => {
     setEditTask(null);
     void refreshTasks();
-    setView(taskListReturnView === "task-list" ? "task-list" : "board");
-    push("success", updated ? t("board.toastTaskUpdated", { id }) : t("board.toastTaskCreated", { id }));
+    pop();
+    pushToast("success", updated ? t("board.toastTaskUpdated", { id }) : t("board.toastTaskCreated", { id }));
   };
 
   useBoardKeybindings({
@@ -336,7 +331,8 @@ export function App(props: { onQuit: () => void }): React.ReactNode {
     searchActive,
     setSearchActive,
     view,
-    setView,
+    push,
+    pop,
     setEditTarget,
     setEditTask,
     selected,
@@ -358,12 +354,10 @@ export function App(props: { onQuit: () => void }): React.ReactNode {
     setSelectedAction,
     onAction: handleAction,
     onOpenRunLog: handleOpenRunLog,
-    returnView: view === "task-list" ? taskListReturnView : undefined,
-    setTaskListReturnView,
     refreshTasks,
-    onViewTasks: () => { setTaskListReturnView("board"); void refreshTasks(); setView("task-list"); },
-    onViewProjects: () => setView("projects"),
-    onAddLoop: () => { setEditTarget(null); setView("create"); },
+    onViewTasks: () => { void refreshTasks(); push("task-list"); },
+    onViewProjects: () => push("projects"),
+    onAddLoop: () => { setEditTarget(null); push("create"); },
     onSelectProject: () => setProjectsModalOpen(true),
   });
 
@@ -384,7 +378,7 @@ export function App(props: { onQuit: () => void }): React.ReactNode {
     onTaskAction: handleTaskAction,
     onCancel: cancelTaskList,
     onCreateTask: handleCreateTask,
-    selectable: taskListReturnView !== "board",
+    selectable: stack.includes("create") || stack.includes("task-edit"),
   });
 
   const counts = {
@@ -404,12 +398,12 @@ export function App(props: { onQuit: () => void }): React.ReactNode {
         counts={counts}
         view={view}
         focusedPanel={focusedPanel}
-        onViewLoops={() => setView("board")}
-        onViewTasks={() => { setTaskListReturnView("board"); void refreshTasks(); setView("task-list"); }}
-        onViewProjects={() => setView("projects")}
-        onAddLoop={() => { setEditTarget(null); setView("create"); }}
-        onAddTask={() => { setEditTask(null); setView("task-create"); }}
-        onAddProject={() => setView("projects")}
+        onViewLoops={() => replace("board")}
+        onViewTasks={() => { void refreshTasks(); push("task-list"); }}
+        onViewProjects={() => push("projects")}
+        onAddLoop={() => { setEditTarget(null); push("create"); }}
+        onAddTask={() => { setEditTask(null); push("task-create"); }}
+        onAddProject={() => { if (view === "projects") { createProjectTriggerRef.current?.(); } else { push("projects"); } }}
       />
 
       {view === "board" ? (
@@ -464,7 +458,7 @@ export function App(props: { onQuit: () => void }): React.ReactNode {
               focused={taskFocusedPanel === "tasks"}
               query={taskQuery}
               onSelect={(index) => { setTaskSelectedIndex(index); setTaskFocusedPanel("tasks"); }}
-              onActivate={(index) => { setTaskSelectedIndex(index); setEditTask(filteredTasks[index] ?? null); setView("task-edit"); }}
+              onActivate={(index) => { setTaskSelectedIndex(index); setEditTask(filteredTasks[index] ?? null); push("task-edit"); }}
             />
             <box style={{ flexDirection: "column", flexGrow: 1, backgroundColor: "#0b0b0b", overflow: "hidden" }}>
               <TaskInspector key={`ti-${selectedTask?.id}`} task={selectedTask} />
@@ -473,7 +467,7 @@ export function App(props: { onQuit: () => void }): React.ReactNode {
                 task={selectedTask}
                 focused={taskFocusedPanel === "actions"}
                 selectedAction={taskSelectedAction}
-                selectable={taskListReturnView !== "board"}
+                selectable={stack.includes("create") || stack.includes("task-edit")}
                 onAction={handleTaskAction}
               />
             </box>
@@ -482,8 +476,9 @@ export function App(props: { onQuit: () => void }): React.ReactNode {
           <ProjectsPage
             projects={projects}
             loops={loops}
-            onClose={() => setView("board")}
+            onClose={() => pop()}
             onRefresh={refreshProjects}
+            onOpenCreate={(trigger) => { createProjectTriggerRef.current = trigger; }}
           />
         ) : (
           <box style={{ flexDirection: breakpoint === "narrow" ? "column" : "row", flexGrow: 1, backgroundColor: "#0b0b0b" }}>
@@ -497,7 +492,7 @@ export function App(props: { onQuit: () => void }): React.ReactNode {
               focused={focusedPanel === "loops"}
               projects={projects}
               onSelect={(index) => { setSelectedIndex(index); setFocusedPanel("loops"); }}
-              onActivate={(index) => { setSelectedIndex(index); const loop = visible[index]; if (loop) { setEditTarget(loop); setView("create"); } }}
+              onActivate={(index) => { setSelectedIndex(index); const loop = visible[index]; if (loop) { setEditTarget(loop); push("create"); } }}
             />
             <box style={{ flexDirection: "column", flexGrow: 1, backgroundColor: "#0b0b0b", overflow: "hidden" }}>
               <Inspector loop={selected} />
