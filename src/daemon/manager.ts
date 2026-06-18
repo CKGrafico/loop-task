@@ -156,8 +156,8 @@ export class LoopManager {
     return this.projectManager.create(name, color);
   }
 
-  updateProject(id: string, name: string): void {
-    this.projectManager.update(id, name);
+  updateProject(id: string, name: string, color?: string): void {
+    this.projectManager.update(id, name, color);
   }
 
   deleteProject(id: string): void {

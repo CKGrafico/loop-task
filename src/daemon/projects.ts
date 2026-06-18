@@ -85,11 +85,12 @@ export class ProjectManager {
     return project;
   }
 
-  update(id: string, name: string): void {
+  update(id: string, name: string, color?: string): void {
     const project = this.projects.get(id);
     if (!project) throw new Error(`Project ${id} not found`);
     if (project.isSystem) throw new Error("Cannot rename system project");
     project.name = name;
+    if (color) project.color = color;
     this.saveProject(project);
   }
 

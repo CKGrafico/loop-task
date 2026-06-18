@@ -2,11 +2,34 @@ import { useState } from "react";
 import { useKeyboard } from "@opentui/react";
 import type { LoopMeta, Project } from "../../types.js";
 import { t } from "../../i18n/index.js";
+import { useHoverState } from "../hooks/useHoverState.js";
+import { HOVER_BG, ENTITY_COLORS } from "../../config/constants.js";
 import { CreateProjectModal } from "./CreateProjectModal.js";
 import { EditProjectModal } from "./EditProjectModal.js";
 import { DeleteProjectConfirm } from "./DeleteProjectConfirm.js";
 
 type SubModal = "none" | "create" | "edit" | "delete";
+
+const PROJECT_ACTION_COUNT = 2;
+
+function ProjectActionButton(props: {
+  label: string;
+  selected: boolean;
+  onMouseDown: () => void;
+}): React.ReactNode {
+  const { isHovered, hoverProps } = useHoverState();
+  const bg = props.selected ? "#1e3a8a" : isHovered ? HOVER_BG : undefined;
+  const fg = props.selected ? "#ffffff" : isHovered ? "#e5e7eb" : "#9ca3af";
+  return (
+    <box
+      onMouseDown={props.onMouseDown}
+      style={{ backgroundColor: bg, paddingLeft: 1, paddingRight: 1, marginRight: 1 }}
+      {...hoverProps}
+    >
+      <text fg={fg}><strong>{props.label}</strong></text>
+    </box>
+  );
+}
 
 export function ProjectsPage(props: {
   projects: Project[];
@@ -18,6 +41,8 @@ export function ProjectsPage(props: {
   const { projects, loops, onClose, onRefresh, onOpenCreate } = props;
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [subModal, setSubModal] = useState<SubModal>("none");
+  const [focusedPanel, setFocusedPanel] = useState<"list" | "actions">("list");
+  const [selectedAction, setSelectedAction] = useState(0);
 
   // Expose create trigger to parent via callback
   useState(() => { onOpenCreate?.(() => setSubModal("create")); });
@@ -25,14 +50,37 @@ export function ProjectsPage(props: {
   const clampedIndex = Math.min(selectedIndex, Math.max(0, projects.length - 1));
   const selectedProject = projects[clampedIndex] ?? null;
 
+  const loopCount = (projectId: string) =>
+    loops.filter((l) => (l.projectId ?? "default") === projectId).length;
+
+  function runAction(actionIndex: number): void {
+    if (!selectedProject || selectedProject.isSystem) return;
+    if (actionIndex === 0) setSubModal("edit");
+    else if (actionIndex === 1) setSubModal("delete");
+  }
+
   useKeyboard((key) => {
     if (subModal !== "none") return;
     if (key.name === "up") {
-      setSelectedIndex((i) => Math.max(0, i - 1));
+      if (focusedPanel === "list") setSelectedIndex((i) => Math.max(0, i - 1));
+      else setSelectedAction((a) => Math.max(0, a - 1));
       return;
     }
     if (key.name === "down") {
-      setSelectedIndex((i) => Math.min(projects.length - 1, i + 1));
+      if (focusedPanel === "list") setSelectedIndex((i) => Math.min(projects.length - 1, i + 1));
+      else setSelectedAction((a) => Math.min(PROJECT_ACTION_COUNT - 1, a + 1));
+      return;
+    }
+    if (key.name === "left" || key.name === "right") {
+      setFocusedPanel((p) => (p === "list" ? "actions" : "list"));
+      return;
+    }
+    if (key.name === "return" || key.name === "enter") {
+      if (focusedPanel === "list") {
+        setFocusedPanel("actions");
+      } else {
+        runAction(selectedAction);
+      }
       return;
     }
     if (key.name === "n") {
@@ -52,8 +100,10 @@ export function ProjectsPage(props: {
     }
   });
 
-  const loopCount = (projectId: string) =>
-    loops.filter((l) => (l.projectId ?? "default") === projectId).length;
+  const actions = [
+    { key: "edit", label: t("project.editProjectLabel") },
+    { key: "delete", label: t("project.deleteProjectLabel") },
+  ];
 
   return (
     <box
@@ -62,7 +112,9 @@ export function ProjectsPage(props: {
       style={{ flexDirection: "row", flexGrow: 1, backgroundColor: "#0b0b0b" }}
     >
       <box
+        title={t("project.projectsTitle")}
         border
+        borderColor={focusedPanel === "list" ? ENTITY_COLORS.project : "#1e3a2a"}
         style={{ width: "40%", flexDirection: "column", backgroundColor: "#0b0b0b", flexShrink: 0 }}
       >
         <text fg="#9ca3af">{t("project.keyNewHint")} | {t("project.keyEditHint")} | {t("project.keyDeleteHint")}</text>
@@ -74,7 +126,7 @@ export function ProjectsPage(props: {
             <box
               key={project.id}
               backgroundColor={bg}
-              onMouseDown={() => setSelectedIndex(index)}
+              onMouseDown={() => { setSelectedIndex(index); setFocusedPanel("list"); }}
               style={{ height: 1 }}
             >
               <text>
@@ -88,42 +140,47 @@ export function ProjectsPage(props: {
         })}
       </box>
 
-      <box
-        border
-        style={{ flexGrow: 1, flexDirection: "column", backgroundColor: "#0b0b0b", padding: 1 }}
-      >
-        {selectedProject ? (
-          <>
-            <text>
-              <span fg={selectedProject.color}>●</span>
-              {` `}
-              <strong>{selectedProject.name}</strong>
-            </text>
-            <text fg="#6b7280">{t("project.loopCount", { count: String(loopCount(selectedProject.id)) })}</text>
-            {selectedProject.isSystem ? (
-              <text fg="#9ca3af">{t("project.systemLabel")}</text>
-            ) : (
-              <box style={{ flexDirection: "row", marginTop: 1 }}>
-                <box
-                  border
-                  onMouseDown={() => setSubModal("edit")}
-                  style={{ paddingLeft: 1, paddingRight: 1, marginRight: 1, backgroundColor: "#1e2a4a" }}
-                >
-                  <text fg="#e5e7eb"><strong>Edit</strong></text>
-                </box>
-                <box
-                  border
-                  onMouseDown={() => setSubModal("delete")}
-                  style={{ paddingLeft: 1, paddingRight: 1, backgroundColor: "#3b0f0f" }}
-                >
-                  <text fg="#f87171"><strong>Delete</strong></text>
-                </box>
-              </box>
-            )}
-          </>
-        ) : (
-          <text fg="#9ca3af">No project selected</text>
-        )}
+      <box style={{ flexGrow: 1, flexDirection: "column", backgroundColor: "#0b0b0b", overflow: "hidden" }}>
+        <box
+          title={t("board.inspectorTitle")}
+          border
+          style={{ flexGrow: 1, flexDirection: "column", backgroundColor: "#0b0b0b", padding: 1 }}
+        >
+          {selectedProject ? (
+            <>
+              <text>
+                <span fg={selectedProject.color}>●</span>
+                {` `}
+                <strong>{selectedProject.name}</strong>
+              </text>
+              <text fg="#6b7280">{t("project.loopCount", { count: String(loopCount(selectedProject.id)) })}</text>
+              {selectedProject.isSystem ? (
+                <text fg="#9ca3af">{t("project.systemLabel")}</text>
+              ) : null}
+            </>
+          ) : (
+            <text fg="#9ca3af">{t("project.noLoops")}</text>
+          )}
+        </box>
+
+        <box
+          border
+          borderColor={focusedPanel === "actions" ? ENTITY_COLORS.project : undefined}
+          style={{ flexDirection: "row", height: 3, flexShrink: 0, paddingLeft: 1, backgroundColor: "#0b0b0b", alignItems: "center", justifyContent: selectedProject?.isSystem ? "center" : "flex-start" }}
+        >
+          {selectedProject && !selectedProject.isSystem ? (
+            actions.map((action, i) => (
+              <ProjectActionButton
+                key={action.key}
+                label={action.label}
+                selected={focusedPanel === "actions" && selectedAction === i}
+                onMouseDown={() => { setFocusedPanel("actions"); runAction(i); }}
+              />
+            ))
+          ) : (
+            <text fg="#9ca3af">{t("project.systemLabel")}</text>
+          )}
+        </box>
       </box>
 
       {subModal === "create" ? (

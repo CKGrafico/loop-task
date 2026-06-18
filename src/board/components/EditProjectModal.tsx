@@ -3,6 +3,7 @@ import { useKeyboard, useTerminalDimensions } from "@opentui/react";
 import type { Project } from "../../types.js";
 import { t } from "../../i18n/index.js";
 import { updateProject } from "../daemon.js";
+import { PROJECT_COLORS, PROJECT_COLOR_KEYS } from "../../config/constants.js";
 
 export function EditProjectModal(props: {
   project: Project;
@@ -13,13 +14,17 @@ export function EditProjectModal(props: {
   const { width } = useTerminalDimensions();
 
   const [name, setName] = useState(project.name);
+  const [selectedColorKey, setSelectedColorKey] = useState<string>(() => {
+    const found = PROJECT_COLOR_KEYS.find((k) => PROJECT_COLORS[k] === project.color);
+    return found ?? PROJECT_COLOR_KEYS[0] ?? "white";
+  });
   const [error, setError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [focusField, setFocusField] = useState<"name" | "save" | "cancel">("name");
+  const [focusField, setFocusField] = useState<"name" | "color" | "save" | "cancel">("name");
 
   useKeyboard((key) => {
     if (key.name === "tab") {
-      const order: Array<"name" | "save" | "cancel"> = ["name", "save", "cancel"];
+      const order: Array<"name" | "color" | "save" | "cancel"> = ["name", "color", "save", "cancel"];
       const idx = order.indexOf(focusField);
       const next = key.shift ? order[(idx - 1 + order.length) % order.length] : order[(idx + 1) % order.length];
       setFocusField(next ?? "name");
@@ -35,6 +40,19 @@ export function EditProjectModal(props: {
         return;
       }
       void submit();
+      return;
+    }
+    if (focusField === "color") {
+      if (key.name === "left") {
+        const idx = PROJECT_COLOR_KEYS.indexOf(selectedColorKey);
+        setSelectedColorKey(PROJECT_COLOR_KEYS[(idx - 1 + PROJECT_COLOR_KEYS.length) % PROJECT_COLOR_KEYS.length] ?? selectedColorKey);
+        return;
+      }
+      if (key.name === "right") {
+        const idx = PROJECT_COLOR_KEYS.indexOf(selectedColorKey);
+        setSelectedColorKey(PROJECT_COLOR_KEYS[(idx + 1) % PROJECT_COLOR_KEYS.length] ?? selectedColorKey);
+        return;
+      }
     }
   });
 
@@ -47,7 +65,8 @@ export function EditProjectModal(props: {
     try {
       setIsSubmitting(true);
       setError("");
-      await updateProject(project.id, name.trim());
+      const color = PROJECT_COLORS[selectedColorKey] ?? project.color;
+      await updateProject(project.id, name.trim(), color);
       onDone();
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err));
@@ -91,8 +110,37 @@ export function EditProjectModal(props: {
             value={name}
             placeholder={project.name}
             onInput={(value: string) => setName(value)}
-            onSubmit={() => setFocusField("save")}
+            onSubmit={() => setFocusField("color")}
           />
+        </box>
+
+        <text fg={focusField === "color" ? "#38bdf8" : "#e5e7eb"}>{t("project.labelColor")}</text>
+        <text fg="#6b7280">{t("project.hintColor")}</text>
+        <box
+          border
+          borderColor={focusField === "color" ? "#38bdf8" : undefined}
+          style={{ height: 3, flexDirection: "row", backgroundColor: "#0b0b0b", alignItems: "center", marginBottom: 1 }}
+        >
+          {PROJECT_COLOR_KEYS.map((colorKey) => {
+            const isActive = selectedColorKey === colorKey;
+            return (
+              <box
+                key={colorKey}
+                onMouseDown={() => { setFocusField("color"); setSelectedColorKey(colorKey); }}
+                style={{
+                  backgroundColor: isActive ? "#1e3a8a" : undefined,
+                  paddingLeft: 1,
+                  paddingRight: 1,
+                  marginRight: 1,
+                }}
+              >
+                <text>
+                  <span fg={PROJECT_COLORS[colorKey] ?? "#ffffff"}>●</span>
+                  {` ${colorKey}`}
+                </text>
+              </box>
+            );
+          })}
         </box>
 
         {error ? <text fg="#f87171">{error}</text> : null}

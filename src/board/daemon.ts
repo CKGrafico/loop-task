@@ -154,8 +154,8 @@ export async function createProject(name: string, color: string): Promise<Projec
   return response.data as Project;
 }
 
-export async function updateProject(id: string, name: string): Promise<void> {
-  const response = await sendRequest({ type: "project-update", payload: { id, name } });
+export async function updateProject(id: string, name: string, color?: string): Promise<void> {
+  const response = await sendRequest({ type: "project-update", payload: { id, name, color } });
   expectOk((response as { message?: string }).message ?? t("project.error.updateFailed"), response.type);
 }
 

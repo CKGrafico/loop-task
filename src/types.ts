@@ -110,7 +110,7 @@ export type IpcRequest =
   | { type: "task-delete"; payload: { id: string } }
   | { type: "project-list" }
   | { type: "project-create"; payload: { name: string; color: string } }
-  | { type: "project-update"; payload: { id: string; name: string } }
+  | { type: "project-update"; payload: { id: string; name: string; color?: string } }
   | { type: "project-delete"; payload: { id: string } }
   | { type: "shutdown" };
 

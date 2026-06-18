@@ -229,13 +229,13 @@ export class IpcServer {
       }
 
       case "project-update": {
-        const { id, name } = request.payload;
+        const { id, name, color } = request.payload;
         if (!name || !name.trim()) {
           send(socket, { type: "error", message: t("project.error.nameEmpty") });
           break;
         }
         try {
-          this.manager.updateProject(id, name.trim());
+          this.manager.updateProject(id, name.trim(), color);
           send(socket, { type: "ok" });
         } catch (err) {
           send(socket, { type: "error", message: err instanceof Error ? err.message : String(err) });

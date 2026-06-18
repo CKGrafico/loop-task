@@ -6,7 +6,7 @@ import { t } from "../../i18n/index.js";
 import type { Filters, SortMode } from "../state.js";
 import { describeLoop, sinceLabel, statusColor, statusLabel, timingLabel, truncate } from "../format.js";
 import { useHoverState } from "../hooks/useHoverState.js";
-import { HOVER_BG } from "../../config/constants.js";
+import { HOVER_BG, ENTITY_COLORS } from "../../config/constants.js";
 import type { Breakpoint } from "../hooks/useBreakpoint.js";
 import type { ScrollBoxRenderable } from "@opentui/core";
 
@@ -80,7 +80,7 @@ export function Navigator(props: {
     <box
       title={t("board.navigatorTitle", { visible: visible.length, total, sort, status: filters.status })}
       border
-      borderColor={focused ? "#38bdf8" : undefined}
+      borderColor={focused ? ENTITY_COLORS.loop : "#1e3a4a"}
       style={{ width: breakpoint === "narrow" ? "100%" : "60.5%", flexShrink: 0, flexDirection: "column", backgroundColor: "#0b0b0b", overflow: "hidden" }}
     >
       <text fg="#6b7280" style={{ height: 1, overflow: "hidden" }}>{header}</text>
