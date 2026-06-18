@@ -47,7 +47,7 @@ export function CreateView(props: {
   selectedTaskId: string | null;
   selectedTaskName: string | null;
   onCancel: () => void;
-  onDone: (updated: boolean, id: string) => void;
+  onDone: (updated: boolean, id: string, description: string) => void;
   onChooseTask: () => void;
 }): React.ReactNode {
   const [values, setValues] = useState<Record<CreateField, string>>(props.initial);
@@ -195,7 +195,7 @@ export function CreateView(props: {
             : createLoop(built.options, built.intervalHuman);
 
         const id = await request;
-        props.onDone(props.mode === "edit", id);
+        props.onDone(props.mode === "edit", id, current.description.trim());
       } else {
         if (!current.taskId) {
           setError(t("errors.commandEmpty"));
@@ -219,7 +219,7 @@ export function CreateView(props: {
             : createLoop(built.options, built.intervalHuman);
 
         const id = await request;
-        props.onDone(props.mode === "edit", id);
+        props.onDone(props.mode === "edit", id, current.description.trim());
       }
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));

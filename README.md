@@ -126,16 +126,15 @@ The board is the primary way to manage loops and tasks. It shows all loops, thei
 ```
 ↑/↓, j/k    move selection
 Enter       edit selected loop
+e           edit loop
+d/del       delete loop
+p           pause (when waiting) / play (when idle/paused)
+s           stop loop (resets schedule)
 n           create a new loop
 t           create a new task
-p           pause / resume selected loop
-x           stop / play selected loop (resets schedule)
-r           force run selected loop now
-del         delete selected loop
-/           search loops
-f           cycle status filter
-s           cycle sort mode
+o           cycle sort mode (order by)
 ←/→         switch between panels
+/           search loops
 h           toggle help
 esc         quit
 ```
@@ -145,7 +144,7 @@ Destructive actions (pause, force run, delete) prompt a confirmation before exec
 ### Pause vs Stop
 
 - **Pause** (`p`) — temporarily halts the loop. Resuming continues the original schedule (e.g., a loop that runs every 6h at :00 paused at 12:00 and resumed at 14:00 will still fire at 16:00).
-- **Stop** (`x`) — halts the loop and clears the schedule. Playing starts a fresh interval from now (e.g., the same loop stopped at 12:00 and played at 14:00 will fire at 20:00).
+- **Stop** (`s`) — halts the loop and clears the schedule. Playing starts a fresh interval from now (e.g., the same loop stopped at 12:00 and played at 14:00 will fire at 20:00).
 
 ## How it works
 

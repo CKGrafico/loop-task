@@ -1,11 +1,12 @@
 import { useEffect, useRef, useState } from "react";
 import type net from "node:net";
-import { useTerminalDimensions } from "@opentui/react";
+import { useKeyboard, useTerminalDimensions } from "@opentui/react";
 import type { RunRecord } from "../../types.js";
 import { t } from "../../i18n/index.js";
 import { formatRunDuration, formatRunTime } from "../format.js";
 import { streamRunLog } from "../daemon.js";
 import { LOG_LINES_MAX } from "../../config/constants.js";
+import { copyToClipboard } from "../../shared/clipboard.js";
 
 export function LogModal(props: {
   loopId: string | null;
@@ -43,6 +44,13 @@ export function LogModal(props: {
       }
     };
   }, [isRunning, loopId, run.runNumber]);
+
+  useKeyboard((key) => {
+    if (key.ctrl && key.name === "c") {
+      const all = (isRunning ? streamLines : staticLines).join("\n");
+      copyToClipboard(all);
+    }
+  });
 
   const logLines = isRunning ? streamLines : staticLines;
 

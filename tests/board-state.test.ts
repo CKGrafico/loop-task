@@ -22,6 +22,7 @@ function loop(id: string, values: Partial<LoopMeta> = {}): LoopMeta {
     status: "waiting",
     createdAt: "2026-06-14T10:00:00.000Z",
     runCount: 0,
+    sessionStartedAt: null,
     lastRunAt: null,
     lastExitCode: null,
     lastDuration: null,

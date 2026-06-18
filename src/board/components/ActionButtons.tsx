@@ -1,7 +1,40 @@
-import type { LoopMeta } from "../../types.js";
+import type { LoopMeta, LoopStatus } from "../../types.js";
 import { t } from "../../i18n/index.js";
 import { useHoverState } from "../hooks/useHoverState.js";
 import { HOVER_BG } from "../../config/constants.js";
+
+export interface ActionDef {
+  key: string;
+  label: string;
+}
+
+export function getActions(status: LoopStatus): ActionDef[] {
+  const actions: ActionDef[] = [
+    { key: "edit", label: t("board.actionEdit") },
+    { key: "delete", label: t("board.actionDelete") },
+  ];
+  if (status === "waiting") {
+    actions.push({ key: "pause", label: t("board.actionPause") });
+    actions.push({ key: "stop", label: t("board.actionStop") });
+  } else if (status === "paused") {
+    actions.push({ key: "stop", label: t("board.actionStop") });
+    actions.push({ key: "play", label: t("board.actionPlay") });
+  } else if (status === "idle" || status === "stopped") {
+    actions.push({ key: "play", label: t("board.actionPlay") });
+  }
+  if (status !== "running") {
+    actions.push({ key: "trigger", label: t("board.actionTrigger") });
+  }
+  return actions;
+}
+
+export function getActionKeys(status: LoopStatus): readonly string[] {
+  return getActions(status).map((a) => a.key);
+}
+
+export function getActionCount(status: LoopStatus): number {
+  return getActions(status).length;
+}
 
 export function ActionButtons(props: {
   loop: LoopMeta | null;
@@ -19,18 +52,7 @@ export function ActionButtons(props: {
     );
   }
 
-  const isPaused = loop.status === "paused";
-  const isIdle = loop.status === "idle";
-  const pauseResumeLabel = isPaused ? t("board.actionResume") : t("board.actionPause");
-  const stopPlayLabel = isIdle ? t("board.actionPlay") : t("board.actionStop");
-
-  const actions = [
-    { key: "pause-resume", label: pauseResumeLabel },
-    { key: "stop-play", label: stopPlayLabel },
-    { key: "run", label: t("board.actionRun") },
-    { key: "edit", label: t("board.actionEdit") },
-    { key: "delete", label: t("board.actionDelete") },
-  ];
+  const actions = getActions(loop.status);
 
   return (
     <box border borderColor={focused ? "#38bdf8" : undefined} style={{ flexDirection: "row", height: 3, flexShrink: 0, paddingLeft: 1, backgroundColor: "#0b0b0b", alignItems: "center" }}>

@@ -65,6 +65,7 @@ export interface LoopMeta {
   status: LoopStatus;
   createdAt: string;
   runCount: number;
+  sessionStartedAt: string | null;
   lastRunAt: string | null;
   lastExitCode: number | null;
   lastDuration: number | null;

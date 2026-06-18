@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type { LoopMeta, RunRecord, TaskDefinition } from "../types.js";
 import {
   applyLoopFilters,
@@ -40,16 +40,6 @@ const VIEW_TO_MODE: Partial<Record<View, Mode>> = {
   "task-create": "task",
   "task-edit": "task",
   "task-list": "task",
-};
-
-const PAUSE_RESOLVE: Record<string, { label: string; verb: string; fn: (id: string) => Promise<void> }> = {
-  paused: { label: t("board.actionResume"), verb: t("board.actionResumed"), fn: (id) => resumeLoop(id) },
-  default: { label: t("board.actionPause"), verb: t("board.actionPaused"), fn: (id) => pauseLoop(id) },
-};
-
-const STOP_PLAY_RESOLVE: Record<string, { msg: string; toast: string; fn: (id: string) => Promise<void> }> = {
-  idle: { msg: t("board.confirmPlay"), toast: t("board.toastPlayed"), fn: (id) => playLoop(id) },
-  default: { msg: t("board.confirmStop"), toast: t("board.toastStopped"), fn: (id) => stopLoop(id) },
 };
 
 function resolveMode(confirm: ConfirmState | null, searchActive: boolean, helpOpen: boolean, view: View): Mode {
@@ -111,6 +101,10 @@ export function App(props: { onQuit: () => void }): React.ReactNode {
     prevSelectedId.current = selectedId;
     setSelectedRunIndex(0);
   }
+
+  useEffect(() => {
+    setSelectedAction(0);
+  }, [selected?.id]);
 
   const { destroy: destroyLogSocket } = useLogStream(
     selectedId,
@@ -177,31 +171,6 @@ export function App(props: { onQuit: () => void }): React.ReactNode {
   function handleAction(action: string): void {
     if (!selected || !selectedId) return;
 
-    if (action === "pause-resume") {
-      const r = PAUSE_RESOLVE[selected.status] ?? PAUSE_RESOLVE.default;
-      confirmAction(
-        t("board.confirmPauseResume", { action: r.label, desc: selectedDesc }),
-        t("board.toastActionId", { verb: r.verb, desc: selectedDesc }),
-        () => r.fn(selectedId),
-      );
-      return;
-    }
-
-    if (action === "stop-play") {
-      const r = STOP_PLAY_RESOLVE[selected.status] ?? STOP_PLAY_RESOLVE.default;
-      confirmAction(r.msg.replace("{desc}", selectedDesc), r.toast.replace("{desc}", selectedDesc), () => r.fn(selectedId));
-      return;
-    }
-
-    if (action === "run") {
-      confirmAction(
-        t("board.confirmForceRun", { desc: selectedDesc }),
-        t("board.toastTriggered", { desc: selectedDesc }),
-        () => triggerLoop(selectedId),
-      );
-      return;
-    }
-
     if (action === "edit") {
       setEditTarget(selected);
       setView("create");
@@ -214,6 +183,61 @@ export function App(props: { onQuit: () => void }): React.ReactNode {
         t("board.toastDeleted", { desc: selectedDesc }),
         () => deleteLoop(selectedId),
       );
+      return;
+    }
+
+    if (action === "pause-or-play") {
+      if (selected.status === "waiting") {
+        confirmAction(
+          t("board.confirmPause", { desc: selectedDesc }),
+          t("board.toastPaused", { desc: selectedDesc }),
+          () => pauseLoop(selectedId),
+        );
+      } else if (selected.status === "paused") {
+        confirmAction(
+          t("board.confirmResume", { desc: selectedDesc }),
+          t("board.toastResumed", { desc: selectedDesc }),
+          () => resumeLoop(selectedId),
+        );
+      } else {
+        confirmAction(
+          t("board.confirmPlay", { desc: selectedDesc }),
+          t("board.toastPlayed", { desc: selectedDesc }),
+          () => playLoop(selectedId),
+        );
+      }
+      return;
+    }
+
+    if (action === "stop") {
+      confirmAction(
+        t("board.confirmStop", { desc: selectedDesc }),
+        t("board.toastStopped", { desc: selectedDesc }),
+        () => stopLoop(selectedId),
+      );
+      return;
+    }
+
+    if (action === "play") {
+      const isPaused = selected.status === "paused";
+      const msgKey = isPaused ? "board.confirmResume" : "board.confirmPlay";
+      const toastKey = isPaused ? "board.toastResumed" : "board.toastPlayed";
+      const fn = isPaused ? () => resumeLoop(selectedId) : () => playLoop(selectedId);
+      confirmAction(
+        t(msgKey, { desc: selectedDesc }),
+        t(toastKey, { desc: selectedDesc }),
+        fn,
+      );
+      return;
+    }
+
+    if (action === "trigger") {
+      confirmAction(
+        t("board.confirmTrigger", { desc: selectedDesc }),
+        t("board.toastTriggered", { desc: selectedDesc }),
+        () => triggerLoop(selectedId),
+      );
+      return;
     }
   }
 
@@ -268,11 +292,11 @@ export function App(props: { onQuit: () => void }): React.ReactNode {
     setView("task-create");
   }
 
-  const onCreateDone = (updated: boolean, id: string) => {
+  const onCreateDone = (updated: boolean, _id: string, desc: string) => {
     setEditTarget(null);
     setPendingTaskSelection(null);
     setView("board");
-    push("success", updated ? t("board.toastUpdated", { id }) : t("board.toastStarted", { id }));
+    push("success", updated ? t("board.toastUpdated", { desc }) : t("board.toastStarted", { desc }));
     setTimeout(() => { void refresh(); }, BOARD_REFRESH_DELAY_MS);
   };
 
@@ -305,6 +329,7 @@ export function App(props: { onQuit: () => void }): React.ReactNode {
     destroyLogSocket,
     logModalRun,
     setLogModalRun,
+    logModalLines,
     selectedRunIndex,
     setSelectedRunIndex,
     selectedRunCount: selected?.runHistory?.length ?? 0,
@@ -423,7 +448,6 @@ export function App(props: { onQuit: () => void }): React.ReactNode {
         ) : (
           <box style={{ flexDirection: breakpoint === "narrow" ? "column" : "row", flexGrow: 1, backgroundColor: "#0b0b0b" }}>
             <Navigator
-              key={`nav-${visible.length}-${visible[0]?.id ?? ""}`}
               visible={visible}
               total={loops.length}
               selectedIndex={clampedIndex}
@@ -435,9 +459,8 @@ export function App(props: { onQuit: () => void }): React.ReactNode {
               onActivate={(index) => { setSelectedIndex(index); const loop = visible[index]; if (loop) { setEditTarget(loop); setView("create"); } }}
             />
             <box style={{ flexDirection: "column", flexGrow: 1, backgroundColor: "#0b0b0b", overflow: "hidden" }}>
-              <Inspector key={`insp-${selected?.id}-${selected?.status}`} loop={selected} />
+              <Inspector loop={selected} />
               <RunHistory
-                key={`rh-${selected?.id}-${selected?.runHistory?.length ?? 0}`}
                 loop={selected}
                 selectedRunIndex={selectedRunIndex}
                 focused={focusedPanel === "runs"}
@@ -445,7 +468,6 @@ export function App(props: { onQuit: () => void }): React.ReactNode {
                 onOpenRun={handleOpenRunLog}
               />
               <ActionButtons
-                key={`ab-${selected?.id}`}
                 loop={selected}
                 focused={focusedPanel === "actions"}
                 selectedAction={selectedAction}

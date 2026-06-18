@@ -31,9 +31,8 @@ export class LoopManager {
     const saved = loadAllLoops();
     let restarted = 0;
     let migrated = 0;
+    const shouldAutoStart = (s: string) => s !== "stopped" && s !== "idle";
     for (const meta of saved) {
-      if (meta.status === "stopped") continue;
-
       let taskId = meta.taskId;
       if (!taskId && meta.command) {
         const task = this.taskManager.createInline(meta.command, meta.commandArgs, meta.cwd ?? "");
@@ -59,6 +58,7 @@ export class LoopManager {
         status: meta.status,
         createdAt: meta.createdAt,
         runCount: meta.runCount,
+        sessionStartedAt: meta.sessionStartedAt,
         lastRunAt: meta.lastRunAt,
         lastExitCode: meta.lastExitCode,
         lastDuration: meta.lastDuration,
@@ -72,8 +72,10 @@ export class LoopManager {
         intervalHuman: meta.intervalHuman,
       });
       this.wireEvents(meta.id, controller, options, meta.intervalHuman);
-      controller.start();
-      restarted += 1;
+      if (shouldAutoStart(meta.status)) {
+        controller.start();
+        restarted += 1;
+      }
     }
     if (migrated > 0) {
       daemonLog(`migrated ${migrated} loop(s) to task model`);

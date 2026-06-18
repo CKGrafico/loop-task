@@ -3,7 +3,7 @@ import { useTerminalDimensions } from "@opentui/react";
 import type { LoopMeta } from "../../types.js";
 import { t } from "../../i18n/index.js";
 import type { Filters, SortMode } from "../state.js";
-import { describeLoop, statusColor, statusLabel, timingLabel, truncate } from "../format.js";
+import { describeLoop, sinceLabel, statusColor, statusLabel, timingLabel, truncate } from "../format.js";
 import { useHoverState } from "../hooks/useHoverState.js";
 import { HOVER_BG } from "../../config/constants.js";
 import type { Breakpoint } from "../hooks/useBreakpoint.js";
@@ -35,21 +35,27 @@ export function Navigator(props: {
   const panelHeight = height - (breakpoint === "narrow" ? 10 : 7);
 
   const statusW = 8;
-  const exitW = 4;
+  const exitW = 2;
   const runsW = 5;
-  const fixedOverhead = 2 + statusW + 1 + 1 + exitW + 1 + runsW;
-  const timingW = Math.max(6, Math.min(12, Math.floor((panelWidth - fixedOverhead) * 0.3)));
-  const descW = Math.max(4, panelWidth - fixedOverhead - timingW);
+  const nonVar = 2 + 1 + statusW + 1 + 1 + 1 + exitW + 1 + 1 + runsW;
+  const avail = Math.floor(panelWidth) - nonVar;
+  const sinceW = Math.min(14, Math.max(8, Math.round(avail * 0.35)));
+  const timingW = Math.min(12, Math.max(6, Math.round(avail * 0.25)));
+  const descW = Math.max(6, avail - sinceW - timingW);
 
   const header =
     "  " +
+    fit(t("board.headerDescription"), descW) +
+    " " +
     fit(t("board.headerStatus"), statusW) +
     " " +
-    fit(t("board.headerDescription"), descW) +
+    fit(t("board.headerSince"), sinceW) +
     " " +
     fit(t("board.headerTiming"), timingW) +
     " " +
-    fit(t("board.headerExitRuns"), exitW + 1 + runsW);
+    fit("EX", exitW) +
+    " " +
+    "#" + fit(t("board.headerRuns"), runsW);
 
   useEffect(() => {
     const id = `nav-row-${selectedIndex}`;
@@ -91,6 +97,7 @@ export function Navigator(props: {
                 focused={focused}
                 exit={exit}
                 statusW={statusW}
+                sinceW={sinceW}
                 descW={descW}
                 timingW={timingW}
                 exitW={exitW}
@@ -114,6 +121,7 @@ function NavigatorRow(props: {
   focused: boolean;
   exit: string;
   statusW: number;
+  sinceW: number;
   descW: number;
   timingW: number;
   exitW: number;
@@ -121,7 +129,7 @@ function NavigatorRow(props: {
   onSelect: (index: number) => void;
   onActivate: (index: number) => void;
 }): React.ReactNode {
-  const { id, loop, index, isSelected, focused, exit, statusW, descW, timingW, exitW, runsW, onSelect, onActivate } = props;
+  const { id, loop, index, isSelected, focused, exit, statusW, sinceW, descW, timingW, exitW, runsW, onSelect, onActivate } = props;
   const { isHovered, hoverProps } = useHoverState();
   const bg = isSelected ? (focused ? "#1e3a8a" : "#1e2a4a") : isHovered ? HOVER_BG : undefined;
   const lastClickRef = useRef(0);
@@ -139,11 +147,11 @@ function NavigatorRow(props: {
   return (
     <box id={id} onMouseDown={handleClick} backgroundColor={bg} {...hoverProps}>
       <text>
-        {isSelected ? "›" : " "} <span fg={statusColor(loop.status)}>
+        {isSelected ? "›" : " "}{" "}
+        {fit(truncate(describeLoop(loop), descW), descW)} <span fg={statusColor(loop.status)}>
           {fit(statusLabel(loop.status), statusW)}
         </span>{" "}
-        {fit(truncate(describeLoop(loop), descW), descW)}{" "}
-        {fit(timingLabel(loop), timingW)} {fit(exit, exitW)} #
+        {fit(sinceLabel(loop), sinceW)} {fit(timingLabel(loop), timingW)} {fit(exit, exitW)} #
         {String(loop.runCount).padStart(runsW)}
       </text>
     </box>

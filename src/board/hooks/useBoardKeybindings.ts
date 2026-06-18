@@ -2,11 +2,11 @@ import type { Dispatch, SetStateAction } from "react";
 import { useKeyboard } from "@opentui/react";
 import type { LoopMeta, RunRecord, TaskDefinition } from "../../types.js";
 import { cycleSortMode, cycleStatusFilter, type Filters, type SortMode } from "../state.js";
+import { copyToClipboard } from "../../shared/clipboard.js";
+import { getActionCount, getActionKeys } from "../components/ActionButtons.js";
 import type { ConfirmState, PanelFocus, View } from "../types.js";
 
 const PANEL_ORDER: PanelFocus[] = ["search", "status", "sort", "tasks", "new", "loops", "runs", "actions"];
-const ACTION_COUNT = 5;
-const ACTION_KEYS = ["pause-resume", "stop-play", "run", "edit", "delete"] as const;
 
 const PANEL_LEFT: Record<PanelFocus, PanelFocus> = {
   search: "loops",
@@ -94,10 +94,12 @@ const GLOBAL_KEYS: Record<string, (p: GlobalKeyParams) => void> = {
   h: (p) => p.setHelpOpen(true),
   n: (p) => { p.setEditTarget(null); p.setView("create"); },
   t: (p) => { p.setEditTask(null); p.setView("task-create"); },
-  r: (p) => p.onAction("run"),
-  p: (p) => p.onAction("pause-resume"),
-  x: (p) => p.onAction("stop-play"),
+  e: (p) => p.onAction("edit"),
+  d: (p) => p.onAction("delete"),
   delete: (p) => p.onAction("delete"),
+  p: (p) => p.onAction("pause-or-play"),
+  s: (p) => p.onAction("stop"),
+  f: (p) => p.onAction("trigger"),
 };
 
 interface GlobalKeyParams {
@@ -171,17 +173,18 @@ const panelHandlers: Record<PanelFocus, PanelKeyHandler> = {
     return false;
   },
   actions: (key, p) => {
-    if (key === "up" || key === "k") { p.setSelectedAction((i) => Math.max(0, i - 1)); return true; }
-    if (key === "down" || key === "j") { p.setSelectedAction((i) => Math.min(ACTION_COUNT - 1, i + 1)); return true; }
-    if (key === "return" || key === "enter") { p.onAction(ACTION_KEYS[p.selectedAction] ?? "edit"); return true; }
+    const count = p.selected ? getActionCount(p.selected.status) : 0;
+    const keys = p.selected ? getActionKeys(p.selected.status) : [];
+    if (key === "up" || key === "k") { p.setSelectedAction((i) => Math.max(0, Math.min(i, count - 1))); return true; }
+    if (key === "down" || key === "j") { p.setSelectedAction((i) => Math.min(count - 1, i + 1)); return true; }
+    if (key === "return" || key === "enter") { p.onAction(keys[p.selectedAction] ?? "edit"); return true; }
     return false;
   },
 };
 
 const BOARD_SHORTCUTS: Record<string, (p: PanelHandlerParams) => void> = {
   "/": (p) => p.setSearchActive(true),
-  f: (p) => p.setFilters((prev) => ({ ...prev, status: cycleStatusFilter(prev.status) })),
-  s: (p) => p.setSort((prev) => cycleSortMode(prev)),
+  o: (p) => p.setSort((prev) => cycleSortMode(prev)),
 };
 
 export interface BoardKeybindingParams {
@@ -206,6 +209,7 @@ export interface BoardKeybindingParams {
   destroyLogSocket: () => void;
   logModalRun: RunRecord | null;
   setLogModalRun: Dispatch<SetStateAction<RunRecord | null>>;
+  logModalLines: string[];
   selectedRunIndex: number;
   setSelectedRunIndex: Dispatch<SetStateAction<number>>;
   selectedRunCount: number;
@@ -243,6 +247,7 @@ export function useBoardKeybindings(params: BoardKeybindingParams): void {
     destroyLogSocket,
     logModalRun,
     setLogModalRun,
+    logModalLines,
     selectedRunIndex,
     setSelectedRunIndex,
     selectedRunCount,
@@ -265,11 +270,17 @@ export function useBoardKeybindings(params: BoardKeybindingParams): void {
       return;
     }
 
-    if (logModalRun && (name === "escape" || name === "q")) {
-      OVERLAY_DISMISS.log({ setLogModalRun, setHelpOpen, setSearchActive, setFocusedPanel }, name);
+    if (logModalRun) {
+      if (name === "escape" || name === "q") {
+        OVERLAY_DISMISS.log({ setLogModalRun, setHelpOpen, setSearchActive, setFocusedPanel }, name);
+        return;
+      }
+      if (key.ctrl && name === "c") {
+        copyToClipboard(logModalLines.join("\n"));
+        return;
+      }
       return;
     }
-    if (logModalRun) return;
 
     if (helpOpen && (name === "h" || name === "escape")) {
       OVERLAY_DISMISS.help({ setLogModalRun, setHelpOpen, setSearchActive, setFocusedPanel }, name);
@@ -286,7 +297,7 @@ export function useBoardKeybindings(params: BoardKeybindingParams): void {
       if (name === "left") {
         setSearchActive(false);
         setFocusedPanel("actions");
-        setSelectedAction(ACTION_COUNT - 1);
+        setSelectedAction((selected ? getActionCount(selected.status) : 0) - 1);
         return;
       }
       if (name === "backspace") {
@@ -302,14 +313,15 @@ export function useBoardKeybindings(params: BoardKeybindingParams): void {
 
     if (name === "left" || name === "right") {
       if (focusedPanel === "actions") {
+        const actionCount = selected ? getActionCount(selected.status) : 0;
         if (name === "left" && selectedAction === 0) {
           setFocusedPanel((p) => nextPanel(p, "left"));
-        } else if (name === "right" && selectedAction === ACTION_COUNT - 1) {
+        } else if (name === "right" && selectedAction === actionCount - 1) {
           setFocusedPanel((p) => nextPanel(p, "right"));
         } else {
           setSelectedAction((i) =>
             name === "right"
-              ? Math.min(ACTION_COUNT - 1, i + 1)
+              ? Math.min(actionCount - 1, i + 1)
               : Math.max(0, i - 1)
           );
         }

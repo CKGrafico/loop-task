@@ -13,6 +13,7 @@ interface LoopControllerState {
   status?: LoopStatus;
   createdAt?: string;
   runCount?: number;
+  sessionStartedAt?: string | null;
   lastRunAt?: string | null;
   lastExitCode?: number | null;
   lastDuration?: number | null;
@@ -28,6 +29,7 @@ export class LoopController extends EventEmitter {
   private _forceRun = false;
   private _resetSchedule = false;
   private interruptedForForceRun = false;
+  private _stopAfterRun = false;
   private _status: LoopStatus = "running";
   private resumeResolve: (() => void) | null = null;
   private runCount = 0;
@@ -43,6 +45,7 @@ export class LoopController extends EventEmitter {
   private remainingDelayMs: number | null = null;
   private logStream: fs.WriteStream | null = null;
   private loopPromise: Promise<void> | null = null;
+  private sessionStartedAt: string | null = null;
   private runHistory: RunRecord[] = [];
   private currentRunStartOffset: number = 0;
 
@@ -61,6 +64,7 @@ export class LoopController extends EventEmitter {
     this.abortController = new AbortController();
     this.createdAt = state?.createdAt ?? new Date().toISOString();
     this.runCount = state?.runCount ?? 0;
+    this.sessionStartedAt = state?.sessionStartedAt ?? null;
     this.lastRunAt = state?.lastRunAt ?? null;
     this.lastExitCode = state?.lastExitCode ?? null;
     this.lastDuration = state?.lastDuration ?? null;
@@ -80,6 +84,9 @@ export class LoopController extends EventEmitter {
   start(): void {
     this.logStream = fs.createWriteStream(this.logPath, { flags: "a" });
     this.loopPromise = this.run();
+    if (this.sessionStartedAt === null) {
+      this.sessionStartedAt = new Date().toISOString();
+    }
   }
 
   pause(interruptCurrentRun = false): void {
@@ -97,6 +104,7 @@ export class LoopController extends EventEmitter {
     if (this._status === "running" || this._status === "waiting" || this._status === "paused") {
       this._paused = true;
       this._status = "idle";
+      this.sessionStartedAt = null;
       this.remainingDelayMs = null;
       this.nextRunAt = null;
       if (interruptCurrentRun) {
@@ -120,29 +128,43 @@ export class LoopController extends EventEmitter {
   }
 
   playLoop(): void {
-    if (this._status !== "idle") return;
+    if (this._status !== "idle" && this._status !== "stopped") return;
+    if (this.options.maxRuns !== null && this.runCount >= this.options.maxRuns) {
+      this.runCount = 0;
+    }
+    this.sessionStartedAt = new Date().toISOString();
     this._resetSchedule = true;
-    if (this._paused && this.resumeResolve) {
-      this._paused = false;
+    this._paused = false;
+    this._status = "waiting";
+    if (this.resumeResolve) {
       this.resumeResolve();
       this.resumeResolve = null;
+    }
+    if (!this.loopPromise) {
+      this.start();
     }
     this.emit("resumed");
   }
 
   triggerNow(interruptCurrentRun = false): boolean {
-    if (this._status === "stopped") {
-      return false;
+    const isStopped = this._status === "stopped";
+    if (isStopped && this.options.maxRuns !== null && this.runCount >= this.options.maxRuns) {
+      this.runCount = 0;
     }
     this._forceRun = true;
     this.remainingDelayMs = null;
     this.nextRunAt = null;
-    if (interruptCurrentRun) {
-      this.interruptedForForceRun = true;
-      this.runAbortController?.abort();
-    }
-    if (this._paused) {
-      this.resume();
+    if (isStopped) {
+      this._stopAfterRun = true;
+      this._paused = false;
+      this._status = "running";
+      if (!this.loopPromise) this.start();
+    } else {
+      if (interruptCurrentRun) {
+        this.interruptedForForceRun = true;
+        this.runAbortController?.abort();
+      }
+      if (this._paused) this.resume();
     }
     this.emit("triggered");
     return true;
@@ -164,6 +186,7 @@ export class LoopController extends EventEmitter {
       taskId: this.options.taskId,
       status: this._status,
       createdAt: this.createdAt,
+      sessionStartedAt: this.sessionStartedAt,
       runCount: this.runCount,
       lastRunAt: this.lastRunAt,
       lastExitCode: this.lastExitCode,
@@ -288,6 +311,9 @@ export class LoopController extends EventEmitter {
         this._forceRun = false;
         this.runCount++;
         this.lastRunAt = new Date().toISOString();
+        if (this.sessionStartedAt === null) {
+          this.sessionStartedAt = this.lastRunAt;
+        }
         this.nextRunAt = null;
         this.emit("run:start", this.runCount);
         this.logStream = rotateLogIfNeeded(this.logPath, this.logStream);
@@ -407,13 +433,23 @@ export class LoopController extends EventEmitter {
           return;
         }
 
+        if (this._stopAfterRun) {
+          this._stopAfterRun = false;
+          this._paused = true;
+          this._status = "idle";
+          this.remainingDelayMs = null;
+          this.nextRunAt = null;
+          this.emit("stopped");
+          return;
+        }
+
         const completed = await this.waitForDelay(this.options.interval, signal);
         if (!completed) {
           break;
         }
       }
     } finally {
-      if (this._status !== "stopped") {
+      if (this._status !== "stopped" && this._status !== "idle") {
         this._status = "stopped";
       }
     }

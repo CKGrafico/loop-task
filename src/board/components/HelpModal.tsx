@@ -4,20 +4,19 @@ import { t } from "../../i18n/index.js";
 export function HelpModal(): React.ReactNode {
   const { width } = useTerminalDimensions();
   const rows: [string, string][] = [
-    [t("board.helpKeyMove"), t("board.helpMoveSelection")],
+    ["e", "edit loop"],
+    ["d/del", "delete loop"],
+    ["f", "force run"],
+    ["p", "pause/play (contextual)"],
+    ["s", "stop loop (resets schedule)"],
     [t("board.helpKeyEnter"), t("board.helpEdit")],
-    [t("board.helpKeyN"), t("board.helpCreate")],
+    ["n", t("board.helpCreate")],
     ["t", t("board.helpCreateTask")],
-    ["p", t("board.helpPauseResume")],
-    ["x", t("board.helpStopPlay")],
-    ["r", t("board.helpForceRun")],
-    ["del", t("board.helpDelete")],
+    ["o", t("board.helpCycleSort")],
     ["←/→", t("board.helpSwitchPanel")],
-    [t("board.helpKeySlash"), t("board.helpSearch")],
-    [t("board.helpKeyF"), t("board.helpCycleFilter")],
-    [t("board.helpKeyS"), t("board.helpCycleSort")],
-    [t("board.helpKeyH"), t("board.helpToggleHelp")],
-    [t("board.helpKeyEsc"), t("board.helpQuit")],
+    ["/", t("board.helpSearch")],
+    ["h", t("board.helpToggleHelp")],
+    ["esc", t("board.helpQuit")],
   ];
 
   return (
