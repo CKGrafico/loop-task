@@ -313,10 +313,21 @@ All persistence is **local filesystem** under the data directory, resolved by
 | Code signature | `~/.loop-cli/daemon.sig` | Detect stale daemon vs current source | 16-char SHA-1 over src mtime/size/count | Written on boot; compared by `ensureDaemon` |
 | IPC endpoint | POSIX: `~/.loop-cli/daemon-<hash>.sock`; Windows: `\\.\pipe\loop-cli-<user>-<hash>` | Client↔daemon transport | OS socket / named pipe | Bound on boot; `.sock` unlinked on POSIX shutdown |
 | Daemon diagnostics | `~/.loop-cli/daemon.log` | Daemon-side troubleshooting log | Plain text | Appended by `daemon-log.ts` |
+| **Project metadata** | `~/.loop-cli/projects/<id>.json` | Per-project config (name, color, system flag) | `Project` (`src/types.ts`) | Created on project-create RPC or init (Default); renamed in-place on update; removed on delete; `default.json` is permanent |
 
 **Migration approach:** None. State files are plain JSON read directly; corrupted
 loop files are skipped on load (`state.ts#loadAllLoops`). There is no schema
 versioning — *Not evident from the repository.*
+
+### 5.1 Projects
+
+**Projects** are organizational scopes for loops. Every `LoopMeta` carries a `projectId` string (default: `"default"`). The `ProjectManager` class (`src/daemon/projects.ts`) owns project persistence:
+
+- **Default project** — created on first daemon init (`id: "default"`, `isSystem: true`, `isDefault: true`, white). Cannot be renamed or deleted.
+- **User projects** — created via `project-create` RPC. Stored as `~/.loop-cli/projects/<id>.json`.
+- **Migration** — `LoopManager.init()` adds `projectId = "default"` to any loop file that lacks the field, then rewrites it atomically.
+- **Cascade on delete** — when a project is deleted via `project-delete` RPC, all loops with that `projectId` are moved to `"default"` before the project file is removed.
+- **Board filtering** — the board keeps `currentProjectId` in React state (persisted to `localStorage`). Only loops matching `loop.projectId === currentProjectId` are shown in the Navigator.
 
 ---
 

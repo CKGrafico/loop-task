@@ -185,7 +185,7 @@ export class LoopController extends EventEmitter {
     this.logStream = null;
   }
 
-  getMeta(): Omit<LoopMeta, "command" | "commandArgs" | "interval" | "intervalHuman" | "immediate" | "maxRuns" | "verbose" | "cwd" | "description" | "pid"> {
+  getMeta(): Omit<LoopMeta, "command" | "commandArgs" | "interval" | "intervalHuman" | "immediate" | "maxRuns" | "verbose" | "cwd" | "description" | "pid" | "projectId"> {
     return {
       id: this.id,
       taskId: this.options.taskId,

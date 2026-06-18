@@ -11,6 +11,7 @@ export interface LoopCommandOptionsInput {
   command?: string;
   commandArgs?: string[];
   cwd?: string;
+  projectId?: string;
 }
 
 export interface BuiltLoopOptions {
@@ -111,6 +112,7 @@ export function buildLoopOptions(
       maxRuns: parseMaxRuns(input.maxRuns),
       verbose: input.verbose ?? false,
       description,
+      projectId: input.projectId ?? "default",
     },
   };
 }

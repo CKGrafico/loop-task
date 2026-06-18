@@ -1,7 +1,9 @@
 import crypto from "node:crypto";
 import { LoopController } from "../core/loop-controller.js";
 import type { LoopOptions, LoopMeta } from "../types.js";
+import type { Project } from "../types.js";
 import { TaskManager } from "./task-manager.js";
+import { ProjectManager } from "./projects.js";
 import {
   saveLoop,
   loadAllLoops,
@@ -20,19 +22,28 @@ export class LoopManager {
   private loops = new Map<string, StoredLoop>();
   private lastSerialized = new Map<string, string>();
   private taskManager: TaskManager;
+  private projectManager: ProjectManager;
 
-  constructor(taskManager: TaskManager) {
+  constructor(taskManager: TaskManager, projectManager?: ProjectManager) {
     this.taskManager = taskManager;
+    this.projectManager = projectManager || new ProjectManager();
   }
 
   private taskResolver = (taskId: string) => this.taskManager.get(taskId);
 
   init(): void {
+    // Initialize projects first
+    this.projectManager.init();
+
     const saved = loadAllLoops();
     let restarted = 0;
     let migrated = 0;
     const shouldAutoStart = (s: string) => s !== "stopped" && s !== "idle";
     for (const meta of saved) {
+      if (!(meta as LoopMeta & { projectId?: string }).projectId) {
+        (meta as LoopMeta & { projectId?: string }).projectId = "default";
+        saveLoop(meta as LoopMeta);
+      }
       let taskId = meta.taskId;
       if (!taskId && meta.command) {
         const task = this.taskManager.createInline(meta.command, meta.commandArgs, meta.cwd ?? "");
@@ -52,6 +63,7 @@ export class LoopManager {
         maxRuns: meta.maxRuns,
         verbose: meta.verbose,
         description: meta.description ?? "",
+        projectId: (meta as LoopMeta & { projectId?: string }).projectId ?? "default",
       };
       const logPath = getLogPath(meta.id);
       const controller = new LoopController(meta.id, options, logPath, this.taskResolver, {
@@ -134,6 +146,28 @@ export class LoopManager {
       result.push(this.buildMeta(id, entry));
     }
     return result;
+  }
+
+  listProjects(): Project[] {
+    return this.projectManager.getAll();
+  }
+
+  createProject(name: string, color: string): Project {
+    return this.projectManager.create(name, color);
+  }
+
+  updateProject(id: string, name: string, color?: string): void {
+    this.projectManager.update(id, name, color);
+  }
+
+  deleteProject(id: string): void {
+    for (const [loopId, entry] of this.loops) {
+      if (entry.options.projectId === id) {
+        entry.options.projectId = "default";
+        this.persist(loopId, entry.controller, entry.options, entry.intervalHuman);
+      }
+    }
+    this.projectManager.delete(id);
   }
 
   status(id: string): LoopMeta | null {
@@ -275,6 +309,7 @@ export class LoopManager {
       description: options.description,
       remainingDelayMs: runtime.remainingDelayMs,
       pid: process.pid,
+      projectId: options.projectId ?? "default",
     };
   }
 }

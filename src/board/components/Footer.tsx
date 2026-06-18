@@ -1,16 +1,18 @@
 import { t } from "../../i18n/index.js";
 import type { Mode } from "../types.js";
+import { ENTITY_COLORS } from "../../config/constants.js";
 
 export function Footer(props: { mode: Mode }): React.ReactNode {
   const { mode } = props;
 
   const badge: Record<Mode, { label: string; bg: string }> = {
-    normal: { label: t("board.badgeNormal"), bg: "#4ade80" },
+    normal: { label: t("board.badgeNormal"), bg: ENTITY_COLORS.loop },
     search: { label: t("board.badgeSearch"), bg: "#38bdf8" },
-    create: { label: t("board.badgeCreate"), bg: "#a3e635" },
-    task: { label: t("board.badgeTask"), bg: "#a78bfa" },
+    create: { label: t("board.badgeCreate"), bg: ENTITY_COLORS.loop },
+    task: { label: t("board.badgeTask"), bg: ENTITY_COLORS.task },
     help: { label: t("board.badgeHelp"), bg: "#facc15" },
     confirm: { label: t("board.badgeConfirm"), bg: "#f87171" },
+    projects: { label: t("project.projectsLabel"), bg: ENTITY_COLORS.project },
   };
 
   const hints: Record<Mode, [string, string][]> = {
@@ -40,6 +42,12 @@ export function Footer(props: { mode: Mode }): React.ReactNode {
       [t("board.hintKeyEnter"), t("board.hintConfirm")],
       [t("board.hintKeyYN"), t("board.hintYesNo")],
       [t("board.hintKeyEsc"), t("board.hintCancel")],
+    ],
+    projects: [
+      ["n", t("project.keyNewHint")],
+      ["e", t("project.keyEditHint")],
+      ["d", t("project.keyDeleteHint")],
+      [t("board.hintKeyEsc"), t("board.hintBack")],
     ],
   };
 

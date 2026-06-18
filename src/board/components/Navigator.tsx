@@ -1,11 +1,12 @@
 import { useEffect, useRef, useState } from "react";
 import { useTerminalDimensions } from "@opentui/react";
 import type { LoopMeta } from "../../types.js";
+import type { Project } from "../../types.js";
 import { t } from "../../i18n/index.js";
 import type { Filters, SortMode } from "../state.js";
 import { describeLoop, sinceLabel, statusColor, statusLabel, timingLabel, truncate } from "../format.js";
 import { useHoverState } from "../hooks/useHoverState.js";
-import { HOVER_BG } from "../../config/constants.js";
+import { HOVER_BG, ENTITY_COLORS } from "../../config/constants.js";
 import type { Breakpoint } from "../hooks/useBreakpoint.js";
 import type { ScrollBoxRenderable } from "@opentui/core";
 
@@ -23,10 +24,11 @@ export function Navigator(props: {
   sort: SortMode;
   breakpoint: Breakpoint;
   focused: boolean;
+  projects?: Project[];
   onSelect: (index: number) => void;
   onActivate: (index: number) => void;
 }): React.ReactNode {
-  const { visible, total, selectedIndex, filters, sort, breakpoint, focused, onSelect, onActivate } = props;
+  const { visible, total, selectedIndex, filters, sort, breakpoint, focused, projects, onSelect, onActivate } = props;
   const { width, height } = useTerminalDimensions();
   const scrollRef = useRef<ScrollBoxRenderable | null>(null);
   const [, setTick] = useState(0);
@@ -38,14 +40,16 @@ export function Navigator(props: {
   const exitW = 2;
   const runsW = 5;
   const skpW = 4;
+  const bulletW = 2;
   const nonVar = 2 + 1 + statusW + 1 + 1 + 1 + exitW + 1 + 1 + runsW + 1 + skpW;
-  const avail = Math.floor(panelWidth) - nonVar;
+  const avail = Math.floor(panelWidth) - nonVar - bulletW;
   const descW = Math.min(22, Math.max(6, Math.round(avail * 0.30)));
   const sinceW = Math.min(14, Math.max(8, Math.round(avail * 0.35)));
   const timingW = Math.max(6, avail - descW - sinceW);
 
   const header =
     "  " +
+    fit("", bulletW) +
     fit(t("board.headerDescription"), descW) +
     " " +
     fit(t("board.headerStatus"), statusW) +
@@ -76,7 +80,7 @@ export function Navigator(props: {
     <box
       title={t("board.navigatorTitle", { visible: visible.length, total, sort, status: filters.status })}
       border
-      borderColor={focused ? "#38bdf8" : undefined}
+      borderColor={focused ? ENTITY_COLORS.loop : "#1e3a4a"}
       style={{ width: breakpoint === "narrow" ? "100%" : "60.5%", flexShrink: 0, flexDirection: "column", backgroundColor: "#0b0b0b", overflow: "hidden" }}
     >
       <text fg="#6b7280" style={{ height: 1, overflow: "hidden" }}>{header}</text>
@@ -90,6 +94,8 @@ export function Navigator(props: {
           {visible.map((loop, index) => {
             const isSelected = index === selectedIndex;
             const exit = loop.lastExitCode === null ? "-" : String(loop.lastExitCode);
+            const proj = projects?.find((p) => p.id === (loop.projectId ?? "default"));
+            const bulletColor = proj?.color ?? "#ffffff";
             return (
               <NavigatorRow
                 key={loop.id}
@@ -106,6 +112,7 @@ export function Navigator(props: {
                 exitW={exitW}
                 runsW={runsW}
                 skpW={skpW}
+                bulletColor={bulletColor}
                 onSelect={onSelect}
                 onActivate={onActivate}
               />
@@ -131,10 +138,11 @@ function NavigatorRow(props: {
   exitW: number;
   runsW: number;
   skpW: number;
+  bulletColor: string;
   onSelect: (index: number) => void;
   onActivate: (index: number) => void;
 }): React.ReactNode {
-  const { id, loop, index, isSelected, focused, exit, statusW, sinceW, descW, timingW, exitW, runsW, skpW, onSelect, onActivate } = props;
+  const { id, loop, index, isSelected, focused, exit, statusW, sinceW, descW, timingW, exitW, runsW, skpW, bulletColor, onSelect, onActivate } = props;
   const { isHovered, hoverProps } = useHoverState();
   const bg = isSelected ? (focused ? "#1e3a8a" : "#1e2a4a") : isHovered ? HOVER_BG : undefined;
   const lastClickRef = useRef(0);
@@ -149,15 +157,19 @@ function NavigatorRow(props: {
     lastClickRef.current = now;
   }
 
-  const rowText = `${isSelected ? "›" : " "} ${fit(truncate(describeLoop(loop), descW), descW)} ${fit(statusLabel(loop.status), statusW)} ${fit(sinceLabel(loop), sinceW)} ${fit(timingLabel(loop), timingW)} ${fit(exit, exitW)} #${String(loop.runCount).padStart(runsW)} ${fit(loop.skippedCount > 0 ? String(loop.skippedCount) : "-", skpW)}`;
+  const descText = fit(truncate(describeLoop(loop), descW), descW);
+  const afterDesc = ` ${fit(statusLabel(loop.status), statusW)} ${fit(sinceLabel(loop), sinceW)} ${fit(timingLabel(loop), timingW)} ${fit(exit, exitW)} #${String(loop.runCount).padStart(runsW)} ${fit(loop.skippedCount > 0 ? String(loop.skippedCount) : "-", skpW)}`;
   const statusFg = statusColor(loop.status);
-  const statusStart = 2 + descW + 1;
-  const statusEnd = statusStart + statusW;
 
   return (
     <box id={id} onMouseDown={handleClick} backgroundColor={bg} style={{ height: 1, overflow: "hidden" }} {...hoverProps}>
       <text fg="#e5e7eb">
-        {rowText.slice(0, statusStart)}<span fg={statusFg}>{rowText.slice(statusStart, statusEnd)}</span>{rowText.slice(statusEnd)}
+        {isSelected ? "› " : "  "}
+        <span fg={bulletColor}>{"● "}</span>
+        {descText}
+        {" "}
+        <span fg={statusFg}>{afterDesc.slice(1, 1 + statusW)}</span>
+        {afterDesc.slice(1 + statusW)}
       </text>
     </box>
   );

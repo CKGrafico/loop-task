@@ -4,7 +4,7 @@ import type { TaskDefinition } from "../../types.js";
 import { t } from "../../i18n/index.js";
 import { commandLine, truncate } from "../format.js";
 import { useHoverState } from "../hooks/useHoverState.js";
-import { HOVER_BG } from "../../config/constants.js";
+import { HOVER_BG, ENTITY_COLORS } from "../../config/constants.js";
 import type { ScrollBoxRenderable } from "@opentui/core";
 
 function fit(text: string, width: number): string {
@@ -63,7 +63,7 @@ export function TaskNavigator(props: {
     <box
       title={t("board.taskBrowserTitle", { visible: visible.length, total })}
       border
-      borderColor={focused ? "#38bdf8" : undefined}
+      borderColor={focused ? ENTITY_COLORS.task : "#2e2545"}
       style={{ width: "55%", flexShrink: 0, flexDirection: "column", backgroundColor: "#0b0b0b", overflow: "hidden" }}
     >
       <text fg="#6b7280">{header}</text>

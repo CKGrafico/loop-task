@@ -6,28 +6,34 @@ import { copyToClipboard } from "../../shared/clipboard.js";
 import { getActionCount, getActionKeys } from "../components/ActionButtons.js";
 import type { ConfirmState, PanelFocus, View } from "../types.js";
 
-const PANEL_ORDER: PanelFocus[] = ["search", "status", "sort", "tasks", "new", "loops", "runs", "actions"];
+const PANEL_ORDER: PanelFocus[] = ["search", "project-filter", "status", "sort", "header-tasks", "header-projects", "header-new", "loops", "runs", "actions"];
 
 const PANEL_LEFT: Record<PanelFocus, PanelFocus> = {
-  search: "loops",
-  status: "search",
-  sort: "status",
-  tasks: "sort",
-  new: "tasks",
-  loops: "new",
-  runs: "loops",
-  actions: "runs",
+  search:            "actions",
+  "project-filter":  "search",
+  status:            "project-filter",
+  sort:              "status",
+  "header-tasks":    "sort",
+  "header-projects": "header-tasks",
+  "header-new":      "header-projects",
+  loops:             "header-new",
+  runs:              "loops",
+  actions:           "runs",
+  projects:          "header-new",
 };
 
 const PANEL_RIGHT: Record<PanelFocus, PanelFocus> = {
-  search: "status",
-  status: "sort",
-  sort: "tasks",
-  tasks: "new",
-  new: "loops",
-  loops: "runs",
-  runs: "actions",
-  actions: "search",
+  search:            "project-filter",
+  "project-filter":  "status",
+  status:            "sort",
+  sort:              "header-tasks",
+  "header-tasks":    "header-projects",
+  "header-projects": "header-new",
+  "header-new":      "loops",
+  loops:             "runs",
+  runs:              "actions",
+  actions:           "search",
+  projects:          "loops",
 };
 
 function nextPanel(current: PanelFocus, direction: "left" | "right"): PanelFocus {
@@ -59,17 +65,17 @@ interface ConfirmParams {
 }
 
 const VIEW_ESCAPE: Record<string, (p: ViewEscapeParams) => void> = {
-  create: (p) => { p.setEditTarget(null); p.setView("board"); },
-  "task-create": (p) => { p.setEditTask(null); p.setView("board"); },
-  "task-edit": (p) => { p.setEditTask(null); p.setView("board"); },
-  "task-list": (p) => p.setView(p.returnView ?? "board"),
+  create: (p) => { p.setEditTarget(null); p.onBack(); },
+  "task-create": (p) => { p.setEditTask(null); p.onBack(); },
+  "task-edit": (p) => { p.setEditTask(null); p.onBack(); },
+  "task-list": (p) => p.onBack(),
+  projects: (p) => p.onBack(),
 };
 
 interface ViewEscapeParams {
   setEditTarget: Dispatch<SetStateAction<LoopMeta | null>>;
   setEditTask: Dispatch<SetStateAction<TaskDefinition | null>>;
-  setView: Dispatch<SetStateAction<View>>;
-  returnView?: View;
+  onBack: () => void;
 }
 
 interface OverlayParams {
@@ -92,8 +98,8 @@ const OVERLAY_DISMISS: Record<string, (p: OverlayParams, overlay: string) => boo
 const GLOBAL_KEYS: Record<string, (p: GlobalKeyParams) => void> = {
   escape: (p) => { p.destroyLogSocket(); p.onQuit(); },
   h: (p) => p.setHelpOpen(true),
-  n: (p) => { p.setEditTarget(null); p.setView("create"); },
-  t: (p) => { p.setEditTask(null); p.setView("task-create"); },
+  n: (p) => { p.setEditTarget(null); p.push("create"); },
+  t: (p) => { p.setEditTask(null); p.push("task-create"); },
   e: (p) => p.onAction("edit"),
   d: (p) => p.onAction("delete"),
   delete: (p) => p.onAction("delete"),
@@ -108,7 +114,7 @@ interface GlobalKeyParams {
   setHelpOpen: Dispatch<SetStateAction<boolean>>;
   setEditTarget: Dispatch<SetStateAction<LoopMeta | null>>;
   setEditTask: Dispatch<SetStateAction<TaskDefinition | null>>;
-  setView: Dispatch<SetStateAction<View>>;
+  push: (view: View) => void;
   onAction: (action: string) => void;
 }
 
@@ -117,7 +123,7 @@ interface PanelHandlerParams {
   setFilters: Dispatch<SetStateAction<Filters>>;
   setSort: Dispatch<SetStateAction<SortMode>>;
   setEditTarget: Dispatch<SetStateAction<LoopMeta | null>>;
-  setView: Dispatch<SetStateAction<View>>;
+  push: (view: View) => void;
   setSelectedIndex: Dispatch<SetStateAction<number>>;
   setSelectedRunIndex: Dispatch<SetStateAction<number>>;
   setFocusedPanel: Dispatch<SetStateAction<PanelFocus>>;
@@ -128,8 +134,11 @@ interface PanelHandlerParams {
   selectedAction: number;
   onAction: (action: string) => void;
   onOpenRunLog: (run: RunRecord) => void;
-  setTaskListReturnView?: Dispatch<SetStateAction<View>>;
   refreshTasks?: () => Promise<void>;
+  onViewTasks?: () => void;
+  onViewProjects?: () => void;
+  onAddLoop?: () => void;
+  onSelectProject?: () => void;
 }
 
 type PanelKeyHandler = (key: string, p: PanelHandlerParams) => boolean;
@@ -137,6 +146,10 @@ type PanelKeyHandler = (key: string, p: PanelHandlerParams) => boolean;
 const panelHandlers: Record<PanelFocus, PanelKeyHandler> = {
   search: (key, p) => {
     if (key === "return" || key === "enter") { p.setSearchActive(true); return true; }
+    return false;
+  },
+  "project-filter": (key, p) => {
+    if (key === "return" || key === "enter") { p.onSelectProject?.(); return true; }
     return false;
   },
   status: (key, p) => {
@@ -147,12 +160,16 @@ const panelHandlers: Record<PanelFocus, PanelKeyHandler> = {
     if (key === "return" || key === "enter") { p.setSort((prev) => cycleSortMode(prev)); return true; }
     return false;
   },
-  new: (key, p) => {
-    if (key === "return" || key === "enter") { p.setEditTarget(null); p.setView("create"); return true; }
+  "header-tasks": (key, p) => {
+    if (key === "return" || key === "enter") { p.onViewTasks?.(); return true; }
     return false;
   },
-  tasks: (key, p) => {
-    if (key === "return" || key === "enter") { p.setTaskListReturnView?.("board"); p.refreshTasks?.(); p.setView("task-list"); return true; }
+  "header-projects": (key, p) => {
+    if (key === "return" || key === "enter") { p.onViewProjects?.(); return true; }
+    return false;
+  },
+  "header-new": (key, p) => {
+    if (key === "return" || key === "enter") { p.onAddLoop?.(); return true; }
     return false;
   },
   loops: (key, p) => {
@@ -180,11 +197,15 @@ const panelHandlers: Record<PanelFocus, PanelKeyHandler> = {
     if (key === "return" || key === "enter") { p.onAction(keys[p.selectedAction] ?? "edit"); return true; }
     return false;
   },
+  projects: () => false,
 };
 
 const BOARD_SHORTCUTS: Record<string, (p: PanelHandlerParams) => void> = {
   "/": (p) => p.setSearchActive(true),
   o: (p) => p.setSort((prev) => cycleSortMode(prev)),
+  x: (p) => p.setFilters((prev) => ({ ...prev, status: cycleStatusFilter(prev.status) })),
+  r: (p) => p.onSelectProject?.(),
+  c: (p) => p.onSelectProject?.(),
 };
 
 export interface BoardKeybindingParams {
@@ -197,7 +218,8 @@ export interface BoardKeybindingParams {
   searchActive: boolean;
   setSearchActive: Dispatch<SetStateAction<boolean>>;
   view: View;
-  setView: Dispatch<SetStateAction<View>>;
+  push: (view: View) => void;
+  pop: () => void;
   setEditTarget: Dispatch<SetStateAction<LoopMeta | null>>;
   setEditTask: Dispatch<SetStateAction<TaskDefinition | null>>;
   selected: LoopMeta | null;
@@ -219,9 +241,11 @@ export interface BoardKeybindingParams {
   setSelectedAction: Dispatch<SetStateAction<number>>;
   onAction: (action: string) => void;
   onOpenRunLog: (run: RunRecord) => void;
-  returnView?: View;
-  setTaskListReturnView?: Dispatch<SetStateAction<View>>;
   refreshTasks?: () => Promise<void>;
+  onViewTasks?: () => void;
+  onViewProjects?: () => void;
+  onAddLoop?: () => void;
+  onSelectProject?: () => void;
 }
 
 export function useBoardKeybindings(params: BoardKeybindingParams): void {
@@ -235,7 +259,8 @@ export function useBoardKeybindings(params: BoardKeybindingParams): void {
     searchActive,
     setSearchActive,
     view,
-    setView,
+    push,
+    pop,
     setEditTarget,
     setEditTask,
     selected,
@@ -257,9 +282,11 @@ export function useBoardKeybindings(params: BoardKeybindingParams): void {
     setSelectedAction,
     onAction,
     onOpenRunLog,
-    returnView,
-    setTaskListReturnView,
     refreshTasks,
+    onViewTasks,
+    onViewProjects,
+    onAddLoop,
+    onSelectProject,
   } = params;
 
   useKeyboard((key) => {
@@ -338,31 +365,32 @@ export function useBoardKeybindings(params: BoardKeybindingParams): void {
     }
 
     if (view !== "board" && name === "escape") {
-      VIEW_ESCAPE[view]?.({ setEditTarget, setEditTask, setView, returnView });
+      VIEW_ESCAPE[view]?.({ setEditTarget, setEditTask, onBack: pop });
       return;
     }
     if (view !== "board") return;
 
     const globalHandler = GLOBAL_KEYS[name];
     if (globalHandler) {
-      globalHandler({ destroyLogSocket, onQuit, setHelpOpen, setEditTarget, setEditTask, setView, onAction });
+      globalHandler({ destroyLogSocket, onQuit, setHelpOpen, setEditTarget, setEditTask, push, onAction });
       return;
     }
 
     const panelHandler = panelHandlers[focusedPanel];
     if (panelHandler?.(name, {
-      setSearchActive, setFilters, setSort, setEditTarget, setView,
+      setSearchActive, setFilters, setSort, setEditTarget, push,
       setSelectedIndex, setSelectedRunIndex, setFocusedPanel, selectedRunCount, selected,
       selectedRunIndex, setSelectedAction, selectedAction, onAction, onOpenRunLog,
-      setTaskListReturnView, refreshTasks,
+      refreshTasks, onViewTasks, onViewProjects, onAddLoop,
     })) return;
 
     const shortcut = BOARD_SHORTCUTS[name];
     if (shortcut) {
       shortcut({
-        setSearchActive, setFilters, setSort, setEditTarget, setView,
+        setSearchActive, setFilters, setSort, setEditTarget, push,
         setSelectedIndex, setSelectedRunIndex, setFocusedPanel, selectedRunCount, selected,
         selectedRunIndex, setSelectedAction, selectedAction, onAction, onOpenRunLog,
+        onSelectProject,
       });
     }
   });
