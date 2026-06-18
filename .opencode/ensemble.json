@@ -4,9 +4,9 @@
   "timeoutMs": 1800000,
   "stallThresholdMs": 300000,
   "modelsByAgent": {
-    "plan": "opencode-go/qwen3.7-max",
-    "build": "opencode-go/qwen3.6-plus",
-    "explore": "opencode/big-pickle"
+    "plan": "github-copilot/claude-sonnet-4.6",
+    "build": "github-copilot/claude-sonnet-4.6",
+    "fast": "github-copilot/claude-sonnet-4.6"
   },
   "modelAssignment": "default"
 }

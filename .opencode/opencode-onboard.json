@@ -1,10 +1,10 @@
 {
   "schema": 1,
-  "generatedAt": "2026-06-15T14:32:39.860Z",
-  "onboardVersion": "0.6.7",
+  "generatedAt": "2026-06-18T12:39:06.832Z",
+  "onboardVersion": "0.6.10",
   "opencodeVersion": "1.16.2",
   "wizard": {
-    "platform": "none",
+    "platform": "github",
     "sourceMode": "current",
     "sourceRoots": [
       "C:\\Projects\\Personal\\loop-cli"
@@ -21,9 +21,9 @@
     },
     "additionalSkillsProvider": "npx-skills",
     "models": {
-      "plan": "opencode/qwen3.6-plus",
-      "build": "opencode/qwen3.6-plus",
-      "fast": "opencode/big-pickle"
+      "plan": "opencode/ring-2.6-1t-free",
+      "build": "opencode/ring-2.6-1t-free",
+      "fast": "opencode/ring-2.6-1t-free"
     },
     "optionalTools": {
       "rtk": {

@@ -25,7 +25,7 @@ Find the oldest unarchived OpenSpec change that has a completed PR, archive it, 
    ```
 
 <!-- OB-PLATFORM-ARCHIVE-START -->
-2. **Find the oldest unarchived change**
+2. **Find the oldest change with a completed PR**
 
    List unarchived changes (top-level only, excludes `archive/`):
 
@@ -33,18 +33,31 @@ Find the oldest unarchived OpenSpec change that has a completed PR, archive it, 
    find "$REPO_ROOT/openspec/changes" -mindepth 1 -maxdepth 1 -type d -name 'us-*' | sort
    ```
 
-   If empty, report a blocker and stop. Otherwise select the **oldest** change (by directory creation/sort order) as the candidate.
+   If empty, report a blocker and stop.
 
-   This mode has no platform PR integration, so completion is judged from local state only. Do not look up remote PRs or work items.
+   List completed PRs:
+
+   ```bash
+   gh pr list --repo {owner}/{repo} --state merged --json title,headRefName,mergedAt,number --jq 'sort_by(.mergedAt) | .[] | {name: .title, sourceRefName: .headRefName, mergedAt: .mergedAt, pullRequestId: .number}'
+   ```
+
+   Match each change to a completed PR using its ID and slug as search hints:
+   - No match → skip (record as blocked: `no merged PR found`).
+   - One match → eligible.
+   - Multiple matches → ask the user which PR belongs to that change.
+
+   If nothing is eligible, report a blocker and stop. Otherwise select the eligible change with the **oldest** PR `mergedAt` as the candidate.
 
 3. **Confirm the candidate**
 
-   Show the candidate (ID, title) and any other unarchived changes, then ask:
+   Show the candidate (ID, title, PR ID, merged date) and any blocked changes, then ask:
 
    ```text
-   Oldest unarchived change found:
+   Oldest unarchived merged change found:
      ID: us-{id}-{slug}
-     Title: {title from proposal.md}
+     Title: {title from resolved PR}
+     PR ID: {pullRequestId}
+     Merged: {mergedAt}
 
    Proceed with archiving? [yes/no]
    ```
@@ -63,16 +76,22 @@ Find the oldest unarchived OpenSpec change that has a completed PR, archive it, 
 
    Compare the archived change's specs against `ARCHITECTURE.md` and `DESIGN.md`. If updates are needed, show them and get user approval before applying.
 
-6. **Commit the archive**
+6. **Create the archive PR**
 
    ```bash
    git add -A
    git commit -m "archive: {title} ({id})"
+   git push origin archive/{id}-{slug}
+
+   gh pr create \
+      --repo {owner}/{repo} \
+      --base main \
+      --head archive/{id}-{slug} \
+      --title "archive(#{id}): {title}" \
+      --body "Archive SDD artifacts for {id} after merge."
    ```
 
-   No PR is created in this mode. Leave the `archive/{id}-{slug}` branch for the user to merge or push manually if they choose.
-
-   If work was stashed in step 1, restore it after the commit unless the user opts out.
+   If work was stashed in step 1, restore it after the PR is created unless the user opts out.
 
 7. **Report**
 
@@ -83,7 +102,8 @@ Find the oldest unarchived OpenSpec change that has a completed PR, archive it, 
 
      Change ID: us-{id}-{slug}
      Title: {title}
-     Archive branch: archive/{id}-{slug}
+     Original PR: {original-pr-link}
+     Archive PR: {archive-pr-link}
 
      Documentation updates:
      - ARCHITECTURE.md: {count} changes applied
@@ -95,7 +115,8 @@ Find the oldest unarchived OpenSpec change that has a completed PR, archive it, 
 - All OpenSpec paths resolve from `git rev-parse --show-toplevel`. Never use `/openspec/...`.
 - Only process top-level directories in `$REPO_ROOT/openspec/changes/`; exclude `archive/`.
 - Use change ID and slug only as search hints; do not assume the source branch name.
-- The oldest unarchived change is the only candidate — never ask the user which change to archive.
-- This mode has no GitHub or Azure DevOps integration. Never call `gh` or `az`, and never use browser tools or direct web requests for PR/work-item lookups.
+- The oldest eligible merged change is the only candidate — never ask the user which change to archive (but do ask which PR if multiple match one change).
+- Never proceed if the selected PR is not completed.
+- Never use browser tools or direct web requests for GitHub. Use `gh` CLI only.
 - Never invent or guess PR, branch, or merge metadata.
 <!-- OB-PLATFORM-ARCHIVE-END -->

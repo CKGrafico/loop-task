@@ -38,6 +38,8 @@ Display the following reference to the user exactly as written. Do not summarize
 
 **`/ob-create-design`** — Regenerate `DESIGN.md` from the design system (Tailwind, CSS vars, tokens, etc.).
 
+**`/ob-model <tier> <model>`** — Set the model for a tier (`plan`, `build`, or `fast`) in `.opencode/ensemble.json`. Use a model id (e.g. `/ob-model fast opencode/big-pickle`) or `current` to use the active session model (e.g. `/ob-model plan current`). Tasks annotated with that `modeltype` resolve to it on the next `/ob-apply`.
+
 ---
 
 ### Typical workflow

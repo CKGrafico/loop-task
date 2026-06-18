@@ -1,127 +1,361 @@
-# AGENTS.md
+# AGENTS.md, Bootstrap Mode
 
-## loop-task
+> This project has not been initialized yet.
+> Your ONLY job right now is to run the initialization sequence below.
+> Do not do anything else until all steps are complete.
 
-A cross-platform CLI that repeatedly runs a shell command at a human-readable interval. TypeScript/ESM, Node runtime (>=20) for CLI/daemon, Bun required for OpenTUI board.
+## Trigger
 
-### Quick start
+When the user says anything resembling initialization, "/ob-init", "initialize", "setup", "start", "bootstrap", "get started", "prepare", execute the steps below. Follow the greenfield/brownfield branching exactly.
+
+---
+
+## Initialization Sequence
+
+### Step 1, Detect project type
+
+Use the **AskUserQuestion tool** (not plain text) to present this choice:
+
+- Question: `"Is this a greenfield or brownfield project?"`
+- Options:
+  - `greenfield` — Starting from scratch, little or no existing code. Skip architecture/design/history analysis.
+  - `brownfield` — Existing codebase. Generate docs from your code.
+
+Wait for the answer. Then follow the matching path below.
+
+---
+
+### Greenfield path
+
+Skip steps 2, 3, and 4. Jump directly to Step 5.
+
+Greenfield note: `ARCHITECTURE.md` and `DESIGN.md` are left as placeholders. Run `/ob-create-architecture` and `/ob-create-design` once the codebase has meaningful content.
+
+---
+
+### Brownfield path
+
+#### Step 2, Archive project history into OpenSpec
+
+Scan the codebase for any existing documentation, changelogs, ADRs, README files, or notable history that describes decisions already made in this project. Create an OpenSpec archive entry that captures this history so agents have context going forward.
+
+Before scanning, load source roots from `.agents/source-roots.json` when present. Only scan those roots plus this repo's docs/config files.
 
 ```bash
-bun install
-bun run typecheck
-bun run lint
-bun run test
+openspec new change "project-history"
 ```
 
-Gate order: `typecheck` → `lint` → `test`.
+Write a `proposal.md` inside that change summarizing:
+- What this project is
+- Key decisions already made (inferred from code and docs)
+- Known tech debt or constraints visible in the codebase
+- Current state of the project
 
-### Commands
+Then archive it immediately:
+```bash
+openspec archive "project-history"
+```
 
-| Script | Effect |
-|--------|--------|
-| `npm run build` | `tsc -p tsconfig.build.json` + copy `entry.js`/`esm-loader.js` to `dist/` |
-| `npm run dev` | Watch mode with auto-reload (`tsx watch src/cli.ts`) |
-| `npm run start` | Run built CLI (`node dist/entry.js`) |
-| `npm run test` | `vitest run` |
-| `npm run test:watch` | `vitest` (watch mode) |
-| `npm run test:coverage` | Coverage with v8 |
-| `npm run lint` | `eslint src/ tests/` |
-| `npm run release` | `npm publish` (build runs via `prepublishOnly`) |
+---
 
-Use `bun run <script>` as the script runner (e.g. `bun run dev`, `bun run test`).
-Use `npm run <script>` only for publish (`npm run release`).
+#### Step 3, Generate ARCHITECTURE.md
 
-### Architecture
+Run `/ob-create-architecture` now. Follow every step defined in that command.
 
-- `src/cli.ts` — Commander entry point (Node shebang, dynamic import for board)
-- `src/entry.js` — Node entry wrapper (registers ESM loader, imports `cli.js`)
-- `src/esm-loader.js` — Custom Node ESM loader (fixes upstream extensionless imports)
-- `src/daemon/` — Background daemon, IPC server, loop manager, state persistence (atomic writes)
-- `src/client/` — IPC client consumed by CLI and board
-- `src/board/` — OpenTUI + React TUI (`index.tsx`, `App.tsx` container + `components/`, `hooks/`)
-- `src/core/` — LoopController (state machine), foreground-loop, command-runner, log-rotator
-- `src/config/constants.ts` — Magic numbers (POLL_MS, TOAST_TIMEOUT, etc.)
-- `src/i18n/en.json` — All user-facing strings via `t(key, params?)` with typed key union
-- `src/shared/` — `sleep()`, `tail()`, `writeFileAtomic`, `removeIfExists`
+---
 
-### Key quirks
+#### Step 4, Generate DESIGN.md
 
-- **Build step required.** `tsc -p tsconfig.build.json` emits `dist/` for npm distribution. `tsconfig.json` (noEmit) stays for type checking during dev.
-- **Board requires Bun.** OpenTUI uses native FFI only available in Bun. `start` and `run` work under Node; board shows a helpful error under Node.
-- `npm run dev` / `tsx watch src/cli.ts` for local development. CLI: `start` (background daemon), `run` (foreground), `board` (TUI, default — requires Bun).
-- `LOOP_CLI_HOME` env var isolates daemon state directory (used by test suite).
-- Pre-existing test issues:
-  - `tests/cli.test.ts`: version assertion (`1.1.0`) out of sync with package (`1.2.0`).
-  - `tests/background-cli.test.ts`: timeouts on Windows (daemon IPC, green on other platforms).
-- Daemon single-flight guard: socket binds before `manager.init`; losing racers exit(0) cleanly.
-- All IPC operations driven by the board; CLI only exposes `start` and `run`.
-- RTK prefix required for shell commands (see below).
-- ESM loader (`esm-loader.js`) fixes `react-reconciler/constants` extensionless imports from `@opentui/react`.
+Run `/ob-create-design` now. Follow every step defined in that command.
 
-### Agents
+---
 
-Custom engineers live in `.opencode/agents/`. Spawned by the lead during `/ob-apply`.
+### Step 2, Populate OpenSpec config
 
-| Agent | File | Role |
-|-------|------|------|
-| `development-engineer` | `.opencode/agents/development-engineer.md` | Full-stack engineer for this project: OpenTUI/React board, Commander CLI, daemon/IPC, Bun/TS core, vitest suite. |
-| `basic-engineer` | `.opencode/agents/basic-engineer.md` | Fallback implementation worker when no specialist fits. |
+Write `openspec/config.yaml` with real project information. For greenfield projects, use what little is known (language choice, intended stack, domain). For brownfield, use what was discovered in steps 2–4.
+
+The output must contain `schema: spec-driven` and a populated `context:` block. Do not leave placeholder text.
+
+```yaml
+schema: spec-driven
+
+context: |
+  Tech stack: <languages, frameworks, libraries found in the codebase>
+  Build system: <build tools, package managers>
+  Architecture: <monolith, microservices, monorepo, etc.>
+  Conventions: <coding style, commit conventions, branching strategy if found>
+  Domain: <what this project does, in one line>
+```
+
+Replace every `<…>` with real values. Add a `rules:` section only if the codebase has clear conventions worth enforcing. Do not invent rules that aren't evidenced by the codebase.
+
+---
+
+### Step 3, Install OpenCode plugins
+
+OpenCode plugins declared in `.opencode/opencode.json` (under the `plugin` key) must be present in `.opencode/node_modules/` or OpenCode will fail to load them. The plugins are also listed in `.opencode/package.json` as dependencies.
+
+```bash
+cd .opencode
+npm install
+cd ..
+```
+
+This installs all plugin packages into `.opencode/node_modules/`. If you ever see "Plugin X not found" errors after init, run `npm install` in `.opencode/` again.
+
+---
+
+### Step 4, Rewrite this file
+
+Replace the entire contents of this file (`AGENTS.md`) with everything below the line `<!-- AGENTS-TEMPLATE-START -->` in this same file. Delete the bootstrap section and the template marker, the file should contain only the template content when done.
+
+---
+
+### Step 5, Confirm
+
+For **brownfield**, tell the user:
+
+```
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  Initialization complete.
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+- openspec/config.yaml populated
+- OpenCode plugins installed
+- AGENTS.md updated with real guidance
+
+!! RESTART OPENCODE NOW !!
+
+Quit and reopen OpenCode before doing anything else.
+Nothing will work correctly until you do.
+After restarting you are ready to work.
+```
+
+For **greenfield**, tell the user:
+
+```
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  Initialization complete (greenfield).
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+- openspec/config.yaml populated
+- OpenCode plugins installed
+- AGENTS.md updated with real guidance
+- ARCHITECTURE.md and DESIGN.md left as placeholders
+
+Once your codebase has meaningful content, run:
+  /ob-create-architecture   → generate architecture docs
+  /ob-create-design         → generate design system docs
+
+!! RESTART OPENCODE NOW !!
+
+Quit and reopen OpenCode before doing anything else.
+Nothing will work correctly until you do.
+After restarting you are ready to work.
+```
+
+---
+
+## Guardrails During Init
+
+- Do NOT implement any features
+- Do NOT create branches or PRs
+- Do NOT modify any project source files
+- Do NOT create CLI wrapper files or scripts
+- Only read source files for analysis, write only to ARCHITECTURE.md, DESIGN.md, AGENTS.md, openspec/config.yaml, and openspec/
+- `npm install` (step 6) is allowed to modify `.opencode/package-lock.json` and `.opencode/node_modules/`
+
+<!-- AGENTS-TEMPLATE-START -->
+# AGENTS.md
+
+This file provides guidance to AI agents when working in this repository.
+
+*Agent-agnostic, works with OpenCode, Claude Code, Codex, Gemini, etc.*
+
+## Project Overview
+
+This is the agent orchestration layer for your project. It provides:
+- Universal agent team for development workflow
+- OpenSpec change management
+- Skills for platform and task-specific knowledge
+
+## Context
+
+Load DESIGN.md for design principles and guidelines. Load ARCHITECTURE.md for system architecture and component interactions. These files are generated during initialization and updated as the codebase evolves.
+
+## I Am the Lead, Full Workflow Ownership
 
 <!-- OB-PLATFORM-WORKFLOW-START -->
-When the user gives a task directly in the conversation, **I own the full lifecycle**. I work from the user request and local repository context. I may use OpenSpec when structured planning helps, but I do not depend on issue links or PR workflows.
+When the user provides a work item URL or says "implement the plan" or "I've added comments to the PR", **I own the full lifecycle**. I load the appropriate userstory skill and use ensemble tools to coordinate the agent team.
 
 Trigger patterns, I recognize ALL of these, exact wording does not matter:
-- User describes a feature, bug, or refactor directly → clarify if needed → optionally run `/ob-propose` → implement in the main session or `/ob-apply` as appropriate
-- `implement the plan` / `implement` / `start` / `go` → run `/ob-apply` against the current OpenSpec change when one exists
-- `just do it` / `quick fix` / `raw conversation` → work directly in the main session without PR or work-item automation
+- User pastes or mentions a GitHub Issue URL → load `ob-userstory` skill → parse issue → run `/ob-propose` → confirm with user → run `/ob-apply` → ship
+- `implement the plan` / `implement` / `start` / `go` → run `/ob-apply` → ship
+- `I've added comments to the PR` → read PR comments → fix → update PR
+- Any GitHub PR URL in a feedback/fix request (e.g. "check comments", "fix PR feedback") → run PR Feedback Loop
 
-**GitHub Issue URLs, Azure DevOps work item URLs, and PR URLs are NOT automatic triggers in this mode.** Only use platform-specific flows if onboarding is later reconfigured for GitHub or Azure DevOps.
+**A GitHub URL anywhere in the user's message is always a trigger, regardless of surrounding words.**
 <!-- OB-PLATFORM-WORKFLOW-END -->
 
 **Never delegate without a plan. Default to specialists for implementation. If ensemble is clearly non-functional in the current session (idle teammate, no claim, or repeated spawn failure after one retry), stop forcing it: report the failure, then continue in the main session or ask the user whether to retry later.**
 
+## Engineer Selection
+
+Before spawning implementation workers:
+- Inspect `.opencode/agents/*.md` and build the list of engineers that actually exist in this project.
+- Prefer the most specialized custom engineer whose description and abilities clearly match the task domain.
+- Use `basic-engineer` only when no custom engineer is a clear fit or as a recovery fallback.
+- Never spawn engineer names that are not present in `.opencode/agents/`.
+- When multiple engineers could fit, choose the narrower specialist before the generalist.
+
+## Multi-Agent Execution, opencode-ensemble
+
+Parallel execution uses the `opencode-ensemble` plugin (`team_create`, `team_spawn`, etc.).
+Works on **all platforms** (Windows, macOS, Linux) via OpenCode's built-in worktree support.
+
+Core tools used in this workflow:
+- `team_create`, `team_spawn`, `team_shutdown`, `team_merge`, `team_cleanup`
+- `team_tasks_add`, `team_tasks_list`, `team_claim`, `team_tasks_complete`
+- `team_message`, `team_results`, `team_status`
+
+**Dashboard**: Monitor running agents at **http://localhost:4747/**
+
+**Hard limits:**
+- **Sequential by default.** Default `2` to `1`. Raise only when tasks are provably independent and user approves. More concurrency = more tokens burned in parallel.
+- **Max 2 truly concurrent agents.** All 2 must be spawned and running simultaneously, not sequentially. Spawn in waves if more than 2 are needed. Wait for wave N to finish before spawning wave N+1.
+- **Non-overlapping file domains.** Each agent owns exclusive directories. Two agents must NEVER touch the same file.
+- **Immediate shutdown on completion.** The moment an agent's domain has no more pending tasks → `team_shutdown` → `team_merge`. Keep agents alive if more tasks in their domain are pending (rolling batch).
+- **Rolling batch assignment.** Agents receive up to 3 tasks initially. When they complete a batch, lead assigns the next batch of up to 3 from the board. Never leave pending tasks orphaned.
+- **Stall detection at 5 minutes.** No commits after 5 min → nudge message → 2 min grace → force shutdown + respawn.
+- **Idle-without-claim is an earlier stall.** If a spawned teammate sits idle with no claimed task after a short wait, resend one short claim-only message with the exact task IDs. If still idle, force shutdown + respawn once with a shorter prompt. If the retry repeats the same failure, treat ensemble as unavailable for that session and stop recycling equivalent workers.
+- **Retry limit.** Max 3 retries per failing task → stop-and-report to user. Never retry indefinitely.
+
+**Progress inspection commands (tell user explicitly after spawning):**
+- `team_status` for live team snapshot
+- `team_tasks_list` for task board state
+- `team_view member:"<name>"` to inspect a teammate live session
+- `team_results from:"<name>"` to fetch full teammate report text
+
+If a teammate stalls due to model quota/rate-limit exhaustion:
+1. `team_shutdown name:"<stuck-member>" force:true`
+2. Resolve a new model using the model resolution priority (agent file frontmatter → `ensemble.json` `modelsByAgent` → active chat model). Avoid the model that hit the rate limit.
+3. `team_spawn` same member/task with the resolved model
+4. `team_message` start instruction with the exact next task ID
+
+---
+
+## Pipeline
+
 <!-- OB-PLATFORM-PIPELINE-START -->
 ```
 lead (main session)
-  → /ob-propose (propose + enrich tasks)
+  → /ob-propose (parse work item + propose + enrich tasks)
         ↓
-  [confirm when scope needs it]
+  [confirm with user]
         ↓
 basic-engineer + *-engineer (parallel via /ob-apply)
   → claim tasks + implement
         ↓
-lead verifies and reports to user
+lead runs /ob-pullrequest → commit + push + create PR
 ```
 
-### Phase 1, Clarify & Plan
+### Phase 1, Parse & Propose
 
 ```
-1. Understand the task from the conversation and local repo context.
-2. If the work benefits from explicit specs/tasks, run /ob-propose.
-   Enrich tasks.md: for each task assign best matching engineer and model from opencode-onboard.json wizard.models.
-3. Show the plan or intended scope when non-trivial.
-4. If the request is small, implement directly in the main session.
+1. If a work item URL is provided, load @ob-userstory skill.
+2. Run /ob-propose → fetches work item, generates proposal.md, specs/, tasks.md, enriches tasks with agent+model.
+3. Show the plan: change name, total tasks, task list with agent assignments.
+4. STOP. Ask user: "Ready to implement? (yes/no)", DO NOT proceed until confirmed.
 ```
 
 ### Phase 2, Implement
 
 ```
-0. Run /quota before spawning, when available.
-1. If using OpenSpec tasks, run /ob-apply.
-   - Classify cost tier, confirm if ≥4 tasks.
-   - Lead adds all tasks to board, discovers engineers, spawns initial batch.
-   - Each engineer claims, implements, commits, messages lead.
-   - Lead merges each engineer branch, marks tasks done.
-2. If task is small, implement directly in the main session.
-3. Verify with tests/build/lint.
+0. Run /quota to check remaining budget before spawning.
+1. Run /ob-apply.
+   - Classify cost tier, announce scope, ask user to confirm if ≥4 tasks.
+   - Lead adds all tasks to board.
+   - Lead discovers available engineers from .opencode/agents/*.md, prefers matching custom engineers.
+   - Each engineer claims tasks, implements, completes, messages lead.
+   - Lead merges each engineer branch after shutdown, marks tasks done in tasks.md.
+2. Verify with tests/build/lint according to task scope.
+3. Run /quota after all agents are merged.
 ```
 
-There is no PR shipping phase in `none` mode. Report completion directly to the user.
+### Phase 3, Ship
+
+```
+1. Run /ob-pullrequest to create the PR.
+2. Done — report PR URL to user.
+```
+
+### Handling PR Feedback
+
+```
+When user says "I've added comments to the PR" or shares a PR URL:
+1. Run /ob-pullrequest — loads @ob-pullrequest skill in feedback mode — reads and classifies comments.
+2. Fix items by running /ob-apply for the required tasks.
+3. Run /ob-pullrequest again to push updates and reply to PR threads.
+```
 <!-- OB-PLATFORM-PIPELINE-END -->
 
+---
+
+## Tools
+
+**OpenSpec** manages the change lifecycle. Each work item becomes a change with a `proposal.md`, specs, and a `tasks.md` task board. Commands: `openspec new change`, `openspec status`, `openspec instructions apply`. Agents never implement without an active change — OpenSpec is the single source of truth for what is planned and what is done.
+
+**opencode-ensemble** handles parallel agent execution via git worktrees. Each spawned agent works in an isolated branch; the lead merges on completion. Core tools: `team_create`, `team_spawn`, `team_shutdown`, `team_merge`, `team_cleanup`, `team_tasks_add`, `team_tasks_list`, `team_claim`, `team_tasks_complete`, `team_message`, `team_results`, `team_status`. Live dashboard at `http://localhost:4747/`.
+
+---
+
+## Agents
+
+Agent files live in `.opencode/agents/`. The set is dynamic — users add specialists over time via `/ob-create-engineer`.
+
+| Agent | File | Role |
+|-------|------|------|
+| `basic-engineer` | `.opencode/agents/basic-engineer.md` | Fallback implementation worker. Used when no custom engineer matches the task domain. |
+| `development-engineer` | `.opencode/agents/development-engineer.md` | Full-stack development specialist. Handles CLI, daemon, board components, and all TypeScript/React code. |
+| `*-engineer` | `.opencode/agents/*-engineer.md` | User-created specialists. Preferred over `basic-engineer` when their domain matches the task. |
+
+Before spawning, inspect `.opencode/agents/` to build the actual list — never assume which custom engineers exist.
+
+---
+
+## Abilities
+
+Every agent file declares an `## Abilities` section that maps roles to `@skill-name` references. This is how agents know what to load — skills deliver the rules, guardrails, and platform knowledge for each domain.
+
+```markdown
+## Abilities
+- Guardrails: @ob-generic-guardrails, @ob-default
+- Development: @ob-default
+- Testing: @ob-default
+- Infrastructure: @ob-default
+```
+
+`@ob-generic-guardrails` is mandatory in every agent's Guardrails line. Custom engineers replace `@ob-default` with real installed skills.
+
+---
+
+## Skills
+
+Skills live in `.agents/skills/`. Agents load them via `@skill-name` in their `## Abilities` section.
+
+Always installed: `@ob-default`, `@ob-generic-guardrails`, `@browser-automation`, `@opencode-ensemble`.
+
 <!-- OB-PLATFORM-SKILLS-GUIDE-START -->
-No platform skills installed (platform: none). Work from direct user instructions and local OpenSpec artifacts only.
+Platform skills (GitHub):
+- `@ob-userstory` — load when a GitHub Issue URL is detected. Fetches the issue via `gh` CLI and creates an OpenSpec change. NEVER use webfetch to access GitHub URLs.
+- `@ob-pullrequest` — load in ship mode to create a PR with screenshots, or in feedback mode to read and classify PR review comments.
 <!-- OB-PLATFORM-SKILLS-GUIDE-END -->
+
+---
+
+## Optimizations
+
+Active tools injected during onboarding. Empty sections mean that tool was not selected.
 
 <!-- OB-RTK-START -->
 ## RTK, MANDATORY

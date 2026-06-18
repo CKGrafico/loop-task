@@ -10,7 +10,7 @@
     "@hueyexe/opencode-ensemble@0.14.1",
     "@slkiser/opencode-quota@latest"
   ],
-  "model": "opencode-go/qwen3.7-max",
+  "model": "opencode/ring-2.6-1t-free",
   "mcp": {
     "codegraph": {
       "type": "local",

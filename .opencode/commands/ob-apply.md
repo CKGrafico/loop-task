@@ -32,8 +32,10 @@ Save every returned task ID. Do not proceed until the full board is built.
 - Use basic-memory (`search` to retrieve prior decisions and context, `write_note` to store new ones) so agents share knowledge across the session.
 
 **5. Spawn.** For each task group:
-- Agent and model come from the task annotations in `tasks.md` (set during `/ob-propose`). If missing: scan `.opencode/agents/` for the best match; read `.opencode/opencode-onboard.json` `wizard.models` — use `build` for engineers.
-- `team_spawn name:"<x>" agent:"<file>" model:"<id>" claim_task:"<task-id>" prompt:"..."`
+- Agent and model tier come from the task annotations in `tasks.md` (`<!-- agent: <name>, modeltype: <tier> -->`, set during `/ob-propose`).
+- Resolve `modeltype` → concrete model id by reading `.opencode/ensemble.json` → `modelsByAgent[<tier>]` (e.g. `modeltype: build` → `modelsByAgent.build`). Fall back to `.opencode/opencode-onboard.json` `wizard.models[<tier>]`, then the active chat model if neither is set. Resolve fresh at spawn time so edits to `ensemble.json` take effect on re-apply.
+- If annotations are missing entirely: scan `.opencode/agents/` for the best agent match and use the `build` tier for engineers.
+- `team_spawn name:"<x>" agent:"<file>" model:"<resolved-id>" claim_task:"<task-id>" prompt:"..."`
 - Spawn prompt must start with: `Claim [<task-id>]: <task text>.` followed by relevant context.
 - Spawn sequentially — wait for each spawn result before the next.
 - Immediately after each spawn: `team_message to:"<x>" text:"Claim now: [<task-id>] <task text>"`

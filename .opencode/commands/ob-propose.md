@@ -17,27 +17,29 @@ Load `@openspec-propose` skill and follow its instructions.
    - `## Abilities` section — the skills listed under Development, Testing, Infrastructure (e.g. `@nodejs-backend`, `@secure-nextjs-api-routes`)
    Build a map of `agent-name → { description, abilities }`.
 2. For each task, compare the task text and domain against every engineer's description AND abilities. Pick the engineer whose combined profile most closely matches. Only use `basic-engineer` if no specialist is a clear fit.
-3. Read `.opencode/opencode-onboard.json` → `wizard.models`. It has three keys: `build` (heavy implementation), `fast` (light/simple tasks), `plan` (orchestration). For each task, pick the most appropriate model:
+3. Classify each task into a **model tier**, not a concrete model id. The tiers are defined in `.opencode/ensemble.json` → `modelsByAgent` (mirrored in `.opencode/opencode-onboard.json` → `wizard.models`) with three keys:
    - `build` — complex code: data models, APIs, auth logic, core business logic, UI components
    - `fast` — light work: i18n keys, config changes, env variables, navigation links, simple markup, verification runs
    - `plan` — reserved for orchestration, do not use for implementation tasks
+
+   Pick the tier name only. Do NOT resolve or write the underlying model id here — `/ob-apply` resolves the tier to a concrete model from `ensemble.json` at spawn time. This keeps the plan stable: the user can edit `ensemble.json` later and re-run `/ob-apply` to get different models without re-running `/ob-propose`.
 4. Annotate each task line in-place:
 
 ```
-- [ ] <task text> <!-- agent: <name>, model: <id> -->
+- [ ] <task text> <!-- agent: <name>, modeltype: <tier> -->
 ```
 
-Example result (each task independently picks agent + model):
+Example result (each task independently picks agent + tier):
 
 ```
-- [ ] Add Invitation model to Prisma schema <!-- agent: backend-engineer, model: opencode/big-pickle -->
-- [ ] Create invitation accept page UI <!-- agent: frontend-engineer, model: opencode/big-pickle -->
-- [ ] Add i18n keys for invitation flow <!-- agent: frontend-engineer, model: opencode/qwen3.6-plus -->
-- [ ] Run pnpm typecheck and fix errors <!-- agent: basic-engineer, model: opencode/qwen3.6-plus -->
+- [ ] Add Invitation model to Prisma schema <!-- agent: backend-engineer, modeltype: build -->
+- [ ] Create invitation accept page UI <!-- agent: frontend-engineer, modeltype: build -->
+- [ ] Add i18n keys for invitation flow <!-- agent: frontend-engineer, modeltype: fast -->
+- [ ] Run pnpm typecheck and fix errors <!-- agent: basic-engineer, modeltype: fast -->
 ```
 
-`/ob-apply` step 6 reads these annotations to spawn the right agent with the right model — no guessing at implementation time.
+`/ob-apply` step 6 reads these annotations and resolves `modeltype` → concrete model via `ensemble.json` `modelsByAgent` — the right agent on the right tier, with no guessing at implementation time.
 
-**After enrichment, show the plan:** change name, total task count, full task list with agent and model annotations.
+**After enrichment, show the plan:** change name, total task count, full task list with agent and model-tier annotations.
 
 **Stop.** Ask the user: "Ready to implement? Run `/ob-apply` to start." Do NOT run `/ob-apply` automatically.

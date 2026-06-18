@@ -54,7 +54,7 @@ If more than two items are unknown, spawn one scout first.
 Use the repository's own commands. For opencode-ensemble itself, run:
 
 ```bash
-npm run typecheck && npm test && npm run build
+bun run typecheck && bun test && bun run build
 ```
 
 If a command fails, report the failure with the command and error summary. Do not claim the team completed successfully.
