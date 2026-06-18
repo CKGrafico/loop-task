@@ -1,5 +1,5 @@
 import { useTerminalDimensions } from "@opentui/react";
-import { HEADER_COMPACT_WIDTH } from "../../config/constants.js";
+import { HEADER_COMPACT_WIDTH, ENTITY_COLORS } from "../../config/constants.js";
 import { t } from "../../i18n/index.js";
 import type { DaemonStatus, View } from "../types.js";
 import { useHoverState } from "../hooks/useHoverState.js";
@@ -53,22 +53,22 @@ export function Header(props: {
 
   if (view === "projects") {
     buttons = [
-      { label: t("board.viewLoopsLabel"),    color: "#38bdf8", panel: "header-tasks",    action: onViewLoops },
-      { label: t("board.viewTasksLabel"),    color: "#a78bfa", panel: "header-projects", action: onViewTasks },
-      { label: t("project.newProjectLabel"), color: "#4ade80", panel: "header-new",      action: onAddProject },
+      { label: t("board.viewLoopsLabel"),    color: ENTITY_COLORS.loop,    panel: "header-tasks",    action: onViewLoops },
+      { label: t("board.viewTasksLabel"),    color: ENTITY_COLORS.task,    panel: "header-projects", action: onViewTasks },
+      { label: t("project.newProjectLabel"), color: ENTITY_COLORS.project, panel: "header-new",      action: onAddProject },
     ];
   } else if (view === "task-list") {
     buttons = [
-      { label: t("project.manageLabel"),    color: "#34d399", panel: "header-tasks",    action: onViewProjects },
-      { label: t("board.viewLoopsLabel"),   color: "#38bdf8", panel: "header-projects", action: onViewLoops },
-      { label: t("board.taskActionNew"),    color: "#4ade80", panel: "header-new",      action: onAddTask },
+      { label: t("project.manageLabel"),    color: ENTITY_COLORS.project, panel: "header-tasks",    action: onViewProjects },
+      { label: t("board.viewLoopsLabel"),   color: ENTITY_COLORS.loop,    panel: "header-projects", action: onViewLoops },
+      { label: t("board.taskActionNew"),    color: ENTITY_COLORS.task,    panel: "header-new",      action: onAddTask },
     ];
   } else {
     // board (default)
     buttons = [
-      { label: t("project.manageLabel"),    color: "#34d399", panel: "header-tasks",    action: onViewProjects },
-      { label: t("board.viewTasksLabel"),   color: "#a78bfa", panel: "header-projects", action: onViewTasks },
-      { label: t("board.newLoopLabel"),     color: "#4ade80", panel: "header-new",      action: onAddLoop },
+      { label: t("project.manageLabel"),    color: ENTITY_COLORS.project, panel: "header-tasks",    action: onViewProjects },
+      { label: t("board.viewTasksLabel"),   color: ENTITY_COLORS.task,    panel: "header-projects", action: onViewTasks },
+      { label: t("board.newLoopLabel"),     color: ENTITY_COLORS.loop,    panel: "header-new",      action: onAddLoop },
     ];
   }
 
