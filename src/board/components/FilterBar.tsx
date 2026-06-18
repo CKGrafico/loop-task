@@ -57,7 +57,6 @@ export function FilterBar(props: {
         narrow
       />
       <ClickableBadge
-        title={t("board.sortTitle")}
         text={sort}
         textColor="#a3e635"
         focused={focusedPanel === "sort"}
@@ -71,7 +70,7 @@ export function FilterBar(props: {
         focused={focusedPanel === "tasks"}
         onMouseDown={onViewTasks}
         marginRight={1}
-        wide
+        narrow
       />
       {onManageProjects ? (
         <ClickableBadge
@@ -80,7 +79,7 @@ export function FilterBar(props: {
           focused={focusedPanel === "projects"}
           onMouseDown={onManageProjects}
           marginRight={1}
-          wide
+          narrow
         />
       ) : null}
       <ClickableBadge
@@ -88,7 +87,7 @@ export function FilterBar(props: {
         textColor="#4ade80"
         focused={focusedPanel === "new"}
         onMouseDown={onNewLoop}
-        wide
+        narrow
       />
     </box>
   );
@@ -102,13 +101,11 @@ function ClickableBadge(props: {
   onMouseDown: () => void;
   marginRight?: number;
   narrow?: boolean;
-  wide?: boolean;
 }): React.ReactNode {
   const { isHovered, hoverProps } = useHoverState();
   const bg = props.focused ? "#1e2a4a" : isHovered ? HOVER_BG : "#0b0b0b";
   const borderColor = props.focused ? "#38bdf8" : undefined;
-  const flexGrow = props.narrow ? 0 : props.wide ? 0 : 1;
-  const paddingLeft = props.wide ? 2 : 1;
+  const flexGrow = props.narrow ? 0 : 1;
   const titleProp = props.title ? { title: props.title } : {};
   return (
     <box
@@ -116,7 +113,7 @@ function ClickableBadge(props: {
       border
       borderColor={borderColor}
       onMouseDown={props.onMouseDown}
-      style={{ flexGrow, height: 3, marginRight: props.marginRight, paddingLeft, backgroundColor: bg }}
+      style={{ flexGrow, height: 3, marginRight: props.marginRight, paddingLeft: 1, backgroundColor: bg }}
       {...hoverProps}
     >
       <text fg={props.textColor}>{props.text}</text>
