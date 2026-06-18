@@ -6,6 +6,14 @@ import { Logger } from "./logger.js";
 import { runLoop } from "./core/foreground-loop.js";
 import { buildLoopOptions } from "./loop-config.js";
 import { startLoop } from "./client/commands.js";
+import {
+  listProjectsCli,
+  createProjectCli,
+  renameProjectCli,
+  setProjectColorCli,
+  deleteProjectCli,
+  resolveProjectId,
+} from "./client/commands.js";
 import { t } from "./i18n/index.js";
 
 const require = createRequire(import.meta.url);
@@ -36,19 +44,30 @@ program
   .option("--max-runs <n>", t("cli.optMaxRuns"), parseInt)
   .option("--verbose", t("cli.optVerbose"), false)
   .option("--cwd <dir>", t("cli.optCwd"))
+  .option("--project <name>", t("cli.optProject"))
   .action(
     async (
       intervalStr: string,
       cmdArgs: string[],
-      opts: { now: boolean; maxRuns?: number; verbose: boolean; cwd?: string }
+      opts: { now: boolean; maxRuns?: number; verbose: boolean; cwd?: string; project?: string }
     ) => {
-      const built = buildLoopOptions(intervalStr, {
-        ...opts,
-        command: cmdArgs[0],
-        commandArgs: cmdArgs.slice(1),
-        cwd: opts.cwd ?? process.cwd(),
-      });
-      await startLoop(built.options, built.intervalHuman);
+      try {
+        const projectId = opts.project
+          ? await resolveProjectId(opts.project)
+          : undefined;
+        const built = buildLoopOptions(intervalStr, {
+          ...opts,
+          command: cmdArgs[0],
+          commandArgs: cmdArgs.slice(1),
+          cwd: opts.cwd ?? process.cwd(),
+          projectId,
+        });
+        await startLoop(built.options, built.intervalHuman);
+      } catch (error: unknown) {
+        const message = error instanceof Error ? error.message : String(error);
+        console.error(t("cli.error", { message }));
+        process.exit(1);
+      }
     }
   );
 
@@ -88,6 +107,50 @@ program
       process.exit(0);
     }
   );
+
+const projectCmd = program.command("project").description(t("cli.projectDescription"));
+
+projectCmd
+  .command("list")
+  .description(t("cli.projectListDescription"))
+  .action(async () => {
+    await listProjectsCli();
+  });
+
+projectCmd
+  .command("new")
+  .description(t("cli.projectNewDescription"))
+  .argument("<name>", t("cli.projectArgName"))
+  .option("--color <color>", t("cli.optProjectColor"))
+  .action(async (name: string, opts: { color?: string }) => {
+    await createProjectCli(name, opts.color);
+  });
+
+projectCmd
+  .command("rename")
+  .description(t("cli.projectRenameDescription"))
+  .argument("<id-or-name>", t("cli.projectArgIdOrName"))
+  .argument("<new-name>", t("cli.projectArgNewName"))
+  .action(async (idOrName: string, newName: string) => {
+    await renameProjectCli(idOrName, newName);
+  });
+
+projectCmd
+  .command("color")
+  .description(t("cli.projectColorDescription"))
+  .argument("<id-or-name>", t("cli.projectArgIdOrName"))
+  .argument("<color>", t("cli.projectArgColor"))
+  .action(async (idOrName: string, color: string) => {
+    await setProjectColorCli(idOrName, color);
+  });
+
+projectCmd
+  .command("delete")
+  .description(t("cli.projectDeleteDescription"))
+  .argument("<id-or-name>", t("cli.projectArgIdOrName"))
+  .action(async (idOrName: string) => {
+    await deleteProjectCli(idOrName);
+  });
 
 program.action(async () => {
   if (!process.execPath.includes("bun")) {

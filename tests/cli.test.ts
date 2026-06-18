@@ -1,8 +1,10 @@
 import { describe, it, expect } from "vitest";
 import { execa } from "execa";
+import { readFileSync } from "node:fs";
 
 const cliPath = "dist/entry.js";
 const runtime = "node";
+const pkgVersion = JSON.parse(readFileSync("package.json", "utf-8")).version as string;
 
 describe("cli", () => {
   it("shows help output", async () => {
@@ -21,7 +23,7 @@ describe("cli", () => {
 
   it("shows version", async () => {
     const result = await execa(runtime, [cliPath, "--version"]);
-    expect(result.stdout).toContain("1.3.0");
+    expect(result.stdout).toContain(pkgVersion);
   });
 
   it("fails with invalid duration", async () => {
