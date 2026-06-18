@@ -235,7 +235,7 @@
   "board.create": "Create",
   "board.cancel": "Cancel",
   "board.formNav": "Tab/Shift+Tab to move | Enter advances or activates | Esc cancels",
-  "board.badgeNormal": "DASHBOARD",
+  "board.badgeNormal": "Loops",
   "board.badgeSearch": "SEARCH",
   "board.badgeCreate": "CREATE",
   "board.badgeTask": "TASK",
