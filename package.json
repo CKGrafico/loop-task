@@ -1,7 +1,7 @@
 {
   "name": "loop-task",
   "version": "1.4.0",
-  "description": "Run commands on repeat. Manage them from a terminal board.",
+  "description": "Loop engineering toolkit. Run any command on a cadence, in the background, managed from a terminal board. Schedule tests, builds, syncs, or agent prompts.",
   "type": "module",
   "bin": {
     "loop-task": "dist/entry.js"
@@ -29,14 +29,24 @@
   "keywords": [
     "cli",
     "loop",
+    "loop-engineering",
     "repeat",
     "interval",
     "schedule",
     "timer",
     "cron",
     "automation",
+    "automations",
     "devops",
-    "agent"
+    "agent",
+    "ai-agent",
+    "coding-agent",
+    "agent-automation",
+    "claude-code",
+    "codex",
+    "opencode",
+    "background-tasks",
+    "scheduler"
   ],
   "author": "Quique Fdez Guerra",
   "license": "MIT",

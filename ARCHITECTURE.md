@@ -156,7 +156,7 @@ flowchart TB
 
 ## 3. Core Components
 
-### 3.1 Frontend / User Interface — Board TUI
+### 3.1 Frontend / User Interface - Board TUI
 
 - **Responsibility:** Primary interactive surface for browsing, creating, editing,
   pausing/resuming, force-running, deleting, searching, filtering, and sorting
@@ -176,7 +176,7 @@ flowchart TB
   `useLoopPolling`; live logs streamed via `useLogStream` over a follow socket;
   destructive/schedule-changing actions go through a confirmation modal.
 
-### 3.2 Backend / Server — Daemon
+### 3.2 Backend / Server - Daemon
 
 - **Responsibility:** Single background process that owns every managed loop,
   persists state, restarts persisted loops on boot, and serves clients.
@@ -237,7 +237,7 @@ flowchart TB
 
 ## 4. Data Flow
 
-### 4.1 `start` — create a background loop
+### 4.1 `start` - create a background loop
 
 ```mermaid
 sequenceDiagram
@@ -317,17 +317,17 @@ All persistence is **local filesystem** under the data directory, resolved by
 
 **Migration approach:** None. State files are plain JSON read directly; corrupted
 loop files are skipped on load (`state.ts#loadAllLoops`). There is no schema
-versioning — *Not evident from the repository.*
+versioning - *Not evident from the repository.*
 
 ### 5.1 Projects
 
 **Projects** are organizational scopes for loops. Every `LoopMeta` carries a `projectId` string (default: `"default"`). The `ProjectManager` class (`src/daemon/projects.ts`) owns project persistence:
 
-- **Default project** — created on first daemon init (`id: "default"`, `isSystem: true`, `isDefault: true`, white). Cannot be renamed or deleted.
-- **User projects** — created via `project-create` RPC. Stored as `~/.loop-cli/projects/<id>.json`.
-- **Migration** — `LoopManager.init()` adds `projectId = "default"` to any loop file that lacks the field, then rewrites it atomically.
-- **Cascade on delete** — when a project is deleted via `project-delete` RPC, all loops with that `projectId` are moved to `"default"` before the project file is removed.
-- **Board filtering** — the board keeps `currentProjectId` in React state (persisted to `localStorage`). Only loops matching `loop.projectId === currentProjectId` are shown in the Navigator.
+- **Default project** - created on first daemon init (`id: "default"`, `isSystem: true`, `isDefault: true`, white). Cannot be renamed or deleted.
+- **User projects** - created via `project-create` RPC. Stored as `~/.loop-cli/projects/<id>.json`.
+- **Migration** - `LoopManager.init()` adds `projectId = "default"` to any loop file that lacks the field, then rewrites it atomically.
+- **Cascade on delete** - when a project is deleted via `project-delete` RPC, all loops with that `projectId` are moved to `"default"` before the project file is removed.
+- **Board filtering** - the board keeps `currentProjectId` in React state (persisted to `localStorage`). Only loops matching `loop.projectId === currentProjectId` are shown in the Navigator.
 
 ---
 
@@ -377,10 +377,10 @@ Runtime npm dependencies: `@opentui/core`, `@opentui/react`, `commander`,
   requires Bun for OpenTUI native FFI. Daemon is spawned with `process.execPath`.
 - **Environment config:** `LOOP_CLI_HOME` overrides the state directory (used by
   the test suite to isolate daemon state).
-- **Containerization:** None — no `Dockerfile` present.
-- **CI/CD:** None — `.github/` contains no workflows. Quality gates are run
+- **Containerization:** None - no `Dockerfile` present.
+- **CI/CD:** None - `.github/` contains no workflows. Quality gates are run
   manually/locally (`typecheck → lint → test`).
-- **Hosting:** N/A — a local developer tool, not a hosted service.
+- **Hosting:** N/A - a local developer tool, not a hosted service.
 
 ---
 
@@ -389,7 +389,7 @@ Runtime npm dependencies: `@opentui/core`, `@opentui/react`, `commander`,
 - **Trust boundary:** The local machine/user. The daemon listens on a
   POSIX Unix-domain socket inside the user's home data dir, or a Windows named
   pipe namespaced to the username (`paths.ts#getSocketPath`). There is **no
-  network listener** and **no authentication layer** — access is governed by OS
+  network listener** and **no authentication layer** - access is governed by OS
   file/pipe permissions for that user.
 - **Authentication / Authorization:** None within the app (single-user, local).
   *Not applicable by design.*
@@ -404,7 +404,7 @@ Runtime npm dependencies: `@opentui/core`, `@opentui/react`, `commander`,
   error instead of failing the loop.
 - **Secrets:** No secret storage or credentials handling is present. Loop
   metadata and logs are plain files in the user's home directory; sensitive
-  output written by a command would land in `logs/<id>.log` unencrypted —
+  output written by a command would land in `logs/<id>.log` unencrypted -
   operators should treat that directory accordingly.
 - **IPC robustness:** Malformed JSON requests are answered with a localized
   `error` response rather than crashing the server (`server.ts:62-64`).
@@ -424,7 +424,7 @@ Runtime npm dependencies: `@opentui/core`, `@opentui/react`, `commander`,
 - **Error surfacing in UI:** Board actions report results as toasts;
   log-stream errors are pushed as error toasts.
 - **Metrics / tracing / external error reporting:** None. There is no metrics
-  endpoint, distributed tracing, or third-party error-reporting integration —
+  endpoint, distributed tracing, or third-party error-reporting integration -
   *Not evident from the repository.*
 
 ---
@@ -487,7 +487,7 @@ npm run release       # npm publish
 
 - **Framework:** Vitest 3 (`globals: true`), v8 coverage. Config in
   `vitest.config.ts`.
-- **Location:** `tests/` —
+- **Location:** `tests/` -
   - `duration.test.ts`, `logger.test.ts`, `board-state.test.ts` (pure logic),
   - `loop.test.ts`, `loop-controller.test.ts` (core loop engine / state machine),
   - `cli.test.ts`, `background-cli.test.ts` (CLI + daemon integration).
@@ -496,11 +496,11 @@ npm run release       # npm publish
   `src/daemon/index.ts`, and `src/tui/**`.
 - **Known gaps / issues (per `AGENTS.md` and code inspection):**
   - `tests/cli.test.ts` version assertion is stale (`1.1.0`) vs `package.json`
-    (`1.2.0`) — a currently failing assertion unrelated to runtime behavior.
+    (`1.2.0`) - a currently failing assertion unrelated to runtime behavior.
   - `tests/background-cli.test.ts` is prone to timeouts on Windows (daemon IPC),
     green on other platforms.
   - Coverage `exclude` references `src/tui/**`, but the UI lives in `src/board/**`
-    — board components/hooks are effectively untested (codegraph reports "no
+    - board components/hooks are effectively untested (codegraph reports "no
     covering tests" for board components). Coverage config has drifted from the
     actual tree.
 
@@ -513,7 +513,7 @@ npm run release       # npm publish
 | **Client–daemon over local IPC** | `daemon/server.ts`, `client/ipc.ts`, `types.ts` IPC unions | Loops must outlive the short-lived CLI and be managed from many entrypoints (CLI + board). Tradeoff: added process-lifecycle complexity (spawn, single-flight, restart). |
 | **Filesystem state, no database** | `daemon/state.ts`, `config/paths.ts` | Zero-dependency persistence for a local tool; human-inspectable JSON/logs. Tradeoff: no querying, no schema migrations, manual corruption handling. |
 | **No build step (ship TS source)** | `package.json` `bin`/`files`, `AGENTS.md` | ~~Simplicity and fast iteration on Bun.~~ Now uses `tsc -p tsconfig.build.json` to emit `dist/` for Node/npm distribution. Board still requires Bun for OpenTUI FFI. |
-| **Code-signature daemon restart** | `daemon/state.ts#computeCodeSignature`, `spawner.ts` | Guarantees a freshly edited CLI never talks to a stale daemon during development. Tradeoff: signature is mtime/size/count based, not content-hash — theoretically coarse. |
+| **Code-signature daemon restart** | `daemon/state.ts#computeCodeSignature`, `spawner.ts` | Guarantees a freshly edited CLI never talks to a stale daemon during development. Tradeoff: signature is mtime/size/count based, not content-hash - theoretically coarse. |
 | **Socket-bind-before-init single-flight** | `daemon/index.ts:17-24` | Race-free single daemon instance; losers exit cleanly. Tradeoff: relies on OS bind exclusivity semantics. |
 | **OpenTUI + React for the board** | `board/*`, `tsconfig.json` `jsxImportSource` | Familiar component/hook model for a rich terminal UI. Tradeoff: early-stage (0.4.x) dependency; UI largely untested. |
 | **Per-loop EventEmitter state machine** | `core/loop-controller.ts` | Cleanly models running/waiting/paused/stopped with pause/resume/trigger and abortable sleeps. Tradeoff: concurrency reasoning concentrated in one class. |
@@ -552,7 +552,7 @@ npm run release       # npm publish
 **Documented roadmap:** None explicitly committed in-repo. `openspec/specs/` is
 empty (`.gitkeep` only), and `DESIGN.md` is an unpopulated placeholder.
 
-**Recommendations (not from existing docs — proposed by this review):**
+**Recommendations (not from existing docs - proposed by this review):**
 
 - **Fix coverage drift:** Update the Vitest `exclude` to target `src/board/**`
   (or add board tests) so the 90% gate reflects reality; correct the `cli.test.ts`

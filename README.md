@@ -2,9 +2,9 @@
 
 # loop-task
 
-**Run commands on repeat. Manage them from a terminal board.**
+**Loop engineering for your terminal. Run any command on a cadence.**
 
-`loop-task` is a cross-platform CLI that runs shell commands at human-readable intervals. Create loops in the background, manage them from an interactive TUI board, or run them in the foreground.
+`loop-task` is a cross-platform CLI that runs shell commands at human-readable intervals. Create loops in the background, manage them from an interactive TUI board, or run them in the foreground. It is the **heartbeat** primitive for [loop engineering](#loop-engineering): instead of running a task by hand every time, you schedule it once and let it run.
 
 [![npm version](https://img.shields.io/npm/v/loop-task?style=flat-square&color=black)](https://www.npmjs.com/package/loop-task)
 [![npm downloads](https://img.shields.io/npm/dm/loop-task?style=flat-square&color=black)](https://www.npmjs.com/package/loop-task)
@@ -12,6 +12,30 @@
 [![node](https://img.shields.io/node/v/loop-task?style=flat-square&color=black)](https://nodejs.org)
 
 </div>
+
+## Loop engineering
+
+**Loop engineering** is designing systems that run work on a cadence instead of triggering each run yourself. A *loop* is a recurring goal: you define a purpose, give it an interval, and let it iterate. It applies to ordinary engineering work just as much as to AI agents: health checks, sync jobs, test watches, data pulls, deploy polls, and report generation are all loops.
+
+`loop-task` is that heartbeat as a tiny local primitive. Some examples:
+
+```bash
+# Run the test suite every 30 minutes
+loop-task new 30m -- npm test
+
+# Poll a deploy every 10 seconds until you stop it
+loop-task new 10s -- curl -sf https://example.com/health
+
+# Re-sync a data export once an hour, scoped to a project
+loop-task new 1h --project etl -- ./scripts/sync.sh
+
+# Have a coding agent chip away at a backlog every 30 minutes
+loop-task new 30m -- opencode run "find missing translations and translate them, 3 max"
+```
+
+No cron files to maintain and no daemon to babysit: loops persist across reboots, run in the background, and you watch them from a terminal board. The idea is described well in Addy Osmani's [Loop Engineering](https://addyosmani.com/blog/loop-engineering/), where scheduled automations are the first of the five pieces of a working loop.
+
+> **Stay in control.** A loop running unattended is also a loop failing unattended. Use `--max-runs`, watch the run history on the board, and review what each loop produces. The leverage moves to the loop; the responsibility stays with you.
 
 ## Quick start
 
@@ -32,8 +56,8 @@ npx loop-task new 30m -- npm test
 
 ## Requirements
 
-- **Node.js >= 20** — required for all commands
-- **Bun >= 1.2** — required for the interactive board only
+- **Node.js >= 20** - required for all commands
+- **Bun >= 1.2** - required for the interactive board only
 
 Install Bun:
 
@@ -47,7 +71,7 @@ npm install -g bun
 
 ### Loops
 
-A **loop** is a schedule — it defines *when* something runs. Loops trigger **tasks**.
+A **loop** is a schedule - it defines *when* something runs. Loops trigger **tasks**.
 
 | Field | Description |
 | ----- | ----------- |
@@ -59,7 +83,7 @@ A **loop** is a schedule — it defines *when* something runs. Loops trigger **t
 
 ### Tasks
 
-A **task** is an executable unit — it defines *what* runs. Tasks can chain to other tasks on success or failure.
+A **task** is an executable unit - it defines *what* runs. Tasks can chain to other tasks on success or failure.
 
 | Field | Description |
 | ----- | ----------- |
@@ -68,7 +92,7 @@ A **task** is an executable unit — it defines *what* runs. Tasks can chain to 
 | **On success** | Optional task to run when this one exits with code 0 |
 | **On failure** | Optional task to run when this one exits with a non-zero code |
 
-Tasks are reusable — the same task can be referenced by multiple loops or by other tasks' success/failure chains.
+Tasks are reusable - the same task can be referenced by multiple loops or by other tasks' success/failure chains.
 
 ### Projects
 
@@ -80,9 +104,9 @@ A **project** is an organizational scope for loops. Every loop belongs to exactl
 | **Color** | One of six colors: white, cyan, orange, green, red, yellow |
 
 Key behaviors:
-- **Default project** — always present, cannot be renamed or deleted. New loops are assigned here when no other project is selected.
-- **Color bullets** — each loop in the navigator displays a colored bullet (●) matching its project color.
-- **Project filter** — the board shows only loops belonging to the currently active project. The selection persists across sessions via `localStorage`.
+- **Default project** - always present, cannot be renamed or deleted. New loops are assigned here when no other project is selected.
+- **Color bullets** - each loop in the navigator displays a colored bullet (●) matching its project color.
+- **Project filter** - the board shows only loops belonging to the currently active project. The selection persists across sessions via `localStorage`.
 
 To use projects from the board:
 - Press `c` to open the **Project selector** (switch between projects)
@@ -90,12 +114,12 @@ To use projects from the board:
 - From the Manage Projects page: `n` creates a new project, `e` renames the selected project, `d` deletes it, `Esc` returns to the board
 
 From the CLI:
-- `loop-task project list` — list all projects
-- `loop-task project new <name> [--color <color>]` — create a project
-- `loop-task project rename <id|name> <new-name>` — rename a project
-- `loop-task project color <id|name> <color>` — change a project's color
-- `loop-task project delete <id|name>` — delete a project (loops move to Default)
-- `loop-task new <interval> --project <name> -- <command>` — create a loop assigned to a project
+- `loop-task project list` - list all projects
+- `loop-task project new <name> [--color <color>]` - create a project
+- `loop-task project rename <id|name> <new-name>` - rename a project
+- `loop-task project color <id|name> <color>` - change a project's color
+- `loop-task project delete <id|name>` - delete a project (loops move to Default)
+- `loop-task new <interval> --project <name> -- <command>` - create a loop assigned to a project
 
 Colors can be a name (`white`, `cyan`, `green`, `yellow`, `orange`, `pink`) or a `#rrggbb` hex value.
 
@@ -137,7 +161,7 @@ loop-task new --now 1h -- npm test
 # Run up to 5 times, then stop
 loop-task run --max-runs 5 5m -- npm test
 
-# Agent workflow — schedule an AI task every 30 minutes
+# Agent workflow - schedule an AI task every 30 minutes
 loop-task new 30m --now -- opencode run "search missing translations and translate them, 3 maximum" --model "opencode/big-pickle"
 # Run in a specific directory
 loop-task new 30m --cwd ./packages/api -- npm test
@@ -178,8 +202,8 @@ Destructive actions (pause, force run, delete) prompt a confirmation before exec
 
 ### Pause vs Stop
 
-- **Pause** (`p`) — temporarily halts the loop. Resuming continues the original schedule (e.g., a loop that runs every 6h at :00 paused at 12:00 and resumed at 14:00 will still fire at 16:00).
-- **Stop** (`s`) — halts the loop and clears the schedule. Playing starts a fresh interval from now (e.g., the same loop stopped at 12:00 and played at 14:00 will fire at 20:00).
+- **Pause** (`p`) - temporarily halts the loop. Resuming continues the original schedule (e.g., a loop that runs every 6h at :00 paused at 12:00 and resumed at 14:00 will still fire at 16:00).
+- **Stop** (`s`) - halts the loop and clears the schedule. Playing starts a fresh interval from now (e.g., the same loop stopped at 12:00 and played at 14:00 will fire at 20:00).
 
 ## How it works
 
@@ -192,14 +216,14 @@ loop-task (board) ──IPC──► daemon ──► loop 1 ──► task (com
 - The **daemon** is a background process that manages all loops and tasks. It starts automatically when you run `loop-task start` or any command that needs it.
 - The **board** is a terminal UI that connects to the daemon via IPC.
 - **Loops** define schedules and reference tasks. **Tasks** define commands and optional success/failure chains.
-- Loops and tasks **persist to disk** — they survive daemon restarts and system reboots. When the daemon starts, it restores all loops and accounts for elapsed time.
+- Loops and tasks **persist to disk** - they survive daemon restarts and system reboots. When the daemon starts, it restores all loops and accounts for elapsed time.
 
 ### Lifecycle
 
 1. `loop-task start` or `loop-task new ...` spawns the daemon if not running
 2. The daemon creates a loop and a task, and persists their state to disk
 3. `loop-task` opens the board for interactive management
-4. Closing the board or terminal does **not** stop loops — the daemon keeps running
+4. Closing the board or terminal does **not** stop loops - the daemon keeps running
 5. After a reboot, `loop-task start` restores all persisted loops with correct timing
 
 ## Supported intervals
@@ -214,10 +238,10 @@ loop-task (board) ──IPC──► daemon ──► loop 1 ──► task (com
 
 ## Behavior
 
-- **No overlapping** — waits for the command to finish before starting the next interval
-- **Resilient** — continues looping even if a command exits with a non-zero code
-- **Persistent** — loop and task state is saved after every run; survives restarts
-- **Graceful shutdown** — background loops are daemon-managed; foreground loops finish the current execution on Ctrl+C
+- **No overlapping** - waits for the command to finish before starting the next interval
+- **Resilient** - continues looping even if a command exits with a non-zero code
+- **Persistent** - loop and task state is saved after every run; survives restarts
+- **Graceful shutdown** - background loops are daemon-managed; foreground loops finish the current execution on Ctrl+C
 
 ## Development
 

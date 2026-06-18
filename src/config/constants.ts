@@ -37,7 +37,7 @@ export const PROJECT_COLORS: Record<string, string> = {
 
 export const PROJECT_COLOR_KEYS = Object.keys(PROJECT_COLORS) as Array<keyof typeof PROJECT_COLORS>;
 
-// Entity theme colors — used for header action buttons and view accents
+// Entity theme colors - used for header action buttons and view accents
 export const ENTITY_COLORS = {
   loop: "#38bdf8",    // cyan/blue
   task: "#a78bfa",    // purple
