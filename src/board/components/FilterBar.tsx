@@ -106,7 +106,7 @@ function ClickableBadge(props: {
   const { isHovered, hoverProps } = useHoverState();
   const bg = props.focused ? "#1e2a4a" : isHovered ? HOVER_BG : "#0b0b0b";
   const borderColor = props.focused ? "#38bdf8" : undefined;
-  const flexGrow = props.narrow ? 0 : props.wide ? 1.1 : 1;
+  const flexGrow = props.narrow ? 0 : props.wide ? 0 : 1;
   const paddingLeft = props.wide ? 2 : 1;
   const titleProp = props.title ? { title: props.title } : {};
   return (
