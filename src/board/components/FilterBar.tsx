@@ -52,6 +52,7 @@ export function FilterBar(props: {
         marginRight={1}
       />
       <ClickableBadge
+        title={t("board.sortTitle")}
         text={sort}
         textColor="#a3e635"
         focused={focusedPanel === "sort"}

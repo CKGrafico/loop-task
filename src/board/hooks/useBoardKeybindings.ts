@@ -6,30 +6,32 @@ import { copyToClipboard } from "../../shared/clipboard.js";
 import { getActionCount, getActionKeys } from "../components/ActionButtons.js";
 import type { ConfirmState, PanelFocus, View } from "../types.js";
 
-const PANEL_ORDER: PanelFocus[] = ["search", "status", "sort", "tasks", "new", "loops", "runs", "actions"];
+const PANEL_ORDER: PanelFocus[] = ["search", "status", "sort", "header-tasks", "header-projects", "header-new", "loops", "runs", "actions"];
 
 const PANEL_LEFT: Record<PanelFocus, PanelFocus> = {
-  search: "loops",
-  status: "search",
-  sort: "status",
-  tasks: "sort",
-  new: "tasks",
-  loops: "new",
-  runs: "loops",
-  actions: "runs",
-  projects: "new",
+  search:          "header-new",
+  status:          "search",
+  sort:            "status",
+  "header-tasks":  "sort",
+  "header-projects": "header-tasks",
+  "header-new":    "header-projects",
+  loops:           "search",
+  runs:            "loops",
+  actions:         "runs",
+  projects:        "header-new",
 };
 
 const PANEL_RIGHT: Record<PanelFocus, PanelFocus> = {
-  search: "status",
-  status: "sort",
-  sort: "tasks",
-  tasks: "new",
-  new: "loops",
-  loops: "runs",
-  runs: "actions",
-  actions: "search",
-  projects: "loops",
+  search:          "status",
+  status:          "sort",
+  sort:            "header-tasks",
+  "header-tasks":  "header-projects",
+  "header-projects": "header-new",
+  "header-new":    "loops",
+  loops:           "runs",
+  runs:            "actions",
+  actions:         "search",
+  projects:        "loops",
 };
 
 function nextPanel(current: PanelFocus, direction: "left" | "right"): PanelFocus {
@@ -133,6 +135,9 @@ interface PanelHandlerParams {
   onOpenRunLog: (run: RunRecord) => void;
   setTaskListReturnView?: Dispatch<SetStateAction<View>>;
   refreshTasks?: () => Promise<void>;
+  onViewTasks?: () => void;
+  onViewProjects?: () => void;
+  onAddLoop?: () => void;
 }
 
 type PanelKeyHandler = (key: string, p: PanelHandlerParams) => boolean;
@@ -150,12 +155,16 @@ const panelHandlers: Record<PanelFocus, PanelKeyHandler> = {
     if (key === "return" || key === "enter") { p.setSort((prev) => cycleSortMode(prev)); return true; }
     return false;
   },
-  new: (key, p) => {
-    if (key === "return" || key === "enter") { p.setEditTarget(null); p.setView("create"); return true; }
+  "header-tasks": (key, p) => {
+    if (key === "return" || key === "enter") { p.onViewTasks?.(); return true; }
     return false;
   },
-  tasks: (key, p) => {
-    if (key === "return" || key === "enter") { p.setTaskListReturnView?.("board"); p.refreshTasks?.(); p.setView("task-list"); return true; }
+  "header-projects": (key, p) => {
+    if (key === "return" || key === "enter") { p.onViewProjects?.(); return true; }
+    return false;
+  },
+  "header-new": (key, p) => {
+    if (key === "return" || key === "enter") { p.onAddLoop?.(); return true; }
     return false;
   },
   loops: (key, p) => {
@@ -226,6 +235,9 @@ export interface BoardKeybindingParams {
   returnView?: View;
   setTaskListReturnView?: Dispatch<SetStateAction<View>>;
   refreshTasks?: () => Promise<void>;
+  onViewTasks?: () => void;
+  onViewProjects?: () => void;
+  onAddLoop?: () => void;
 }
 
 export function useBoardKeybindings(params: BoardKeybindingParams): void {
@@ -264,6 +276,9 @@ export function useBoardKeybindings(params: BoardKeybindingParams): void {
     returnView,
     setTaskListReturnView,
     refreshTasks,
+    onViewTasks,
+    onViewProjects,
+    onAddLoop,
   } = params;
 
   useKeyboard((key) => {
@@ -358,7 +373,7 @@ export function useBoardKeybindings(params: BoardKeybindingParams): void {
       setSearchActive, setFilters, setSort, setEditTarget, setView,
       setSelectedIndex, setSelectedRunIndex, setFocusedPanel, selectedRunCount, selected,
       selectedRunIndex, setSelectedAction, selectedAction, onAction, onOpenRunLog,
-      setTaskListReturnView, refreshTasks,
+      setTaskListReturnView, refreshTasks, onViewTasks, onViewProjects, onAddLoop,
     })) return;
 
     const shortcut = BOARD_SHORTCUTS[name];

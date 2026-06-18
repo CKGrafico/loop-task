@@ -8,13 +8,15 @@ import { HOVER_BG } from "../../config/constants.js";
 function ActionButton(props: {
   label: string;
   textColor: string;
+  focused?: boolean;
   onMouseDown: () => void;
 }): React.ReactNode {
   const { isHovered, hoverProps } = useHoverState();
+  const bg = props.focused ? "#1e2a4a" : isHovered ? HOVER_BG : undefined;
   return (
     <box
       onMouseDown={props.onMouseDown}
-      style={{ flexGrow: 0, paddingLeft: 1, paddingRight: 1, marginLeft: 1, backgroundColor: isHovered ? HOVER_BG : undefined }}
+      style={{ flexGrow: 0, paddingLeft: 1, paddingRight: 1, marginLeft: 1, backgroundColor: bg }}
       {...hoverProps}
     >
       <text fg={props.textColor}>{props.label}</text>
@@ -25,11 +27,12 @@ function ActionButton(props: {
 export function Header(props: {
   daemonStatus: DaemonStatus;
   counts: { total: number; running: number; waiting: number; paused: number; idle: number };
+  focusedPanel?: string;
   onViewTasks?: () => void;
   onViewProjects?: () => void;
   onAddLoop?: () => void;
 }): React.ReactNode {
-  const { daemonStatus, counts, onViewTasks, onViewProjects, onAddLoop } = props;
+  const { daemonStatus, counts, focusedPanel, onViewTasks, onViewProjects, onAddLoop } = props;
   const { width } = useTerminalDimensions();
   const compact = width < HEADER_COMPACT_WIDTH;
   const color =
@@ -69,9 +72,9 @@ export function Header(props: {
             )}
           </text>
         </box>
-        {onViewTasks ? <ActionButton label={t("board.viewTasksLabel")} textColor="#a78bfa" onMouseDown={onViewTasks} /> : null}
-        {onViewProjects ? <ActionButton label={t("project.manageLabel")} textColor="#34d399" onMouseDown={onViewProjects} /> : null}
-        {onAddLoop ? <ActionButton label={t("board.newLoopLabel")} textColor="#4ade80" onMouseDown={onAddLoop} /> : null}
+        {onViewTasks ? <ActionButton label={t("board.viewTasksLabel")} textColor="#a78bfa" focused={focusedPanel === "header-tasks"} onMouseDown={onViewTasks} /> : null}
+        {onViewProjects ? <ActionButton label={t("project.manageLabel")} textColor="#34d399" focused={focusedPanel === "header-projects"} onMouseDown={onViewProjects} /> : null}
+        {onAddLoop ? <ActionButton label={t("board.newLoopLabel")} textColor="#4ade80" focused={focusedPanel === "header-new"} onMouseDown={onAddLoop} /> : null}
       </box>
       <box style={{ height: 1, paddingLeft: 1, paddingRight: 1 }}>
         <text fg="#374151">{"─".repeat(Math.max(0, width - 2))}</text>
