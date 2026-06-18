@@ -6,32 +6,34 @@ import { copyToClipboard } from "../../shared/clipboard.js";
 import { getActionCount, getActionKeys } from "../components/ActionButtons.js";
 import type { ConfirmState, PanelFocus, View } from "../types.js";
 
-const PANEL_ORDER: PanelFocus[] = ["search", "status", "sort", "header-tasks", "header-projects", "header-new", "loops", "runs", "actions"];
+const PANEL_ORDER: PanelFocus[] = ["search", "project-filter", "status", "sort", "header-tasks", "header-projects", "header-new", "loops", "runs", "actions"];
 
 const PANEL_LEFT: Record<PanelFocus, PanelFocus> = {
-  search:          "header-new",
-  status:          "search",
-  sort:            "status",
-  "header-tasks":  "sort",
+  search:            "actions",
+  "project-filter":  "search",
+  status:            "project-filter",
+  sort:              "status",
+  "header-tasks":    "sort",
   "header-projects": "header-tasks",
-  "header-new":    "header-projects",
-  loops:           "search",
-  runs:            "loops",
-  actions:         "runs",
-  projects:        "header-new",
+  "header-new":      "header-projects",
+  loops:             "header-new",
+  runs:              "loops",
+  actions:           "runs",
+  projects:          "header-new",
 };
 
 const PANEL_RIGHT: Record<PanelFocus, PanelFocus> = {
-  search:          "status",
-  status:          "sort",
-  sort:            "header-tasks",
-  "header-tasks":  "header-projects",
+  search:            "project-filter",
+  "project-filter":  "status",
+  status:            "sort",
+  sort:              "header-tasks",
+  "header-tasks":    "header-projects",
   "header-projects": "header-new",
-  "header-new":    "loops",
-  loops:           "runs",
-  runs:            "actions",
-  actions:         "search",
-  projects:        "loops",
+  "header-new":      "loops",
+  loops:             "runs",
+  runs:              "actions",
+  actions:           "search",
+  projects:          "loops",
 };
 
 function nextPanel(current: PanelFocus, direction: "left" | "right"): PanelFocus {
@@ -146,6 +148,10 @@ type PanelKeyHandler = (key: string, p: PanelHandlerParams) => boolean;
 const panelHandlers: Record<PanelFocus, PanelKeyHandler> = {
   search: (key, p) => {
     if (key === "return" || key === "enter") { p.setSearchActive(true); return true; }
+    return false;
+  },
+  "project-filter": (key, p) => {
+    if (key === "return" || key === "enter") { p.onSelectProject?.(); return true; }
     return false;
   },
   status: (key, p) => {
