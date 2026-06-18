@@ -44,7 +44,6 @@ export function FilterBar(props: {
           focused={focusedPanel === "project-filter"}
           onMouseDown={onSelectProject}
           marginRight={1}
-          narrow
         />
       ) : null}
       <ClickableBadge
