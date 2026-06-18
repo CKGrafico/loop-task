@@ -13,8 +13,10 @@ export function FilterBar(props: {
   onViewTasks: () => void;
   onNewLoop: () => void;
   onManageProjects?: () => void;
+  onSelectProject?: () => void;
+  currentProjectName?: string;
 }): React.ReactNode {
-  const { filters, sort, searchActive, focusedPanel, onStatusCycle, onSortCycle, onViewTasks, onNewLoop, onManageProjects } = props;
+  const { filters, sort, searchActive, focusedPanel, onStatusCycle, onSortCycle, onViewTasks, onNewLoop, onManageProjects, onSelectProject, currentProjectName } = props;
 
   const statusDisplay = filters.status === "waiting" ? "waiting" : filters.status;
 
@@ -34,6 +36,17 @@ export function FilterBar(props: {
           </text>
         )}
       </box>
+      {onSelectProject ? (
+        <ClickableBadge
+          title={t("project.filterTitle")}
+          text={currentProjectName ?? "Default"}
+          textColor="#f59e0b"
+          focused={focusedPanel === "project-filter"}
+          onMouseDown={onSelectProject}
+          marginRight={1}
+          narrow
+        />
+      ) : null}
       <ClickableBadge
         title={t("board.statusFilterTitle")}
         text={statusDisplay}
@@ -41,6 +54,7 @@ export function FilterBar(props: {
         focused={focusedPanel === "status"}
         onMouseDown={onStatusCycle}
         marginRight={1}
+        narrow
       />
       <ClickableBadge
         title={t("board.sortTitle")}
@@ -49,6 +63,7 @@ export function FilterBar(props: {
         focused={focusedPanel === "sort"}
         onMouseDown={onSortCycle}
         marginRight={1}
+        narrow
       />
       <ClickableBadge
         title={t("board.viewTasksTitle")}
@@ -57,17 +72,17 @@ export function FilterBar(props: {
         focused={focusedPanel === "tasks"}
         onMouseDown={onViewTasks}
         marginRight={1}
-        narrow
+        wide
       />
       {onManageProjects ? (
         <ClickableBadge
-          title={t("project.projectsTitle")}
-          text={t("project.projectsLabel")}
+          title={t("project.manageTitle")}
+          text={t("project.manageLabel")}
           textColor="#34d399"
           focused={focusedPanel === "projects"}
           onMouseDown={onManageProjects}
           marginRight={1}
-          narrow
+          wide
         />
       ) : null}
       <ClickableBadge
@@ -76,7 +91,7 @@ export function FilterBar(props: {
         textColor="#4ade80"
         focused={focusedPanel === "new"}
         onMouseDown={onNewLoop}
-        narrow
+        wide
       />
     </box>
   );
@@ -90,17 +105,20 @@ function ClickableBadge(props: {
   onMouseDown: () => void;
   marginRight?: number;
   narrow?: boolean;
+  wide?: boolean;
 }): React.ReactNode {
   const { isHovered, hoverProps } = useHoverState();
   const bg = props.focused ? "#1e2a4a" : isHovered ? HOVER_BG : "#0b0b0b";
   const borderColor = props.focused ? "#38bdf8" : undefined;
+  const flexGrow = props.narrow ? 0 : props.wide ? 2 : 1;
+  const paddingLeft = props.wide ? 2 : 1;
   return (
     <box
       title={props.title}
       border
       borderColor={borderColor}
       onMouseDown={props.onMouseDown}
-      style={{ flexGrow: props.narrow ? 0 : 1, height: 3, marginRight: props.marginRight, paddingLeft: 1, backgroundColor: bg }}
+      style={{ flexGrow, height: 3, marginRight: props.marginRight, paddingLeft, backgroundColor: bg }}
       {...hoverProps}
     >
       <text fg={props.textColor}>{props.text}</text>

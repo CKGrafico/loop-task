@@ -404,6 +404,8 @@ export function App(props: { onQuit: () => void }): React.ReactNode {
           onSortCycle={() => setSort(cycleSortMode(sort))}
           onViewTasks={() => { setTaskListReturnView("board"); void refreshTasks(); setView("task-list"); }}
           onNewLoop={() => { setEditTarget(null); setView("create"); }}
+          onSelectProject={() => setProjectsModalOpen(true)}
+          currentProjectName={projects.find(p => p.id === currentProjectId)?.name ?? "Default"}
           onManageProjects={() => setView("projects")}
         />
       ) : view === "task-list" ? (
