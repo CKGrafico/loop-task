@@ -10,13 +10,10 @@ export function FilterBar(props: {
   focusedPanel: string;
   onStatusCycle: () => void;
   onSortCycle: () => void;
-  onViewTasks: () => void;
-  onNewLoop: () => void;
-  onManageProjects?: () => void;
   onSelectProject?: () => void;
   currentProjectName?: string;
 }): React.ReactNode {
-  const { filters, sort, searchActive, focusedPanel, onStatusCycle, onSortCycle, onViewTasks, onNewLoop, onManageProjects, onSelectProject, currentProjectName } = props;
+  const { filters, sort, searchActive, focusedPanel, onStatusCycle, onSortCycle, onSelectProject, currentProjectName } = props;
 
   const statusDisplay = filters.status === "waiting" ? "waiting" : filters.status;
 
@@ -59,29 +56,6 @@ export function FilterBar(props: {
         textColor="#a3e635"
         focused={focusedPanel === "sort"}
         onMouseDown={onSortCycle}
-        marginRight={1}
-      />
-      <ClickableBadge
-        text={t("board.viewTasksLabel")}
-        textColor="#a78bfa"
-        focused={focusedPanel === "tasks"}
-        onMouseDown={onViewTasks}
-        marginRight={1}
-      />
-      {onManageProjects ? (
-        <ClickableBadge
-          text={t("project.manageLabel")}
-          textColor="#34d399"
-          focused={focusedPanel === "projects"}
-          onMouseDown={onManageProjects}
-          marginRight={1}
-        />
-      ) : null}
-      <ClickableBadge
-        text={t("board.newLoopLabel")}
-        textColor="#4ade80"
-        focused={focusedPanel === "new"}
-        onMouseDown={onNewLoop}
       />
     </box>
   );

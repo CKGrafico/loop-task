@@ -392,7 +392,13 @@ export function App(props: { onQuit: () => void }): React.ReactNode {
 
   return (
     <box style={{ flexDirection: "column", width: "100%", height: "100%", backgroundColor: "#0b0b0b" }}>
-      <Header daemonStatus={daemonStatus} counts={counts} />
+      <Header
+        daemonStatus={daemonStatus}
+        counts={counts}
+        onViewTasks={() => { setTaskListReturnView("board"); void refreshTasks(); setView("task-list"); }}
+        onViewProjects={() => setView("projects")}
+        onAddLoop={() => { setEditTarget(null); setView("create"); }}
+      />
 
       {view === "board" ? (
         <FilterBar
@@ -402,11 +408,8 @@ export function App(props: { onQuit: () => void }): React.ReactNode {
           focusedPanel={focusedPanel}
           onStatusCycle={() => setFilters((prev) => ({ ...prev, status: cycleStatusFilter(prev.status) }))}
           onSortCycle={() => setSort(cycleSortMode(sort))}
-          onViewTasks={() => { setTaskListReturnView("board"); void refreshTasks(); setView("task-list"); }}
-          onNewLoop={() => { setEditTarget(null); setView("create"); }}
           onSelectProject={() => setProjectsModalOpen(true)}
           currentProjectName={projects.find(p => p.id === currentProjectId)?.name ?? "Default"}
-          onManageProjects={() => setView("projects")}
         />
       ) : view === "task-list" ? (
         <TaskFilterBar
