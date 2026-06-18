@@ -13,9 +13,8 @@ function ActionButton(props: {
   const { isHovered, hoverProps } = useHoverState();
   return (
     <box
-      border
       onMouseDown={props.onMouseDown}
-      style={{ flexGrow: 0, height: 3, paddingLeft: 1, paddingRight: 1, marginLeft: 1, backgroundColor: isHovered ? HOVER_BG : "#0b0b0b" }}
+      style={{ flexGrow: 0, paddingLeft: 1, paddingRight: 1, marginLeft: 1, backgroundColor: isHovered ? HOVER_BG : undefined }}
       {...hoverProps}
     >
       <text fg={props.textColor}>{props.label}</text>
