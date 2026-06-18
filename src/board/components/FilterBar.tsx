@@ -65,7 +65,6 @@ export function FilterBar(props: {
         narrow
       />
       <ClickableBadge
-        title={t("board.viewTasksTitle")}
         text={t("board.viewTasksLabel")}
         textColor="#a78bfa"
         focused={focusedPanel === "tasks"}
@@ -75,7 +74,6 @@ export function FilterBar(props: {
       />
       {onManageProjects ? (
         <ClickableBadge
-          title={t("project.manageTitle")}
           text={t("project.manageLabel")}
           textColor="#34d399"
           focused={focusedPanel === "projects"}
@@ -85,7 +83,6 @@ export function FilterBar(props: {
         />
       ) : null}
       <ClickableBadge
-        title={t("board.newLoopTitle")}
         text={t("board.newLoopLabel")}
         textColor="#4ade80"
         focused={focusedPanel === "new"}
@@ -97,7 +94,7 @@ export function FilterBar(props: {
 }
 
 function ClickableBadge(props: {
-  title: string;
+  title?: string;
   text: string;
   textColor: string;
   focused: boolean;
@@ -111,9 +108,10 @@ function ClickableBadge(props: {
   const borderColor = props.focused ? "#38bdf8" : undefined;
   const flexGrow = props.narrow ? 0 : props.wide ? 1.6 : 1;
   const paddingLeft = props.wide ? 2 : 1;
+  const titleProp = props.title ? { title: props.title } : {};
   return (
     <box
-      title={props.title}
+      {...titleProp}
       border
       borderColor={borderColor}
       onMouseDown={props.onMouseDown}
