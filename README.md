@@ -1,5 +1,6 @@
 <div align="center">
 
+
 # loop-task
 
 **Loop engineering for your terminal. Run any command on a cadence.**
@@ -18,6 +19,10 @@
 **Loop engineering** is designing systems that run work on a cadence instead of triggering each run yourself. A *loop* is a recurring goal: you define a purpose, give it an interval, and let it iterate. It applies to ordinary engineering work just as much as to AI agents: health checks, sync jobs, test watches, data pulls, deploy polls, and report generation are all loops.
 
 `loop-task` is that heartbeat as a tiny local primitive. Some examples:
+
+<div align="center">
+<img src="https://raw.githubusercontent.com/CKGrafico/opencode-task/refs/heads/main/demo.gif" alt="opencode-task demo" width="700" />
+</div>
 
 ```bash
 # Run the test suite every 30 minutes
