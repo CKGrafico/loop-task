@@ -9,6 +9,8 @@ import {
   loadAllLoops,
   deleteLoop as deleteLoopState,
   getLogPath,
+  migrateLoopsToJson,
+  migrateTasksToJson,
 } from "./state.js";
 import { daemonLog } from "./daemon-log.js";
 
@@ -34,6 +36,10 @@ export class LoopManager {
   init(): void {
     // Initialize projects first
     this.projectManager.init();
+
+    // Migrate from individual files to consolidated JSON
+    migrateLoopsToJson();
+    migrateTasksToJson();
 
     const saved = loadAllLoops();
     let restarted = 0;

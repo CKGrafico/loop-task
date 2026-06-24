@@ -28,6 +28,18 @@ export function taskFile(id: string): string {
   return path.join(getTasksDir(), `${id}.json`);
 }
 
+export function loopsJson(): string {
+  return path.join(getDataDir(), "loops.json");
+}
+
+export function tasksJson(): string {
+  return path.join(getDataDir(), "tasks.json");
+}
+
+export function projectsJson(): string {
+  return path.join(getDataDir(), "projects.json");
+}
+
 export function logFile(id: string): string {
   return path.join(getLogsDir(), `${id}.log`);
 }
