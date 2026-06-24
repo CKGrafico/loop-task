@@ -244,11 +244,11 @@ export interface BoardKeybindingParams {
   refreshTasks?: () => Promise<void>;
   onViewTasks?: () => void;
   onViewProjects?: () => void;
+  onViewLoops?: () => void;
   onAddLoop?: () => void;
+  onAddTask?: () => void;
   onSelectProject?: () => void;
-}
-
-export function useBoardKeybindings(params: BoardKeybindingParams): void {
+}(params: BoardKeybindingParams): void {
   const {
     confirm,
     confirmChoice,
@@ -285,7 +285,9 @@ export function useBoardKeybindings(params: BoardKeybindingParams): void {
     refreshTasks,
     onViewTasks,
     onViewProjects,
+    onViewLoops,
     onAddLoop,
+    onAddTask,
     onSelectProject,
   } = params;
 
@@ -361,6 +363,22 @@ export function useBoardKeybindings(params: BoardKeybindingParams): void {
         setFocusedPanel(HEADER_PANELS[nextIdx]);
         key.preventDefault();
         return;
+      }
+    }
+
+    if (view !== "board" && (name === "return" || name === "enter")) {
+      if (view === "task-list") {
+        if (focusedPanel === "header-tasks") { onViewProjects?.(); key.preventDefault(); return; }
+        if (focusedPanel === "header-projects") { onViewLoops?.(); key.preventDefault(); return; }
+        if (focusedPanel === "header-new") { onAddTask?.(); key.preventDefault(); return; }
+      } else if (view === "projects") {
+        if (focusedPanel === "header-tasks") { onViewLoops?.(); key.preventDefault(); return; }
+        if (focusedPanel === "header-projects") { onViewTasks?.(); key.preventDefault(); return; }
+        if (focusedPanel === "header-new") { onViewProjects?.(); key.preventDefault(); return; }
+      } else if (view === "create" || view === "task-create" || view === "task-edit") {
+        if (focusedPanel === "header-tasks") { onViewProjects?.(); key.preventDefault(); return; }
+        if (focusedPanel === "header-projects") { onViewTasks?.(); key.preventDefault(); return; }
+        if (focusedPanel === "header-new") { onAddLoop?.(); key.preventDefault(); return; }
       }
     }
 

@@ -37,8 +37,9 @@ export function ProjectsPage(props: {
   onClose: () => void;
   onRefresh: () => Promise<void>;
   onOpenCreate?: (trigger: () => void) => void;
+  onEnterHeader?: (direction: "left" | "right") => void;
 }): React.ReactNode {
-  const { projects, loops, onClose, onRefresh, onOpenCreate } = props;
+  const { projects, loops, onClose, onRefresh, onOpenCreate, onEnterHeader } = props;
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [subModal, setSubModal] = useState<SubModal>("none");
   const [focusedPanel, setFocusedPanel] = useState<"list" | "actions">("list");
@@ -74,6 +75,17 @@ export function ProjectsPage(props: {
       return;
     }
     if (key.name === "tab") {
+      const direction = key.shift ? "left" : "right";
+      if (focusedPanel === "list" && direction === "left") {
+        onEnterHeader?.("left");
+        key.preventDefault();
+        return;
+      }
+      if (focusedPanel === "actions" && direction === "right") {
+        onEnterHeader?.("right");
+        key.preventDefault();
+        return;
+      }
       setFocusedPanel((p) => (p === "list" ? "actions" : "list"));
       key.preventDefault();
       return;

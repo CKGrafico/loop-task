@@ -371,7 +371,9 @@ export function App(props: { onQuit: () => void }): React.ReactNode {
     refreshTasks,
     onViewTasks: () => { void refreshTasks(); push("task-list"); },
     onViewProjects: () => push("projects"),
+    onViewLoops: () => replace("board"),
     onAddLoop: () => { setEditTarget(null); push("create"); },
+    onAddTask: () => { setEditTask(null); push("task-create"); },
     onSelectProject: () => setProjectsModalOpen(true),
   });
 
@@ -392,6 +394,9 @@ export function App(props: { onQuit: () => void }): React.ReactNode {
     onTaskAction: handleTaskAction,
     onCancel: cancelTaskList,
     onCreateTask: handleCreateTask,
+    onEnterHeader: (direction) => {
+      setFocusedPanel(direction === "right" ? "header-tasks" : "header-new");
+    },
     selectable: stack.includes("create") || stack.includes("task-edit"),
   });
 
@@ -499,6 +504,9 @@ export function App(props: { onQuit: () => void }): React.ReactNode {
             onClose={() => pop()}
             onRefresh={refreshProjects}
             onOpenCreate={(trigger) => { createProjectTriggerRef.current = trigger; }}
+            onEnterHeader={(direction) => {
+              setFocusedPanel(direction === "right" ? "header-tasks" : "header-new");
+            }}
           />
         ) : (
           <box style={{ flexDirection: breakpoint === "narrow" ? "column" : "row", flexGrow: 1, backgroundColor: "#0b0b0b" }}>

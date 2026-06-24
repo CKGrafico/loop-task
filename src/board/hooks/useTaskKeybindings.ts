@@ -21,6 +21,7 @@ export interface TaskKeybindingParams {
   onTaskAction: (action: string) => void;
   onCancel: () => void;
   onCreateTask: () => void;
+  onEnterHeader: (direction: "left" | "right") => void;
   selectable?: boolean;
 }
 
@@ -42,6 +43,7 @@ export function useTaskKeybindings(params: TaskKeybindingParams): void {
     onTaskAction,
     onCancel,
     onCreateTask,
+    onEnterHeader,
     selectable = true,
   } = params;
 
@@ -100,7 +102,9 @@ export function useTaskKeybindings(params: TaskKeybindingParams): void {
         if (direction === "left" && taskSelectedAction === 0) {
           setTaskFocusedPanel((p) => nextTaskPanel(p, "left"));
         } else if (direction === "right" && taskSelectedAction === taskActionCount - 1) {
-          setTaskFocusedPanel((p) => nextTaskPanel(p, "right"));
+          onEnterHeader("right");
+          key.preventDefault();
+          return;
         } else {
           setTaskSelectedAction((i) =>
             direction === "right"
@@ -108,6 +112,10 @@ export function useTaskKeybindings(params: TaskKeybindingParams): void {
               : Math.max(0, i - 1)
           );
         }
+      } else if (taskFocusedPanel === "search" && direction === "left") {
+        onEnterHeader("left");
+        key.preventDefault();
+        return;
       } else {
         setTaskFocusedPanel((p) => nextTaskPanel(p, direction));
       }
