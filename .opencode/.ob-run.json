@@ -1,14 +1,14 @@
 {
-  "updatedAt": "2026-06-24T15:37:12.929Z",
+  "updatedAt": "2026-06-24T16:41:11.877Z",
   "agents": {
-    "ses_105ba76f8ffeQjPlEtd2bECxly": {
+    "ses_105810241ffeeP6jaiS0UVRW4F": {
       "agent": "explore",
       "model": null,
       "tasks": [],
-      "title": "Explore cwd and tags inputs (@explore subagent)",
+      "title": "Explore input navigation patterns (@explore subagent)",
       "status": "done",
-      "startedAt": "2026-06-24T15:35:21.642Z",
-      "endedAt": "2026-06-24T15:37:12.929Z"
+      "startedAt": "2026-06-24T16:38:07.080Z",
+      "endedAt": "2026-06-24T16:41:11.877Z"
     }
   }
 }
