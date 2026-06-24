@@ -4,3 +4,4 @@ coverage/
 *.tsbuildinfo
 .DS_Store
 Thumbs.db
+.opencode/.ob-run.json
