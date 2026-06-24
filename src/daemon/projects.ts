@@ -1,54 +1,73 @@
 import type { Project } from "../types.js";
 import fs from "node:fs";
 import { writeFileAtomic } from "../shared/fs-utils.js";
-import { homedir } from "node:os";
-import { join } from "node:path";
 import { daemonLog } from "./daemon-log.js";
 import crypto from "node:crypto";
+import { getDataDir, projectsJson } from "../config/paths.js";
+import path from "node:path";
 
 export class ProjectManager {
   private projects: Map<string, Project> = new Map();
-  private projectsDir: string;
-
-  constructor(loopCliHome?: string) {
-    const baseDir = loopCliHome || join(homedir(), ".loop-cli");
-    this.projectsDir = join(baseDir, "projects");
-  }
 
   init(): void {
-    if (!fs.existsSync(this.projectsDir)) {
-      fs.mkdirSync(this.projectsDir, { recursive: true });
-    }
+    const dataDir = getDataDir();
+    fs.mkdirSync(dataDir, { recursive: true });
+    this.migrateProjectsToJson();
     this.loadProjects();
     if (!this.projects.has("default")) {
       this.createDefaultProject();
     }
   }
 
-  private loadProjects(): void {
-    this.projects.clear();
-    if (!fs.existsSync(this.projectsDir)) return;
+  private migrateProjectsToJson(): void {
+    const jsonFile = projectsJson();
+    if (fs.existsSync(jsonFile)) return;
+    const oldDir = path.join(getDataDir(), "projects");
+    if (!fs.existsSync(oldDir)) return;
     try {
-      const files = fs.readdirSync(this.projectsDir);
+      const files = fs.readdirSync(oldDir).filter((f) => f.endsWith(".json"));
+      if (files.length === 0) return;
+      const projects: Project[] = [];
       for (const file of files) {
-        if (!file.endsWith(".json")) continue;
         try {
-          const raw = fs.readFileSync(join(this.projectsDir, file), "utf-8");
+          const raw = fs.readFileSync(path.join(oldDir, file), "utf-8");
           const content = JSON.parse(raw) as Project;
-          if (content.id) this.projects.set(content.id, content);
-        } catch (err) {
-          daemonLog(`Failed to load project ${file}: ${err}`);
+          if (content.id) projects.push(content);
+        } catch {
+          // skip corrupted files
         }
       }
+      writeFileAtomic(jsonFile, JSON.stringify(projects, null, 2));
+      daemonLog(`migrated ${projects.length} project(s) to projects.json`);
     } catch (err) {
-      daemonLog(`Failed to load projects directory: ${err}`);
+      daemonLog(`Failed to migrate projects: ${err}`);
     }
   }
 
+  private loadProjects(): void {
+    this.projects.clear();
+    const jsonFile = projectsJson();
+    if (!fs.existsSync(jsonFile)) return;
+    try {
+      const raw = fs.readFileSync(jsonFile, "utf-8");
+      const parsed = JSON.parse(raw);
+      if (!Array.isArray(parsed)) return;
+      for (const item of parsed) {
+        if (item && item.id) this.projects.set(item.id, item as Project);
+      }
+    } catch (err) {
+      daemonLog(`Failed to load projects.json: ${err}`);
+    }
+  }
+
+  private saveAllProjects(): void {
+    const all = Array.from(this.projects.values());
+    writeFileAtomic(projectsJson(), JSON.stringify(all, null, 2));
+  }
+
   private saveProject(project: Project): void {
-    const filePath = join(this.projectsDir, `${project.id}.json`);
-    writeFileAtomic(filePath, JSON.stringify(project, null, 2));
     this.projects.set(project.id, project);
+    this.saveAllProjects();
   }
 
   private createDefaultProject(): void {
@@ -98,8 +117,7 @@ export class ProjectManager {
     const project = this.projects.get(id);
     if (!project) throw new Error(`Project ${id} not found`);
     if (project.isSystem) throw new Error("Cannot delete system project");
-    const filePath = join(this.projectsDir, `${id}.json`);
-    if (fs.existsSync(filePath)) fs.rmSync(filePath);
     this.projects.delete(id);
+    this.saveAllProjects();
   }
 }

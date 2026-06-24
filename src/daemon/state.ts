@@ -14,31 +14,42 @@ import {
   getPidFile,
   getSignatureFile,
   getSocketPath,
+  loopsJson,
+  tasksJson,
+  getDataDir,
 } from "../config/paths.js";
 
 export { getDataDir, getPidFile, getSocketPath } from "../config/paths.js";
 
 function ensureDirs(): void {
-  fs.mkdirSync(getLoopsDir(), { recursive: true });
+  fs.mkdirSync(getDataDir(), { recursive: true });
   fs.mkdirSync(getLogsDir(), { recursive: true });
 }
 
-export function saveLoop(meta: LoopMeta): void {
-  ensureDirs();
-  writeFileAtomic(loopFile(meta.id), JSON.stringify(meta, null, 2));
+function readJsonArray<T>(filePath: string): T[] {
+  if (!fs.existsSync(filePath)) return [];
+  try {
+    const raw = fs.readFileSync(filePath, "utf-8");
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? (parsed as T[]) : [];
+  } catch {
+    return [];
+  }
 }
 
-export function loadLoop(id: string): LoopMeta | null {
-  const file = loopFile(id);
-  if (!fs.existsSync(file)) return null;
-  const raw = fs.readFileSync(file, "utf-8");
-  return JSON.parse(raw) as LoopMeta;
+function writeJsonArray<T>(filePath: string, items: T[]): void {
+  ensureDirs();
+  writeFileAtomic(filePath, JSON.stringify(items, null, 2));
 }
 
-export function loadAllLoops(): LoopMeta[] {
+export function migrateLoopsToJson(): void {
   ensureDirs();
+  const jsonFile = loopsJson();
+  if (fs.existsSync(jsonFile)) return;
   const dir = getLoopsDir();
+  if (!fs.existsSync(dir)) return;
   const files = fs.readdirSync(dir).filter((f) => f.endsWith(".json"));
+  if (files.length === 0) return;
   const loops: LoopMeta[] = [];
   for (const file of files) {
     try {
@@ -48,31 +59,18 @@ export function loadAllLoops(): LoopMeta[] {
       // skip corrupted files
     }
   }
-  return loops.sort((a, b) => a.createdAt.localeCompare(b.createdAt));
+  loops.sort((a, b) => a.createdAt.localeCompare(b.createdAt));
+  writeJsonArray(jsonFile, loops);
 }
 
-export function deleteLoop(id: string): void {
-  removeIfExists(loopFile(id));
-  removeIfExists(logFile(id));
-}
-
-export function saveTask(task: TaskDefinition): void {
+export function migrateTasksToJson(): void {
+  ensureDirs();
+  const jsonFile = tasksJson();
+  if (fs.existsSync(jsonFile)) return;
   const dir = getTasksDir();
-  fs.mkdirSync(dir, { recursive: true });
-  writeFileAtomic(taskFile(task.id), JSON.stringify(task, null, 2));
-}
-
-export function loadTask(id: string): TaskDefinition | null {
-  const file = taskFile(id);
-  if (!fs.existsSync(file)) return null;
-  const raw = fs.readFileSync(file, "utf-8");
-  return JSON.parse(raw) as TaskDefinition;
-}
-
-export function loadAllTasks(): TaskDefinition[] {
-  const dir = getTasksDir();
-  fs.mkdirSync(dir, { recursive: true });
+  if (!fs.existsSync(dir)) return;
   const files = fs.readdirSync(dir).filter((f) => f.endsWith(".json"));
+  if (files.length === 0) return;
   const tasks: TaskDefinition[] = [];
   for (const file of files) {
     try {
@@ -82,11 +80,61 @@ export function loadAllTasks(): TaskDefinition[] {
       // skip corrupted files
     }
   }
+  tasks.sort((a, b) => a.createdAt.localeCompare(b.createdAt));
+  writeJsonArray(jsonFile, tasks);
+}
+
+export function saveLoop(meta: LoopMeta): void {
+  const loops = readJsonArray<LoopMeta>(loopsJson());
+  const idx = loops.findIndex((l) => l.id === meta.id);
+  if (idx >= 0) loops[idx] = meta;
+  else loops.push(meta);
+  writeJsonArray(loopsJson(), loops);
+}
+
+export function loadLoop(id: string): LoopMeta | null {
+  const loops = readJsonArray<LoopMeta>(loopsJson());
+  return loops.find((l) => l.id === id) ?? null;
+}
+
+export function loadAllLoops(): LoopMeta[] {
+  const loops = readJsonArray<LoopMeta>(loopsJson());
+  return loops.sort((a, b) => a.createdAt.localeCompare(b.createdAt));
+}
+
+export function deleteLoop(id: string): void {
+  const loops = readJsonArray<LoopMeta>(loopsJson());
+  const filtered = loops.filter((l) => l.id !== id);
+  if (filtered.length !== loops.length) {
+    writeJsonArray(loopsJson(), filtered);
+  }
+  removeIfExists(logFile(id));
+}
+
+export function saveTask(task: TaskDefinition): void {
+  const tasks = readJsonArray<TaskDefinition>(tasksJson());
+  const idx = tasks.findIndex((t) => t.id === task.id);
+  if (idx >= 0) tasks[idx] = task;
+  else tasks.push(task);
+  writeJsonArray(tasksJson(), tasks);
+}
+
+export function loadTask(id: string): TaskDefinition | null {
+  const tasks = readJsonArray<TaskDefinition>(tasksJson());
+  return tasks.find((t) => t.id === id) ?? null;
+}
+
+export function loadAllTasks(): TaskDefinition[] {
+  const tasks = readJsonArray<TaskDefinition>(tasksJson());
   return tasks.sort((a, b) => a.createdAt.localeCompare(b.createdAt));
 }
 
 export function deleteTask(id: string): void {
-  removeIfExists(taskFile(id));
+  const tasks = readJsonArray<TaskDefinition>(tasksJson());
+  const filtered = tasks.filter((t) => t.id !== id);
+  if (filtered.length !== tasks.length) {
+    writeJsonArray(tasksJson(), filtered);
+  }
 }
 
 export function getLogPath(id: string): string {
