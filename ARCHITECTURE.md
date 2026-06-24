@@ -312,25 +312,24 @@ All persistence is **local filesystem** under the data directory, resolved by
 
 | Store | Path | Purpose | Format / Schema | Lifecycle |
 |-------|------|---------|-----------------|-----------|
-| Loop metadata | `~/.loop-cli/loops/<id>.json` | Persisted per-loop config + runtime status | `LoopMeta` (`src/types.ts`) | Created on `start`; rewritten on every state change via `writeFileAtomic`; removed on `delete` |
+| **Loop metadata** | `~/.loop-cli/loops.json` | Consolidated loop config + runtime status (single JSON array) | `LoopMeta[]` (`src/types.ts`) | Created/updated on every state change via `writeFileAtomic`; individual loops upserted by id; entries removed on `delete` |
 | Loop output | `~/.loop-cli/logs/<id>.log` | Captured stdout/stderr of each run | Plain text with run headers/exit markers | Appended during runs; rotated at `MAX_LOG_BYTES` (1 MB) keeping `MAX_LOG_GENERATIONS` (3) `.1/.2/.3` files; deleted on `delete` |
 | Daemon PID | `~/.loop-cli/daemon.pid` | Liveness/single-instance tracking | Integer PID | Written on daemon boot; removed on shutdown |
 | Code signature | `~/.loop-cli/daemon.sig` | Detect stale daemon vs current source | 16-char SHA-1 over src mtime/size/count | Written on boot; compared by `ensureDaemon` |
 | IPC endpoint | POSIX: `~/.loop-cli/daemon-<hash>.sock`; Windows: `\\.\pipe\loop-cli-<user>-<hash>` | Client↔daemon transport | OS socket / named pipe | Bound on boot; `.sock` unlinked on POSIX shutdown |
 | Daemon diagnostics | `~/.loop-cli/daemon.log` | Daemon-side troubleshooting log | Plain text | Appended by `daemon-log.ts` |
-| **Project metadata** | `~/.loop-cli/projects/<id>.json` | Per-project config (name, color, system flag) | `Project` (`src/types.ts`) | Created on project-create RPC or init (Default); renamed in-place on update; removed on delete; `default.json` is permanent |
+| **Task definitions** | `~/.loop-cli/tasks.json` | Consolidated task definitions (single JSON array) | `TaskDefinition[]` (`src/types.ts`) | Created/updated on task CRUD via `writeFileAtomic`; entries removed on `delete` |
+| **Project metadata** | `~/.loop-cli/projects.json` | Consolidated project config (name, color, system flag) as a single JSON array | `Project[]` (`src/types.ts`) | Created on project CRUD or init (Default); updated atomically on every change; `default` entry is permanent |
 
-**Migration approach:** None. State files are plain JSON read directly; corrupted
-loop files are skipped on load (`state.ts#loadAllLoops`). There is no schema
-versioning - *Not evident from the repository.*
+**Migration approach:** On daemon init, if `loops.json` does not exist but a `loops/` directory with individual `.json` files does, the contents are consolidated into `loops.json` (old files preserved, not deleted). Same migration applies to `tasks.json` ← `tasks/` and `projects.json` ← `projects/`. Corrupted entries are skipped during migration and load.
 
 ### 5.1 Projects
 
 **Projects** are organizational scopes for loops. Every `LoopMeta` carries a `projectId` string (default: `"default"`). The `ProjectManager` class (`src/daemon/projects.ts`) owns project persistence:
 
 - **Default project** - created on first daemon init (`id: "default"`, `isSystem: true`, `isDefault: true`, white). Cannot be renamed or deleted.
-- **User projects** - created via `project-create` RPC. Stored as `~/.loop-cli/projects/<id>.json`.
-- **Migration** - `LoopManager.init()` adds `projectId = "default"` to any loop file that lacks the field, then rewrites it atomically.
+- **User projects** - created via `project-create` RPC. Stored in `~/.loop-cli/projects.json` (consolidated array).
+- **Migration** - `LoopManager.init()` adds `projectId = "default"` to any loop that lacks the field, then rewrites it atomically. Also migrates individual project files to `projects.json` on first init.
 - **Cascade on delete** - when a project is deleted via `project-delete` RPC, all loops with that `projectId` are moved to `"default"` before the project file is removed.
 - **Board filtering** - the board keeps `currentProjectId` in React state (persisted to `localStorage`). Only loops matching `loop.projectId === currentProjectId` are shown in the Navigator.
 
