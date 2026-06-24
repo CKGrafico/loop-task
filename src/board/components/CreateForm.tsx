@@ -56,7 +56,7 @@ export function CreateView(props: {
 }): React.ReactNode {
   const [values, setValues] = useState<Record<CreateField, string>>({
     ...props.initial,
-    project: props.currentProjectId ?? props.initial.project ?? "default",
+    project: props.initial.project ?? props.currentProjectId ?? "default",
   });
   const valuesRef = useRef(values);
   const [focusIndex, setFocusIndex] = useState(0);

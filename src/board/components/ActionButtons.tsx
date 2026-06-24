@@ -23,6 +23,7 @@ export function getActions(status: LoopStatus): ActionDef[] {
     actions.push({ key: "play", label: t("board.actionPlay") });
   }
   if (status !== "running") {
+    actions.push({ key: "clone", label: t("board.actionClone") });
     actions.push({ key: "trigger", label: t("board.actionTrigger") });
   }
   return actions;

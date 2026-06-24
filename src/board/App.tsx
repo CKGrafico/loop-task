@@ -70,6 +70,7 @@ export function App(props: { onQuit: () => void }): React.ReactNode {
   const [confirm, setConfirm] = useState<ConfirmState | null>(null);
   const [confirmChoice, setConfirmChoice] = useState(0);
   const [editTarget, setEditTarget] = useState<LoopMeta | null>(null);
+  const [cloneMode, setCloneMode] = useState(false);
   const [editTask, setEditTask] = useState<TaskDefinition | null>(null);
   const [pendingTaskSelection, setPendingTaskSelection] = useState<{ id: string; name: string } | null>(null);
   const [selectedRunIndex, setSelectedRunIndex] = useState(0);
@@ -197,6 +198,18 @@ export function App(props: { onQuit: () => void }): React.ReactNode {
       return;
     }
 
+    if (action === "clone") {
+      const copy: LoopMeta = {
+        ...selected,
+        id: "",
+        description: `${selected.description} - Copy`,
+      };
+      setEditTarget(copy);
+      setCloneMode(true);
+      push("create");
+      return;
+    }
+
     if (action === "delete") {
       confirmAction(
         t("board.confirmDelete", { desc: selectedDesc }),
@@ -292,7 +305,7 @@ export function App(props: { onQuit: () => void }): React.ReactNode {
     }
   }
 
-  const cancelCreate = () => { setEditTarget(null); setPendingTaskSelection(null); pop(); };
+  const cancelCreate = () => { setEditTarget(null); setCloneMode(false); setPendingTaskSelection(null); pop(); };
   const cancelTask = () => { setEditTask(null); pop(); };
   const cancelTaskList = () => pop();
 
@@ -308,6 +321,7 @@ export function App(props: { onQuit: () => void }): React.ReactNode {
 
   const onCreateDone = (updated: boolean, _id: string, desc: string) => {
     setEditTarget(null);
+    setCloneMode(false);
     setPendingTaskSelection(null);
     pop();
     pushToast("success", updated ? t("board.toastUpdated", { desc }) : t("board.toastStarted", { desc }));
@@ -431,8 +445,8 @@ export function App(props: { onQuit: () => void }): React.ReactNode {
       >
         {view === "create" ? (
           <CreateView
-            mode={editTarget ? "edit" : "create"}
-            editId={editTarget?.id ?? null}
+            mode={editTarget && !cloneMode ? "edit" : "create"}
+            editId={editTarget && !cloneMode ? editTarget.id : null}
             initial={createInitialValues(editTarget, currentProjectId)}
             selectedTaskId={pendingTaskSelection?.id ?? null}
             selectedTaskName={pendingTaskSelection?.name ?? null}
@@ -525,7 +539,7 @@ export function App(props: { onQuit: () => void }): React.ReactNode {
         />
       ) : null}
 
-      {helpOpen ? <HelpModal /> : null}
+      {helpOpen ? <HelpModal view={view} /> : null}
 
       {logModalRun ? (
         <LogModal

@@ -275,6 +275,7 @@
   "board.actionPause": "Pause",
   "board.actionStop": "Stop",
   "board.actionPlay": "Play",
+  "board.actionClone": "Clone",
   "board.actionTrigger": "Force Run",
   "board.noActions": "Select a loop to see actions",
   "board.confirmPause": "Pause loop \"{desc}\"?",

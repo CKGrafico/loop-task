@@ -103,6 +103,7 @@ const GLOBAL_KEYS: Record<string, (p: GlobalKeyParams) => void> = {
   e: (p) => p.onAction("edit"),
   d: (p) => p.onAction("delete"),
   delete: (p) => p.onAction("delete"),
+  c: (p) => p.onAction("clone"),
   p: (p) => p.onAction("pause-or-play"),
   s: (p) => p.onAction("stop"),
   f: (p) => p.onAction("trigger"),
@@ -205,7 +206,6 @@ const BOARD_SHORTCUTS: Record<string, (p: PanelHandlerParams) => void> = {
   o: (p) => p.setSort((prev) => cycleSortMode(prev)),
   x: (p) => p.setFilters((prev) => ({ ...prev, status: cycleStatusFilter(prev.status) })),
   r: (p) => p.onSelectProject?.(),
-  c: (p) => p.onSelectProject?.(),
 };
 
 export interface BoardKeybindingParams {
