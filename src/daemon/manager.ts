@@ -46,7 +46,7 @@ export class LoopManager {
       }
       let taskId = meta.taskId;
       if (!taskId && meta.command) {
-        const task = this.taskManager.createInline(meta.command, meta.commandArgs, meta.cwd ?? "");
+        const task = this.taskManager.createInline(meta.command, meta.commandArgs);
         taskId = task.id;
         meta.taskId = taskId;
         saveLoop(meta);
@@ -300,7 +300,7 @@ export class LoopManager {
       ...runtime,
       command: task?.command ?? options.command,
       commandArgs: task?.commandArgs ?? options.commandArgs,
-      cwd: task?.cwd ?? options.cwd,
+      cwd: options.cwd || "",
       interval: options.interval,
       intervalHuman,
       immediate: options.immediate,

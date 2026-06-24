@@ -157,7 +157,6 @@ export function TaskInspector(props: { task: TaskDefinition | null }): React.Rea
       <text><strong>{t("board.fieldId")}</strong> {task.id}</text>
       <text><strong>{t("board.taskLabelName")}</strong> {task.name}</text>
       <text><strong>{t("board.fieldCommand")}</strong> {cmd}</text>
-      <text><strong>{t("board.fieldDir")}</strong> {task.cwd || t("board.inherit")}</text>
       <text><strong>{t("board.taskLabelOnSuccess")}</strong> {task.onSuccessTaskId ?? t("board.taskNone")}</text>
       <text><strong>{t("board.taskLabelOnFailure")}</strong> {task.onFailureTaskId ?? t("board.taskNone")}</text>
     </box>
@@ -182,9 +181,9 @@ export function TaskActionButtons(props: {
   }
 
   const allActions = [
-    { key: "select", label: t("board.taskActionSelect") },
-    { key: "edit", label: t("board.taskActionEdit") },
-    { key: "delete", label: t("board.taskActionDelete") },
+    { key: "select", label: t("board.taskActionSelect"), hotkey: "s" },
+    { key: "edit", label: t("board.taskActionEdit"), hotkey: "e" },
+    { key: "delete", label: t("board.taskActionDelete"), hotkey: "d" },
   ];
   const actions = selectable ? allActions : allActions.filter((a) => a.key !== "select");
 
@@ -194,6 +193,7 @@ export function TaskActionButtons(props: {
         <TaskActionButton
           key={action.key}
           label={action.label}
+          hotkey={action.hotkey}
           selected={focused && selectedAction === i}
           onMouseDown={() => onAction(action.key)}
         />
@@ -204,18 +204,21 @@ export function TaskActionButtons(props: {
 
 function TaskActionButton(props: {
   label: string;
+  hotkey: string;
   selected: boolean;
   onMouseDown: () => void;
 }): React.ReactNode {
   const { isHovered, hoverProps } = useHoverState();
   const bg = props.selected ? "#1e3a8a" : isHovered ? HOVER_BG : undefined;
   const fg = props.selected ? "#ffffff" : isHovered ? "#e5e7eb" : "#9ca3af";
+  const keycapFg = props.selected ? "#93c5fd" : "#6b7280";
   return (
     <box
       onMouseDown={props.onMouseDown}
-      style={{ backgroundColor: bg, paddingLeft: 1, paddingRight: 1, marginRight: 1 }}
+      style={{ backgroundColor: bg, paddingLeft: 1, paddingRight: 1, marginRight: 1, flexDirection: "row", alignItems: "center" }}
       {...hoverProps}
     >
+      <text fg={keycapFg}>[{props.hotkey}] </text>
       <text fg={fg}><strong>{props.label}</strong></text>
     </box>
   );

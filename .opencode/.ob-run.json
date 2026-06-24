@@ -1,0 +1,14 @@
+{
+  "updatedAt": "2026-06-24T15:37:12.929Z",
+  "agents": {
+    "ses_105ba76f8ffeQjPlEtd2bECxly": {
+      "agent": "explore",
+      "model": null,
+      "tasks": [],
+      "title": "Explore cwd and tags inputs (@explore subagent)",
+      "status": "done",
+      "startedAt": "2026-06-24T15:35:21.642Z",
+      "endedAt": "2026-06-24T15:37:12.929Z"
+    }
+  }
+}

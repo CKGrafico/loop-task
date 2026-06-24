@@ -7,10 +7,9 @@
     "opencode-plugin-openspec@latest",
     "@different-ai/opencode-browser@latest",
     "@mohak34/opencode-notifier@latest",
-    "@hueyexe/opencode-ensemble@0.14.1",
     "@slkiser/opencode-quota@latest"
   ],
-  "model": "opencode/ring-2.6-1t-free",
+  "model": "opencode/big-pickle",
   "mcp": {
     "codegraph": {
       "type": "local",
@@ -20,7 +19,8 @@
         "serve",
         "--mcp"
       ],
-      "enabled": true
+      "enabled": true,
+      "timeout": 120000
     },
     "basic-memory": {
       "type": "local",

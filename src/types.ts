@@ -12,7 +12,6 @@ export interface TaskDefinition {
   name: string;
   command: string;
   commandArgs: string[];
-  cwd: string;
   onSuccessTaskId: string | null;
   onFailureTaskId: string | null;
   createdAt: string;

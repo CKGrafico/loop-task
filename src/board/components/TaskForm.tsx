@@ -118,7 +118,6 @@ export function TaskForm(props: {
           name: current.name.trim() || command,
           command,
           commandArgs,
-          cwd: props.editTask.cwd,
           onSuccessTaskId,
           onFailureTaskId,
         });
@@ -130,7 +129,6 @@ export function TaskForm(props: {
           name: current.name.trim() || command,
           command,
           commandArgs,
-          cwd: "",
           onSuccessTaskId,
           onFailureTaskId,
         });

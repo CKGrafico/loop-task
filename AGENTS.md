@@ -1,171 +1,3 @@
-# AGENTS.md, Bootstrap Mode
-
-> This project has not been initialized yet.
-> Your ONLY job right now is to run the initialization sequence below.
-> Do not do anything else until all steps are complete.
-
-## Trigger
-
-When the user says anything resembling initialization, "/ob-init", "initialize", "setup", "start", "bootstrap", "get started", "prepare", execute the steps below. Follow the greenfield/brownfield branching exactly.
-
----
-
-## Initialization Sequence
-
-### Step 1, Detect project type
-
-Use the **AskUserQuestion tool** (not plain text) to present this choice:
-
-- Question: `"Is this a greenfield or brownfield project?"`
-- Options:
-  - `greenfield` — Starting from scratch, little or no existing code. Skip architecture/design/history analysis.
-  - `brownfield` — Existing codebase. Generate docs from your code.
-
-Wait for the answer. Then follow the matching path below.
-
----
-
-### Greenfield path
-
-Skip steps 2, 3, and 4. Jump directly to Step 5.
-
-Greenfield note: `ARCHITECTURE.md` and `DESIGN.md` are left as placeholders. Run `/ob-create-architecture` and `/ob-create-design` once the codebase has meaningful content.
-
----
-
-### Brownfield path
-
-#### Step 2, Archive project history into OpenSpec
-
-Scan the codebase for any existing documentation, changelogs, ADRs, README files, or notable history that describes decisions already made in this project. Create an OpenSpec archive entry that captures this history so agents have context going forward.
-
-Before scanning, load source roots from `.agents/source-roots.json` when present. Only scan those roots plus this repo's docs/config files.
-
-```bash
-openspec new change "project-history"
-```
-
-Write a `proposal.md` inside that change summarizing:
-- What this project is
-- Key decisions already made (inferred from code and docs)
-- Known tech debt or constraints visible in the codebase
-- Current state of the project
-
-Then archive it immediately:
-```bash
-openspec archive "project-history"
-```
-
----
-
-#### Step 3, Generate ARCHITECTURE.md
-
-Run `/ob-create-architecture` now. Follow every step defined in that command.
-
----
-
-#### Step 4, Generate DESIGN.md
-
-Run `/ob-create-design` now. Follow every step defined in that command.
-
----
-
-### Step 2, Populate OpenSpec config
-
-Write `openspec/config.yaml` with real project information. For greenfield projects, use what little is known (language choice, intended stack, domain). For brownfield, use what was discovered in steps 2–4.
-
-The output must contain `schema: spec-driven` and a populated `context:` block. Do not leave placeholder text.
-
-```yaml
-schema: spec-driven
-
-context: |
-  Tech stack: <languages, frameworks, libraries found in the codebase>
-  Build system: <build tools, package managers>
-  Architecture: <monolith, microservices, monorepo, etc.>
-  Conventions: <coding style, commit conventions, branching strategy if found>
-  Domain: <what this project does, in one line>
-```
-
-Replace every `<…>` with real values. Add a `rules:` section only if the codebase has clear conventions worth enforcing. Do not invent rules that aren't evidenced by the codebase.
-
----
-
-### Step 3, Install OpenCode plugins
-
-OpenCode plugins declared in `.opencode/opencode.json` (under the `plugin` key) must be present in `.opencode/node_modules/` or OpenCode will fail to load them. The plugins are also listed in `.opencode/package.json` as dependencies.
-
-```bash
-cd .opencode
-npm install
-cd ..
-```
-
-This installs all plugin packages into `.opencode/node_modules/`. If you ever see "Plugin X not found" errors after init, run `npm install` in `.opencode/` again.
-
----
-
-### Step 4, Rewrite this file
-
-Replace the entire contents of this file (`AGENTS.md`) with everything below the line `<!-- AGENTS-TEMPLATE-START -->` in this same file. Delete the bootstrap section and the template marker, the file should contain only the template content when done.
-
----
-
-### Step 5, Confirm
-
-For **brownfield**, tell the user:
-
-```
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-  Initialization complete.
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-- openspec/config.yaml populated
-- OpenCode plugins installed
-- AGENTS.md updated with real guidance
-
-!! RESTART OPENCODE NOW !!
-
-Quit and reopen OpenCode before doing anything else.
-Nothing will work correctly until you do.
-After restarting you are ready to work.
-```
-
-For **greenfield**, tell the user:
-
-```
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-  Initialization complete (greenfield).
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-- openspec/config.yaml populated
-- OpenCode plugins installed
-- AGENTS.md updated with real guidance
-- ARCHITECTURE.md and DESIGN.md left as placeholders
-
-Once your codebase has meaningful content, run:
-  /ob-create-architecture   → generate architecture docs
-  /ob-create-design         → generate design system docs
-
-!! RESTART OPENCODE NOW !!
-
-Quit and reopen OpenCode before doing anything else.
-Nothing will work correctly until you do.
-After restarting you are ready to work.
-```
-
----
-
-## Guardrails During Init
-
-- Do NOT implement any features
-- Do NOT create branches or PRs
-- Do NOT modify any project source files
-- Do NOT create CLI wrapper files or scripts
-- Only read source files for analysis, write only to ARCHITECTURE.md, DESIGN.md, AGENTS.md, openspec/config.yaml, and openspec/
-- `npm install` (step 6) is allowed to modify `.opencode/package-lock.json` and `.opencode/node_modules/`
-
-<!-- AGENTS-TEMPLATE-START -->
 # AGENTS.md
 
 This file provides guidance to AI agents when working in this repository.
@@ -186,7 +18,7 @@ Load DESIGN.md for design principles and guidelines. Load ARCHITECTURE.md for sy
 ## I Am the Lead, Full Workflow Ownership
 
 <!-- OB-PLATFORM-WORKFLOW-START -->
-When the user provides a work item URL or says "implement the plan" or "I've added comments to the PR", **I own the full lifecycle**. I load the appropriate userstory skill and use ensemble tools to coordinate the agent team.
+When the user provides a work item URL or says "implement the plan" or "I've added comments to the PR", **I own the full lifecycle**. I load the appropriate userstory skill and coordinate implementation as native subagent waves via `/ob-apply`.
 
 Trigger patterns, I recognize ALL of these, exact wording does not matter:
 - User pastes or mentions a GitHub Issue URL → load `ob-userstory` skill → parse issue → run `/ob-propose` → confirm with user → run `/ob-apply` → ship
@@ -197,7 +29,7 @@ Trigger patterns, I recognize ALL of these, exact wording does not matter:
 **A GitHub URL anywhere in the user's message is always a trigger, regardless of surrounding words.**
 <!-- OB-PLATFORM-WORKFLOW-END -->
 
-**Never delegate without a plan. Default to specialists for implementation. If ensemble is clearly non-functional in the current session (idle teammate, no claim, or repeated spawn failure after one retry), stop forcing it: report the failure, then continue in the main session or ask the user whether to retry later.**
+**Never delegate without a plan. Default to specialists for implementation. If a subagent wave repeatedly fails (a group errors after one retry, or a full wave makes zero progress), stop forcing it: report the failure, then continue in the main session or ask the user whether to retry later.**
 
 ## Engineer Selection
 
@@ -208,39 +40,28 @@ Before spawning implementation workers:
 - Never spawn engineer names that are not present in `.opencode/agents/`.
 - When multiple engineers could fit, choose the narrower specialist before the generalist.
 
-## Multi-Agent Execution, opencode-ensemble
+## Multi-Agent Execution, native subagent waves
 
-Parallel execution uses the `opencode-ensemble` plugin (`team_create`, `team_spawn`, etc.).
-Works on **all platforms** (Windows, macOS, Linux) via OpenCode's built-in worktree support.
+Parallel execution uses OpenCode's native `task` tool — no external plugin, no worktrees. The lead spawns subagents in **waves**: a set of foreground `task()` calls in a single turn that run concurrently and return their results to the lead. Subagents are navigable (`ctrl+x ↓`, `←`/`→`) and ephemeral (one batch, then they exit).
 
-Core tools used in this workflow:
-- `team_create`, `team_spawn`, `team_shutdown`, `team_merge`, `team_cleanup`
-- `team_tasks_add`, `team_tasks_list`, `team_claim`, `team_tasks_complete`
-- `team_message`, `team_results`, `team_status`
-
-**Dashboard**: Monitor running agents at **http://localhost:4747/**
+**How a wave works:**
+- **Push assignment.** Each subagent's task IDs + text go in its spawn prompt — there is no claim step, so a worker can never sit idle waiting for work.
+- **Eligibility.** A task runs only when every `depends_on` is done.
+- **Conflict safety (no worktrees).** Concurrent subagents must touch disjoint files (codegraph impact → `touches` globs → `git diff`). Same-file tasks are packed into one worker and run sequentially.
+- **Checkpoints.** The lead commits each group on success; on failure it reverts that group's paths and retries once.
+- **Per-agent model.** Each engineer's model is set in its own agent file (chosen by tier when the engineer is created); the lead spawns the plain agent name.
 
 **Hard limits:**
-- **Sequential by default.** Default `2` to `1`. Raise only when tasks are provably independent and user approves. More concurrency = more tokens burned in parallel.
-- **Max 2 truly concurrent agents.** All 2 must be spawned and running simultaneously, not sequentially. Spawn in waves if more than 2 are needed. Wait for wave N to finish before spawning wave N+1.
-- **Non-overlapping file domains.** Each agent owns exclusive directories. Two agents must NEVER touch the same file.
-- **Immediate shutdown on completion.** The moment an agent's domain has no more pending tasks → `team_shutdown` → `team_merge`. Keep agents alive if more tasks in their domain are pending (rolling batch).
-- **Rolling batch assignment.** Agents receive up to 3 tasks initially. When they complete a batch, lead assigns the next batch of up to 3 from the board. Never leave pending tasks orphaned.
-- **Stall detection at 5 minutes.** No commits after 5 min → nudge message → 2 min grace → force shutdown + respawn.
-- **Idle-without-claim is an earlier stall.** If a spawned teammate sits idle with no claimed task after a short wait, resend one short claim-only message with the exact task IDs. If still idle, force shutdown + respawn once with a shorter prompt. If the retry repeats the same failure, treat ensemble as unavailable for that session and stop recycling equivalent workers.
-- **Retry limit.** Max 3 retries per failing task → stop-and-report to user. Never retry indefinitely.
+- **Max 2 concurrent subagents per wave** (set during onboarding, 1–5). The lead enforces the cap by emitting at most that many `task()` calls per turn; overflow queues to the next wave.
+- **Non-overlapping file domains.** Two concurrent subagents must NEVER touch the same file.
+- **Explicit stalls.** If tasks remain but none are eligible (a dependency failed), or a full wave makes zero progress, STOP and report — never spin.
+- **Retry limit.** One retry per failed group, then surface to the user. Never retry indefinitely.
 
-**Progress inspection commands (tell user explicitly after spawning):**
-- `team_status` for live team snapshot
-- `team_tasks_list` for task board state
-- `team_view member:"<name>"` to inspect a teammate live session
-- `team_results from:"<name>"` to fetch full teammate report text
+**Live view:** the lead's native Todo list is the board; a **Subagents** panel (TUI plugin) also renders each subagent's agent · model · status live in the session sidebar, backed by `.opencode/.ob-run.json` (written by the `ob-subagent-monitor` server plugin). Navigate into any running subagent with `ctrl+x ↓` then `←`/`→`.
 
-If a teammate stalls due to model quota/rate-limit exhaustion:
-1. `team_shutdown name:"<stuck-member>" force:true`
-2. Resolve a new model using the model resolution priority (agent file frontmatter → `ensemble.json` `modelsByAgent` → active chat model). Avoid the model that hit the rate limit.
-3. `team_spawn` same member/task with the resolved model
-4. `team_message` start instruction with the exact next task ID
+**Recovery:** re-run `/ob-apply` — it rebuilds state from `tasks.md` + git + basic-memory + `.opencode/.ob-run.json` and continues. State is on disk, not in the session.
+
+**MCP degradation:** if codegraph or basic-memory is unavailable, fall back to `touches` + `git diff` for disjointness and inline result-passing, and tell the user.
 
 ---
 
@@ -254,7 +75,7 @@ lead (main session)
   [confirm with user]
         ↓
 basic-engineer + *-engineer (parallel via /ob-apply)
-  → claim tasks + implement
+  → implement assigned tasks (parallel waves)
         ↓
 lead runs /ob-pullrequest → commit + push + create PR
 ```
@@ -263,7 +84,7 @@ lead runs /ob-pullrequest → commit + push + create PR
 
 ```
 1. If a work item URL is provided, load @ob-userstory skill.
-2. Run /ob-propose → fetches work item, generates proposal.md, specs/, tasks.md, enriches tasks with agent+model.
+2. Run /ob-propose → fetches work item, generates proposal.md, specs/, tasks.md, enriches tasks with agent + dependencies.
 3. Show the plan: change name, total tasks, task list with agent assignments.
 4. STOP. Ask user: "Ready to implement? (yes/no)", DO NOT proceed until confirmed.
 ```
@@ -274,12 +95,11 @@ lead runs /ob-pullrequest → commit + push + create PR
 0. Run /quota to check remaining budget before spawning.
 1. Run /ob-apply.
    - Classify cost tier, announce scope, ask user to confirm if ≥4 tasks.
-   - Lead adds all tasks to board.
    - Lead discovers available engineers from .opencode/agents/*.md, prefers matching custom engineers.
-   - Each engineer claims tasks, implements, completes, messages lead.
-   - Lead merges each engineer branch after shutdown, marks tasks done in tasks.md.
+   - Lead builds dependency- and file-disjoint waves, then spawns each wave as parallel subagents (by agent name; each engineer carries its own model).
+   - Each subagent implements its assigned tasks and returns; the lead commits each group and marks tasks done in tasks.md.
 2. Verify with tests/build/lint according to task scope.
-3. Run /quota after all agents are merged.
+3. Run /quota after all waves complete.
 ```
 
 ### Phase 3, Ship
@@ -305,7 +125,7 @@ When user says "I've added comments to the PR" or shares a PR URL:
 
 **OpenSpec** manages the change lifecycle. Each work item becomes a change with a `proposal.md`, specs, and a `tasks.md` task board. Commands: `openspec new change`, `openspec status`, `openspec instructions apply`. Agents never implement without an active change — OpenSpec is the single source of truth for what is planned and what is done.
 
-**opencode-ensemble** handles parallel agent execution via git worktrees. Each spawned agent works in an isolated branch; the lead merges on completion. Core tools: `team_create`, `team_spawn`, `team_shutdown`, `team_merge`, `team_cleanup`, `team_tasks_add`, `team_tasks_list`, `team_claim`, `team_tasks_complete`, `team_message`, `team_results`, `team_status`. Live dashboard at `http://localhost:4747/`.
+**Native subagent waves** handle parallel execution via the OpenCode `task` tool — no external plugin or worktrees. The lead spawns concurrent foreground subagents per wave; each implements its assigned tasks and returns its result, and the lead commits per group. Live board in the Todo pane; subagent state mirrored to `.opencode/.ob-run.json` by the `ob-subagent-monitor` plugin.
 
 ---
 
@@ -316,7 +136,7 @@ Agent files live in `.opencode/agents/`. The set is dynamic — users add specia
 | Agent | File | Role |
 |-------|------|------|
 | `basic-engineer` | `.opencode/agents/basic-engineer.md` | Fallback implementation worker. Used when no custom engineer matches the task domain. |
-| `development-engineer` | `.opencode/agents/development-engineer.md` | Full-stack development specialist. Handles CLI, daemon, board components, and all TypeScript/React code. |
+| `development-engineer` | `.opencode/agents/development-engineer.md` | TypeScript, React, testing, and project tooling specialist. |
 | `*-engineer` | `.opencode/agents/*-engineer.md` | User-created specialists. Preferred over `basic-engineer` when their domain matches the task. |
 
 Before spawning, inspect `.opencode/agents/` to build the actual list — never assume which custom engineers exist.
@@ -343,7 +163,7 @@ Every agent file declares an `## Abilities` section that maps roles to `@skill-n
 
 Skills live in `.agents/skills/`. Agents load them via `@skill-name` in their `## Abilities` section.
 
-Always installed: `@ob-default`, `@ob-generic-guardrails`, `@browser-automation`, `@opencode-ensemble`.
+Always installed: `@ob-default`, `@ob-generic-guardrails`, `@browser-automation`.
 
 <!-- OB-PLATFORM-SKILLS-GUIDE-START -->
 Platform skills (GitHub):
@@ -424,8 +244,8 @@ Query before implementing unfamiliar areas or picking up a long-running task.
 
 In repositories indexed by CodeGraph (a `.codegraph/` directory exists at the repo root), reach for it BEFORE grep/find or reading files when you need to understand or locate code:
 
-- **MCP tools** (when available): `codegraph_explore` answers most code questions in one call — the relevant symbols' verbatim source plus the call paths between them. `codegraph_node` returns one symbol's source + callers, or reads a whole file with line numbers. If the tools are listed but deferred, load them by name via tool search.
-- **Shell** (always works): `codegraph explore "<symbol names or question>"` and `codegraph node <symbol-or-file>` print the same output.
+- **MCP tool** (when available): `codegraph_explore` answers most code questions in one call — the relevant symbols' verbatim source plus the call paths between them, including dynamic-dispatch hops grep can't follow. Name a file or symbol in the query to read its current line-numbered source. If it's listed but deferred, load it by name via tool search.
+- **Shell** (always works): `codegraph explore "<symbol names or question>"` prints the same output.
 
 If there is no `.codegraph/` directory, skip CodeGraph entirely — indexing is the user's decision.
 <!-- CODEGRAPH_END -->

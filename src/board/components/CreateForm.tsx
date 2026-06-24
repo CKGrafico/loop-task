@@ -82,7 +82,7 @@ export function CreateView(props: {
     : [...createFields];
 
   const filteredFields = visibleFields.filter((f) => {
-    if (f === "command" || f === "cwd") return isInline;
+    if (f === "command") return isInline;
     if (f === "taskId") return !isInline;
     return true;
   });
@@ -226,12 +226,18 @@ export function CreateView(props: {
           setError(t("errors.descriptionEmpty"));
           return;
         }
+        const cwd = current.cwd.trim();
+        if (cwd && !fs.existsSync(cwd)) {
+          setError(t("board.cwdMissing", { cwd }));
+          return;
+        }
         const built = buildLoopOptions(current.interval.trim(), {
           now: props.mode === "create" && current.runNow === "y",
           maxRuns: current.maxRuns.trim() || null,
           verbose: false,
           description: current.description.trim(),
           taskId: current.taskId,
+          cwd,
         });
         built.options.projectId = current.project || "default";
 

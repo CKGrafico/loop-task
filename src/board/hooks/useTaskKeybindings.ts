@@ -140,8 +140,16 @@ export function useTaskKeybindings(params: TaskKeybindingParams): void {
         onTaskAction("edit");
         return;
       }
+      if (name === "d" && tasks[taskSelectedIndex]) {
+        onTaskAction("delete");
+        return;
+      }
       if (name === "delete" && tasks[taskSelectedIndex]) {
         onTaskAction("delete");
+        return;
+      }
+      if (selectable && name === "s" && tasks[taskSelectedIndex]) {
+        onTaskAction("select");
         return;
       }
     }
@@ -157,6 +165,14 @@ export function useTaskKeybindings(params: TaskKeybindingParams): void {
       }
       if (name === "return" || name === "enter") {
         onTaskAction(taskActions[taskSelectedAction] ?? "select");
+        return;
+      }
+      if (name === "d") {
+        onTaskAction("delete");
+        return;
+      }
+      if (selectable && name === "s") {
+        onTaskAction("select");
         return;
       }
     }

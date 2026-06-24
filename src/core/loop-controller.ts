@@ -357,7 +357,7 @@ export class LoopController extends EventEmitter {
         const task = this.options.taskId ? this.taskResolver(this.options.taskId) : null;
         const command = task?.command ?? this.options.command;
         const commandArgs = task?.commandArgs ?? this.options.commandArgs;
-        const cwd = task?.cwd ?? this.options.cwd;
+        const cwd = this.options.cwd;
         const result = await executeCommand(
           command,
           commandArgs,
@@ -415,7 +415,7 @@ export class LoopController extends EventEmitter {
             const chainResult = await executeCommand(
               chainTask.command,
               chainTask.commandArgs,
-              chainTask.cwd,
+              this.options.cwd,
               this.logStream!,
               signal,
               this.runCount

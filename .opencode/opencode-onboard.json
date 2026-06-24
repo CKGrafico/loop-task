@@ -1,7 +1,7 @@
 {
   "schema": 1,
-  "generatedAt": "2026-06-18T12:39:06.832Z",
-  "onboardVersion": "0.6.10",
+  "generatedAt": "2026-06-24T15:16:45.376Z",
+  "onboardVersion": "0.7.0",
   "opencodeVersion": "1.16.2",
   "wizard": {
     "platform": "github",
@@ -21,9 +21,9 @@
     },
     "additionalSkillsProvider": "npx-skills",
     "models": {
-      "plan": "opencode/ring-2.6-1t-free",
-      "build": "opencode/ring-2.6-1t-free",
-      "fast": "opencode/ring-2.6-1t-free"
+      "plan": "opencode/qwen3.6-plus",
+      "build": "opencode/big-pickle",
+      "fast": "opencode/big-pickle"
     },
     "optionalTools": {
       "rtk": {
@@ -45,5 +45,5 @@
       "patchedFiles": 0
     }
   },
-  "note": "Informational file only. Editing this file does not change runtime behavior."
+  "note": "Snapshot of onboarding choices. Runtime config — wizard.models and wizard.maxConcurrentAgents — is read by /ob-apply and the agent generator and is preserved across `opencode-onboard metadata` refreshes. Other fields are informational."
 }

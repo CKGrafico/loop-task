@@ -8,6 +8,7 @@ permission:
   read: allow
   glob: allow
   grep: allow
+model: opencode/big-pickle
 ---
 
 ## Abilities

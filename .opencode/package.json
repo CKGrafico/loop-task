@@ -1,9 +1,11 @@
 {
   "dependencies": {
+    "@opencode-ai/plugin": "latest",
+    "opencode-plugin-openspec": "latest",
     "@different-ai/opencode-browser": "latest",
-    "@hueyexe/opencode-ensemble": "0.14.1",
-    "@opencode-ai/plugin": "1.16.2",
-    "@slkiser/opencode-quota": "latest",
-    "opencode-plugin-openspec": "latest"
+    "@opentui/core": "0.3.4",
+    "@opentui/solid": "0.3.4",
+    "solid-js": "1.9.10",
+    "@slkiser/opencode-quota": "latest"
   }
 }

@@ -1,70 +1,19 @@
 schema: spec-driven
 
-# Project context (optional)
-# This is shown to AI when creating artifacts.
-# Add your tech stack, conventions, style guides, domain knowledge, etc.
 context: |
-  Project: loop-task (repo: loop-cli) — a cross-platform CLI that repeatedly
-  runs a shell command at a human-readable interval (30s, 5m, 1h, 1d, 1w).
-  Version 1.2.0. License MIT. Maintainer: Quique Fdez Guerra.
+  Tech stack: TypeScript (5.8, strict ESM), React 19 (OpenTUI 0.4.x for TUI board),
+  Commander 13 (CLI parsing), execa 9.x (process spawn), ms 2.x (duration parsing).
+  Build system: npm/pnpm; `tsc -p tsconfig.build.json` compiles to dist/ for Node;
+  Bun >= 1.2 runs board .ts/.tsx directly. Vitest 3 + v8 coverage (90% threshold).
+  Architecture: client-daemon over local IPC (Unix socket / Windows named pipe).
+  Filesystem persistence (~/.loop-cli/) — no database, no network listener.
+  Conventions: trunk-based on main, conventional commits (feat:/fix:/docs:/chore:/archive:),
+  all magic numbers in src/config/constants.ts, all strings in src/i18n/en.json,
+  IPC contract as single source of truth in src/types.ts, dictionary/strategy pattern
+  over nested if/else, prefix shell commands with `rtk`.
+  Domain: Loop engineering toolkit — run any shell command on a cadence, in the
+  background, managed from a terminal board.
 
-  Runtime & language:
-    - Bun >= 1.2 (runtime, package manager, test host). NO build step — Bun
-      runs .ts/.tsx source directly; the package ships src/ as-is.
-    - TypeScript (strict, ESM, moduleResolution "bundler").
-    - React 19 for the terminal UI, JSX via "@opentui/react"
-      (jsxImportSource: @opentui/react).
-
-  Architecture (client–daemon over local IPC):
-    - src/cli.ts — Commander entry; three modes: default = board (TUI),
-      `start` = background daemon loop, `run` = foreground blocking loop.
-    - src/daemon/ — long-lived background process. IpcServer (server.ts) +
-      LoopManager (manager.ts) own all loops; state.ts persists state;
-      spawner.ts auto-spawns/restarts the daemon. Single-flight guard:
-      bind socket before manager.init; losing racers exit(0).
-    - src/client/ — IPC client (ipc.ts) + CLI output formatters (commands.ts).
-    - src/board/ — OpenTUI + React board (App.tsx, components/, hooks/);
-      board/daemon.ts is the typed IPC bridge. Polls `list` every 2s and
-      streams live logs.
-    - src/core/ — LoopController (EventEmitter state machine:
-      running/waiting/paused/stopped), command-runner (execa),
-      foreground-loop, log-rotator.
-    - src/ipc/ — JSON-lines send + live log-follow handler.
-    - src/config/ — constants.ts (all magic numbers) + paths.ts.
-    - src/i18n/ — t(key, params) over en.json; ALL user-facing strings live
-      here with a typed key union.
-    - src/shared/ — sleep (abortable), tail, fs-utils (writeFileAtomic).
-    - src/types.ts — canonical domain model (LoopOptions, LoopMeta, LoopStatus)
-      and the IPC contract (IpcRequest/IpcResponse discriminated unions),
-      shared across client and daemon.
-
-  Transport & persistence:
-    - IPC: newline-delimited JSON over a Unix domain socket (POSIX) or named
-      pipe (Windows). No network listener, no auth (local single-user trust).
-    - State: filesystem under ~/.loop-cli (override with LOOP_CLI_HOME):
-      loops/<id>.json (atomic writes), logs/<id>.log (rotated 1MB x3),
-      daemon.pid, daemon.sig, daemon-<hash>.sock, daemon.log. No database,
-      no schema migrations.
-
-  Key dependencies: @opentui/core, @opentui/react, commander, execa, ms, react.
-
-  Conventions:
-    - Add magic numbers to src/config/constants.ts, never inline.
-    - Add user-facing strings to src/i18n/en.json and use t(key, params).
-    - Keep the IPC contract in src/types.ts as the source of truth across
-      client and daemon.
-    - Prefix ALL shell commands with `rtk` (e.g. `rtk bun run test`); light
-      read-only commands (cat, ls) are exempt.
-    - Quality gate order (run before declaring work done):
-      `bun run typecheck` -> `bun run lint` -> `bun run test`.
-
-  Testing:
-    - Vitest 3 + v8 coverage (90% thresholds). Tests in tests/.
-    - Known quirks: tests/cli.test.ts version assertion can lag package.json;
-      tests/background-cli.test.ts may time out on Windows (daemon IPC).
-
-# Per-artifact rules (optional)
-# Add custom rules for specific artifacts.
 rules:
   proposal:
     - State the problem and the user-facing behavior change first.
@@ -75,5 +24,4 @@ rules:
     - Break work into small, independently verifiable steps.
     - Route new magic numbers to src/config/constants.ts and new strings to
       src/i18n/en.json.
-    - Every change must pass typecheck -> lint -> test (in that order).
-    - Prefix shell commands with `rtk`.
+    - Every change must pass `rtk npx tsc --noEmit` -> `rtk pnpm lint` -> `rtk pnpm test`.

@@ -50,7 +50,7 @@ export class TaskManager {
     return true;
   }
 
-  createInline(command: string, commandArgs: string[], cwd: string): TaskDefinition {
+  createInline(command: string, commandArgs: string[]): TaskDefinition {
     const id = crypto.randomUUID().slice(0, 8);
     const name = [command, ...commandArgs].join(" ").slice(0, 40);
     return this.create({
@@ -58,7 +58,6 @@ export class TaskManager {
       name,
       command,
       commandArgs,
-      cwd,
       onSuccessTaskId: null,
       onFailureTaskId: null,
     });
