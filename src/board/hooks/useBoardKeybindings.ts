@@ -248,7 +248,9 @@ export interface BoardKeybindingParams {
   onAddLoop?: () => void;
   onAddTask?: () => void;
   onSelectProject?: () => void;
-}(params: BoardKeybindingParams): void {
+}
+
+export function useBoardKeybindings(params: BoardKeybindingParams): void {
   const {
     confirm,
     confirmChoice,
