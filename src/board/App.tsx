@@ -35,8 +35,8 @@ import { ProjectsPage } from "./components/ProjectsPage.js";
 import { fetchRunLog, deleteLoop, pauseLoop, resumeLoop, stopLoop, playLoop, triggerLoop, listTasks, deleteTask, listProjects } from "./daemon.js";
 import { useBreakpoint } from "./hooks/useBreakpoint.js";
 import { useRouter } from "./router.js";
+import { POLL_MS } from "../config/constants.js";
 
-const BOARD_REFRESH_DELAY_MS = 150;
 
 const VIEW_TO_MODE: Partial<Record<View, Mode>> = {
   create: "create",
@@ -139,13 +139,19 @@ export function App(props: { onQuit: () => void }): React.ReactNode {
     try { setTasks(await listTasks()); } catch { /* ignore */ }
   }
 
-  useState(() => { void refreshTasks(); });
-
   async function refreshProjects(): Promise<void> {
     try { setProjects(await listProjects()); } catch { /* ignore */ }
   }
 
-  useState(() => { void refreshProjects(); });
+  useEffect(() => { void refreshTasks(); void refreshProjects(); }, []);
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      void refreshTasks();
+      void refreshProjects();
+    }, POLL_MS);
+    return () => clearInterval(timer);
+  }, []);
 
   useEffect(() => {
     try { localStorage.setItem("loop-current-project", currentProjectId); } catch {}
@@ -155,7 +161,7 @@ export function App(props: { onQuit: () => void }): React.ReactNode {
     return async () => {
       try {
         await action();
-        setTimeout(() => { void refresh(); }, BOARD_REFRESH_DELAY_MS);
+        void refresh();
         pushToast("success", label);
       } catch (error) {
         pushToast("error", error instanceof Error ? error.message : String(error));
@@ -325,7 +331,7 @@ export function App(props: { onQuit: () => void }): React.ReactNode {
     setPendingTaskSelection(null);
     pop();
     pushToast("success", updated ? t("board.toastUpdated", { desc }) : t("board.toastStarted", { desc }));
-    setTimeout(() => { void refresh(); }, BOARD_REFRESH_DELAY_MS);
+    void refresh();
   };
 
   const onTaskDone = (updated: boolean, id: string) => {
@@ -370,7 +376,7 @@ export function App(props: { onQuit: () => void }): React.ReactNode {
     onOpenRunLog: handleOpenRunLog,
     refreshTasks,
     onViewTasks: () => { void refreshTasks(); push("task-list"); },
-    onViewProjects: () => push("projects"),
+    onViewProjects: () => { void refreshProjects(); push("projects"); },
     onViewLoops: () => replace("board"),
     onAddLoop: () => { setEditTarget(null); push("create"); },
     onAddTask: () => { setEditTask(null); push("task-create"); },
