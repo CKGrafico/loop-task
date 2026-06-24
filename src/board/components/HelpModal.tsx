@@ -7,42 +7,45 @@ export function HelpModal(props: { view: View }): React.ReactNode {
   const { width } = useTerminalDimensions();
 
   const loopRows: [string, string][] = [
+    ["tab/←→", "switch panels"],
+    ["↑/↓", "navigate list items"],
+    ["enter", t("board.helpEdit")],
     ["e", "edit loop"],
     ["d/del", "delete loop"],
     ["c", "clone loop"],
     ["f", "force run"],
     ["p", "pause/play (contextual)"],
     ["s", "stop loop (resets schedule)"],
-    [t("board.helpKeyEnter"), t("board.helpEdit")],
     ["n", t("board.helpCreate")],
     ["t", t("board.helpCreateTask")],
     ["o", t("board.helpCycleSort")],
     ["x", "cycle status filter"],
     ["r", "project filter"],
-    ["←/→", t("board.helpSwitchPanel")],
     ["/", t("board.helpSearch")],
     ["h", t("board.helpToggleHelp")],
     ["esc", t("board.helpQuit")],
   ];
 
   const taskRows: [string, string][] = [
+    ["tab/←→", "switch panels"],
+    ["↑/↓", "navigate tasks"],
+    ["enter", "focus actions panel"],
     ["e", "edit task"],
     ["d/del", "delete task"],
     ["s", "select task (when creating/editing a loop)"],
-    ["enter", "focus actions panel"],
     ["n", t("board.helpCreateTask")],
-    ["←/→", t("board.helpSwitchPanel")],
     ["/", t("board.helpSearch")],
     ["h", t("board.helpToggleHelp")],
     ["esc", t("board.helpQuit")],
   ];
 
   const projectRows: [string, string][] = [
+    ["tab/←→", "switch panel (list/actions)"],
+    ["↑/↓", "navigate projects"],
     ["enter", "focus actions"],
     ["n", "new project"],
     ["e", "edit project"],
     ["d", "delete project"],
-    ["←/→", "switch panel (list/actions)"],
     ["h", t("board.helpToggleHelp")],
     ["esc", t("board.helpQuit")],
   ];

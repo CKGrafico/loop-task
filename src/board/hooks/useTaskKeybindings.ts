@@ -60,6 +60,7 @@ export function useTaskKeybindings(params: TaskKeybindingParams): void {
       if (name === "escape") {
         setTaskSearchActive(false);
         setTaskFocusedPanel("tasks");
+        key.preventDefault();
         return;
       }
       return;
@@ -67,70 +68,77 @@ export function useTaskKeybindings(params: TaskKeybindingParams): void {
 
     if (name === "escape") {
       onCancel();
+      key.preventDefault();
       return;
     }
 
     if (name === "n") {
       onCreateTask();
+      key.preventDefault();
       return;
     }
 
     if (name === "/" && taskFocusedPanel === "tasks") {
       setTaskSearchActive(true);
+      key.preventDefault();
       return;
     }
 
-    if (name === "tab") {
-      setTaskFocusedPanel((p) => nextTaskPanel(p, "right"));
-      return;
-    }
-
-    if (name === "left" || name === "right") {
-      if (taskFocusedPanel === "actions") {
-        if (name === "left" && taskSelectedAction === 0) {
+    if (name === "tab" || name === "left" || name === "right") {
+      const direction = name === "left" || (name === "tab" && key.shift) ? "left" : "right";
+      if (taskFocusedPanel === "actions" && name !== "tab") {
+        if (direction === "left" && taskSelectedAction === 0) {
           setTaskFocusedPanel((p) => nextTaskPanel(p, "left"));
-        } else if (name === "right" && taskSelectedAction === taskActionCount - 1) {
+        } else if (direction === "right" && taskSelectedAction === taskActionCount - 1) {
           setTaskFocusedPanel((p) => nextTaskPanel(p, "right"));
         } else {
           setTaskSelectedAction((i) =>
-            name === "right"
+            direction === "right"
               ? Math.min(taskActionCount - 1, i + 1)
               : Math.max(0, i - 1)
           );
         }
       } else {
-        setTaskFocusedPanel((p) => nextTaskPanel(p, name === "right" ? "right" : "left"));
+        setTaskFocusedPanel((p) => nextTaskPanel(p, direction));
       }
+      key.preventDefault();
       return;
     }
 
     if (taskFocusedPanel === "tasks") {
       if (name === "up" || name === "k") {
         setTaskSelectedIndex((i) => Math.max(0, i - 1));
+        key.preventDefault();
         return;
       }
       if (name === "down" || name === "j") {
         setTaskSelectedIndex((i) => Math.min(tasks.length - 1, i + 1));
+        key.preventDefault();
         return;
       }
       if (name === "return" || name === "enter") {
         setTaskFocusedPanel("actions");
+        key.preventDefault();
         return;
       }
       if (name === "e" && tasks[taskSelectedIndex]) {
         onTaskAction("edit");
+        key.preventDefault();
         return;
       }
       if (name === "d" && tasks[taskSelectedIndex]) {
         onTaskAction("delete");
+        key.preventDefault();
         return;
       }
       if (name === "delete" && tasks[taskSelectedIndex]) {
         onTaskAction("delete");
+        key.preventDefault();
         return;
       }
       if (selectable && name === "s" && tasks[taskSelectedIndex]) {
         onTaskAction("select");
+        key.preventDefault();
         return;
       }
     }
@@ -138,22 +146,27 @@ export function useTaskKeybindings(params: TaskKeybindingParams): void {
     if (taskFocusedPanel === "actions") {
       if (name === "up" || name === "k") {
         setTaskSelectedAction((i) => Math.max(0, i - 1));
+        key.preventDefault();
         return;
       }
       if (name === "down" || name === "j") {
         setTaskSelectedAction((i) => Math.min(taskActionCount - 1, i + 1));
+        key.preventDefault();
         return;
       }
       if (name === "return" || name === "enter") {
         onTaskAction(taskActions[taskSelectedAction] ?? "select");
+        key.preventDefault();
         return;
       }
       if (name === "d") {
         onTaskAction("delete");
+        key.preventDefault();
         return;
       }
       if (selectable && name === "s") {
         onTaskAction("select");
+        key.preventDefault();
         return;
       }
     }

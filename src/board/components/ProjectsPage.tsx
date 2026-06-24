@@ -64,15 +64,18 @@ export function ProjectsPage(props: {
     if (key.name === "up") {
       if (focusedPanel === "list") setSelectedIndex((i) => Math.max(0, i - 1));
       else setSelectedAction((a) => Math.max(0, a - 1));
+      key.preventDefault();
       return;
     }
     if (key.name === "down") {
       if (focusedPanel === "list") setSelectedIndex((i) => Math.min(projects.length - 1, i + 1));
       else setSelectedAction((a) => Math.min(PROJECT_ACTION_COUNT - 1, a + 1));
+      key.preventDefault();
       return;
     }
-    if (key.name === "left" || key.name === "right") {
+    if (key.name === "left" || key.name === "right" || key.name === "tab") {
       setFocusedPanel((p) => (p === "list" ? "actions" : "list"));
+      key.preventDefault();
       return;
     }
     if (key.name === "return" || key.name === "enter") {
@@ -81,22 +84,27 @@ export function ProjectsPage(props: {
       } else {
         runAction(selectedAction);
       }
+      key.preventDefault();
       return;
     }
     if (key.name === "n") {
       setSubModal("create");
+      key.preventDefault();
       return;
     }
     if (key.name === "e" && selectedProject && !selectedProject.isSystem) {
       setSubModal("edit");
+      key.preventDefault();
       return;
     }
     if (key.name === "d" && selectedProject && !selectedProject.isSystem) {
       setSubModal("delete");
+      key.preventDefault();
       return;
     }
     if (key.name === "escape") {
       onClose();
+      key.preventDefault();
     }
   });
 
