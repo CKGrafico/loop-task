@@ -392,11 +392,14 @@ export class LoopController extends EventEmitter {
 
         const chainTargetId = result.exitCode === 0 ? task?.onSuccessTaskId : task?.onFailureTaskId;
         if (chainTargetId) {
-          const chainTask = this.taskResolver(chainTargetId);
-          if (chainTask) {
-            const chainGroupId = crypto.randomUUID().slice(0, 8);
-            const mainRecord = this.runHistory[this.runHistory.length - 1];
-            if (mainRecord) mainRecord.chainGroupId = chainGroupId;
+          const chainGroupId = crypto.randomUUID().slice(0, 8);
+          const mainRecord = this.runHistory[this.runHistory.length - 1];
+          if (mainRecord) mainRecord.chainGroupId = chainGroupId;
+
+          let currentTargetId: string | null = chainTargetId;
+          while (currentTargetId) {
+            const chainTask = this.taskResolver(currentTargetId);
+            if (!chainTask) break;
 
             const chainStartedAt = new Date().toISOString();
             const chainOffset = fs.existsSync(this.logPath) ? fs.statSync(this.logPath).size : 0;
@@ -422,7 +425,7 @@ export class LoopController extends EventEmitter {
             );
 
             const chainLogSize = fs.existsSync(this.logPath) ? fs.statSync(this.logPath).size - chainOffset : 0;
-            const chainRecord = this.runHistory.find((r) => r.chainGroupId === chainGroupId && r.status === "running");
+            const chainRecord = this.runHistory.find((r) => r.chainGroupId === chainGroupId && r.status === "running" && r.chainName === chainTask.name);
             if (chainRecord) {
               chainRecord.exitCode = chainResult.exitCode;
               chainRecord.duration = chainResult.duration;
@@ -432,6 +435,8 @@ export class LoopController extends EventEmitter {
 
             this.lastExitCode = chainResult.exitCode;
             this.lastDuration = (this.lastDuration ?? 0) + chainResult.duration;
+
+            currentTargetId = (chainResult.exitCode === 0 ? chainTask.onSuccessTaskId : chainTask.onFailureTaskId) ?? null;
           }
         }
 
