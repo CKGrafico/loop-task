@@ -7,12 +7,16 @@ import {
   writeDaemonSignature,
   removeDaemonSignature,
   computeCodeSignature,
+  migrateTasksToJson,
+  migrateLoopsToJson,
 } from "./state.js";
 import { t } from "../i18n/index.js";
 import { daemonLog } from "./daemon-log.js";
 
 async function main(): Promise<void> {
   const taskManager = new TaskManager();
+  migrateLoopsToJson();
+  migrateTasksToJson();
   taskManager.init();
   const manager = new LoopManager(taskManager);
   const server = new IpcServer(manager, taskManager);
