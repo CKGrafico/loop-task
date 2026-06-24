@@ -347,6 +347,23 @@ export function useBoardKeybindings(params: BoardKeybindingParams): void {
       key.preventDefault();
       return;
     }
+
+    if (name === "tab" && view !== "board") {
+      const HEADER_PANELS: PanelFocus[] = ["header-tasks", "header-projects", "header-new"];
+      const isHeader = HEADER_PANELS.includes(focusedPanel);
+      const direction = key.shift ? "left" : "right";
+
+      if (isHeader) {
+        const idx = HEADER_PANELS.indexOf(focusedPanel);
+        const nextIdx = direction === "right"
+          ? (idx + 1) % HEADER_PANELS.length
+          : (idx - 1 + HEADER_PANELS.length) % HEADER_PANELS.length;
+        setFocusedPanel(HEADER_PANELS[nextIdx]);
+        key.preventDefault();
+        return;
+      }
+    }
+
     if (view !== "board") return;
 
     if (name === "tab") {
