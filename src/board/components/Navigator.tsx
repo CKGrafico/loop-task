@@ -43,9 +43,9 @@ export function Navigator(props: {
   const bulletW = 2;
   const nonVar = 2 + 1 + statusW + 1 + 1 + 1 + exitW + 1 + 1 + runsW + 1 + skpW;
   const avail = Math.floor(panelWidth) - nonVar - bulletW;
-  const descW = Math.min(22, Math.max(6, Math.round(avail * 0.30)));
-  const sinceW = Math.min(14, Math.max(8, Math.round(avail * 0.35)));
-  const timingW = Math.max(6, avail - descW - sinceW);
+  const descW = Math.min(32, Math.max(10, Math.round(avail * 0.38)));
+  const timingW = Math.min(16, Math.max(6, Math.round(avail * 0.25)));
+  const sinceW = Math.max(8, avail - descW - timingW);
 
   const header =
     "  " +
