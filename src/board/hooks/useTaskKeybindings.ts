@@ -62,25 +62,6 @@ export function useTaskKeybindings(params: TaskKeybindingParams): void {
         setTaskFocusedPanel("tasks");
         return;
       }
-      if (name === "return" || name === "enter") {
-        setTaskSearchActive(false);
-        setTaskFocusedPanel("tasks");
-        return;
-      }
-      if (name === "left") {
-        setTaskSearchActive(false);
-        setTaskFocusedPanel("actions");
-        setTaskSelectedAction(taskActionCount - 1);
-        return;
-      }
-      if (name === "backspace") {
-        setTaskQuery((q) => q.slice(0, -1));
-        return;
-      }
-      if (key.sequence && key.sequence.length === 1 && key.sequence >= " " && key.sequence <= "~") {
-        setTaskQuery((q) => q + key.sequence);
-        return;
-      }
       return;
     }
 

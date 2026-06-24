@@ -430,12 +430,18 @@ export function App(props: { onQuit: () => void }): React.ReactNode {
           onSortCycle={() => setSort(cycleSortMode(sort))}
           onSelectProject={() => setProjectsModalOpen(true)}
           currentProjectName={currentProjectId === "all" ? t("project.showAll") : (projects.find(p => p.id === currentProjectId)?.name ?? "Default")}
+          onQueryChange={(value) => setFilters((prev) => ({ ...prev, query: value }))}
+          onSearchActivate={() => setSearchActive(true)}
+          onSearchDismiss={() => { setSearchActive(false); setFocusedPanel("loops"); }}
         />
       ) : view === "task-list" ? (
         <TaskFilterBar
           query={taskQuery}
           searchActive={taskSearchActive}
           focusedPanel={taskFocusedPanel}
+          onQueryChange={setTaskQuery}
+          onSearchActivate={() => setTaskSearchActive(true)}
+          onSearchDismiss={() => { setTaskSearchActive(false); setTaskFocusedPanel("tasks"); }}
         />
       ) : null}
 
