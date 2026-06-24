@@ -107,36 +107,11 @@ export function CreateView(props: {
     if (key.name === "tab") {
       setFocusIndex((i) => {
         const next = key.shift ? i - 1 : i + 1;
-        return Math.max(0, Math.min(cancelIndex, next));
+        if (next < 0) return cancelIndex;
+        if (next > cancelIndex) return 0;
+        return next;
       });
       return;
-    }
-
-    if (key.name === "left" || key.name === "right") {
-      if (focusIndex === saveIndex) {
-        setFocusIndex(key.name === "right" ? cancelIndex : focusIndex - 1 >= 0 ? filteredFields.length - 1 : 0);
-        return;
-      }
-      if (focusIndex === cancelIndex) {
-        setFocusIndex(key.name === "right" ? 0 : saveIndex);
-        return;
-      }
-      if (key.name === "right") {
-        if (focusIndex + 1 < filteredFields.length) {
-          setFocusIndex((i) => i + 1);
-        } else {
-          setFocusIndex(saveIndex);
-        }
-        return;
-      }
-      if (key.name === "left") {
-        if (focusIndex > 0) {
-          setFocusIndex((i) => i - 1);
-        } else {
-          setFocusIndex(cancelIndex);
-        }
-        return;
-      }
     }
 
     if (key.name === "return" || key.name === "enter" || key.name === " ") {

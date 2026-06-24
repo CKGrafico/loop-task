@@ -1,28 +1,30 @@
 import { t } from "../../i18n/index.js";
 import type { TaskPanelFocus } from "./TaskBrowser.js";
+import { SearchBox } from "./SearchBox.js";
 
 export function TaskFilterBar(props: {
   query: string;
   searchActive: boolean;
   focusedPanel: TaskPanelFocus;
+  onQueryChange: (value: string) => void;
+  onSearchActivate: () => void;
+  onSearchDismiss: () => void;
 }): React.ReactNode {
-  const { query, searchActive, focusedPanel } = props;
+  const { query, searchActive, focusedPanel, onQueryChange, onSearchActivate, onSearchDismiss } = props;
 
   return (
     <box style={{ flexDirection: "row", height: 3, paddingLeft: 1, paddingRight: 1, backgroundColor: "#0b0b0b" }}>
       <box
-        title={t("board.searchTitle")}
-        border
-        borderColor={focusedPanel === "search" ? "#38bdf8" : undefined}
-        style={{ flexGrow: 1, height: 3, paddingLeft: 1, backgroundColor: focusedPanel === "search" ? "#1e2a4a" : "#0b0b0b" }}
+        style={{ flexGrow: 1 }}
       >
-        {searchActive ? (
-          <text fg={query ? "#e5e7eb" : "#6b7280"}>{query || t("board.searchPlaceholder")}▎</text>
-        ) : (
-          <text fg={query ? "#e5e7eb" : "#6b7280"}>
-            {query || t("board.searchEmpty")}
-          </text>
-        )}
+        <SearchBox
+          query={query}
+          searchActive={searchActive}
+          focused={focusedPanel === "search"}
+          onQueryChange={onQueryChange}
+          onActivate={onSearchActivate}
+          onDismiss={onSearchDismiss}
+        />
       </box>
     </box>
   );

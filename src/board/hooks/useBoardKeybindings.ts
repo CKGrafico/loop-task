@@ -315,24 +315,10 @@ export function useBoardKeybindings(params: BoardKeybindingParams): void {
     }
     if (helpOpen) return;
 
-    if (searchActive && (name === "escape" || name === "return" || name === "enter")) {
-      OVERLAY_DISMISS.search({ setLogModalRun, setHelpOpen, setSearchActive, setFocusedPanel }, name);
-      return;
-    }
-
     if (searchActive) {
-      if (name === "left") {
+      if (name === "escape") {
         setSearchActive(false);
-        setFocusedPanel("actions");
-        setSelectedAction((selected ? getActionCount(selected.status) : 0) - 1);
-        return;
-      }
-      if (name === "backspace") {
-        setFilters((prev) => ({ ...prev, query: prev.query.slice(0, -1) }));
-        return;
-      }
-      if (key.sequence && key.sequence.length === 1 && key.sequence >= " " && key.sequence <= "~") {
-        setFilters((prev) => ({ ...prev, query: prev.query + key.sequence }));
+        setFocusedPanel("loops");
         return;
       }
       return;

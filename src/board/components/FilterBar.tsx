@@ -2,6 +2,7 @@ import { t } from "../../i18n/index.js";
 import type { Filters, SortMode } from "../state.js";
 import { useHoverState } from "../hooks/useHoverState.js";
 import { HOVER_BG } from "../../config/constants.js";
+import { SearchBox } from "./SearchBox.js";
 
 export function FilterBar(props: {
   filters: Filters;
@@ -12,27 +13,24 @@ export function FilterBar(props: {
   onSortCycle: () => void;
   onSelectProject?: () => void;
   currentProjectName?: string;
+  onQueryChange: (value: string) => void;
+  onSearchActivate: () => void;
+  onSearchDismiss: () => void;
 }): React.ReactNode {
-  const { filters, sort, searchActive, focusedPanel, onStatusCycle, onSortCycle, onSelectProject, currentProjectName } = props;
+  const { filters, sort, searchActive, focusedPanel, onStatusCycle, onSortCycle, onSelectProject, currentProjectName, onQueryChange, onSearchActivate, onSearchDismiss } = props;
 
   const statusDisplay = filters.status === "waiting" ? "waiting" : filters.status;
 
   return (
     <box style={{ flexDirection: "row", height: 3, paddingLeft: 1, paddingRight: 1, backgroundColor: "#0b0b0b" }}>
-      <box
-        title={t("board.searchTitle")}
-        border
-        borderColor={focusedPanel === "search" ? "#38bdf8" : undefined}
-        style={{ width: "25%", height: 3, marginRight: 1, paddingLeft: 1, backgroundColor: focusedPanel === "search" ? "#1e2a4a" : "#0b0b0b" }}
-      >
-        {searchActive ? (
-          <text fg={filters.query ? "#e5e7eb" : "#6b7280"}>{filters.query || t("board.searchPlaceholder")}▎</text>
-        ) : (
-          <text fg={filters.query ? "#e5e7eb" : "#6b7280"}>
-            {filters.query || t("board.searchEmpty")}
-          </text>
-        )}
-      </box>
+      <SearchBox
+        query={filters.query}
+        searchActive={searchActive}
+        focused={focusedPanel === "search"}
+        onQueryChange={onQueryChange}
+        onActivate={onSearchActivate}
+        onDismiss={onSearchDismiss}
+      />
       {onSelectProject ? (
         <ClickableBadge
           title={t("project.filterTitle")}
