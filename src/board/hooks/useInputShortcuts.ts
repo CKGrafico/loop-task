@@ -18,36 +18,52 @@ export function useInputShortcuts(getActiveInput: () => EditBufferRenderableLike
     const name = key.name;
 
     if (name === "c") {
-      const text = input.getSelectedText();
-      if (text) {
-        copyToClipboard(text);
+      try {
+        const text = input.getSelectedText();
+        if (text) {
+          copyToClipboard(text);
+        }
+      } catch (e) {
+        console.error(`[loop-task] copy failed: ${e}`);
       }
       key.preventDefault();
+      key.stopPropagation();
       return;
     }
 
     if (name === "x") {
-      const text = input.getSelectedText();
-      if (text) {
-        copyToClipboard(text);
-        input.deleteSelection();
+      try {
+        const text = input.getSelectedText();
+        if (text) {
+          copyToClipboard(text);
+          input.deleteSelection();
+        }
+      } catch (e) {
+        console.error(`[loop-task] cut failed: ${e}`);
       }
       key.preventDefault();
+      key.stopPropagation();
       return;
     }
 
     if (name === "v") {
-      const text = readFromClipboard();
-      if (text) {
-        input.insertText(text);
+      try {
+        const text = readFromClipboard();
+        if (text) {
+          input.insertText(text);
+        }
+      } catch (e) {
+        console.error(`[loop-task] paste failed: ${e}`);
       }
       key.preventDefault();
+      key.stopPropagation();
       return;
     }
 
     if (name === "a") {
       input.selectAll();
       key.preventDefault();
+      key.stopPropagation();
       return;
     }
   });

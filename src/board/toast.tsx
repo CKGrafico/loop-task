@@ -73,7 +73,7 @@ export function ToastStack(props: { toasts: Toast[] }): React.ReactNode {
     <box
       style={{
         position: "absolute",
-        bottom: 1,
+        bottom: 3,
         right: 2,
         flexDirection: "column",
         alignItems: "flex-end",
