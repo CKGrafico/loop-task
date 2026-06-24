@@ -111,30 +111,8 @@ export function CreateView(props: {
         if (next > cancelIndex) return 0;
         return next;
       });
+      key.preventDefault();
       return;
-    }
-
-    if (key.name === "return" || key.name === "enter" || key.name === " ") {
-      const field = filteredFields[focusIndex];
-      if (field === "taskMode") {
-        const next = valuesRef.current.taskMode === TASK_MODE_INLINE ? TASK_MODE_EXISTING : TASK_MODE_INLINE;
-        updateValues({ ...valuesRef.current, taskMode: next });
-        return;
-      }
-      if (field === "runNow") {
-        const next = valuesRef.current.runNow === "y" ? "n" : "y";
-        updateValues({ ...valuesRef.current, runNow: next });
-        return;
-      }
-      if (focusIndex === chooseTaskIdx && !isInline) {
-        props.onChooseTask();
-        return;
-      }
-      if (focusIndex === saveIndex) {
-        void submit(valuesRef.current);
-      } else if (focusIndex === cancelIndex) {
-        props.onCancel();
-      }
     }
 
     if (key.name === "up" || key.name === "down") {
@@ -146,7 +124,44 @@ export function CreateView(props: {
           : (currentIdx - 1 + projectOptions.length) % projectOptions.length;
         const next = projectOptions[nextIdx];
         if (next) updateValues({ ...valuesRef.current, project: next.value });
+        key.preventDefault();
         return;
+      }
+      setFocusIndex((i) => {
+        const next = key.name === "up" ? i - 1 : i + 1;
+        if (next < 0) return cancelIndex;
+        if (next > cancelIndex) return 0;
+        return next;
+      });
+      key.preventDefault();
+      return;
+    }
+
+    if (key.name === "return" || key.name === "enter" || key.name === " ") {
+      const field = filteredFields[focusIndex];
+      if (field === "taskMode") {
+        const next = valuesRef.current.taskMode === TASK_MODE_INLINE ? TASK_MODE_EXISTING : TASK_MODE_INLINE;
+        updateValues({ ...valuesRef.current, taskMode: next });
+        key.preventDefault();
+        return;
+      }
+      if (field === "runNow") {
+        const next = valuesRef.current.runNow === "y" ? "n" : "y";
+        updateValues({ ...valuesRef.current, runNow: next });
+        key.preventDefault();
+        return;
+      }
+      if (focusIndex === chooseTaskIdx && !isInline) {
+        props.onChooseTask();
+        key.preventDefault();
+        return;
+      }
+      if (focusIndex === saveIndex) {
+        void submit(valuesRef.current);
+        key.preventDefault();
+      } else if (focusIndex === cancelIndex) {
+        props.onCancel();
+        key.preventDefault();
       }
     }
   });

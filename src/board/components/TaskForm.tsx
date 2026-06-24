@@ -57,14 +57,28 @@ export function TaskForm(props: {
         if (next > cancelIndex) return 0;
         return next;
       });
+      key.preventDefault();
+      return;
+    }
+
+    if (key.name === "up" || key.name === "down") {
+      setFocusIndex((i) => {
+        const next = key.name === "up" ? i - 1 : i + 1;
+        if (next < 0) return cancelIndex;
+        if (next > cancelIndex) return 0;
+        return next;
+      });
+      key.preventDefault();
       return;
     }
 
     if (key.name === "return" || key.name === "enter") {
       if (focusIndex === saveIndex) {
         void submit(valuesRef.current);
+        key.preventDefault();
       } else if (focusIndex === cancelIndex) {
         props.onCancel();
+        key.preventDefault();
       }
     }
   });

@@ -294,16 +294,19 @@ export function useBoardKeybindings(params: BoardKeybindingParams): void {
 
     if (confirm) {
       CONFIRM_KEYS[name]?.({ confirm, confirmChoice, setConfirm, setConfirmChoice });
+      key.preventDefault();
       return;
     }
 
     if (logModalRun) {
       if (name === "escape" || name === "q") {
         OVERLAY_DISMISS.log({ setLogModalRun, setHelpOpen, setSearchActive, setFocusedPanel }, name);
+        key.preventDefault();
         return;
       }
       if (key.ctrl && name === "c") {
         copyToClipboard(logModalLines.join("\n"));
+        key.preventDefault();
         return;
       }
       return;
@@ -311,6 +314,7 @@ export function useBoardKeybindings(params: BoardKeybindingParams): void {
 
     if (helpOpen && (name === "h" || name === "escape")) {
       OVERLAY_DISMISS.help({ setLogModalRun, setHelpOpen, setSearchActive, setFocusedPanel }, name);
+      key.preventDefault();
       return;
     }
     if (helpOpen) return;
@@ -319,27 +323,36 @@ export function useBoardKeybindings(params: BoardKeybindingParams): void {
       if (name === "escape") {
         setSearchActive(false);
         setFocusedPanel("loops");
+        key.preventDefault();
         return;
       }
       return;
     }
 
-    if (name === "left" || name === "right") {
-      if (focusedPanel === "actions") {
+    if (view !== "board" && name === "escape") {
+      VIEW_ESCAPE[view]?.({ setEditTarget, setEditTask, onBack: pop });
+      key.preventDefault();
+      return;
+    }
+    if (view !== "board") return;
+
+    if (name === "left" || name === "right" || name === "tab") {
+      const direction = name === "left" || (name === "tab" && key.shift) ? "left" : "right";
+      if (focusedPanel === "actions" && name !== "tab") {
         const actionCount = selected ? getActionCount(selected.status) : 0;
-        if (name === "left" && selectedAction === 0) {
+        if (direction === "left" && selectedAction === 0) {
           setFocusedPanel((p) => nextPanel(p, "left"));
-        } else if (name === "right" && selectedAction === actionCount - 1) {
+        } else if (direction === "right" && selectedAction === actionCount - 1) {
           setFocusedPanel((p) => nextPanel(p, "right"));
         } else {
           setSelectedAction((i) =>
-            name === "right"
+            direction === "right"
               ? Math.min(actionCount - 1, i + 1)
               : Math.max(0, i - 1)
           );
         }
       } else {
-        const next = nextPanel(focusedPanel, name === "right" ? "right" : "left");
+        const next = nextPanel(focusedPanel, direction);
         if (next === "actions") {
           setFocusedPanel("actions");
           setSelectedAction(0);
@@ -347,18 +360,14 @@ export function useBoardKeybindings(params: BoardKeybindingParams): void {
           setFocusedPanel(next);
         }
       }
+      key.preventDefault();
       return;
     }
-
-    if (view !== "board" && name === "escape") {
-      VIEW_ESCAPE[view]?.({ setEditTarget, setEditTask, onBack: pop });
-      return;
-    }
-    if (view !== "board") return;
 
     const globalHandler = GLOBAL_KEYS[name];
     if (globalHandler) {
       globalHandler({ destroyLogSocket, onQuit, setHelpOpen, setEditTarget, setEditTask, push, onAction });
+      key.preventDefault();
       return;
     }
 
@@ -368,7 +377,10 @@ export function useBoardKeybindings(params: BoardKeybindingParams): void {
       setSelectedIndex, setSelectedRunIndex, setFocusedPanel, selectedRunCount, selected,
       selectedRunIndex, setSelectedAction, selectedAction, onAction, onOpenRunLog,
       refreshTasks, onViewTasks, onViewProjects, onAddLoop,
-    })) return;
+    })) {
+      key.preventDefault();
+      return;
+    }
 
     const shortcut = BOARD_SHORTCUTS[name];
     if (shortcut) {
@@ -378,6 +390,7 @@ export function useBoardKeybindings(params: BoardKeybindingParams): void {
         selectedRunIndex, setSelectedAction, selectedAction, onAction, onOpenRunLog,
         onSelectProject,
       });
+      key.preventDefault();
     }
   });
 }
