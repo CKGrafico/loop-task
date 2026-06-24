@@ -311,8 +311,10 @@ export class IpcServer {
       send(socket, { type: "error", message: t("errors.loopNotFound", { id }) });
       return;
     }
-    const record = meta.runHistory.find((r) => r.runNumber === runNumber);
-    if (!record) {
+    const records = meta.runHistory
+      .filter((r) => r.runNumber === runNumber)
+      .sort((a, b) => a.logOffset - b.logOffset);
+    if (records.length === 0) {
       send(socket, { type: "ok", data: "" });
       return;
     }
@@ -323,13 +325,13 @@ export class IpcServer {
       return;
     }
 
-    const offset = record.logOffset;
+    const firstOffset = records[0].logOffset;
     const stat = fs.statSync(logPath);
 
-    if (stat.size > offset) {
+    if (stat.size > firstOffset) {
       const fd = fs.openSync(logPath, "r");
-      const buf = Buffer.alloc(stat.size - offset);
-      fs.readSync(fd, buf, 0, buf.length, offset);
+      const buf = Buffer.alloc(stat.size - firstOffset);
+      fs.readSync(fd, buf, 0, buf.length, firstOffset);
       fs.closeSync(fd);
       for (const line of buf.toString().split("\n")) {
         if (line) {
@@ -338,7 +340,8 @@ export class IpcServer {
       }
     }
 
-    if (record.status === "completed") {
+    const allCompleted = records.every((r) => r.status === "completed");
+    if (allCompleted) {
       send(socket, { type: "end" });
       return;
     }

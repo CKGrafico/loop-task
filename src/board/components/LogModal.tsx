@@ -1,12 +1,32 @@
 import { useEffect, useRef, useState } from "react";
 import type net from "node:net";
 import { useKeyboard, useTerminalDimensions } from "@opentui/react";
+import type { ScrollBoxRenderable } from "@opentui/core";
 import type { RunRecord } from "../../types.js";
 import { t } from "../../i18n/index.js";
 import { formatRunDuration, formatRunTime } from "../format.js";
 import { streamRunLog } from "../daemon.js";
 import { LOG_LINES_MAX } from "../../config/constants.js";
 import { copyToClipboard } from "../../shared/clipboard.js";
+
+function colorizeLine(line: string): React.ReactNode {
+  if (/^\[Run #/.test(line)) {
+    return <text fg="#38bdf8"><strong>{line}</strong></text>;
+  }
+  if (/^--- Chain:/.test(line)) {
+    return <text fg="#a78bfa"><strong>{line}</strong></text>;
+  }
+  if (/^\[exit 0/.test(line)) {
+    return <text fg="#4ade80">{line}</text>;
+  }
+  if (/^\[exit /.test(line)) {
+    return <text fg="#f87171">{line}</text>;
+  }
+  if (/^\[error\]/.test(line)) {
+    return <text fg="#f87171">{line}</text>;
+  }
+  return <text fg="#e5e7eb">{line}</text>;
+}
 
 export function LogModal(props: {
   loopId: string | null;
@@ -21,6 +41,7 @@ export function LogModal(props: {
 
   const [streamLines, setStreamLines] = useState<string[]>([]);
   const socketRef = useRef<net.Socket | null>(null);
+  const scrollRef = useRef<ScrollBoxRenderable | null>(null);
 
   useEffect(() => {
     if (!isRunning || !loopId) return;
@@ -45,14 +66,20 @@ export function LogModal(props: {
     };
   }, [isRunning, loopId, run.runNumber]);
 
+  const logLines = isRunning ? streamLines : staticLines;
+
+  useEffect(() => {
+    if (logLines.length > 0) {
+      scrollRef.current?.scrollChildIntoView(`log-line-${logLines.length - 1}`);
+    }
+  }, [logLines]);
+
   useKeyboard((key) => {
     if (key.ctrl && key.name === "c") {
-      const all = (isRunning ? streamLines : staticLines).join("\n");
+      const all = logLines.join("\n");
       copyToClipboard(all);
     }
   });
-
-  const logLines = isRunning ? streamLines : staticLines;
 
   const success = isRunning ? true : run.exitCode === 0;
   const icon = isRunning ? "⟳" : success ? "✓" : "✗";
@@ -83,13 +110,15 @@ export function LogModal(props: {
           backgroundColor: "#111827",
         }}
       >
-        <scrollbox style={{ flexGrow: 1, backgroundColor: "#0b0b0b" }}>
+        <scrollbox ref={scrollRef} style={{ flexGrow: 1, backgroundColor: "#0b0b0b" }}>
           {loading && !isRunning ? (
             <text fg="#9ca3af">{t("board.logModalLoading")}</text>
           ) : logLines.length === 0 ? (
             <text fg="#9ca3af">{t("board.logModalEmpty")}</text>
           ) : (
-            logLines.map((line, i) => <text key={i}>{line}</text>)
+            logLines.map((line, i) => (
+              <box key={i} id={`log-line-${i}`}>{colorizeLine(line)}</box>
+            ))
           )}
         </scrollbox>
         <box style={{ flexDirection: "row", justifyContent: "space-between", backgroundColor: "#111827" }}>

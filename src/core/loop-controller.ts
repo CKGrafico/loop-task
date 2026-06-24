@@ -6,6 +6,7 @@ import { sleep } from "../shared/sleep.js";
 import { SLEEP_CHUNK_MS } from "../config/constants.js";
 import { executeCommand } from "./command-runner.js";
 import { rotateLogIfNeeded } from "./log-rotator.js";
+import { t } from "../i18n/index.js";
 
 export type TaskResolver = (taskId: string) => TaskDefinition | null;
 
@@ -400,6 +401,10 @@ export class LoopController extends EventEmitter {
           while (currentTargetId) {
             const chainTask = this.taskResolver(currentTargetId);
             if (!chainTask) break;
+
+            if (this.logStream) {
+              this.logStream.write(t("loop.chainHeader", { name: chainTask.name }));
+            }
 
             const chainStartedAt = new Date().toISOString();
             const chainOffset = fs.existsSync(this.logPath) ? fs.statSync(this.logPath).size : 0;

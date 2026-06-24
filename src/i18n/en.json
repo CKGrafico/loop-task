@@ -65,6 +65,7 @@
   "cli.projectAmbiguous": "Multiple projects named \"{name}\" - use the id instead",
   "cli.projectInvalidColor": "Invalid color \"{color}\". Valid names: {valid}, or a #rrggbb hex",
   "loop.runHeader": "\n[Run #{runNumber} - {timestamp}]\n",
+  "loop.chainHeader": "\n--- Chain: {name} ---\n",
   "loop.exitMarker": "[exit {code} · {duration}]\n",
   "loop.cwdMissingLog": "[error] working directory does not exist: {cwd}\n",
   "loop.cwdMissing": "Working directory does not exist: {cwd}",
