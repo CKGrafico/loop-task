@@ -73,7 +73,7 @@ export function ProjectsPage(props: {
       key.preventDefault();
       return;
     }
-    if (key.name === "left" || key.name === "right" || key.name === "tab") {
+    if (key.name === "tab") {
       setFocusedPanel((p) => (p === "list" ? "actions" : "list"));
       key.preventDefault();
       return;

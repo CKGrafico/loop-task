@@ -2,11 +2,13 @@ import { useRef, useState } from "react";
 import { useKeyboard, useTerminalDimensions } from "@opentui/react";
 import fs from "node:fs";
 import type { LoopMeta, Project } from "../../types.js";
+import type { InputRenderable } from "@opentui/core";
 import { buildLoopOptions, parseCommandLine } from "../../loop-config.js";
 import { t } from "../../i18n/index.js";
 import { commandLine } from "../format.js";
 import { createLoop, updateLoop, listTasks } from "../daemon.js";
 import { useHoverState } from "../hooks/useHoverState.js";
+import { useInputShortcuts } from "../hooks/useInputShortcuts.js";
 import { HOVER_BG } from "../../config/constants.js";
 
 export const TASK_MODE_INLINE = "inline";
@@ -63,6 +65,12 @@ export function CreateView(props: {
   const [error, setError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [selectedTaskName, setSelectedTaskName] = useState<string | null>(props.selectedTaskName ?? null);
+  const inputRef = useRef<InputRenderable | null>(null);
+
+  useInputShortcuts(() => {
+    if (focusIndex >= saveIndex) return null;
+    return inputRef.current;
+  });
 
   useState(() => {
     if (values.taskId && !selectedTaskName) {
@@ -328,6 +336,7 @@ export function CreateView(props: {
                 selectedTaskName={selectedTaskName}
                 fields={filteredFields}
                 onChooseTask={props.onChooseTask}
+                inputRef={inputRef}
                 style={{ width: "50%", paddingRight: 1 }}
               />
               {rightField ? (
@@ -349,6 +358,7 @@ export function CreateView(props: {
                   selectedTaskName={selectedTaskName}
                   fields={filteredFields}
                   onChooseTask={props.onChooseTask}
+                  inputRef={inputRef}
                   style={{ width: "50%" }}
                 />
               ) : (
@@ -420,9 +430,10 @@ function FormRow(props: {
   selectedTaskName: string | null;
   fields: readonly CreateField[];
   onChooseTask: () => void;
+  inputRef: React.MutableRefObject<InputRenderable | null>;
   style?: { width?: number | `${number}%` | "auto"; flexGrow?: number; marginRight?: number; paddingRight?: number };
 }): React.ReactNode {
-  const { field, index, focusIndex, values, valuesRef, updateValues, setFocusIndex, submit, labels, hints, examples, taskModeOptions, runNowOptions, projectOptions, selectedTaskName, fields, onChooseTask, style } = props;
+  const { field, index, focusIndex, values, valuesRef, updateValues, setFocusIndex, submit, labels, hints, examples, taskModeOptions, runNowOptions, projectOptions, selectedTaskName, fields, onChooseTask, inputRef, style } = props;
   const { isHovered, hoverProps } = useHoverState();
   const isFocused = focusIndex === index;
 
@@ -497,6 +508,7 @@ function FormRow(props: {
           style={{ height: 3, backgroundColor: "#0b0b0b" }}
         >
           <input
+            ref={inputRef}
             focused={isFocused}
             value={values[field]}
             placeholder={examples[field] ? t("board.placeholderExample", { example: examples[field] }) : t("board.placeholderBlank")}

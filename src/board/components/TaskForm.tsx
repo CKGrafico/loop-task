@@ -2,9 +2,11 @@ import { useRef, useState } from "react";
 import crypto from "node:crypto";
 import { useKeyboard, useTerminalDimensions } from "@opentui/react";
 import type { TaskDefinition } from "../../types.js";
+import type { InputRenderable } from "@opentui/core";
 import { t } from "../../i18n/index.js";
 import { createTask, updateTask, listTasks } from "../daemon.js";
 import { useHoverState } from "../hooks/useHoverState.js";
+import { useInputShortcuts } from "../hooks/useInputShortcuts.js";
 import { HOVER_BG } from "../../config/constants.js";
 
 const taskFields = ["name", "command", "onSuccessTaskId", "onFailureTaskId"] as const;
@@ -34,8 +36,14 @@ export function TaskForm(props: {
   const [error, setError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [allTasks, setAllTasks] = useState<TaskDefinition[]>([]);
+  const inputRef = useRef<InputRenderable | null>(null);
   const { width: termWidth } = useTerminalDimensions();
   const btnWidth = Math.max(10, Math.min(14, Math.floor(termWidth / 6)));
+
+  useInputShortcuts(() => {
+    if (focusIndex >= saveIndex) return null;
+    return inputRef.current;
+  });
 
   const saveIndex = taskFields.length;
   const cancelIndex = taskFields.length + 1;
@@ -173,6 +181,7 @@ export function TaskForm(props: {
                 labels={labels}
                 hints={hints}
                 chainOptions={chainOptions}
+                inputRef={inputRef}
                 style={{ width: "50%", paddingRight: 1 }}
               />
               {rightField ? (
@@ -188,6 +197,7 @@ export function TaskForm(props: {
                   labels={labels}
                   hints={hints}
                   chainOptions={chainOptions}
+                  inputRef={inputRef}
                   style={{ width: "50%" }}
                 />
               ) : (
@@ -230,9 +240,10 @@ function TaskFormRow(props: {
   labels: Record<TaskField, string>;
   hints: Record<TaskField, string>;
   chainOptions: { name: string; description: string; value: string }[];
+  inputRef: React.MutableRefObject<InputRenderable | null>;
   style?: { width?: number | `${number}%` | "auto"; flexGrow?: number; marginRight?: number; paddingRight?: number };
 }): React.ReactNode {
-  const { field, index, focusIndex, values, valuesRef, updateValues, setFocusIndex, submit, labels, hints, chainOptions, style } = props;
+  const { field, index, focusIndex, values, valuesRef, updateValues, setFocusIndex, submit, labels, hints, chainOptions, inputRef, style } = props;
   const isFocused = focusIndex === index;
   const isSelect = field === "onSuccessTaskId" || field === "onFailureTaskId";
   const selectOpts = isSelect ? chainOptions : [];
@@ -266,6 +277,7 @@ function TaskFormRow(props: {
           style={{ height: 3, backgroundColor: "#0b0b0b" }}
         >
           <input
+            ref={inputRef}
             focused={isFocused}
             value={values[field]}
             placeholder={field === "command" ? t("board.exampleCommand") : ""}

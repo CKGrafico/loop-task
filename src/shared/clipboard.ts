@@ -15,3 +15,22 @@ export function copyToClipboard(text: string): void {
     }
   }
 }
+
+export function readFromClipboard(): string {
+  const os = platform();
+  try {
+    if (os === "win32") {
+      return execFileSync("powershell", ["-NoProfile", "-Command", "Get-Clipboard"], { encoding: "utf-8" }).replace(/\r?\n$/, "");
+    } else if (os === "darwin") {
+      return execFileSync("pbpaste", { encoding: "utf-8" });
+    } else {
+      try {
+        return execFileSync("xclip", ["-selection", "clipboard", "-o"], { encoding: "utf-8" });
+      } catch {
+        return execFileSync("xsel", ["--clipboard", "--output"], { encoding: "utf-8" });
+      }
+    }
+  } catch {
+    return "";
+  }
+}

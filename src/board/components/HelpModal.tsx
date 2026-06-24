@@ -7,8 +7,8 @@ export function HelpModal(props: { view: View }): React.ReactNode {
   const { width } = useTerminalDimensions();
 
   const loopRows: [string, string][] = [
-    ["tab/←→", "switch panels"],
-    ["↑/↓", "navigate list items"],
+    ["tab", "switch panels"],
+    ["up/down", "navigate list items"],
     ["enter", t("board.helpEdit")],
     ["e", "edit loop"],
     ["d/del", "delete loop"],
@@ -27,8 +27,8 @@ export function HelpModal(props: { view: View }): React.ReactNode {
   ];
 
   const taskRows: [string, string][] = [
-    ["tab/←→", "switch panels"],
-    ["↑/↓", "navigate tasks"],
+    ["tab", "switch panels"],
+    ["up/down", "navigate tasks"],
     ["enter", "focus actions panel"],
     ["e", "edit task"],
     ["d/del", "delete task"],
@@ -40,8 +40,8 @@ export function HelpModal(props: { view: View }): React.ReactNode {
   ];
 
   const projectRows: [string, string][] = [
-    ["tab/←→", "switch panel (list/actions)"],
-    ["↑/↓", "navigate projects"],
+    ["tab", "switch panel (list/actions)"],
+    ["up/down", "navigate projects"],
     ["enter", "focus actions"],
     ["n", "new project"],
     ["e", "edit project"],

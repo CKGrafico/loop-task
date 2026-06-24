@@ -326,6 +326,19 @@ export function useBoardKeybindings(params: BoardKeybindingParams): void {
         key.preventDefault();
         return;
       }
+      if (name === "up" || name === "k" || name === "down" || name === "j") {
+        const handler = panelHandlers["loops"];
+        if (handler) {
+          handler(name, {
+            setSearchActive, setFilters, setSort, setEditTarget, push,
+            setSelectedIndex, setSelectedRunIndex, setFocusedPanel, selectedRunCount, selected,
+            selectedRunIndex, setSelectedAction, selectedAction, onAction, onOpenRunLog,
+            refreshTasks, onViewTasks, onViewProjects, onAddLoop,
+          });
+          key.preventDefault();
+        }
+        return;
+      }
       return;
     }
 
@@ -336,9 +349,9 @@ export function useBoardKeybindings(params: BoardKeybindingParams): void {
     }
     if (view !== "board") return;
 
-    if (name === "left" || name === "right" || name === "tab") {
-      const direction = name === "left" || (name === "tab" && key.shift) ? "left" : "right";
-      if (focusedPanel === "actions" && name !== "tab") {
+    if (name === "tab") {
+      const direction = key.shift ? "left" : "right";
+      if (focusedPanel === "actions") {
         const actionCount = selected ? getActionCount(selected.status) : 0;
         if (direction === "left" && selectedAction === 0) {
           setFocusedPanel((p) => nextPanel(p, "left"));

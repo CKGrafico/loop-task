@@ -1,4 +1,7 @@
+import { useRef } from "react";
+import type { InputRenderable } from "@opentui/core";
 import { t } from "../../i18n/index.js";
+import { useInputShortcuts } from "../hooks/useInputShortcuts.js";
 
 export function SearchBox(props: {
   query: string;
@@ -9,6 +12,9 @@ export function SearchBox(props: {
   onDismiss: () => void;
 }): React.ReactNode {
   const { query, searchActive, focused, onQueryChange, onActivate, onDismiss } = props;
+  const inputRef = useRef<InputRenderable | null>(null);
+
+  useInputShortcuts(() => searchActive ? inputRef.current : null);
 
   return (
     <box
@@ -19,6 +25,7 @@ export function SearchBox(props: {
     >
       {searchActive ? (
         <input
+          ref={inputRef}
           focused={true}
           value={query}
           placeholder={t("board.searchPlaceholder")}

@@ -63,6 +63,16 @@ export function useTaskKeybindings(params: TaskKeybindingParams): void {
         key.preventDefault();
         return;
       }
+      if (name === "up" || name === "k") {
+        setTaskSelectedIndex((i) => Math.max(0, i - 1));
+        key.preventDefault();
+        return;
+      }
+      if (name === "down" || name === "j") {
+        setTaskSelectedIndex((i) => Math.min(tasks.length - 1, i + 1));
+        key.preventDefault();
+        return;
+      }
       return;
     }
 
@@ -84,9 +94,9 @@ export function useTaskKeybindings(params: TaskKeybindingParams): void {
       return;
     }
 
-    if (name === "tab" || name === "left" || name === "right") {
-      const direction = name === "left" || (name === "tab" && key.shift) ? "left" : "right";
-      if (taskFocusedPanel === "actions" && name !== "tab") {
+    if (name === "tab") {
+      const direction = key.shift ? "left" : "right";
+      if (taskFocusedPanel === "actions") {
         if (direction === "left" && taskSelectedAction === 0) {
           setTaskFocusedPanel((p) => nextTaskPanel(p, "left"));
         } else if (direction === "right" && taskSelectedAction === taskActionCount - 1) {
