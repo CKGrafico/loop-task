@@ -5,6 +5,7 @@ import { createRequire } from "node:module";
 import { Logger } from "./logger.js";
 import { runLoop } from "./core/foreground-loop.js";
 import { buildLoopOptions } from "./loop-config.js";
+import { parseDuration } from "./duration.js";
 import { startLoop } from "./client/commands.js";
 import {
   listProjectsCli,
@@ -87,22 +88,25 @@ program
   .option("--verbose", t("cli.optVerbose"), false)
   .option("--cwd <dir>", t("cli.optCwd"))
   .option("--project <name>", t("cli.optProject"))
+  .option("--offset <duration>", "Phase offset (e.g. 5m, 15m)")
   .action(
     async (
       intervalStr: string,
       cmdArgs: string[],
-      opts: { now: boolean; maxRuns?: number; verbose: boolean; cwd?: string; project?: string }
+      opts: { now: boolean; maxRuns?: number; verbose: boolean; cwd?: string; project?: string; offset?: string }
     ) => {
       try {
         const projectId = opts.project
           ? await resolveProjectId(opts.project)
           : undefined;
+        const offsetMs = opts.offset ? parseDuration(opts.offset) : null;
         const built = buildLoopOptions(intervalStr, {
           ...opts,
           command: cmdArgs[0],
           commandArgs: cmdArgs.slice(1),
           cwd: opts.cwd ?? process.cwd(),
           projectId,
+          offset: offsetMs,
         });
         await startLoop(built.options, built.intervalHuman);
       } catch (error: unknown) {

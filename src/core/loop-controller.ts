@@ -6,6 +6,7 @@ import { sleep } from "../shared/sleep.js";
 import { SLEEP_CHUNK_MS } from "../config/constants.js";
 import { executeCommand } from "./command-runner.js";
 import { rotateLogIfNeeded } from "./log-rotator.js";
+import { computePhase, alignToPhase } from "./scheduling.js";
 import { t } from "../i18n/index.js";
 
 export type TaskResolver = (taskId: string) => TaskDefinition | null;
@@ -148,7 +149,11 @@ export class LoopController extends EventEmitter {
     this._resetSchedule = true;
     this._paused = false;
     this._status = "waiting";
-    this.nextRunAt = new Date(Date.now() + this.options.interval).toISOString();
+    const phase = this.options.offset !== null
+      ? this.options.offset
+      : computePhase(this.id, this.options.interval);
+    const delay = alignToPhase(Date.now(), this.options.interval, phase);
+    this.nextRunAt = new Date(Date.now() + delay).toISOString();
     if (this.resumeResolve) {
       this.resumeResolve();
       this.resumeResolve = null;
@@ -186,7 +191,7 @@ export class LoopController extends EventEmitter {
     this.logStream = null;
   }
 
-  getMeta(): Omit<LoopMeta, "command" | "commandArgs" | "interval" | "intervalHuman" | "immediate" | "maxRuns" | "verbose" | "cwd" | "description" | "pid" | "projectId"> {
+  getMeta(): Omit<LoopMeta, "command" | "commandArgs" | "interval" | "intervalHuman" | "immediate" | "maxRuns" | "verbose" | "cwd" | "description" | "pid" | "projectId" | "offset"> {
     return {
       id: this.id,
       taskId: this.options.taskId,
@@ -317,7 +322,14 @@ export class LoopController extends EventEmitter {
             }
           }
         } else if (isFirstRun && !this.options.immediate) {
-          const completed = await this.waitForDelay(this.options.interval, signal);
+          const phase = this.options.offset !== null
+            ? this.options.offset
+            : computePhase(this.id, this.options.interval);
+          const delay = alignToPhase(Date.now(), this.options.interval, phase);
+          if (delay > 0) {
+            this.nextRunAt = new Date(Date.now() + delay).toISOString();
+          }
+          const completed = await this.waitForDelay(delay, signal);
           if (!completed) {
             break;
           }

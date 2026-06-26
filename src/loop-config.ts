@@ -12,6 +12,7 @@ export interface LoopCommandOptionsInput {
   commandArgs?: string[];
   cwd?: string;
   projectId?: string;
+  offset?: number | null;
 }
 
 export interface BuiltLoopOptions {
@@ -113,6 +114,7 @@ export function buildLoopOptions(
       verbose: input.verbose ?? false,
       description,
       projectId: input.projectId ?? "default",
+      offset: input.offset ?? null,
     },
   };
 }

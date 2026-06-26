@@ -437,6 +437,11 @@ Runtime npm dependencies: `@opentui/core`, `@opentui/react`, `commander`,
 
 - **No overlapping executions:** Each `LoopController` awaits command completion
   before scheduling the next interval, preventing pile-ups.
+- **Spread scheduling:** Each loop gets a deterministic phase offset computed as
+  `hash(loopId) % intervalMs` (`core/scheduling.ts#computePhase`). The first-run
+  delay aligns to this phase instead of using raw `interval`. Users can override
+  with `--offset <duration>`. Subsequent runs use the existing
+  `runStartedAtMs + interval` math — only the initial scheduling is phased.
 - **Abortable, chunked sleeps:** Delays are sliced into `SLEEP_CHUNK_MS` (200 ms)
   chunks so pause/resume/trigger/abort stay responsive without busy-waiting
   (`loop-controller.ts#waitForDelay`).
