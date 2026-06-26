@@ -50,6 +50,8 @@ loop-task                          # open the board (requires Bun)
 loop-task start                    # start the daemon, restore persisted loops
 loop-task new 30m -- npm test      # create a background loop
 loop-task run --now 10s -- echo hi # run a loop in the foreground
+loop-task stop <id>                # stop a frozen loop and kill its child process
+loop-task restart                  # kill daemon + all loops, restart fresh
 ```
 
 Or run it directly:
@@ -137,6 +139,8 @@ Colors can be a name (`white`, `cyan`, `green`, `yellow`, `orange`, `pink`) or a
 | `loop-task new <interval> -- <command>` | Create a background loop (creates an inline task) |
 | `loop-task new <interval> --project <name> -- <command>` | Create a loop assigned to a project |
 | `loop-task run <interval> -- <command>` | Run a loop in the foreground |
+| `loop-task stop <id>` | Stop a loop and interrupt its running child process |
+| `loop-task restart` | Kill the daemon and all running loops, then restart fresh |
 | `loop-task project list` | List all projects |
 | `loop-task project new <name> [--color <color>]` | Create a project |
 | `loop-task project rename <id\|name> <new-name>` | Rename a project |
