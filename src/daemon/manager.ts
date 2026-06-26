@@ -195,9 +195,19 @@ export class LoopManager {
   stopLoop(id: string): boolean {
     const entry = this.loops.get(id);
     if (!entry) return false;
-    entry.controller.stopLoop();
+    entry.controller.stopLoop(true);
     this.persist(id, entry.controller, entry.options, entry.intervalHuman);
     return true;
+  }
+
+  stopAllLoops(): number {
+    let count = 0;
+    for (const [id, entry] of this.loops) {
+      entry.controller.stopLoop(true);
+      this.persist(id, entry.controller, entry.options, entry.intervalHuman);
+      count++;
+    }
+    return count;
   }
 
   playLoop(id: string): boolean {

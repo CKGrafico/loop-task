@@ -36,6 +36,48 @@ program
   });
 
 program
+  .command("stop")
+  .description("Stop a running loop and interrupt its current execution")
+  .argument("<id>", "Loop ID")
+  .action(async (id: string) => {
+    try {
+      const { sendRequest } = await import("./client/ipc.js");
+      const res = await sendRequest({ type: "stop-loop", payload: { id } });
+      if (res.type === "ok" && res.data) {
+        console.log(`Stopped loop ${id}`);
+      } else if (res.type === "error") {
+        console.error(res.message);
+        process.exit(1);
+      } else {
+        console.error(`Loop ${id} not found`);
+        process.exit(1);
+      }
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : String(error);
+      console.error(t("cli.error", { message }));
+      process.exit(1);
+    }
+  });
+
+program
+  .command("restart")
+  .description("Kill the daemon and all running loops, then restart fresh")
+  .action(async () => {
+    const { stopDaemon, ensureDaemon } = await import("./daemon/spawner.js");
+    const { readDaemonPid, removeDaemonPid, removeDaemonSignature } = await import("./daemon/state.js");
+    const pid = readDaemonPid();
+    if (pid !== null) {
+      console.log("Stopping daemon...");
+      stopDaemon(pid);
+      removeDaemonPid();
+      removeDaemonSignature();
+    }
+    console.log("Starting fresh daemon...");
+    ensureDaemon();
+    console.log("Daemon restarted.");
+  });
+
+program
   .command("new")
   .description(t("cli.newDescription"))
   .argument("<interval>", t("cli.argInterval"))
