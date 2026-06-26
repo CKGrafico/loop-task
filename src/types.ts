@@ -28,6 +28,7 @@ export interface LoopOptions {
   verbose: boolean;
   description: string;
   projectId: string;
+  offset: number | null;
 }
 
 export interface ExecutionResult {
@@ -85,6 +86,7 @@ export interface LoopMeta {
   runHistory: RunRecord[];
   skippedCount: number;
   projectId: string;
+  offset: number | null;
 }
 
 export type IpcRequest =

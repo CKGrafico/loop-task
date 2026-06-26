@@ -64,6 +64,7 @@ export class LoopManager {
         verbose: meta.verbose,
         description: meta.description ?? "",
         projectId: (meta as LoopMeta & { projectId?: string }).projectId ?? "default",
+        offset: (meta as LoopMeta & { offset?: number | null }).offset ?? null,
       };
       const logPath = getLogPath(meta.id);
       const controller = new LoopController(meta.id, options, logPath, this.taskResolver, {
@@ -320,6 +321,7 @@ export class LoopManager {
       remainingDelayMs: runtime.remainingDelayMs,
       pid: process.pid,
       projectId: options.projectId ?? "default",
+      offset: options.offset,
     };
   }
 }
