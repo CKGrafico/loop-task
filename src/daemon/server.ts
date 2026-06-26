@@ -139,6 +139,12 @@ export class IpcServer {
         break;
       }
 
+      case "stop-all": {
+        const count = this.manager.stopAllLoops();
+        send(socket, { type: "ok", data: count });
+        break;
+      }
+
       case "play-loop": {
         if (this.manager.isMaxRunsBlocked(request.payload.id)) {
           send(socket, { type: "error", message: t("errors.maxRunsReached") });

@@ -95,6 +95,7 @@ export type IpcRequest =
   | { type: "pause"; payload: { id: string } }
   | { type: "resume"; payload: { id: string } }
   | { type: "stop-loop"; payload: { id: string } }
+  | { type: "stop-all" }
   | { type: "play-loop"; payload: { id: string } }
   | { type: "trigger"; payload: { id: string } }
   | { type: "delete"; payload: { id: string } }

@@ -29,7 +29,7 @@ function blockingWait(ms: number): void {
   Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, ms);
 }
 
-function stopDaemon(pid: number): void {
+export function stopDaemon(pid: number): void {
   try {
     process.kill(pid, "SIGTERM");
   } catch {
