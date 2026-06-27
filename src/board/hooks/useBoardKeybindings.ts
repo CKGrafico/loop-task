@@ -162,11 +162,11 @@ const panelHandlers: Record<PanelFocus, PanelKeyHandler> = {
     return false;
   },
   "header-tasks": (key, p) => {
-    if (key === "return" || key === "enter") { p.onViewTasks?.(); return true; }
+    if (key === "return" || key === "enter") { p.onViewProjects?.(); return true; }
     return false;
   },
   "header-projects": (key, p) => {
-    if (key === "return" || key === "enter") { p.onViewProjects?.(); return true; }
+    if (key === "return" || key === "enter") { p.onViewTasks?.(); return true; }
     return false;
   },
   "header-new": (key, p) => {
@@ -360,7 +360,7 @@ export function useBoardKeybindings(params: BoardKeybindingParams): void {
       } else if (view === "projects") {
         if (focusedPanel === "header-tasks") { onViewLoops?.(); key.preventDefault(); return; }
         if (focusedPanel === "header-projects") { onViewTasks?.(); key.preventDefault(); return; }
-        if (focusedPanel === "header-new") { onViewProjects?.(); key.preventDefault(); return; }
+        if (focusedPanel === "header-new") { onAddLoop?.(); key.preventDefault(); return; }
       } else if (view === "create" || view === "task-create" || view === "task-edit") {
         if (focusedPanel === "header-tasks") { onViewProjects?.(); key.preventDefault(); return; }
         if (focusedPanel === "header-projects") { onViewTasks?.(); key.preventDefault(); return; }
