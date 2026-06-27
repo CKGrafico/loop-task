@@ -8,6 +8,8 @@ import { executeCommand } from "./command-runner.js";
 import { rotateLogIfNeeded } from "./log-rotator.js";
 import { computePhase, alignToPhase } from "./scheduling.js";
 import { t } from "../i18n/index.js";
+import { parseStdout } from "./context-parser.js";
+import { interpolate } from "./template.js";
 
 export type TaskResolver = (taskId: string) => TaskDefinition | null;
 
@@ -371,15 +373,25 @@ export class LoopController extends EventEmitter {
         const command = task?.command ?? this.options.command;
         const commandArgs = task?.commandArgs ?? this.options.commandArgs;
         const cwd = this.options.cwd;
+        const chainContext: Record<string, unknown> = {};
+        const hasChainTasks = !!(task?.onSuccessTaskId || task?.onFailureTaskId);
         const result = await executeCommand(
           command,
           commandArgs,
           cwd,
           this.logStream!,
           AbortSignal.any([signal, this.runAbortController.signal]),
-          this.runCount
+          this.runCount,
+          hasChainTasks
         );
         this.runAbortController = null;
+
+        if (hasChainTasks && result.stdout) {
+          const parsed = parseStdout(result.stdout);
+          if (parsed !== null) {
+            Object.assign(chainContext, parsed);
+          }
+        }
 
         this.lastExitCode = result.exitCode;
         this.lastDuration = result.duration;
@@ -432,14 +444,24 @@ export class LoopController extends EventEmitter {
               chainName: chainTask.name,
             });
 
+            const interpolatedCommand = interpolate(chainTask.command, chainContext);
+            const interpolatedArgs = chainTask.commandArgs.map(a => interpolate(a, chainContext));
             const chainResult = await executeCommand(
-              chainTask.command,
-              chainTask.commandArgs,
+              interpolatedCommand,
+              interpolatedArgs,
               this.options.cwd,
               this.logStream!,
               signal,
-              this.runCount
+              this.runCount,
+              true
             );
+
+            if (chainResult.stdout) {
+              const parsed = parseStdout(chainResult.stdout);
+              if (parsed !== null) {
+                Object.assign(chainContext, parsed);
+              }
+            }
 
             const chainLogSize = fs.existsSync(this.logPath) ? fs.statSync(this.logPath).size - chainOffset : 0;
             const chainRecord = this.runHistory.find((r) => r.chainGroupId === chainGroupId && r.status === "running" && r.chainName === chainTask.name);
