@@ -37,6 +37,7 @@ import { fetchRunLog, deleteLoop, pauseLoop, resumeLoop, stopLoop, playLoop, tri
 import { useBreakpoint } from "./hooks/useBreakpoint.js";
 import { useRouter } from "./router.js";
 import { POLL_MS } from "../config/constants.js";
+import { FocusProvider } from "./focus-context.js";
 
 
 const VIEW_TO_MODE: Partial<Record<View, Mode>> = {
