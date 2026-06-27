@@ -510,6 +510,7 @@ export function App(props: { onQuit: () => void }): React.ReactNode {
           <ProjectsPage
             projects={projects}
             loops={loops}
+            headerFocused={focusedPanel === "header-tasks" || focusedPanel === "header-projects" || focusedPanel === "header-new"}
             onClose={() => pop()}
             onRefresh={refreshProjects}
             onOpenCreate={(trigger) => { createProjectTriggerRef.current = trigger; }}

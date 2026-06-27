@@ -34,12 +34,13 @@ function ProjectActionButton(props: {
 export function ProjectsPage(props: {
   projects: Project[];
   loops: LoopMeta[];
+  headerFocused: boolean;
   onClose: () => void;
   onRefresh: () => Promise<void>;
   onOpenCreate?: (trigger: () => void) => void;
   onEnterHeader?: (direction: "left" | "right") => void;
 }): React.ReactNode {
-  const { projects, loops, onClose, onRefresh, onOpenCreate, onEnterHeader } = props;
+  const { projects, loops, headerFocused, onClose, onRefresh, onOpenCreate, onEnterHeader } = props;
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [subModal, setSubModal] = useState<SubModal>("none");
   const [focusedPanel, setFocusedPanel] = useState<"list" | "actions">("list");
@@ -62,6 +63,7 @@ export function ProjectsPage(props: {
 
   useKeyboard((key) => {
     if (subModal !== "none") return;
+    if (headerFocused) return;
     if (key.name === "up" || key.name === "down") {
       if (focusedPanel !== "list") {
         key.preventDefault();
