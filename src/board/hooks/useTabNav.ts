@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useKeyboard } from "@opentui/react";
 
 interface UseTabNavOptions {
@@ -20,38 +20,52 @@ export function useTabNav<T>(items: T[], options?: UseTabNavOptions): UseTabNavR
   const [focusIndex, setFocusIndex] = useState(Math.min(initial, Math.max(0, items.length - 1)));
   const [enabled, setEnabled] = useState(true);
 
-  const onCycleOut = options?.onCycleOut;
+  const focusIndexRef = useRef(focusIndex);
+  focusIndexRef.current = focusIndex;
+
+  const itemsRef = useRef(items);
+  itemsRef.current = items;
+
+  const onCycleOutRef = useRef(options?.onCycleOut);
+  onCycleOutRef.current = options?.onCycleOut;
+
+  const enabledRef = useRef(enabled);
+  enabledRef.current = enabled;
 
   useEffect(() => {
     setFocusIndex((i) => Math.min(i, Math.max(0, items.length - 1)));
   }, [items.length]);
 
   useKeyboard((key) => {
-    if (!enabled) return;
+    if (!enabledRef.current) return;
     if (key.name !== "tab") return;
 
+    const currentItems = itemsRef.current;
+    const currentIdx = focusIndexRef.current;
+    const lastIndex = currentItems.length - 1;
+    if (lastIndex < 0) return;
+
     const direction = key.shift ? "left" : "right";
-    const lastIndex = items.length - 1;
 
     if (direction === "right") {
-      if (focusIndex >= lastIndex) {
-        if (onCycleOut) {
-          onCycleOut("right");
+      if (currentIdx >= lastIndex) {
+        if (onCycleOutRef.current) {
+          onCycleOutRef.current("right");
         } else {
           setFocusIndex(0);
         }
       } else {
-        setFocusIndex(focusIndex + 1);
+        setFocusIndex(currentIdx + 1);
       }
     } else {
-      if (focusIndex <= 0) {
-        if (onCycleOut) {
-          onCycleOut("left");
+      if (currentIdx <= 0) {
+        if (onCycleOutRef.current) {
+          onCycleOutRef.current("left");
         } else {
           setFocusIndex(lastIndex);
         }
       } else {
-        setFocusIndex(focusIndex - 1);
+        setFocusIndex(currentIdx - 1);
       }
     }
 
