@@ -42,7 +42,7 @@ export function TaskForm(props: {
   const btnWidth = Math.max(10, Math.min(14, Math.floor(termWidth / 6)));
 
   const navItems = [...taskFields, "save", "cancel"];
-  const { focusIndex, setFocusIndex, focusedItem, isFocused } = useTabNav<string>(navItems);
+  const { setFocusIndex, focusedItem, isFocused } = useTabNav<string>(navItems);
 
   useInputShortcuts(() => {
     if (focusedItem != null && focusedItem !== "save" && focusedItem !== "cancel") {

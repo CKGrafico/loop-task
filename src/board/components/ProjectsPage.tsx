@@ -43,7 +43,7 @@ export function ProjectsPage(props: {
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [subModal, setSubModal] = useState<SubModal>("none");
   const navItems = ["list", "edit", "delete"];
-  const { focusIndex, setFocusIndex, focusedItem, isFocused } = useTabNav<string>(navItems, {
+  const { setFocusIndex, focusedItem, isFocused } = useTabNav<string>(navItems, {
     onCycleOut: (dir) => {
       if (dir === "right") onEnterHeader?.("right");
       else onEnterHeader?.("left");

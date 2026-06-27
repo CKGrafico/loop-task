@@ -84,7 +84,7 @@ export function CreateView(props: {
   });
 
   const navItems = [...filteredFields, "save", "cancel"];
-  const { focusIndex, setFocusIndex, focusedItem, isFocused } = useTabNav<string>(navItems);
+  const { setFocusIndex, focusedItem, isFocused } = useTabNav<string>(navItems);
 
   useInputShortcuts(() => {
     if (focusedItem === "save" || focusedItem === "cancel") return null;

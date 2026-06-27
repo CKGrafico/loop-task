@@ -21,7 +21,7 @@ export function EditProjectModal(props: {
   });
   const [error, setError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const { focusedItem: focusField, isFocused, setFocusIndex } = useTabNav<"name" | "color" | "save" | "cancel">(["name", "color", "save", "cancel"]);
+  const { focusedItem: focusField, setFocusIndex } = useTabNav<"name" | "color" | "save" | "cancel">(["name", "color", "save", "cancel"]);
 
   useKeyboard((key) => {
     if (key.name === "escape") {
