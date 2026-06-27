@@ -7,6 +7,7 @@ import { t } from "../../i18n/index.js";
 import { createTask, updateTask, listTasks } from "../daemon.js";
 import { useHoverState } from "../hooks/useHoverState.js";
 import { useInputShortcuts } from "../hooks/useInputShortcuts.js";
+import { useTabNav } from "../hooks/useTabNav.js";
 import { HOVER_BG } from "../../config/constants.js";
 import { SearchSelect } from "./SearchSelect.js";
 
@@ -33,7 +34,6 @@ export function TaskForm(props: {
 }): React.ReactNode {
   const [values, setValues] = useState<Record<TaskField, string>>(taskInitialValues(props.editTask));
   const valuesRef = useRef(values);
-  const [focusIndex, setFocusIndex] = useState(0);
   const [error, setError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [allTasks, setAllTasks] = useState<TaskDefinition[]>([]);
@@ -41,13 +41,15 @@ export function TaskForm(props: {
   const { width: termWidth } = useTerminalDimensions();
   const btnWidth = Math.max(10, Math.min(14, Math.floor(termWidth / 6)));
 
-  useInputShortcuts(() => {
-    if (focusIndex >= saveIndex) return null;
-    return inputRef.current;
-  });
+  const navItems = [...taskFields, "save", "cancel"];
+  const { setFocusIndex, focusedItem, isFocused } = useTabNav<string>(navItems);
 
-  const saveIndex = taskFields.length;
-  const cancelIndex = taskFields.length + 1;
+  useInputShortcuts(() => {
+    if (focusedItem != null && focusedItem !== "save" && focusedItem !== "cancel") {
+      return inputRef.current;
+    }
+    return null;
+  });
 
   function updateValues(next: Record<TaskField, string>): void {
     valuesRef.current = next;
@@ -59,44 +61,9 @@ export function TaskForm(props: {
   });
 
   useKeyboard((key) => {
-    if (key.name === "tab") {
-      setFocusIndex((i) => {
-        const next = key.shift ? i - 1 : i + 1;
-        if (next < 0) return cancelIndex;
-        if (next > cancelIndex) return 0;
-        return next;
-      });
-      key.preventDefault();
-      return;
-    }
-
-    const field = taskFields[focusIndex];
-    const isSelectField = field === "onSuccessTaskId" || field === "onFailureTaskId";
-
-    if (key.name === "up" || key.name === "down" || key.name === "left" || key.name === "right") {
-      if (isSelectField) return;
-      if (key.name === "left" || key.name === "right") {
-        key.preventDefault();
-        return;
-      }
-      setFocusIndex((i) => {
-        const next = key.name === "up" ? i - 1 : i + 1;
-        if (next < 0) return cancelIndex;
-        if (next > cancelIndex) return 0;
-        return next;
-      });
-      key.preventDefault();
-      return;
-    }
-
     if (key.name === "return" || key.name === "enter") {
-      if (focusIndex === saveIndex) {
-        void submit(valuesRef.current);
-        key.preventDefault();
-      } else if (focusIndex === cancelIndex) {
-        props.onCancel();
-        key.preventDefault();
-      }
+      if (focusedItem === "save") { void submit(valuesRef.current); key.preventDefault(); }
+      else if (focusedItem === "cancel") { props.onCancel(); key.preventDefault(); }
     }
   });
 
@@ -181,7 +148,7 @@ export function TaskForm(props: {
               <TaskFormRow
                 field={leftField}
                 index={row * 2}
-                focusIndex={focusIndex}
+                focused={isFocused(leftField)}
                 values={values}
                 valuesRef={valuesRef}
                 updateValues={updateValues}
@@ -197,7 +164,7 @@ export function TaskForm(props: {
                 <TaskFormRow
                   field={rightField}
                   index={row * 2 + 1}
-                  focusIndex={focusIndex}
+                  focused={isFocused(rightField)}
                   values={values}
                   valuesRef={valuesRef}
                   updateValues={updateValues}
@@ -220,14 +187,14 @@ export function TaskForm(props: {
         <HoverButton
           label={isSubmitting ? t("board.saving") : props.mode === "edit" ? t("board.save") : t("board.create")}
           onMouseDown={() => void submit(valuesRef.current)}
-          selected={focusIndex === saveIndex}
+          selected={isFocused("save")}
           width={btnWidth}
           marginRight={1}
         />
         <HoverButton
           label={t("board.cancel")}
           onMouseDown={props.onCancel}
-          selected={focusIndex === cancelIndex}
+          selected={isFocused("cancel")}
           width={btnWidth}
         />
       </box>
@@ -240,11 +207,11 @@ export function TaskForm(props: {
 function TaskFormRow(props: {
   field: TaskField;
   index: number;
-  focusIndex: number;
+  focused: boolean;
   values: Record<TaskField, string>;
   valuesRef: React.MutableRefObject<Record<TaskField, string>>;
   updateValues: (next: Record<TaskField, string>) => void;
-  setFocusIndex: React.Dispatch<React.SetStateAction<number>>;
+  setFocusIndex: (index: number) => void;
   submit: (current: Record<TaskField, string>) => Promise<void>;
   labels: Record<TaskField, string>;
   hints: Record<TaskField, string>;
@@ -252,31 +219,30 @@ function TaskFormRow(props: {
   inputRef: React.MutableRefObject<InputRenderable | null>;
   style?: { width?: number | `${number}%` | "auto"; flexGrow?: number; marginRight?: number; paddingRight?: number };
 }): React.ReactNode {
-  const { field, index, focusIndex, values, valuesRef, updateValues, setFocusIndex, submit, labels, hints, chainOptions, inputRef, style } = props;
-  const isFocused = focusIndex === index;
+  const { field, index, focused, values, valuesRef, updateValues, setFocusIndex, submit, labels, hints, chainOptions, inputRef, style } = props;
   const isSelect = field === "onSuccessTaskId" || field === "onFailureTaskId";
   const selectOpts = isSelect ? chainOptions : [];
 
   return (
     <box style={{ flexDirection: "column", ...style }}>
-      <text fg={isFocused ? "#38bdf8" : "#e5e7eb"}>{labels[field]}</text>
+      <text fg={focused ? "#38bdf8" : "#e5e7eb"}>{labels[field]}</text>
       <text fg="#6b7280">{hints[field]}</text>
       {isSelect ? (
         <SearchSelect
           options={selectOpts}
           value={values[field]}
           onChange={(v) => updateValues({ ...valuesRef.current, [field]: v })}
-          focused={isFocused}
+          focused={focused}
         />
       ) : (
         <box
           border
-          borderColor={isFocused ? "#38bdf8" : undefined}
+          borderColor={focused ? "#38bdf8" : undefined}
           style={{ height: 3, backgroundColor: "#0b0b0b" }}
         >
           <input
             ref={inputRef}
-            focused={isFocused}
+            focused={focused}
             value={values[field]}
             placeholder={field === "command" ? t("board.exampleCommand") : ""}
             onInput={(value: string) =>

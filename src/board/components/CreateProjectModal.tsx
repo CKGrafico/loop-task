@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useTabNav } from "../hooks/useTabNav.js";
 import { useKeyboard, useTerminalDimensions } from "@opentui/react";
 import type { Project } from "../../types.js";
 import { t } from "../../i18n/index.js";
@@ -17,16 +18,9 @@ export function CreateProjectModal(props: {
   const [selectedColorKey, setSelectedColorKey] = useState<string>(defaultColorKey);
   const [error, setError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [focusField, setFocusField] = useState<"name" | "color" | "save" | "cancel">("name");
+  const { focusedItem: focusField, setFocusIndex } = useTabNav<"name" | "color" | "save" | "cancel">(["name", "color", "save", "cancel"]);
 
   useKeyboard((key) => {
-    if (key.name === "tab") {
-      const order: Array<"name" | "color" | "save" | "cancel"> = ["name", "color", "save", "cancel"];
-      const idx = order.indexOf(focusField);
-      const next = key.shift ? order[(idx - 1 + order.length) % order.length] : order[(idx + 1) % order.length];
-      setFocusField(next ?? "name");
-      return;
-    }
     if (key.name === "escape") {
       onCancel();
       return;
@@ -104,7 +98,6 @@ export function CreateProjectModal(props: {
             value={name}
             placeholder="My Project"
             onInput={(value: string) => setName(value)}
-            onSubmit={() => setFocusField("color")}
           />
         </box>
 
@@ -120,7 +113,7 @@ export function CreateProjectModal(props: {
             return (
               <box
                 key={colorKey}
-                onMouseDown={() => { setFocusField("color"); setSelectedColorKey(colorKey); }}
+                onMouseDown={() => { setFocusIndex(1); setSelectedColorKey(colorKey); }}
                 style={{
                   backgroundColor: isActive ? "#1e3a8a" : undefined,
                   paddingLeft: 1,

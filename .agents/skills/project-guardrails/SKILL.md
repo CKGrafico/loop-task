@@ -40,6 +40,15 @@ Gate order is `typecheck` → `lint` → `test` → `build`. The board TUI canno
 - **No inline magic numbers.** Add to `src/config/constants.ts` (POLL_MS, TOAST_TIMEOUT, etc.) and import.
 - **No nested if/else chains for dispatch.** When code branches on a string or enum value (view, status, key name, panel, action), use a dictionary/map lookup instead of stacked `if`/`else if` or `switch`/`case`. This applies to keybinding handlers, view routing, status-to-color mappings, cycle transitions, and action resolution. Nesting a second conditional inside a first (e.g. `if (view === "x") { if (key === "escape") { … } }`) is an anti-pattern — use `Record<Key, Handler>` dicts instead. Linear guard clauses (early returns with no nesting) are fine.
 
+## Board keyboard navigation conventions
+
+- **Tab/Shift+Tab is the ONLY way to move between focusable elements** (fields, buttons, panels). Arrow keys (up/down/left/right) are NEVER used for element-to-element navigation.
+- **Up/down arrows** are ONLY for navigating within a list (e.g., Navigator items, project list, task list) or within a SearchSelect's filtered options.
+- **Left/right arrows** are ONLY for cursor movement inside text inputs, or for cycling horizontal lists (e.g., the color picker). They are never used for panel navigation.
+- **useTabNav hook** (`src/board/hooks/useTabNav.ts`): all forms and modals MUST use this hook for Tab/Shift+Tab cycling. Do NOT register a separate `useKeyboard` handler for Tab in any form or modal. The hook handles `preventDefault` internally.
+- **SearchSelect** manages its own keyboard state (up/down, Enter, Escape, Backspace, typing) via its own `useKeyboard`. Parent forms must NOT intercept these keys when a SearchSelect is focused — the SearchSelect calls `preventDefault` + `stopPropagation`.
+- **Header navigation**: the board-level `useBoardKeybindings` handles Tab cycling within the 3 header buttons (`header-tasks`, `header-projects`, `header-new`). At the boundaries, it calls `onExitHeader` to hand focus back to the active view. Forms/modals must NOT handle Tab when `headerFocused` is true.
+
 ## Product / architecture rules
 
 - **Board-first.** Prefer adding management actions to the OpenTUI board over new top-level CLI commands. CLI exposes only `start` (background daemon) and `run` (foreground); no-arg opens the board.
