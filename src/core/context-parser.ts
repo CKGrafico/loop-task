@@ -22,6 +22,9 @@ export function parseStdout(raw: string): Record<string, unknown> | null {
     if (typeof whole === "string" || typeof whole === "number" || typeof whole === "boolean" || whole === null) {
       return { output: String(whole) };
     }
+    if (Array.isArray(whole)) {
+      return { output: trimmed };
+    }
   }
 
   const lines = trimmed.split("\n");

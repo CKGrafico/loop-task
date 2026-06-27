@@ -29,16 +29,16 @@ export function ContextHelpModal(props: { onClose: () => void }): React.ReactNod
           backgroundColor: "#111827",
         }}
       >
-        <text wrap fg="#e5e7eb">{t("context.helpRules")}</text>
+        <text fg="#e5e7eb">{t("context.helpRules")}</text>
         <text> </text>
-        <text wrap fg="#38bdf8">{"{{key}} Templates"}</text>
-        <text wrap fg="#e5e7eb">{t("context.helpTemplates")}</text>
+        <text fg="#38bdf8">{"{{key}} Templates"}</text>
+        <text fg="#e5e7eb">{t("context.helpTemplates")}</text>
         <text> </text>
-        <text wrap fg="#f59e0b">{"Caveat"}</text>
-        <text wrap fg="#e5e7eb">{t("context.helpCaveat")}</text>
+        <text fg="#f59e0b">{"Caveat"}</text>
+        <text fg="#e5e7eb">{t("context.helpCaveat")}</text>
         <text> </text>
-        <text wrap fg="#34d399">{"jq Tip"}</text>
-        <text wrap fg="#e5e7eb">{t("context.helpJqTip")}</text>
+        <text fg="#34d399">{"jq Tip"}</text>
+        <text fg="#e5e7eb">{t("context.helpJqTip")}</text>
         <text> </text>
         <text fg="#9ca3af">{"Press any key or click to close"}</text>
       </box>

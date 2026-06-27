@@ -285,13 +285,13 @@ Task 3: git checkout -b issue-{{number}}/{{output}}
 
 ### Wrapping values with --jq
 
-To avoid the plain-text `output` clobbering, wrap any value in a named JSON key using `--jq`:
+To avoid the plain-text `output` clobbering, wrap any value in a named JSON key using `--jq` (requires `--json` before `--jq`):
 
 ```bash
-loop-task new 30m --jq '{branch: .}' -- echo feature/add-dark-mode
+gh issue list --label "to refine" --json number,title --jq '{number: .[0].number, title: .[0].title}'
 ```
 
-This stores `{ "branch": "feature/add-dark-mode" }` in context instead of overwriting `output`.
+This stores `{ "number": 123, "title": "Fix login" }` in context instead of overwriting `output`.
 
 ## Development
 
