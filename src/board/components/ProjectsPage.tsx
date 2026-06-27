@@ -86,11 +86,6 @@ export function ProjectsPage(props: {
         key.preventDefault();
         return;
       }
-      if (focusedPanel === "actions" && direction === "right") {
-        onEnterHeader?.("right");
-        key.preventDefault();
-        return;
-      }
       if (focusedPanel === "list" && direction === "right") {
         setSelectedAction(0);
         setFocusedPanel("actions");
