@@ -70,9 +70,15 @@ export function TaskForm(props: {
       return;
     }
 
-    if (key.name === "up" || key.name === "down") {
-      const field = taskFields[focusIndex];
-      if (field === "onSuccessTaskId" || field === "onFailureTaskId") return;
+    const field = taskFields[focusIndex];
+    const isSelectField = field === "onSuccessTaskId" || field === "onFailureTaskId";
+
+    if (key.name === "up" || key.name === "down" || key.name === "left" || key.name === "right") {
+      if (isSelectField) return;
+      if (key.name === "left" || key.name === "right") {
+        key.preventDefault();
+        return;
+      }
       setFocusIndex((i) => {
         const next = key.name === "up" ? i - 1 : i + 1;
         if (next < 0) return cancelIndex;

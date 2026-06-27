@@ -124,9 +124,14 @@ export function CreateView(props: {
       return;
     }
 
-    if (key.name === "up" || key.name === "down") {
-      const field = filteredFields[focusIndex];
+    const field = filteredFields[focusIndex];
+
+    if (key.name === "up" || key.name === "down" || key.name === "left" || key.name === "right") {
       if (field === "project") return;
+      if (key.name === "left" || key.name === "right") {
+        key.preventDefault();
+        return;
+      }
       setFocusIndex((i) => {
         const next = key.name === "up" ? i - 1 : i + 1;
         if (next < 0) return cancelIndex;
@@ -138,7 +143,6 @@ export function CreateView(props: {
     }
 
     if (key.name === "return" || key.name === "enter" || key.name === " ") {
-      const field = filteredFields[focusIndex];
       if (field === "taskMode") {
         const next = valuesRef.current.taskMode === TASK_MODE_INLINE ? TASK_MODE_EXISTING : TASK_MODE_INLINE;
         updateValues({ ...valuesRef.current, taskMode: next });

@@ -62,15 +62,20 @@ export function ProjectsPage(props: {
 
   useKeyboard((key) => {
     if (subModal !== "none") return;
-    if (key.name === "up") {
-      if (focusedPanel === "list") setSelectedIndex((i) => Math.max(0, i - 1));
-      else setSelectedAction((a) => Math.max(0, a - 1));
+    if (key.name === "up" || key.name === "down") {
+      if (focusedPanel !== "list") {
+        key.preventDefault();
+        return;
+      }
+      if (key.name === "up") {
+        setSelectedIndex((i) => Math.max(0, i - 1));
+      } else {
+        setSelectedIndex((i) => Math.min(projects.length - 1, i + 1));
+      }
       key.preventDefault();
       return;
     }
-    if (key.name === "down") {
-      if (focusedPanel === "list") setSelectedIndex((i) => Math.min(projects.length - 1, i + 1));
-      else setSelectedAction((a) => Math.min(PROJECT_ACTION_COUNT - 1, a + 1));
+    if (key.name === "left" || key.name === "right") {
       key.preventDefault();
       return;
     }
@@ -86,12 +91,28 @@ export function ProjectsPage(props: {
         key.preventDefault();
         return;
       }
-      setFocusedPanel((p) => (p === "list" ? "actions" : "list"));
+      if (focusedPanel === "list" && direction === "right") {
+        setSelectedAction(0);
+        setFocusedPanel("actions");
+      } else if (focusedPanel === "actions" && direction === "right") {
+        if (selectedAction < PROJECT_ACTION_COUNT - 1) {
+          setSelectedAction((a) => a + 1);
+        } else {
+          onEnterHeader?.("right");
+        }
+      } else if (focusedPanel === "actions" && direction === "left") {
+        if (selectedAction > 0) {
+          setSelectedAction((a) => a - 1);
+        } else {
+          setFocusedPanel("list");
+        }
+      }
       key.preventDefault();
       return;
     }
     if (key.name === "return" || key.name === "enter") {
       if (focusedPanel === "list") {
+        setSelectedAction(0);
         setFocusedPanel("actions");
       } else {
         runAction(selectedAction);
