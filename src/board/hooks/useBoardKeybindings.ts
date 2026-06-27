@@ -377,7 +377,8 @@ export function useBoardKeybindings(params: BoardKeybindingParams): void {
       return;
     }
 
-    const panelHandler = panelHandlers[focusedPanel];
+    const isActionPanel = typeof focusedPanel === "string" && focusedPanel.startsWith("action-");
+    const panelHandler = isActionPanel ? panelHandlers["actions"] : panelHandlers[focusedPanel];
     if (panelHandler?.(name, {
       setSearchActive, setFilters, setSort, setEditTarget, push,
       setSelectedIndex, setSelectedRunIndex, setFocusedPanel, selectedRunCount, selected,

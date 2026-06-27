@@ -21,7 +21,7 @@ import { FilterBar } from "./components/FilterBar.js";
 import { Navigator } from "./components/Navigator.js";
 import { Inspector } from "./components/Inspector.js";
 import { RunHistory } from "./components/RunHistory.js";
-import { ActionButtons } from "./components/ActionButtons.js";
+import { ActionButtons, getActionKeys, getActionCount } from "./components/ActionButtons.js";
 import { HelpModal } from "./components/HelpModal.js";
 import { ContextHelpModal } from "./components/ContextHelpModal.js";
 import { Footer } from "./components/Footer.js";
@@ -345,8 +345,10 @@ export function App(props: { onQuit: () => void }): React.ReactNode {
   const FORM_VIEWS: View[] = ["create", "task-create", "task-edit"];
   const isFormView = FORM_VIEWS.includes(view);
 
-  const boardItems = ["search", "project-filter", "status", "sort", "header-1", "header-2", "header-3", "navigator", "run-history", "actions"];
-  const taskItems = ["task-search", "header-1", "header-2", "header-3", "task-list", "task-actions"];
+  const actionKeys = selected ? getActionKeys(selected.status) : [];
+  const actionItems = actionKeys.map((k) => `action-${k}`);
+  const boardItems = ["search", "project-filter", "status", "sort", "header-1", "header-2", "header-3", "navigator", "run-history", ...actionItems];
+  const taskItems = ["task-search", "header-1", "header-2", "header-3", "task-list", "task-action-0", "task-action-1", "task-action-2"];
 
   const navItems = isFormView ? [] : view === "task-list" ? taskItems : view === "projects" ? [] : boardItems;
 
@@ -356,6 +358,9 @@ export function App(props: { onQuit: () => void }): React.ReactNode {
   const isHeaderFocused = navFocused === "header-1" || navFocused === "header-2" || navFocused === "header-3";
 
   const derivedFocusedPanel = isHeaderFocused ? HEADER_MAP[navFocused!]! : navFocused ?? "loops";
+
+  const actionIdx = navFocused?.startsWith("action-") ? actionKeys.indexOf(navFocused.slice("action-".length)) : -1;
+  const derivedSelectedAction = actionIdx >= 0 ? actionIdx : selectedAction;
 
   const taskPanelMap: Partial<Record<string, TaskPanelFocus>> = { "task-search": "search", "task-list": "tasks", "task-actions": "actions" };
   const derivedTaskPanel: TaskPanelFocus = (navFocused ? taskPanelMap[navFocused] : undefined) ?? "tasks";
@@ -392,7 +397,7 @@ export function App(props: { onQuit: () => void }): React.ReactNode {
       const navIdx = navItems.indexOf(p as string);
       if (navIdx >= 0) setNavIndex(navIdx);
     }) as React.Dispatch<React.SetStateAction<PanelFocus>>,
-    selectedAction,
+    selectedAction: derivedSelectedAction,
     setSelectedAction,
     onAction: handleAction,
     onOpenRunLog: handleOpenRunLog,
@@ -562,8 +567,8 @@ export function App(props: { onQuit: () => void }): React.ReactNode {
               />
               <ActionButtons
                 loop={selected}
-                focused={derivedFocusedPanel === "actions"}
-                selectedAction={selectedAction}
+                focused={actionIdx >= 0}
+                selectedAction={derivedSelectedAction}
                 onAction={handleAction}
               />
             </box>
