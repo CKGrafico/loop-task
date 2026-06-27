@@ -348,9 +348,11 @@ export function App(props: { onQuit: () => void }): React.ReactNode {
   const actionKeys = selected ? getActionKeys(selected.status) : [];
   const actionItems = actionKeys.map((k) => `action-${k}`);
   const boardItems = ["search", "project-filter", "status", "sort", "header-1", "header-2", "header-3", "navigator", "run-history", ...actionItems];
-  const taskItems = ["task-search", "header-1", "header-2", "header-3", "task-list", "task-action-0", "task-action-1", "task-action-2"];
+  const taskItems = ["task-search", "header-1", "header-2", "header-3", "task-list", ...(["select", "edit", "delete"].map((k) => `task-action-${k}`))];
 
-  const navItems = isFormView ? [] : view === "task-list" ? taskItems : view === "projects" ? [] : boardItems;
+  const projectItems = ["header-1", "header-2", "header-3"];
+
+  const navItems = isFormView ? [] : view === "task-list" ? taskItems : view === "projects" ? projectItems : boardItems;
 
   const { focusedItem: navFocused, setFocusIndex: setNavIndex, enabled: navEnabled } = useTabNav<string>(navItems);
 
@@ -362,7 +364,16 @@ export function App(props: { onQuit: () => void }): React.ReactNode {
   const actionIdx = navFocused?.startsWith("action-") ? actionKeys.indexOf(navFocused.slice("action-".length)) : -1;
   const derivedSelectedAction = actionIdx >= 0 ? actionIdx : selectedAction;
 
-  const taskPanelMap: Partial<Record<string, TaskPanelFocus>> = { "task-search": "search", "task-list": "tasks", "task-actions": "actions" };
+  const taskActionIdx = navFocused?.startsWith("task-action-") ? ["select", "edit", "delete"].indexOf(navFocused.slice("task-action-".length)) : -1;
+  const derivedTaskAction = taskActionIdx >= 0 ? taskActionIdx : taskSelectedAction;
+
+  const taskPanelMap: Partial<Record<string, TaskPanelFocus>> = {
+    "task-search": "search",
+    "task-list": "tasks",
+    "task-action-select": "actions",
+    "task-action-edit": "actions",
+    "task-action-delete": "actions",
+  };
   const derivedTaskPanel: TaskPanelFocus = (navFocused ? taskPanelMap[navFocused] : undefined) ?? "tasks";
 
   useBoardKeybindings({
@@ -416,8 +427,16 @@ export function App(props: { onQuit: () => void }): React.ReactNode {
     tasks: filteredTasks,
     taskSelectedIndex,
     setTaskSelectedIndex,
-    taskSelectedAction,
-    setTaskSelectedAction,
+    taskSelectedAction: derivedTaskAction,
+    setTaskSelectedAction: (( updater: number | ((prev: number) => number)) => {
+      const nextIdx = typeof updater === "function" ? updater(derivedTaskAction) : updater;
+      const taskActions = ["select", "edit", "delete"];
+      const actionKey = taskActions[nextIdx];
+      if (actionKey) {
+        const navIdx = navItems.indexOf(`task-action-${actionKey}`);
+        if (navIdx >= 0) setNavIndex(navIdx);
+      }
+    }) as React.Dispatch<React.SetStateAction<number>>,
     taskFocusedPanel: derivedTaskPanel,
     setTaskFocusedPanel: ((p: TaskPanelFocus) => {
       const navIdx = navItems.indexOf(p === "search" ? "task-search" : p === "actions" ? "task-actions" : "task-list");
@@ -525,8 +544,8 @@ export function App(props: { onQuit: () => void }): React.ReactNode {
               <TaskActionButtons
                 key={`tab-${selectedTask?.id}`}
                 task={selectedTask}
-                focused={derivedTaskPanel === "actions"}
-                selectedAction={taskSelectedAction}
+                focused={taskActionIdx >= 0}
+                selectedAction={derivedTaskAction}
                 selectable={stack.includes("create") || stack.includes("task-edit")}
                 onAction={handleTaskAction}
               />
