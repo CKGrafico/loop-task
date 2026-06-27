@@ -293,10 +293,10 @@ interpolated: `gh issue edit 123 --add-label "refining" --remove-label "to refin
 **Task 3** (chain, onSuccess): Rewrite with AI (edits the issue directly)
 
 ```bash
-opencode run "Find the GitHub issue with label 'refining' and rewrite it as a detailed user story using project context. Update the issue title and body directly using gh issue edit. Issue number: {{number}}" --model "opencode/big-pickle"
+opencode run "Rewrite this GitHub issue as a detailed user story using project context. Update the issue title and body directly using gh issue edit. Issue number: {{number}} Original title: {{title}} Original body: {{body}}" --model "opencode/big-pickle"
 ```
 
-interpolated: `opencode run "Find the GitHub issue with label 'refining' and rewrite it as a detailed user story using project context. Update the issue title and body directly using gh issue edit. Issue number: 123" --model "opencode/big-pickle"`
+interpolated: `opencode run "Rewrite this GitHub issue as a detailed user story using project context. Update the issue title and body directly using gh issue edit. Issue number: 123 Original title: Fix login Original body: It doesn't work" --model "opencode/big-pickle"`
 
 **Task 4** (chain, onSuccess): Relabel as ready to implement
 
