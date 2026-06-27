@@ -45,6 +45,8 @@ loop-cli/
 │   ├── core/                   # Runtime-agnostic loop execution
 │   │   ├── loop-controller.ts  # LoopController: per-loop state machine (EventEmitter)
 │   │   ├── command-runner.ts   # executeCommand / executeCommandForeground (execa)
+│   │   ├── context-parser.ts   # parseStdout: JSON/JSONL/plain-text -> chain context entries
+│   │   ├── template.ts         # interpolate: {{key}} Mustache-style template substitution
 │   │   ├── foreground-loop.ts  # runLoop: blocking foreground loop for `run`
 │   │   └── log-rotator.ts      # Size-based log rotation (1 MB × 3 generations)
 │   │
