@@ -23,6 +23,7 @@ export interface TaskKeybindingParams {
   onCreateTask: () => void;
   onEnterHeader: (direction: "left" | "right") => void;
   onToggleContextHelp: () => void;
+  headerFocused: boolean;
   selectable?: boolean;
 }
 
@@ -46,6 +47,7 @@ export function useTaskKeybindings(params: TaskKeybindingParams): void {
     onCreateTask,
     onEnterHeader,
     onToggleContextHelp,
+    headerFocused = false,
     selectable = true,
   } = params;
 
@@ -56,6 +58,7 @@ export function useTaskKeybindings(params: TaskKeybindingParams): void {
 
   useKeyboard((key) => {
     if (view !== "task-list") return;
+    if (headerFocused) return;
     const name = key.name;
 
     if (confirm) return;

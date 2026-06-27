@@ -387,7 +387,7 @@ export function App(props: { onQuit: () => void }): React.ReactNode {
       if (view === "projects") {
         setFocusedPanel("projects");
       } else if (view === "task-list") {
-        setFocusedPanel(direction === "right" ? "header-tasks" : "header-new");
+        setTaskFocusedPanel(direction === "right" ? "search" : "actions");
       } else {
         setFocusedPanel("loops");
       }
@@ -415,6 +415,7 @@ export function App(props: { onQuit: () => void }): React.ReactNode {
       setFocusedPanel(direction === "right" ? "header-tasks" : "header-new");
     },
     onToggleContextHelp: () => setContextHelpOpen((v) => !v),
+    headerFocused: focusedPanel === "header-tasks" || focusedPanel === "header-projects" || focusedPanel === "header-new",
     selectable: stack.includes("create") || stack.includes("task-edit"),
   });
 
