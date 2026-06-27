@@ -271,20 +271,26 @@ When tasks are arranged in a chain (on-success or on-failure), context flows bet
 
 ### Example: Issue Refinement Chain
 
-A three-task chain that finds an issue, rewrites it with AI, and relabels it - all without re-querying:
+A four-task chain that finds an issue, marks it in-progress, rewrites it with AI, and relabels it - all without re-querying:
 
-**Task 1** (primary): Find an issue to refine and mark it as in-progress
+**Task 1** (primary): Find an issue to refine
 
 ```bash
-NUMBER=$(gh issue list --label "to refine" --limit 1 --json number,title,body --jq '{number: .[0].number, title: .[0].title, body: .[0].body}' | tee /dev/stderr | jq -r '.number') && gh issue edit "$NUMBER" --add-label "refining" --remove-label "to refine"
+gh issue list --label "to refine" --limit 1 --json number,title,body --jq '{number: .[0].number, title: .[0].title, body: .[0].body}'
 ```
 
 stdout: `{"number":123,"title":"Fix login","body":"It doesn't work"}`
 context: `{ number: 123, title: "Fix login", body: "It doesn't work" }`
 
-> **Note:** The primary task cannot use `{{key}}` interpolation because the chain context is empty when it runs. The `tee /dev/stderr | jq -r` trick captures the JSON for context (from stdout) while also extracting the number for the relabel command within the same shell pipeline.
+**Task 2** (chain, onSuccess): Mark as in-progress
 
-**Task 2** (chain, onSuccess): Rewrite with AI
+```bash
+gh issue edit {{number}} --add-label "refining" --remove-label "to refine"
+```
+
+interpolated: `gh issue edit 123 --add-label "refining" --remove-label "to refine"`
+
+**Task 3** (chain, onSuccess): Rewrite with AI
 
 ```bash
 opencode run "Rewrite this GitHub issue as a detailed user story using project context and return only JSON with fields title and body. Original title: {{title}} Original body: {{body}}" --model "opencode/big-pickle"
@@ -295,7 +301,7 @@ interpolated: `opencode run "Rewrite this GitHub issue as a detailed user story 
 stdout: `{"title":"As a user, I want to log in securely","body":"## Acceptance Criteria\n- Login form validates email\n- ..."}`
 context: `{ number: 123, title: "As a user, I want to log in securely", body: "## Acceptance Criteria\n- ..." }`
 
-**Task 3** (chain, onSuccess): Apply the rewrite and relabel
+**Task 4** (chain, onSuccess): Apply the rewrite and relabel
 
 ```bash
 gh issue edit {{number}} --title "{{title}}" --body "{{body}}" --remove-label "refining" --add-label "to implement"
@@ -305,9 +311,10 @@ interpolated: `gh issue edit 123 --title "As a user, I want to log in securely" 
 
 ### How it works
 
-1. Task 1 queries the issue and emits a JSON object with `number`, `title`, and `body` via `--jq`. It also labels the issue as "refining" using `{{number}}` from its own stdout.
-2. Task 2 receives `{{title}}` and `{{body}}` interpolated from task 1's context. It rewrites the issue and outputs a new JSON object with updated `title` and `body`. Since it uses the same key names, the context is updated with the new values (merge with last-writer-wins).
-3. Task 3 receives `{{number}}` (still 123 from task 1), `{{title}}` and `{{body}}` (now the rewritten versions from task 2). It applies the edits and relabels the issue - no re-query needed.
+1. Task 1 queries the issue and emits a JSON object with `number`, `title`, and `body` via `--jq`. The primary task cannot use `{{key}}` interpolation because the chain context is empty when it runs.
+2. Task 2 receives `{{number}}` interpolated from task 1's context. It relabels the issue from "to refine" to "refining" - no re-query needed.
+3. Task 3 receives `{{title}}` and `{{body}}` interpolated from the accumulated context. It rewrites the issue and outputs a new JSON object with updated `title` and `body`. Since it uses the same key names, the context is updated with the new values (merge with last-writer-wins).
+4. Task 4 receives `{{number}}` (still 123 from task 1), `{{title}}` and `{{body}}` (now the rewritten versions from task 3). It applies the edits and relabels the issue as "to implement" - no re-query needed.
 
 ### Wrapping values with --jq
 
