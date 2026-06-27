@@ -293,8 +293,10 @@ interpolated: `gh issue edit 123 --add-label "refining" --remove-label "to refin
 **Task 3** (chain, onSuccess): Rewrite with AI
 
 ```bash
-opencode run "Rewrite this GitHub issue as a detailed user story using project context and return only JSON with fields title and body." --model "opencode/big-pickle"
+opencode run "Rewrite this GitHub issue as a detailed user story using project context and return only JSON with fields title and body. Original title: {{title}} Original body: {{body}}" --model "opencode/big-pickle"
 ```
+
+interpolated: `opencode run "Rewrite this GitHub issue as a detailed user story using project context and return only JSON with fields title and body. Original title: Fix login Original body: It doesn't work" --model "opencode/big-pickle"`
 
 stdout: `{"title":"As a user, I want to log in securely","body":"## Acceptance Criteria\n- Login form validates email\n- ..."}`
 context: `{ number: 123, title: "As a user, I want to log in securely", body: "## Acceptance Criteria\n- ..." }`
