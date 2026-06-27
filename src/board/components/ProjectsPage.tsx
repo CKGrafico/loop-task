@@ -92,15 +92,19 @@ export function ProjectsPage(props: {
       } else if (focusedPanel === "actions" && direction === "right") {
         if (selectedAction < PROJECT_ACTION_COUNT - 1) {
           setSelectedAction((a) => a + 1);
-        } else {
-          onEnterHeader?.("right");
+          key.preventDefault();
+          return;
         }
+        onEnterHeader?.("right");
       } else if (focusedPanel === "actions" && direction === "left") {
         if (selectedAction > 0) {
           setSelectedAction((a) => a - 1);
-        } else {
-          setFocusedPanel("list");
+          key.preventDefault();
+          return;
         }
+        setFocusedPanel("list");
+        key.preventDefault();
+        return;
       }
       key.preventDefault();
       return;
