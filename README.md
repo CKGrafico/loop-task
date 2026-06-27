@@ -290,31 +290,28 @@ gh issue edit {{number}} --add-label "refining" --remove-label "to refine"
 
 interpolated: `gh issue edit 123 --add-label "refining" --remove-label "to refine"`
 
-**Task 3** (chain, onSuccess): Rewrite with AI
+**Task 3** (chain, onSuccess): Rewrite with AI (edits the issue directly)
 
 ```bash
-opencode run "Rewrite this GitHub issue as a detailed user story using project context and return only JSON with fields title and body. Original title: {{title}} Original body: {{body}}" --model "opencode/big-pickle"
+opencode run "Find the GitHub issue with label 'refining' and rewrite it as a detailed user story using project context. Update the issue title and body directly using gh issue edit. Issue number: {{number}}" --model "opencode/big-pickle"
 ```
 
-interpolated: `opencode run "Rewrite this GitHub issue as a detailed user story using project context and return only JSON with fields title and body. Original title: Fix login Original body: It doesn't work" --model "opencode/big-pickle"`
+interpolated: `opencode run "Find the GitHub issue with label 'refining' and rewrite it as a detailed user story using project context. Update the issue title and body directly using gh issue edit. Issue number: 123" --model "opencode/big-pickle"`
 
-stdout: `{"title":"As a user, I want to log in securely","body":"## Acceptance Criteria\n- Login form validates email\n- ..."}`
-context: `{ number: 123, title: "As a user, I want to log in securely", body: "## Acceptance Criteria\n- ..." }`
-
-**Task 4** (chain, onSuccess): Apply the rewrite and relabel
+**Task 4** (chain, onSuccess): Relabel as ready to implement
 
 ```bash
-gh issue edit {{number}} --title "{{title}}" --body "{{body}}" --remove-label "refining" --add-label "to implement"
+gh issue edit {{number}} --remove-label "refining" --add-label "to implement"
 ```
 
-interpolated: `gh issue edit 123 --title "As a user, I want to log in securely" --body "## Acceptance Criteria\n- ..." --remove-label "refining" --add-label "to implement"`
+interpolated: `gh issue edit 123 --remove-label "refining" --add-label "to implement"`
 
 ### How it works
 
 1. Task 1 queries the issue and emits a JSON object with `number`, `title`, and `body` via `--jq`. The primary task cannot use `{{key}}` interpolation because the chain context is empty when it runs.
 2. Task 2 receives `{{number}}` interpolated from task 1's context. It relabels the issue from "to refine" to "refining" - no re-query needed.
-3. Task 3 runs opencode, which finds the issue by the "refining" label and rewrites it. It outputs a new JSON object with updated `title` and `body`. Since it uses the same key names, the context is updated with the new values (merge with last-writer-wins).
-4. Task 4 receives `{{number}}` (still 123 from task 1), `{{title}}` and `{{body}}` (now the rewritten versions from task 3). It applies the edits and relabels the issue as "to implement" - no re-query needed.
+3. Task 3 runs opencode, which finds the issue by the "refining" label and rewrites it in place using `gh issue edit`. The AI agent edits the issue directly - no need to parse its stdout as JSON.
+4. Task 4 receives `{{number}}` (still 123 from task 1) and relabels the issue as "to implement" - no re-query needed.
 
 ### Wrapping values with --jq
 
