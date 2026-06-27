@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useKeyboard } from "@opentui/react";
 import type { LoopMeta, Project } from "../../types.js";
 import { t } from "../../i18n/index.js";
@@ -45,6 +45,15 @@ export function ProjectsPage(props: {
   const [subModal, setSubModal] = useState<SubModal>("none");
   const [focusedPanel, setFocusedPanel] = useState<"list" | "actions">("list");
   const [selectedAction, setSelectedAction] = useState(0);
+
+  const prevHeaderFocused = useRef(headerFocused);
+  useEffect(() => {
+    if (prevHeaderFocused.current && !headerFocused) {
+      setFocusedPanel("list");
+      setSelectedAction(0);
+    }
+    prevHeaderFocused.current = headerFocused;
+  }, [headerFocused]);
 
   // Expose create trigger to parent via callback
   useState(() => { onOpenCreate?.(() => setSubModal("create")); });

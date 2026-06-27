@@ -383,6 +383,15 @@ export function App(props: { onQuit: () => void }): React.ReactNode {
     onAddLoop: () => { setEditTarget(null); push("create"); },
     onAddTask: () => { setEditTask(null); push("task-create"); },
     onSelectProject: () => setProjectsModalOpen(true),
+    onExitHeader: (direction) => {
+      if (view === "projects") {
+        setFocusedPanel("projects");
+      } else if (view === "task-list") {
+        setFocusedPanel(direction === "right" ? "header-tasks" : "header-new");
+      } else {
+        setFocusedPanel("loops");
+      }
+    },
   });
 
   useTaskKeybindings({

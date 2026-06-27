@@ -248,6 +248,7 @@ export interface BoardKeybindingParams {
   onAddLoop?: () => void;
   onAddTask?: () => void;
   onSelectProject?: () => void;
+  onExitHeader?: (direction: "left" | "right") => void;
 }
 
 export function useBoardKeybindings(params: BoardKeybindingParams): void {
@@ -291,6 +292,7 @@ export function useBoardKeybindings(params: BoardKeybindingParams): void {
     onAddLoop,
     onAddTask,
     onSelectProject,
+    onExitHeader,
   } = params;
 
   useKeyboard((key) => {
@@ -359,10 +361,16 @@ export function useBoardKeybindings(params: BoardKeybindingParams): void {
 
       if (isHeader) {
         const idx = HEADER_PANELS.indexOf(focusedPanel);
-        const nextIdx = direction === "right"
-          ? (idx + 1) % HEADER_PANELS.length
-          : (idx - 1 + HEADER_PANELS.length) % HEADER_PANELS.length;
-        setFocusedPanel(HEADER_PANELS[nextIdx]);
+        if (direction === "right" && idx === HEADER_PANELS.length - 1) {
+          onExitHeader?.("right");
+        } else if (direction === "left" && idx === 0) {
+          onExitHeader?.("left");
+        } else {
+          const nextIdx = direction === "right"
+            ? idx + 1
+            : idx - 1;
+          setFocusedPanel(HEADER_PANELS[nextIdx]);
+        }
         key.preventDefault();
         return;
       }
