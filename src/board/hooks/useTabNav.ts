@@ -11,11 +11,14 @@ interface UseTabNavReturn<T> {
   setFocusIndex: (i: number) => void;
   focusedItem: T | undefined;
   isFocused: (item: T) => boolean;
+  enabled: boolean;
+  setEnabled: (e: boolean) => void;
 }
 
 export function useTabNav<T>(items: T[], options?: UseTabNavOptions): UseTabNavReturn<T> {
   const initial = options?.initialIndex ?? 0;
   const [focusIndex, setFocusIndex] = useState(Math.min(initial, Math.max(0, items.length - 1)));
+  const [enabled, setEnabled] = useState(true);
 
   const onCycleOut = options?.onCycleOut;
 
@@ -24,6 +27,7 @@ export function useTabNav<T>(items: T[], options?: UseTabNavOptions): UseTabNavR
   }, [items.length]);
 
   useKeyboard((key) => {
+    if (!enabled) return;
     if (key.name !== "tab") return;
 
     const direction = key.shift ? "left" : "right";
@@ -57,5 +61,5 @@ export function useTabNav<T>(items: T[], options?: UseTabNavOptions): UseTabNavR
   const focusedItem = items[focusIndex];
   const isFocused = useCallback((item: T) => item === focusedItem, [focusedItem]);
 
-  return { focusIndex, setFocusIndex, focusedItem, isFocused };
+  return { focusIndex, setFocusIndex, focusedItem, isFocused, enabled, setEnabled };
 }

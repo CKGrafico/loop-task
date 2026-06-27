@@ -248,7 +248,6 @@ export interface BoardKeybindingParams {
   onAddLoop?: () => void;
   onAddTask?: () => void;
   onSelectProject?: () => void;
-  onExitHeader?: (direction: "left" | "right") => void;
 }
 
 export function useBoardKeybindings(params: BoardKeybindingParams): void {
@@ -292,7 +291,6 @@ export function useBoardKeybindings(params: BoardKeybindingParams): void {
     onAddLoop,
     onAddTask,
     onSelectProject,
-    onExitHeader,
   } = params;
 
   useKeyboard((key) => {
@@ -354,28 +352,6 @@ export function useBoardKeybindings(params: BoardKeybindingParams): void {
       return;
     }
 
-    if (name === "tab" && view !== "board") {
-      const HEADER_PANELS: PanelFocus[] = ["header-tasks", "header-projects", "header-new"];
-      const isHeader = HEADER_PANELS.includes(focusedPanel);
-      const direction = key.shift ? "left" : "right";
-
-      if (isHeader) {
-        const idx = HEADER_PANELS.indexOf(focusedPanel);
-        if (direction === "right" && idx === HEADER_PANELS.length - 1) {
-          onExitHeader?.("right");
-        } else if (direction === "left" && idx === 0) {
-          onExitHeader?.("left");
-        } else {
-          const nextIdx = direction === "right"
-            ? idx + 1
-            : idx - 1;
-          setFocusedPanel(HEADER_PANELS[nextIdx]);
-        }
-        key.preventDefault();
-        return;
-      }
-    }
-
     if (view !== "board" && (name === "return" || name === "enter")) {
       if (view === "task-list") {
         if (focusedPanel === "header-tasks") { onViewProjects?.(); key.preventDefault(); return; }
@@ -393,34 +369,6 @@ export function useBoardKeybindings(params: BoardKeybindingParams): void {
     }
 
     if (view !== "board") return;
-
-    if (name === "tab") {
-      const direction = key.shift ? "left" : "right";
-      if (focusedPanel === "actions") {
-        const actionCount = selected ? getActionCount(selected.status) : 0;
-        if (direction === "left" && selectedAction === 0) {
-          setFocusedPanel((p) => nextPanel(p, "left"));
-        } else if (direction === "right" && selectedAction === actionCount - 1) {
-          setFocusedPanel((p) => nextPanel(p, "right"));
-        } else {
-          setSelectedAction((i) =>
-            direction === "right"
-              ? Math.min(actionCount - 1, i + 1)
-              : Math.max(0, i - 1)
-          );
-        }
-      } else {
-        const next = nextPanel(focusedPanel, direction);
-        if (next === "actions") {
-          setFocusedPanel("actions");
-          setSelectedAction(0);
-        } else {
-          setFocusedPanel(next);
-        }
-      }
-      key.preventDefault();
-      return;
-    }
 
     const globalHandler = GLOBAL_KEYS[name];
     if (globalHandler) {
