@@ -43,14 +43,11 @@ export function EditProjectModal(props: {
       return;
     }
     if (focusField === "color") {
-      if (key.name === "left") {
+      if (key.name === "left" || key.name === "right") {
         const idx = PROJECT_COLOR_KEYS.indexOf(selectedColorKey);
-        setSelectedColorKey(PROJECT_COLOR_KEYS[(idx - 1 + PROJECT_COLOR_KEYS.length) % PROJECT_COLOR_KEYS.length] ?? selectedColorKey);
-        return;
-      }
-      if (key.name === "right") {
-        const idx = PROJECT_COLOR_KEYS.indexOf(selectedColorKey);
-        setSelectedColorKey(PROJECT_COLOR_KEYS[(idx + 1) % PROJECT_COLOR_KEYS.length] ?? selectedColorKey);
+        const dir = key.name === "left" ? -1 : 1;
+        setSelectedColorKey(PROJECT_COLOR_KEYS[(idx + dir + PROJECT_COLOR_KEYS.length) % PROJECT_COLOR_KEYS.length] ?? selectedColorKey);
+        key.preventDefault();
         return;
       }
     }
