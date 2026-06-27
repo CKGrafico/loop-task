@@ -276,11 +276,13 @@ A three-task chain that finds an issue, rewrites it with AI, and relabels it - a
 **Task 1** (primary): Find an issue to refine and mark it as in-progress
 
 ```bash
-gh issue list --label "to refine" --limit 1 --json number,title,body --jq '{number: .[0].number, title: .[0].title, body: .[0].body}' && gh issue edit {{number}} --add-label "refining" --remove-label "to refine"
+NUMBER=$(gh issue list --label "to refine" --limit 1 --json number,title,body --jq '{number: .[0].number, title: .[0].title, body: .[0].body}' | tee /dev/stderr | jq -r '.number') && gh issue edit "$NUMBER" --add-label "refining" --remove-label "to refine"
 ```
 
 stdout: `{"number":123,"title":"Fix login","body":"It doesn't work"}`
 context: `{ number: 123, title: "Fix login", body: "It doesn't work" }`
+
+> **Note:** The primary task cannot use `{{key}}` interpolation because the chain context is empty when it runs. The `tee /dev/stderr | jq -r` trick captures the JSON for context (from stdout) while also extracting the number for the relabel command within the same shell pipeline.
 
 **Task 2** (chain, onSuccess): Rewrite with AI
 
