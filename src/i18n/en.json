@@ -128,6 +128,7 @@
   "board.idleLabel": "    Stopped: ",
   "board.searchTitle": " Search / ",
   "board.searchPlaceholder": "type to filter, enter to apply",
+  "board.searchSelectPlaceholder": "type to filter...",
   "board.searchEmpty": "press / to search",
   "board.statusFilterTitle": " Status x ",
   "board.sortTitle": " Order o ",

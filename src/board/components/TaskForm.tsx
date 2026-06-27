@@ -8,6 +8,7 @@ import { createTask, updateTask, listTasks } from "../daemon.js";
 import { useHoverState } from "../hooks/useHoverState.js";
 import { useInputShortcuts } from "../hooks/useInputShortcuts.js";
 import { HOVER_BG } from "../../config/constants.js";
+import { SearchSelect } from "./SearchSelect.js";
 
 const taskFields = ["name", "command", "onSuccessTaskId", "onFailureTaskId"] as const;
 type TaskField = (typeof taskFields)[number];
@@ -70,6 +71,8 @@ export function TaskForm(props: {
     }
 
     if (key.name === "up" || key.name === "down") {
+      const field = taskFields[focusIndex];
+      if (field === "onSuccessTaskId" || field === "onFailureTaskId") return;
       setFocusIndex((i) => {
         const next = key.name === "up" ? i - 1 : i + 1;
         if (next < 0) return cancelIndex;
@@ -247,29 +250,18 @@ function TaskFormRow(props: {
   const isFocused = focusIndex === index;
   const isSelect = field === "onSuccessTaskId" || field === "onFailureTaskId";
   const selectOpts = isSelect ? chainOptions : [];
-  const selectedIdx = isSelect ? selectOpts.findIndex((o) => o.value === values[field]) : 0;
 
   return (
     <box style={{ flexDirection: "column", ...style }}>
       <text fg={isFocused ? "#38bdf8" : "#e5e7eb"}>{labels[field]}</text>
       <text fg="#6b7280">{hints[field]}</text>
       {isSelect ? (
-        <box
-          border
-          borderColor={isFocused ? "#38bdf8" : undefined}
-          style={{ height: Math.min(selectOpts.length + 2, 6), backgroundColor: "#0b0b0b" }}
-        >
-          <select
-            focused={isFocused}
-            options={selectOpts}
-            selectedIndex={Math.max(0, selectedIdx)}
-            showDescription={false}
-            style={{ flexGrow: 1 }}
-            onChange={(_i: number, option: { value?: string } | null) =>
-              updateValues({ ...valuesRef.current, [field]: option?.value ?? "" })
-            }
-          />
-        </box>
+        <SearchSelect
+          options={selectOpts}
+          value={values[field]}
+          onChange={(v) => updateValues({ ...valuesRef.current, [field]: v })}
+          focused={isFocused}
+        />
       ) : (
         <box
           border

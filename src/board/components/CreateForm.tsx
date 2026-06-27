@@ -9,6 +9,7 @@ import { commandLine } from "../format.js";
 import { createLoop, updateLoop, listTasks } from "../daemon.js";
 import { useHoverState } from "../hooks/useHoverState.js";
 import { useInputShortcuts } from "../hooks/useInputShortcuts.js";
+import { SearchSelect } from "./SearchSelect.js";
 import { HOVER_BG } from "../../config/constants.js";
 
 export const TASK_MODE_INLINE = "inline";
@@ -125,16 +126,7 @@ export function CreateView(props: {
 
     if (key.name === "up" || key.name === "down") {
       const field = filteredFields[focusIndex];
-      if (field === "project" && projectOptions.length > 1) {
-        const currentIdx = projectOptions.findIndex((p) => p.value === valuesRef.current.project);
-        const nextIdx = key.name === "down"
-          ? (currentIdx + 1) % projectOptions.length
-          : (currentIdx - 1 + projectOptions.length) % projectOptions.length;
-        const next = projectOptions[nextIdx];
-        if (next) updateValues({ ...valuesRef.current, project: next.value });
-        key.preventDefault();
-        return;
-      }
+      if (field === "project") return;
       setFocusIndex((i) => {
         const next = key.name === "up" ? i - 1 : i + 1;
         if (next < 0) return cancelIndex;
@@ -482,25 +474,12 @@ function FormRow(props: {
           </text>
         </box>
       ) : isProjectField ? (
-        <box
-          border
-          borderColor={isFocused ? "#38bdf8" : undefined}
-          style={{ height: 3, flexDirection: "row", backgroundColor: "#0b0b0b", alignItems: "center", paddingLeft: 1 }}
-          onMouseDown={() => setFocusIndex(index)}
-        >
-          {projectOptions.map((opt) => {
-            const isActive = values.project === opt.value;
-            return (
-              <box
-                key={opt.value}
-                onMouseDown={() => updateValues({ ...valuesRef.current, project: opt.value })}
-                style={{ backgroundColor: isActive ? "#1e3a8a" : undefined, paddingLeft: 1, paddingRight: 1, marginRight: 1 }}
-              >
-                <text fg={isActive ? "#ffffff" : "#9ca3af"}>{`● ${opt.name}`}</text>
-              </box>
-            );
-          })}
-        </box>
+        <SearchSelect
+          options={projectOptions}
+          value={values.project}
+          onChange={(v) => updateValues({ ...valuesRef.current, project: v })}
+          focused={isFocused}
+        />
       ) : (
         <box
           border
