@@ -76,7 +76,8 @@ loop-cli/
 │   │   ├── toast.tsx           # Toast notifications
 │   │   ├── types.ts            # View/Mode/ConfirmState/DaemonStatus
 │   │   ├── components/         # Header, FilterBar, Navigator, Inspector, Timeline,
-│   │   │                       #   DetailView, CreateForm, ConfirmModal, HelpModal, Footer
+│   │   │                       #   DetailView, CreateForm, TaskForm, SearchSelect,
+│   │   │                       #   ConfirmModal, HelpModal, ContextHelpModal, Footer
 │   │   └── hooks/              # useLoopPolling, useLogStream, useBoardKeybindings
 │   │
 │   ├── config/
