@@ -21,7 +21,6 @@ export interface TaskKeybindingParams {
   onTaskAction: (action: string) => void;
   onCancel: () => void;
   onCreateTask: () => void;
-  onEnterHeader: (direction: "left" | "right") => void;
   onToggleContextHelp: () => void;
   headerFocused: boolean;
   selectable?: boolean;
@@ -45,7 +44,6 @@ export function useTaskKeybindings(params: TaskKeybindingParams): void {
     onTaskAction,
     onCancel,
     onCreateTask,
-    onEnterHeader,
     onToggleContextHelp,
     headerFocused = false,
     selectable = true,
@@ -103,33 +101,6 @@ export function useTaskKeybindings(params: TaskKeybindingParams): void {
 
     if (name === "/" && taskFocusedPanel === "tasks") {
       setTaskSearchActive(true);
-      key.preventDefault();
-      return;
-    }
-
-    if (name === "tab") {
-      const direction = key.shift ? "left" : "right";
-      if (taskFocusedPanel === "actions") {
-        if (direction === "left" && taskSelectedAction === 0) {
-          setTaskFocusedPanel((p) => nextTaskPanel(p, "left"));
-        } else if (direction === "right" && taskSelectedAction === taskActionCount - 1) {
-          onEnterHeader("right");
-          key.preventDefault();
-          return;
-        } else {
-          setTaskSelectedAction((i) =>
-            direction === "right"
-              ? Math.min(taskActionCount - 1, i + 1)
-              : Math.max(0, i - 1)
-          );
-        }
-      } else if (taskFocusedPanel === "search" && direction === "left") {
-        onEnterHeader("left");
-        key.preventDefault();
-        return;
-      } else {
-        setTaskFocusedPanel((p) => nextTaskPanel(p, direction));
-      }
       key.preventDefault();
       return;
     }

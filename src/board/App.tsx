@@ -37,6 +37,7 @@ import { fetchRunLog, deleteLoop, pauseLoop, resumeLoop, stopLoop, playLoop, tri
 import { useBreakpoint } from "./hooks/useBreakpoint.js";
 import { useRouter } from "./router.js";
 import { POLL_MS } from "../config/constants.js";
+import { useTabNav } from "./hooks/useTabNav.js";
 
 
 const VIEW_TO_MODE: Partial<Record<View, Mode>> = {
@@ -77,7 +78,6 @@ export function App(props: { onQuit: () => void }): React.ReactNode {
   const [pendingTaskSelection, setPendingTaskSelection] = useState<{ id: string; name: string } | null>(null);
   const [selectedRunIndex, setSelectedRunIndex] = useState(0);
   const [selectedAction, setSelectedAction] = useState(0);
-  const [focusedPanel, setFocusedPanel] = useState<PanelFocus>("loops");
   const [logModalRun, setLogModalRun] = useState<RunRecord | null>(null);
   const [logModalLines, setLogModalLines] = useState<string[]>([]);
   const [logModalLoading, setLogModalLoading] = useState(false);
@@ -85,7 +85,6 @@ export function App(props: { onQuit: () => void }): React.ReactNode {
   const [tasks, setTasks] = useState<TaskDefinition[]>([]);
   const [taskSelectedIndex, setTaskSelectedIndex] = useState(0);
   const [taskSelectedAction, setTaskSelectedAction] = useState(0);
-  const [taskFocusedPanel, setTaskFocusedPanel] = useState<TaskPanelFocus>("tasks");
   const [taskSearchActive, setTaskSearchActive] = useState(false);
   const [taskQuery, setTaskQuery] = useState("");
 
@@ -343,6 +342,24 @@ export function App(props: { onQuit: () => void }): React.ReactNode {
     pushToast("success", updated ? t("board.toastTaskUpdated", { id }) : t("board.toastTaskCreated", { id }));
   };
 
+  const FORM_VIEWS: View[] = ["create", "task-create", "task-edit"];
+  const isFormView = FORM_VIEWS.includes(view);
+
+  const boardItems = ["search", "project-filter", "status", "sort", "header-1", "header-2", "header-3", "navigator", "run-history", "actions"];
+  const taskItems = ["task-search", "header-1", "header-2", "header-3", "task-list", "task-actions"];
+
+  const navItems = isFormView ? [] : view === "task-list" ? taskItems : view === "projects" ? [] : boardItems;
+
+  const { focusedItem: navFocused, setFocusIndex: setNavIndex, enabled: navEnabled } = useTabNav<string>(navItems);
+
+  const HEADER_MAP: Record<string, string> = { "header-1": "header-tasks", "header-2": "header-projects", "header-3": "header-new" };
+  const isHeaderFocused = navFocused === "header-1" || navFocused === "header-2" || navFocused === "header-3";
+
+  const derivedFocusedPanel = isHeaderFocused ? HEADER_MAP[navFocused!]! : navFocused ?? "loops";
+
+  const taskPanelMap: Partial<Record<string, TaskPanelFocus>> = { "task-search": "search", "task-list": "tasks", "task-actions": "actions" };
+  const derivedTaskPanel: TaskPanelFocus = (navFocused ? taskPanelMap[navFocused] : undefined) ?? "tasks";
+
   useBoardKeybindings({
     confirm,
     confirmChoice,
@@ -370,8 +387,11 @@ export function App(props: { onQuit: () => void }): React.ReactNode {
     selectedRunIndex,
     setSelectedRunIndex,
     selectedRunCount: selected?.runHistory?.length ?? 0,
-    focusedPanel,
-    setFocusedPanel,
+    focusedPanel: derivedFocusedPanel as PanelFocus,
+    setFocusedPanel: ((p: PanelFocus) => {
+      const navIdx = navItems.indexOf(p as string);
+      if (navIdx >= 0) setNavIndex(navIdx);
+    }) as React.Dispatch<React.SetStateAction<PanelFocus>>,
     selectedAction,
     setSelectedAction,
     onAction: handleAction,
@@ -383,15 +403,6 @@ export function App(props: { onQuit: () => void }): React.ReactNode {
     onAddLoop: () => { setEditTarget(null); push("create"); },
     onAddTask: () => { setEditTask(null); push("task-create"); },
     onSelectProject: () => setProjectsModalOpen(true),
-    onExitHeader: (direction) => {
-      if (view === "projects") {
-        setFocusedPanel("projects");
-      } else if (view === "task-list") {
-        setTaskFocusedPanel(direction === "right" ? "search" : "actions");
-      } else {
-        setFocusedPanel("loops");
-      }
-    },
   });
 
   useTaskKeybindings({
@@ -402,8 +413,11 @@ export function App(props: { onQuit: () => void }): React.ReactNode {
     setTaskSelectedIndex,
     taskSelectedAction,
     setTaskSelectedAction,
-    taskFocusedPanel,
-    setTaskFocusedPanel,
+    taskFocusedPanel: derivedTaskPanel,
+    setTaskFocusedPanel: ((p: TaskPanelFocus) => {
+      const navIdx = navItems.indexOf(p === "search" ? "task-search" : p === "actions" ? "task-actions" : "task-list");
+      if (navIdx >= 0) setNavIndex(navIdx);
+    }) as React.Dispatch<React.SetStateAction<TaskPanelFocus>>,
     taskSearchActive,
     setTaskSearchActive,
     taskQuery,
@@ -411,11 +425,8 @@ export function App(props: { onQuit: () => void }): React.ReactNode {
     onTaskAction: handleTaskAction,
     onCancel: cancelTaskList,
     onCreateTask: handleCreateTask,
-    onEnterHeader: (direction) => {
-      setFocusedPanel(direction === "right" ? "header-tasks" : "header-new");
-    },
     onToggleContextHelp: () => setContextHelpOpen((v) => !v),
-    headerFocused: focusedPanel === "header-tasks" || focusedPanel === "header-projects" || focusedPanel === "header-new",
+    headerFocused: isHeaderFocused,
     selectable: stack.includes("create") || stack.includes("task-edit"),
   });
 
@@ -435,7 +446,7 @@ export function App(props: { onQuit: () => void }): React.ReactNode {
         daemonStatus={daemonStatus}
         counts={counts}
         view={view}
-        focusedPanel={focusedPanel}
+        focusedPanel={derivedFocusedPanel}
         onViewLoops={() => replace("board")}
         onViewTasks={() => { void refreshTasks(); push("task-list"); }}
         onViewProjects={() => push("projects")}
@@ -449,23 +460,23 @@ export function App(props: { onQuit: () => void }): React.ReactNode {
           filters={filters}
           sort={sort}
           searchActive={searchActive}
-          focusedPanel={focusedPanel}
+          focusedPanel={derivedFocusedPanel}
           onStatusCycle={() => setFilters((prev) => ({ ...prev, status: cycleStatusFilter(prev.status) }))}
           onSortCycle={() => setSort(cycleSortMode(sort))}
           onSelectProject={() => setProjectsModalOpen(true)}
           currentProjectName={currentProjectId === "all" ? t("project.showAll") : (projects.find(p => p.id === currentProjectId)?.name ?? "Default")}
           onQueryChange={(value) => setFilters((prev) => ({ ...prev, query: value }))}
           onSearchActivate={() => setSearchActive(true)}
-          onSearchDismiss={() => { setSearchActive(false); setFocusedPanel("loops"); }}
+          onSearchDismiss={() => { setSearchActive(false); }}
         />
       ) : view === "task-list" ? (
         <TaskFilterBar
           query={taskQuery}
           searchActive={taskSearchActive}
-          focusedPanel={taskFocusedPanel}
+          focusedPanel={derivedTaskPanel}
           onQueryChange={setTaskQuery}
           onSearchActivate={() => setTaskSearchActive(true)}
-          onSearchDismiss={() => { setTaskSearchActive(false); setTaskFocusedPanel("tasks"); }}
+          onSearchDismiss={() => { setTaskSearchActive(false); }}
         />
       ) : null}
 
@@ -499,9 +510,9 @@ export function App(props: { onQuit: () => void }): React.ReactNode {
               visible={filteredTasks}
               total={tasks.length}
               selectedIndex={taskClampedIndex}
-              focused={taskFocusedPanel === "tasks"}
+              focused={derivedTaskPanel === "tasks"}
               query={taskQuery}
-              onSelect={(index) => { setTaskSelectedIndex(index); setTaskFocusedPanel("tasks"); }}
+              onSelect={(index) => { setTaskSelectedIndex(index); }}
               onActivate={(index) => { setTaskSelectedIndex(index); setEditTask(filteredTasks[index] ?? null); push("task-edit"); }}
             />
             <box style={{ flexDirection: "column", flexGrow: 1, backgroundColor: "#0b0b0b", overflow: "hidden" }}>
@@ -509,7 +520,7 @@ export function App(props: { onQuit: () => void }): React.ReactNode {
               <TaskActionButtons
                 key={`tab-${selectedTask?.id}`}
                 task={selectedTask}
-                focused={taskFocusedPanel === "actions"}
+                focused={derivedTaskPanel === "actions"}
                 selectedAction={taskSelectedAction}
                 selectable={stack.includes("create") || stack.includes("task-edit")}
                 onAction={handleTaskAction}
@@ -520,13 +531,11 @@ export function App(props: { onQuit: () => void }): React.ReactNode {
           <ProjectsPage
             projects={projects}
             loops={loops}
-            headerFocused={focusedPanel === "header-tasks" || focusedPanel === "header-projects" || focusedPanel === "header-new"}
+            headerFocused={isHeaderFocused}
             onClose={() => pop()}
             onRefresh={refreshProjects}
             onOpenCreate={(trigger) => { createProjectTriggerRef.current = trigger; }}
-            onEnterHeader={(direction) => {
-              setFocusedPanel(direction === "right" ? "header-tasks" : "header-new");
-            }}
+            onEnterHeader={() => {}}
           />
         ) : (
           <box style={{ flexDirection: breakpoint === "narrow" ? "column" : "row", flexGrow: 1, backgroundColor: "#0b0b0b" }}>
@@ -537,9 +546,9 @@ export function App(props: { onQuit: () => void }): React.ReactNode {
               filters={filters}
               sort={sort}
               breakpoint={breakpoint}
-              focused={focusedPanel === "loops"}
+              focused={derivedFocusedPanel === "loops" || derivedFocusedPanel === "navigator"}
               projects={projects}
-              onSelect={(index) => { setSelectedIndex(index); setFocusedPanel("loops"); }}
+              onSelect={(index) => setSelectedIndex(index)}
               onActivate={(index) => { setSelectedIndex(index); const loop = visible[index]; if (loop) { setEditTarget(loop); push("create"); } }}
             />
             <box style={{ flexDirection: "column", flexGrow: 1, backgroundColor: "#0b0b0b", overflow: "hidden" }}>
@@ -547,13 +556,13 @@ export function App(props: { onQuit: () => void }): React.ReactNode {
               <RunHistory
                 loop={selected}
                 selectedRunIndex={selectedRunIndex}
-                focused={focusedPanel === "runs"}
-                onSelectRun={(index) => { setSelectedRunIndex(index); setFocusedPanel("runs"); }}
+                focused={derivedFocusedPanel === "runs" || derivedFocusedPanel === "run-history"}
+                onSelectRun={(index) => setSelectedRunIndex(index)}
                 onOpenRun={handleOpenRunLog}
               />
               <ActionButtons
                 loop={selected}
-                focused={focusedPanel === "actions"}
+                focused={derivedFocusedPanel === "actions"}
                 selectedAction={selectedAction}
                 onAction={handleAction}
               />
