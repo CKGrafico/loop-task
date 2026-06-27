@@ -3,14 +3,13 @@ import { useKeyboard } from "@opentui/react";
 import type { LoopMeta, Project } from "../../types.js";
 import { t } from "../../i18n/index.js";
 import { useHoverState } from "../hooks/useHoverState.js";
+import { useTabNav } from "../hooks/useTabNav.js";
 import { HOVER_BG, ENTITY_COLORS } from "../../config/constants.js";
 import { CreateProjectModal } from "./CreateProjectModal.js";
 import { EditProjectModal } from "./EditProjectModal.js";
 import { DeleteProjectConfirm } from "./DeleteProjectConfirm.js";
 
 type SubModal = "none" | "create" | "edit" | "delete";
-
-const PROJECT_ACTION_COUNT = 2;
 
 function ProjectActionButton(props: {
   label: string;
@@ -43,14 +42,18 @@ export function ProjectsPage(props: {
   const { projects, loops, headerFocused, onClose, onRefresh, onOpenCreate, onEnterHeader } = props;
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [subModal, setSubModal] = useState<SubModal>("none");
-  const [focusedPanel, setFocusedPanel] = useState<"list" | "actions">("list");
-  const [selectedAction, setSelectedAction] = useState(0);
+  const navItems = ["list", "edit", "delete"];
+  const { focusIndex, setFocusIndex, focusedItem, isFocused } = useTabNav<string>(navItems, {
+    onCycleOut: (dir) => {
+      if (dir === "right") onEnterHeader?.("right");
+      else onEnterHeader?.("left");
+    },
+  });
 
   const prevHeaderFocused = useRef(headerFocused);
   useEffect(() => {
     if (prevHeaderFocused.current && !headerFocused) {
-      setFocusedPanel("list");
-      setSelectedAction(0);
+      setFocusIndex(0);
     }
     prevHeaderFocused.current = headerFocused;
   }, [headerFocused]);
@@ -74,7 +77,7 @@ export function ProjectsPage(props: {
     if (subModal !== "none") return;
     if (headerFocused) return;
     if (key.name === "up" || key.name === "down") {
-      if (focusedPanel !== "list") {
+      if (focusedItem !== "list") {
         key.preventDefault();
         return;
       }
@@ -90,42 +93,13 @@ export function ProjectsPage(props: {
       key.preventDefault();
       return;
     }
-    if (key.name === "tab") {
-      const direction = key.shift ? "left" : "right";
-      if (focusedPanel === "list" && direction === "left") {
-        onEnterHeader?.("left");
-        key.preventDefault();
-        return;
-      }
-      if (focusedPanel === "list" && direction === "right") {
-        setSelectedAction(0);
-        setFocusedPanel("actions");
-      } else if (focusedPanel === "actions" && direction === "right") {
-        if (selectedAction < PROJECT_ACTION_COUNT - 1) {
-          setSelectedAction((a) => a + 1);
-          key.preventDefault();
-          return;
-        }
-        onEnterHeader?.("right");
-      } else if (focusedPanel === "actions" && direction === "left") {
-        if (selectedAction > 0) {
-          setSelectedAction((a) => a - 1);
-          key.preventDefault();
-          return;
-        }
-        setFocusedPanel("list");
-        key.preventDefault();
-        return;
-      }
-      key.preventDefault();
-      return;
-    }
     if (key.name === "return" || key.name === "enter") {
-      if (focusedPanel === "list") {
-        setSelectedAction(0);
-        setFocusedPanel("actions");
-      } else {
-        runAction(selectedAction);
+      if (focusedItem === "list") {
+        setFocusIndex(1);
+      } else if (focusedItem === "edit") {
+        if (selectedProject && !selectedProject.isSystem) setSubModal("edit");
+      } else if (focusedItem === "delete") {
+        if (selectedProject && !selectedProject.isSystem) setSubModal("delete");
       }
       key.preventDefault();
       return;
@@ -163,7 +137,7 @@ export function ProjectsPage(props: {
       <box
         title={t("project.projectsTitle")}
         border
-        borderColor={focusedPanel === "list" ? ENTITY_COLORS.project : "#1e3a2a"}
+        borderColor={focusedItem === "list" ? ENTITY_COLORS.project : "#1e3a2a"}
         style={{ width: "40%", flexDirection: "column", backgroundColor: "#0b0b0b", flexShrink: 0 }}
       >
         <text fg="#9ca3af">{t("project.keyNewHint")} | {t("project.keyEditHint")} | {t("project.keyDeleteHint")}</text>
@@ -175,7 +149,7 @@ export function ProjectsPage(props: {
             <box
               key={project.id}
               backgroundColor={bg}
-              onMouseDown={() => { setSelectedIndex(index); setFocusedPanel("list"); }}
+              onMouseDown={() => { setSelectedIndex(index); setFocusIndex(0); }}
               style={{ height: 1 }}
             >
               <text>
@@ -214,7 +188,7 @@ export function ProjectsPage(props: {
 
         <box
           border
-          borderColor={focusedPanel === "actions" ? ENTITY_COLORS.project : undefined}
+          borderColor={focusedItem === "edit" || focusedItem === "delete" ? ENTITY_COLORS.project : undefined}
           style={{ flexDirection: "row", height: 3, flexShrink: 0, paddingLeft: 1, backgroundColor: "#0b0b0b", alignItems: "center", justifyContent: selectedProject?.isSystem ? "center" : "flex-start" }}
         >
           {selectedProject && !selectedProject.isSystem ? (
@@ -222,8 +196,8 @@ export function ProjectsPage(props: {
               <ProjectActionButton
                 key={action.key}
                 label={action.label}
-                selected={focusedPanel === "actions" && selectedAction === i}
-                onMouseDown={() => { setFocusedPanel("actions"); runAction(i); }}
+                selected={isFocused(action.key)}
+                onMouseDown={() => { setFocusIndex(i + 1); runAction(i); }}
               />
             ))
           ) : (

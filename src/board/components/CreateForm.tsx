@@ -9,6 +9,7 @@ import { commandLine } from "../format.js";
 import { createLoop, updateLoop, listTasks } from "../daemon.js";
 import { useHoverState } from "../hooks/useHoverState.js";
 import { useInputShortcuts } from "../hooks/useInputShortcuts.js";
+import { useTabNav } from "../hooks/useTabNav.js";
 import { SearchSelect } from "./SearchSelect.js";
 import { HOVER_BG } from "../../config/constants.js";
 
@@ -62,25 +63,11 @@ export function CreateView(props: {
     project: props.initial.project ?? props.currentProjectId ?? "default",
   });
   const valuesRef = useRef(values);
-  const [focusIndex, setFocusIndex] = useState(0);
   const [error, setError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [selectedTaskName, setSelectedTaskName] = useState<string | null>(props.selectedTaskName ?? null);
   const inputRef = useRef<InputRenderable | null>(null);
 
-  useInputShortcuts(() => {
-    if (focusIndex >= saveIndex) return null;
-    return inputRef.current;
-  });
-
-  useState(() => {
-    if (values.taskId && !selectedTaskName) {
-      void listTasks().then((tasks) => {
-        const found = tasks.find((t) => t.id === values.taskId);
-        if (found) setSelectedTaskName(found.name);
-      }).catch(() => {});
-    }
-  });
   const { width: termWidth } = useTerminalDimensions();
   const btnWidth = Math.max(10, Math.min(14, Math.floor(termWidth / 6)));
 
@@ -96,9 +83,22 @@ export function CreateView(props: {
     return true;
   });
 
-  const chooseTaskIdx = filteredFields.indexOf("taskId");
-  const saveIndex = filteredFields.length;
-  const cancelIndex = filteredFields.length + 1;
+  const navItems = [...filteredFields, "save", "cancel"];
+  const { focusIndex, setFocusIndex, focusedItem, isFocused } = useTabNav<string>(navItems);
+
+  useInputShortcuts(() => {
+    if (focusedItem === "save" || focusedItem === "cancel") return null;
+    return inputRef.current;
+  });
+
+  useState(() => {
+    if (values.taskId && !selectedTaskName) {
+      void listTasks().then((tasks) => {
+        const found = tasks.find((t) => t.id === values.taskId);
+        if (found) setSelectedTaskName(found.name);
+      }).catch(() => {});
+    }
+  });
 
   function updateValues(next: Record<CreateField, string>): void {
     valuesRef.current = next;
@@ -113,57 +113,28 @@ export function CreateView(props: {
   }
 
   useKeyboard((key) => {
-    if (key.name === "tab") {
-      setFocusIndex((i) => {
-        const next = key.shift ? i - 1 : i + 1;
-        if (next < 0) return cancelIndex;
-        if (next > cancelIndex) return 0;
-        return next;
-      });
-      key.preventDefault();
-      return;
-    }
-
-    const field = filteredFields[focusIndex];
-
-    if (key.name === "up" || key.name === "down" || key.name === "left" || key.name === "right") {
-      if (field === "project") return;
-      if (key.name === "left" || key.name === "right") {
-        key.preventDefault();
-        return;
-      }
-      setFocusIndex((i) => {
-        const next = key.name === "up" ? i - 1 : i + 1;
-        if (next < 0) return cancelIndex;
-        if (next > cancelIndex) return 0;
-        return next;
-      });
-      key.preventDefault();
-      return;
-    }
-
     if (key.name === "return" || key.name === "enter" || key.name === " ") {
-      if (field === "taskMode") {
+      if (focusedItem === "taskMode") {
         const next = valuesRef.current.taskMode === TASK_MODE_INLINE ? TASK_MODE_EXISTING : TASK_MODE_INLINE;
         updateValues({ ...valuesRef.current, taskMode: next });
         key.preventDefault();
         return;
       }
-      if (field === "runNow") {
+      if (focusedItem === "runNow") {
         const next = valuesRef.current.runNow === "y" ? "n" : "y";
         updateValues({ ...valuesRef.current, runNow: next });
         key.preventDefault();
         return;
       }
-      if (focusIndex === chooseTaskIdx && !isInline) {
+      if (focusedItem === "taskId" && !isInline) {
         props.onChooseTask();
         key.preventDefault();
         return;
       }
-      if (focusIndex === saveIndex) {
+      if (focusedItem === "save") {
         void submit(valuesRef.current);
         key.preventDefault();
-      } else if (focusIndex === cancelIndex) {
+      } else if (focusedItem === "cancel") {
         props.onCancel();
         key.preventDefault();
       }
@@ -317,7 +288,7 @@ export function CreateView(props: {
               <FormRow
                 field={leftField}
                 index={row * 2}
-                focusIndex={focusIndex}
+                isFocused={isFocused(leftField)}
                 values={values}
                 valuesRef={valuesRef}
                 updateValues={updateValues}
@@ -330,7 +301,6 @@ export function CreateView(props: {
                 runNowOptions={runNowOptions}
                 projectOptions={projectOptions}
                 selectedTaskName={selectedTaskName}
-                fields={filteredFields}
                 onChooseTask={props.onChooseTask}
                 inputRef={inputRef}
                 style={{ width: "50%", paddingRight: 1 }}
@@ -339,7 +309,7 @@ export function CreateView(props: {
                 <FormRow
                   field={rightField}
                   index={row * 2 + 1}
-                  focusIndex={focusIndex}
+                  isFocused={isFocused(rightField)}
                   values={values}
                   valuesRef={valuesRef}
                   updateValues={updateValues}
@@ -352,7 +322,6 @@ export function CreateView(props: {
                   runNowOptions={runNowOptions}
                   projectOptions={projectOptions}
                   selectedTaskName={selectedTaskName}
-                  fields={filteredFields}
                   onChooseTask={props.onChooseTask}
                   inputRef={inputRef}
                   style={{ width: "50%" }}
@@ -368,14 +337,14 @@ export function CreateView(props: {
         <HoverButton
           label={isSubmitting ? t("board.saving") : props.mode === "edit" ? t("board.save") : t("board.create")}
           onMouseDown={() => void submit(valuesRef.current)}
-          selected={focusIndex === saveIndex}
+          selected={isFocused("save")}
           width={btnWidth}
           marginRight={1}
         />
         <HoverButton
           label={t("board.cancel")}
           onMouseDown={props.onCancel}
-          selected={focusIndex === cancelIndex}
+          selected={isFocused("cancel")}
           width={btnWidth}
         />
       </box>
@@ -411,11 +380,11 @@ function HoverButton(props: {
 function FormRow(props: {
   field: CreateField;
   index: number;
-  focusIndex: number;
+  isFocused: boolean;
   values: Record<CreateField, string>;
   valuesRef: React.MutableRefObject<Record<CreateField, string>>;
   updateValues: (next: Record<CreateField, string>) => void;
-  setFocusIndex: React.Dispatch<React.SetStateAction<number>>;
+  setFocusIndex: (i: number) => void;
   submit: (current: Record<CreateField, string>) => Promise<void>;
   labels: Record<CreateField, string>;
   hints: Record<CreateField, string>;
@@ -424,14 +393,12 @@ function FormRow(props: {
   runNowOptions: { name: string; description: string; value: string }[];
   projectOptions: { name: string; value: string; color: string }[];
   selectedTaskName: string | null;
-  fields: readonly CreateField[];
   onChooseTask: () => void;
   inputRef: React.MutableRefObject<InputRenderable | null>;
   style?: { width?: number | `${number}%` | "auto"; flexGrow?: number; marginRight?: number; paddingRight?: number };
 }): React.ReactNode {
-  const { field, index, focusIndex, values, valuesRef, updateValues, setFocusIndex, submit, labels, hints, examples, taskModeOptions, runNowOptions, projectOptions, selectedTaskName, fields, onChooseTask, inputRef, style } = props;
+  const { field, index, isFocused, values, valuesRef, updateValues, setFocusIndex, submit, labels, hints, examples, taskModeOptions, runNowOptions, projectOptions, selectedTaskName, onChooseTask, inputRef, style } = props;
   const { isHovered, hoverProps } = useHoverState();
-  const isFocused = focusIndex === index;
 
   const isToggleField = field === "taskMode" || field === "runNow";
   const isTaskButton = field === "taskId";
@@ -498,13 +465,7 @@ function FormRow(props: {
             onInput={(value: string) =>
               updateValues({ ...valuesRef.current, [field]: value })
             }
-            onSubmit={() => {
-              if (index < fields.length - 1) {
-                setFocusIndex(index + 1);
-              } else {
-                void submit(valuesRef.current);
-              }
-            }}
+            onSubmit={() => { void submit(valuesRef.current); }}
           />
         </box>
       )}
