@@ -26,6 +26,8 @@ export const BOARD_BREAKPOINT_WIDTH = 80;
 
 export const HEADER_COMPACT_WIDTH = 60;
 
+export const SEARCH_SELECT_HEIGHT = 6;
+
 export const HOVER_BG = "#1e3a5f";
 
 export const PROJECT_COLORS: Record<string, string> = {
