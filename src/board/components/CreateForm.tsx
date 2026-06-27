@@ -86,8 +86,12 @@ export function CreateView(props: {
   const navItems = [...filteredFields, "save", "cancel"];
   const { setFocusIndex, focusedItem, isFocused } = useTabNav<string>(navItems);
 
+  const focusedItemRef = useRef(focusedItem);
+  focusedItemRef.current = focusedItem;
+
   useInputShortcuts(() => {
-    if (focusedItem === "save" || focusedItem === "cancel") return null;
+    const fi = focusedItemRef.current;
+    if (fi === "save" || fi === "cancel" || fi === "project") return null;
     return inputRef.current;
   });
 
@@ -113,31 +117,31 @@ export function CreateView(props: {
   }
 
   useKeyboard((key) => {
-    if (key.name === "return" || key.name === "enter" || key.name === " ") {
-      if (focusedItem === "taskMode") {
-        const next = valuesRef.current.taskMode === TASK_MODE_INLINE ? TASK_MODE_EXISTING : TASK_MODE_INLINE;
-        updateValues({ ...valuesRef.current, taskMode: next });
-        key.preventDefault();
-        return;
-      }
-      if (focusedItem === "runNow") {
-        const next = valuesRef.current.runNow === "y" ? "n" : "y";
-        updateValues({ ...valuesRef.current, runNow: next });
-        key.preventDefault();
-        return;
-      }
-      if (focusedItem === "taskId" && !isInline) {
-        props.onChooseTask();
-        key.preventDefault();
-        return;
-      }
-      if (focusedItem === "save") {
-        void submit(valuesRef.current);
-        key.preventDefault();
-      } else if (focusedItem === "cancel") {
-        props.onCancel();
-        key.preventDefault();
-      }
+    if (key.name !== "return" && key.name !== "enter" && key.name !== " ") return;
+    const fi = focusedItemRef.current;
+    if (fi === "taskMode") {
+      const next = valuesRef.current.taskMode === TASK_MODE_INLINE ? TASK_MODE_EXISTING : TASK_MODE_INLINE;
+      updateValues({ ...valuesRef.current, taskMode: next });
+      key.preventDefault();
+      return;
+    }
+    if (fi === "runNow") {
+      const next = valuesRef.current.runNow === "y" ? "n" : "y";
+      updateValues({ ...valuesRef.current, runNow: next });
+      key.preventDefault();
+      return;
+    }
+    if (fi === "taskId" && !isInline) {
+      props.onChooseTask();
+      key.preventDefault();
+      return;
+    }
+    if (fi === "save") {
+      void submit(valuesRef.current);
+      key.preventDefault();
+    } else if (fi === "cancel") {
+      props.onCancel();
+      key.preventDefault();
     }
   });
 

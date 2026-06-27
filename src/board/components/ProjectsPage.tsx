@@ -50,6 +50,9 @@ export function ProjectsPage(props: {
     },
   });
 
+  const focusedItemRef = useRef(focusedItem);
+  focusedItemRef.current = focusedItem;
+
   const prevHeaderFocused = useRef(headerFocused);
   useEffect(() => {
     if (prevHeaderFocused.current && !headerFocused) {
@@ -76,8 +79,9 @@ export function ProjectsPage(props: {
   useKeyboard((key) => {
     if (subModal !== "none") return;
     if (headerFocused) return;
+    const fi = focusedItemRef.current;
     if (key.name === "up" || key.name === "down") {
-      if (focusedItem !== "list") {
+      if (fi !== "list") {
         key.preventDefault();
         return;
       }
@@ -94,11 +98,11 @@ export function ProjectsPage(props: {
       return;
     }
     if (key.name === "return" || key.name === "enter") {
-      if (focusedItem === "list") {
+      if (fi === "list") {
         setFocusIndex(1);
-      } else if (focusedItem === "edit") {
+      } else if (fi === "edit") {
         if (selectedProject && !selectedProject.isSystem) setSubModal("edit");
-      } else if (focusedItem === "delete") {
+      } else if (fi === "delete") {
         if (selectedProject && !selectedProject.isSystem) setSubModal("delete");
       }
       key.preventDefault();

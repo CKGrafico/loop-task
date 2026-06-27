@@ -1,4 +1,4 @@
-import { useRef, useState, useMemo } from "react";
+import { useRef, useState, useMemo, useEffect } from "react";
 import { useKeyboard } from "@opentui/react";
 import type { InputRenderable } from "@opentui/core";
 import { t } from "../../i18n/index.js";
@@ -26,8 +26,6 @@ export function SearchSelect(props: {
   const [filter, setFilter] = useState("");
   const [selectedIndex, setSelectedIndex] = useState(0);
 
-  useInputShortcuts(() => focused ? inputRef.current : null);
-
   const filtered = useMemo(() => {
     if (!filter) return options;
     const q = filter.toLowerCase();
@@ -40,15 +38,32 @@ export function SearchSelect(props: {
   const safeSelected = currentIdx >= 0 ? currentIdx : selectedIndex;
   const clampedSelected = Math.min(safeSelected, Math.max(0, filtered.length - 1));
 
+  const filteredRef = useRef(filtered);
+  filteredRef.current = filtered;
+  const selectedRef = useRef(clampedSelected);
+  selectedRef.current = clampedSelected;
+  const focusedRef = useRef(focused);
+  focusedRef.current = focused;
+  const onChangeRef = useRef(onChange);
+  onChangeRef.current = onChange;
+
+  useEffect(() => {
+    if (!focused) {
+      setFilter("");
+    }
+  }, [focused]);
+
+  useInputShortcuts(() => focusedRef.current ? inputRef.current : null);
+
   useKeyboard((key) => {
-    if (!focused) return;
+    if (!focusedRef.current) return;
     const name = key.name;
 
     if (name === "up" || name === "k") {
-      if (filtered.length > 0) {
-        setSelectedIndex((i) =>
-          i <= 0 ? filtered.length - 1 : i - 1
-        );
+      const list = filteredRef.current;
+      if (list.length > 0) {
+        const current = selectedRef.current;
+        setSelectedIndex(current <= 0 ? list.length - 1 : current - 1);
       }
       key.preventDefault();
       key.stopPropagation();
@@ -56,10 +71,10 @@ export function SearchSelect(props: {
     }
 
     if (name === "down" || name === "j") {
-      if (filtered.length > 0) {
-        setSelectedIndex((i) =>
-          i >= filtered.length - 1 ? 0 : i + 1
-        );
+      const list = filteredRef.current;
+      if (list.length > 0) {
+        const current = selectedRef.current;
+        setSelectedIndex(current >= list.length - 1 ? 0 : current + 1);
       }
       key.preventDefault();
       key.stopPropagation();
@@ -67,9 +82,10 @@ export function SearchSelect(props: {
     }
 
     if (name === "return" || name === "enter") {
-      const option = filtered[clampedSelected];
+      const list = filteredRef.current;
+      const option = list[selectedRef.current];
       if (option) {
-        onChange(option.value);
+        onChangeRef.current(option.value);
       }
       key.preventDefault();
       key.stopPropagation();
