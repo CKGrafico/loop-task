@@ -36,6 +36,7 @@ export interface ExecutionResult {
   duration: number;
   startedAt: Date;
   endedAt: Date;
+  stdout?: string;
 }
 
 export interface LoopState {

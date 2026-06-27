@@ -252,6 +252,47 @@ loop-task (board) ──IPC──► daemon ──► loop 1 ──► task (com
 - **Persistent** - loop and task state is saved after every run; survives restarts
 - **Graceful shutdown** - background loops are daemon-managed; foreground loops finish the current execution on Ctrl+C
 
+## Chain Context Sharing
+
+When tasks are arranged in a chain (on-success or on-failure), context flows between them automatically. This lets later tasks reference output from earlier ones without custom glue.
+
+### How it works
+
+1. **Auto-capture** - stdout from every task in the chain is captured before the next task starts.
+2. **Parse rules** - captured output is parsed by content type:
+   - **JSON object** (`{"key": "value"}`) - each key is merged into the shared context.
+   - **JSONL** (one JSON object per line) - each line's keys are merged in order.
+   - **Plain text** - stored under a single `output` key.
+   - **Empty output** - no change to context.
+3. **Template interpolation** - use `{{key}}` in the command or arguments of any task. Before spawning, `{{key}}` is replaced with the current value of `key` from the shared context.
+4. **Merge semantics** - keys accumulate across the chain. Task 1 produces `{ "id": "42" }`, task 2 can use `{{id}}` and also add `{ "status": "ok" }`. Task 3 sees both.
+5. **Output clobbering** - plain text tasks overwrite the `output` key. Use JSON with named keys when data must survive across multiple downstream tasks.
+6. **Context lifecycle** - context is built fresh each loop iteration and exists only in memory. It is never persisted to disk.
+
+### Example
+
+A three-task chain that fetches an issue, extracts the title, and creates a branch name:
+
+```
+Task 1: gh issue view 42 --json number,title,labels
+Task 2: echo {{title}} | sed 's/ /-/g' | tr '[:upper:]' '[:lower:]'
+Task 3: git checkout -b issue-{{number}}/{{output}}
+```
+
+1. Task 1 runs `gh issue view 42 --json number,title,labels` and produces JSON. The context gains `number=42`, `title=Add dark mode`, and `labels=[...]`.
+2. Task 2 runs `echo Add dark mode | sed 's/ /-/g' | tr '[:upper:]' '[:lower:]'` and produces plain text `add-dark-mode`. The context now has `output=add-dark-mode` alongside the earlier keys.
+3. Task 3 runs `git checkout -b issue-42/add-dark-mode` using both `{{number}}` and `{{output}}`.
+
+### Wrapping values with --jq
+
+To avoid the plain-text `output` clobbering, wrap any value in a named JSON key using `--jq` (requires `--json` before `--jq`):
+
+```bash
+gh issue list --label "to refine" --json number,title --jq '{number: .[0].number, title: .[0].title}'
+```
+
+This stores `{ "number": 123, "title": "Fix login" }` in context instead of overwriting `output`.
+
 ## Development
 
 Requires [Bun](https://bun.sh) >= 1.2 for package management and the board, and [Node.js](https://nodejs.org) >= 20 for the CLI and daemon.

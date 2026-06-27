@@ -384,5 +384,11 @@
   "project.error.deleteFailed": "Failed to delete project",
   "project.toastCreated": "Project \"{name}\" created",
   "project.toastUpdated": "Project \"{name}\" updated",
-  "project.toastDeleted": "Project \"{name}\" deleted"
+  "project.toastDeleted": "Project \"{name}\" deleted",
+  "context.truncationWarning": "stdout exceeded 1MB - context was truncated",
+  "context.helpTitle": "Chain Context Sharing",
+  "context.helpRules": "JSON output merges its keys. JSONL merges each line as a separate key. Plain text is stored under the \"output\" key. Empty output produces no change.",
+  "context.helpTemplates": "Use {{key}} in commands and args - replaced with context values from earlier tasks in the chain.",
+  "context.helpCaveat": "Plain text stdout overwrites the \"output\" key. Use JSON with named keys when data must survive across tasks.",
+  "context.helpJqTip": "Tip: use --jq '{key: .field}' to wrap any value in a named JSON key"
 }

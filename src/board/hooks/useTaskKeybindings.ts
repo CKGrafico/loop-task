@@ -22,6 +22,7 @@ export interface TaskKeybindingParams {
   onCancel: () => void;
   onCreateTask: () => void;
   onEnterHeader: (direction: "left" | "right") => void;
+  onToggleContextHelp: () => void;
   selectable?: boolean;
 }
 
@@ -44,6 +45,7 @@ export function useTaskKeybindings(params: TaskKeybindingParams): void {
     onCancel,
     onCreateTask,
     onEnterHeader,
+    onToggleContextHelp,
     selectable = true,
   } = params;
 
@@ -80,6 +82,12 @@ export function useTaskKeybindings(params: TaskKeybindingParams): void {
 
     if (name === "escape") {
       onCancel();
+      key.preventDefault();
+      return;
+    }
+
+    if (name === "?") {
+      onToggleContextHelp();
       key.preventDefault();
       return;
     }

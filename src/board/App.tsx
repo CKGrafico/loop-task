@@ -23,6 +23,7 @@ import { Inspector } from "./components/Inspector.js";
 import { RunHistory } from "./components/RunHistory.js";
 import { ActionButtons } from "./components/ActionButtons.js";
 import { HelpModal } from "./components/HelpModal.js";
+import { ContextHelpModal } from "./components/ContextHelpModal.js";
 import { Footer } from "./components/Footer.js";
 import { ConfirmModal } from "./components/ConfirmModal.js";
 import { CreateView, createInitialValues } from "./components/CreateForm.js";
@@ -67,6 +68,7 @@ export function App(props: { onQuit: () => void }): React.ReactNode {
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [searchActive, setSearchActive] = useState(false);
   const [helpOpen, setHelpOpen] = useState(false);
+  const [contextHelpOpen, setContextHelpOpen] = useState(false);
   const [confirm, setConfirm] = useState<ConfirmState | null>(null);
   const [confirmChoice, setConfirmChoice] = useState(0);
   const [editTarget, setEditTarget] = useState<LoopMeta | null>(null);
@@ -403,6 +405,7 @@ export function App(props: { onQuit: () => void }): React.ReactNode {
     onEnterHeader: (direction) => {
       setFocusedPanel(direction === "right" ? "header-tasks" : "header-new");
     },
+    onToggleContextHelp: () => setContextHelpOpen((v) => !v),
     selectable: stack.includes("create") || stack.includes("task-edit"),
   });
 
@@ -560,6 +563,8 @@ export function App(props: { onQuit: () => void }): React.ReactNode {
       ) : null}
 
       {helpOpen ? <HelpModal view={view} /> : null}
+
+      {contextHelpOpen ? <ContextHelpModal onClose={() => setContextHelpOpen(false)} /> : null}
 
       {logModalRun ? (
         <LogModal
