@@ -324,6 +324,50 @@ gh issue list --label "to refine" --json number,title --jq '{number: .[0].number
 
 This stores `{ "number": 123, "title": "Fix login" }` in context instead of overwriting `output`.
 
+### Example: Issue Implementation Chain
+
+A four-task chain that finds an issue to implement, marks it in-progress, runs an AI agent to implement it, then closes it - all without re-querying:
+
+**Task 1** (primary): Find an issue to implement (or exit if one is already in progress)
+
+```bash
+gh issue list --label "implementing" --limit 1 --json number --jq 'length == 0' | grep -q true && gh issue list --label "to implement" --limit 1 --json number,title,body --jq '{number: .[0].number, title: .[0].title, body: .[0].body}'
+```
+
+stdout: `{"number":456,"title":"Add dark mode toggle","body":"Users want a dark theme"}`
+context: `{ number: 456, title: "Add dark mode toggle", body: "Users want a dark theme" }`
+
+If an issue with the "implementing" label already exists, `length == 0` returns `false`, `grep -q true` fails, and the `&&` short-circuits - the chain does not fire. The loop waits for the next iteration.
+
+**Task 2** (chain, onSuccess): Mark as in-progress
+
+```bash
+gh issue edit {{number}} --add-label "implementing" --remove-label "to implement"
+```
+
+interpolated: `gh issue edit 456 --add-label "implementing" --remove-label "to implement"`
+
+**Task 3** (chain, onSuccess): Implement with AI agent
+
+```bash
+git fetch origin && git checkout main && git reset --hard origin/main && opencode run "Implement this GitHub issue using /ob-autopilot and return only JSON with fields title and body after implementation is completed, merged to main, pushed to origin and the issue has been referenced in GitHub. Issue title: {{title}} Issue body: {{body}}" --model "opencode/big-pickle"
+```
+
+interpolated: `git fetch origin && git checkout main && git reset --hard origin/main && opencode run "Implement this GitHub issue using /ob-autopilot ... Issue title: Add dark mode toggle Issue body: Users want a dark theme" --model "opencode/big-pickle"`
+
+stdout: `{"title":"Add dark mode toggle","body":"Implemented dark mode toggle with CSS variables..."}`
+context: `{ number: 456, title: "Add dark mode toggle", body: "Implemented dark mode toggle..." }`
+
+**Task 4** (chain, onSuccess): Verify sync and close the issue
+
+```bash
+git push && git fetch origin && [ "$(git rev-parse HEAD)" = "$(git rev-parse origin/main)" ] && gh issue edit {{number}} --remove-label "implementing" && gh issue close {{number}}
+```
+
+interpolated: `git push && git fetch origin && [ "$(git rev-parse HEAD)" = "$(git rev-parse origin/main)" ] && gh issue edit 456 --remove-label "implementing" && gh issue close 456`
+
+The `git rev-parse` check ensures local and remote are in sync before closing - if the push failed or remote is ahead, the command fails and the issue stays open.
+
 ## Development
 
 Requires [Bun](https://bun.sh) >= 1.2 for package management and the board, and [Node.js](https://nodejs.org) >= 20 for the CLI and daemon.
