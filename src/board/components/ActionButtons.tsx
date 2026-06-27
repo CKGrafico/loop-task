@@ -8,20 +8,24 @@ export interface ActionDef {
   label: string;
 }
 
-export function getActions(status: LoopStatus): ActionDef[] {
+const STOP_ACTION: ActionDef = { key: "stop", label: t("board.actionStop") };
+const PAUSE_ACTION: ActionDef = { key: "pause", label: t("board.actionPause") };
+const PLAY_ACTION: ActionDef = { key: "play", label: t("board.actionPlay") };
+
+const STATUS_ACTIONS: Record<LoopStatus, ActionDef[]> = {
+  running: [STOP_ACTION],
+  waiting: [PAUSE_ACTION, STOP_ACTION],
+  paused: [STOP_ACTION, PLAY_ACTION],
+  idle: [PLAY_ACTION],
+  stopped: [PLAY_ACTION],
+};
+
+function getActions(status: LoopStatus): ActionDef[] {
   const actions: ActionDef[] = [
     { key: "edit", label: t("board.actionEdit") },
     { key: "delete", label: t("board.actionDelete") },
   ];
-  if (status === "waiting") {
-    actions.push({ key: "pause", label: t("board.actionPause") });
-    actions.push({ key: "stop", label: t("board.actionStop") });
-  } else if (status === "paused") {
-    actions.push({ key: "stop", label: t("board.actionStop") });
-    actions.push({ key: "play", label: t("board.actionPlay") });
-  } else if (status === "idle" || status === "stopped") {
-    actions.push({ key: "play", label: t("board.actionPlay") });
-  }
+  actions.push(...STATUS_ACTIONS[status]);
   if (status !== "running") {
     actions.push({ key: "clone", label: t("board.actionClone") });
     actions.push({ key: "trigger", label: t("board.actionTrigger") });
