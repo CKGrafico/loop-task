@@ -4,6 +4,7 @@ import type { ExecutionResult } from "../types.js";
 import { Logger } from "../logger.js";
 import { formatDuration } from "../duration.js";
 import { t } from "../i18n/index.js";
+import { MAX_CONTEXT_STDOUT_BYTES } from "../config/constants.js";
 
 export function extractExitCode(error: unknown): number {
   return error && typeof error === "object" && "exitCode" in error
@@ -17,7 +18,8 @@ export async function executeCommand(
   cwd: string,
   logStream: fs.WriteStream,
   signal?: AbortSignal,
-  runNumber?: number
+  runNumber?: number,
+  captureStdout: boolean = false
 ): Promise<ExecutionResult> {
   const startedAt = new Date();
   const header = t("loop.runHeader", { timestamp: startedAt.toLocaleString(), runNumber: runNumber ?? 0 });
@@ -39,8 +41,27 @@ export async function executeCommand(
     shell: true,
   });
 
+  const stdoutChunks: string[] = [];
+  let stdoutTruncated = false;
+  let stdoutBytes = 0;
+
   child.stdout!.on("data", (chunk: Buffer) => {
     logStream.write(chunk);
+
+    if (captureStdout && !stdoutTruncated) {
+      const chunkStr = chunk.toString();
+      const chunkLen = Buffer.byteLength(chunkStr, "utf-8");
+
+      if (stdoutBytes + chunkLen > MAX_CONTEXT_STDOUT_BYTES) {
+        const remaining = MAX_CONTEXT_STDOUT_BYTES - stdoutBytes;
+        stdoutChunks.push(chunkStr.slice(0, remaining));
+        stdoutTruncated = true;
+        logStream.write(t("context.truncationWarning"));
+      } else {
+        stdoutChunks.push(chunkStr);
+        stdoutBytes += chunkLen;
+      }
+    }
   });
   child.stderr!.on("data", (chunk: Buffer) => {
     logStream.write(chunk);
@@ -51,13 +72,25 @@ export async function executeCommand(
     const endedAt = new Date();
     const duration = endedAt.getTime() - startedAt.getTime();
     logStream.write(t("loop.exitMarker", { code: String(result.exitCode), duration: formatDuration(duration) }));
-    return { exitCode: result.exitCode ?? 0, duration, startedAt, endedAt };
+    return {
+      exitCode: result.exitCode ?? 0,
+      duration,
+      startedAt,
+      endedAt,
+      ...(captureStdout ? { stdout: stdoutChunks.join("") } : {}),
+    };
   } catch (error: unknown) {
     const endedAt = new Date();
     const duration = endedAt.getTime() - startedAt.getTime();
     const exitCode = extractExitCode(error);
     logStream.write(t("loop.exitMarker", { code: exitCode, duration: formatDuration(duration) }));
-    return { exitCode, duration, startedAt, endedAt };
+    return {
+      exitCode,
+      duration,
+      startedAt,
+      endedAt,
+      ...(captureStdout ? { stdout: stdoutChunks.join("") } : {}),
+    };
   }
 }
 
