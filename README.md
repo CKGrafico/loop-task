@@ -269,19 +269,43 @@ When tasks are arranged in a chain (on-success or on-failure), context flows bet
 5. **Output clobbering** - plain text tasks overwrite the `output` key. Use JSON with named keys when data must survive across multiple downstream tasks.
 6. **Context lifecycle** - context is built fresh each loop iteration and exists only in memory. It is never persisted to disk.
 
-### Example
+### Example: Issue Refinement Chain
 
-A three-task chain that fetches an issue, extracts the title, and creates a branch name:
+A three-task chain that finds an issue, rewrites it with AI, and relabels it - all without re-querying:
 
+**Task 1** (primary): Find an issue to refine and mark it as in-progress
+
+```bash
+gh issue list --label "to refine" --limit 1 --json number,title,body --jq '{number: .[0].number, title: .[0].title, body: .[0].body}' && gh issue edit {{number}} --add-label "refining" --remove-label "to refine"
 ```
-Task 1: gh issue view 42 --json number,title,labels
-Task 2: echo {{title}} | sed 's/ /-/g' | tr '[:upper:]' '[:lower:]'
-Task 3: git checkout -b issue-{{number}}/{{output}}
+
+stdout: `{"number":123,"title":"Fix login","body":"It doesn't work"}`
+context: `{ number: 123, title: "Fix login", body: "It doesn't work" }`
+
+**Task 2** (chain, onSuccess): Rewrite with AI
+
+```bash
+opencode run "Rewrite this GitHub issue as a detailed user story using project context and return only JSON with fields title and body. Original title: {{title}} Original body: {{body}}" --model "opencode/big-pickle"
 ```
 
-1. Task 1 runs `gh issue view 42 --json number,title,labels` and produces JSON. The context gains `number=42`, `title=Add dark mode`, and `labels=[...]`.
-2. Task 2 runs `echo Add dark mode | sed 's/ /-/g' | tr '[:upper:]' '[:lower:]'` and produces plain text `add-dark-mode`. The context now has `output=add-dark-mode` alongside the earlier keys.
-3. Task 3 runs `git checkout -b issue-42/add-dark-mode` using both `{{number}}` and `{{output}}`.
+interpolated: `opencode run "Rewrite this GitHub issue as a detailed user story using project context and return only JSON with fields title and body. Original title: Fix login Original body: It doesn't work" --model "opencode/big-pickle"`
+
+stdout: `{"title":"As a user, I want to log in securely","body":"## Acceptance Criteria\n- Login form validates email\n- ..."}`
+context: `{ number: 123, title: "As a user, I want to log in securely", body: "## Acceptance Criteria\n- ..." }`
+
+**Task 3** (chain, onSuccess): Apply the rewrite and relabel
+
+```bash
+gh issue edit {{number}} --title "{{title}}" --body "{{body}}" --remove-label "refining" --add-label "to implement"
+```
+
+interpolated: `gh issue edit 123 --title "As a user, I want to log in securely" --body "## Acceptance Criteria\n- ..." --remove-label "refining" --add-label "to implement"`
+
+### How it works
+
+1. Task 1 queries the issue and emits a JSON object with `number`, `title`, and `body` via `--jq`. It also labels the issue as "refining" using `{{number}}` from its own stdout.
+2. Task 2 receives `{{title}}` and `{{body}}` interpolated from task 1's context. It rewrites the issue and outputs a new JSON object with updated `title` and `body`. Since it uses the same key names, the context is updated with the new values (merge with last-writer-wins).
+3. Task 3 receives `{{number}}` (still 123 from task 1), `{{title}}` and `{{body}}` (now the rewritten versions from task 2). It applies the edits and relabels the issue - no re-query needed.
 
 ### Wrapping values with --jq
 
