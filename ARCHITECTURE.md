@@ -78,7 +78,8 @@ loop-cli/
 │   │   ├── components/         # Header, FilterBar, Navigator, Inspector, Timeline,
 │   │   │                       #   DetailView, CreateForm, TaskForm, SearchSelect,
 │   │   │                       #   ConfirmModal, HelpModal, ContextHelpModal, Footer
-│   │   └── hooks/              # useLoopPolling, useLogStream, useBoardKeybindings
+│   │   └── hooks/              # useLoopPolling, useLogStream, useBoardKeybindings,
+│   │                           #   useTabNav, useInputShortcuts, useHoverState, useBreakpoint
 │   │
 │   ├── config/
 │   │   ├── constants.ts        # Magic numbers (POLL_MS, timeouts, log limits)
