@@ -8,6 +8,8 @@ export const LOG_LINES_MAX = 500;
 
 export const MAX_LOG_BYTES = 1024 * 1024;
 
+export const MAX_CONTEXT_STDOUT_BYTES = 1024 * 1024;
+
 export const MAX_LOG_GENERATIONS = 3;
 
 export const SLEEP_CHUNK_MS = 200;
