@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useTabNav } from "../hooks/useTabNav.js";
 import { useKeyboard, useTerminalDimensions } from "@opentui/react";
 import type { Project } from "../../types.js";
@@ -20,20 +20,23 @@ export function CreateProjectModal(props: {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { focusedItem: focusField, setFocusIndex } = useTabNav<"name" | "color" | "save" | "cancel">(["name", "color", "save", "cancel"]);
 
+  const focusFieldRef = useRef(focusField);
+  focusFieldRef.current = focusField;
+
   useKeyboard((key) => {
     if (key.name === "escape") {
       onCancel();
       return;
     }
     if (key.name === "return" || key.name === "enter") {
-      if (focusField === "cancel") {
+      if (focusFieldRef.current === "cancel") {
         onCancel();
         return;
       }
       void submit();
       return;
     }
-    if (focusField === "color") {
+    if (focusFieldRef.current === "color") {
       if (key.name === "left" || key.name === "right") {
         const idx = PROJECT_COLOR_KEYS.indexOf(selectedColorKey);
         const dir = key.name === "left" ? -1 : 1;

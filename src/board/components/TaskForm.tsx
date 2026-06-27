@@ -44,8 +44,12 @@ export function TaskForm(props: {
   const navItems = [...taskFields, "save", "cancel"];
   const { setFocusIndex, focusedItem, isFocused } = useTabNav<string>(navItems);
 
+  const focusedItemRef = useRef(focusedItem);
+  focusedItemRef.current = focusedItem;
+
   useInputShortcuts(() => {
-    if (focusedItem != null && focusedItem !== "save" && focusedItem !== "cancel") {
+    const fi = focusedItemRef.current;
+    if (fi != null && fi !== "save" && fi !== "cancel" && fi !== "onSuccessTaskId" && fi !== "onFailureTaskId") {
       return inputRef.current;
     }
     return null;
@@ -62,8 +66,9 @@ export function TaskForm(props: {
 
   useKeyboard((key) => {
     if (key.name === "return" || key.name === "enter") {
-      if (focusedItem === "save") { void submit(valuesRef.current); key.preventDefault(); }
-      else if (focusedItem === "cancel") { props.onCancel(); key.preventDefault(); }
+      const fi = focusedItemRef.current;
+      if (fi === "save") { void submit(valuesRef.current); key.preventDefault(); }
+      else if (fi === "cancel") { props.onCancel(); key.preventDefault(); }
     }
   });
 
