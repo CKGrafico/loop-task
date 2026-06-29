@@ -1,6 +1,6 @@
-import { useRef, useState, useMemo, useEffect } from "react";
+import { useRef, useState, useMemo, useEffect, useCallback } from "react";
 import { useKeyboard } from "@opentui/react";
-import type { InputRenderable, ScrollBoxRenderable } from "@opentui/core";
+import type { ScrollBoxRenderable } from "@opentui/core";
 import { t } from "../../i18n/index.js";
 import { useInputShortcuts } from "../hooks/useInputShortcuts.js";
 import { SEARCH_SELECT_HEIGHT } from "../../config/constants.js";
@@ -22,7 +22,6 @@ export function SearchSelect(props: {
   const { options, value, onChange, focused, height } = props;
   const placeholder = props.placeholder ?? t("board.searchSelectPlaceholder");
   const maxHeight = height ?? SEARCH_SELECT_HEIGHT;
-  const inputRef = useRef<InputRenderable | null>(null);
   const [filter, setFilter] = useState("");
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [userNavigated, setUserNavigated] = useState(false);
@@ -49,18 +48,22 @@ export function SearchSelect(props: {
   onChangeRef.current = onChange;
   const filterRef = useRef(filter);
   filterRef.current = filter;
+  const optionsRef = useRef(options);
+  optionsRef.current = options;
 
   useEffect(() => {
     if (focused) {
       setUserNavigated(false);
       setSelectedIndex(currentIdx >= 0 ? currentIdx : 0);
-    } else {
-      setFilter("");
-      setUserNavigated(false);
     }
   }, [focused]);
 
-  useInputShortcuts(() => focusedRef.current ? inputRef.current : null);
+  const listHeight = Math.min(filtered.length, maxHeight);
+  const scrollRef = useRef<ScrollBoxRenderable | null>(null);
+
+  useEffect(() => {
+    scrollRef.current?.scrollChildIntoView(`select-option-${clampedSelected}`);
+  }, [clampedSelected]);
 
   useKeyboard((key) => {
     if (!focusedRef.current) return;
@@ -104,19 +107,18 @@ export function SearchSelect(props: {
     }
 
     if (name === "escape") {
-      if (filterRef.current) {
-        setFilter("");
-        setSelectedIndex(0);
-        setUserNavigated(false);
-        if (inputRef.current) inputRef.current.value = "";
-      }
+      setFilter("");
+      setSelectedIndex(0);
+      setUserNavigated(false);
       key.preventDefault();
       key.stopPropagation();
       return;
     }
 
     if (name === "backspace") {
-      setFilter((f) => f.slice(0, -1));
+      const newFilter = filterRef.current.slice(0, -1);
+      filterRef.current = newFilter;
+      setFilter(newFilter);
       setSelectedIndex(0);
       setUserNavigated(false);
       key.preventDefault();
@@ -134,7 +136,9 @@ export function SearchSelect(props: {
     }
 
     if (char) {
-      setFilter((f) => f + char);
+      const newFilter = filterRef.current + char;
+      filterRef.current = newFilter;
+      setFilter(newFilter);
       setSelectedIndex(0);
       setUserNavigated(false);
       key.preventDefault();
@@ -142,17 +146,6 @@ export function SearchSelect(props: {
       return;
     }
   });
-
-  const listHeight = filter ? Math.min(filtered.length, maxHeight) : filtered.length;
-  const scrollRef = useRef<ScrollBoxRenderable | null>(null);
-
-  useEffect(() => {
-    scrollRef.current?.scrollChildIntoView(`select-option-${clampedSelected}`);
-  }, [clampedSelected, filter]);
-
-  useEffect(() => {
-    scrollRef.current?.scrollChildIntoView(`select-option-${currentIdx >= 0 ? currentIdx : 0}`);
-  }, [currentIdx, scrollRef.current]);
 
   return (
     <box
