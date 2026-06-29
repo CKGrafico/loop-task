@@ -8,7 +8,9 @@
   },
   "main": "dist/entry.js",
   "files": [
-    "dist"
+    "dist",
+    "README.md",
+    "LICENSE"
   ],
   "scripts": {
     "build": "tsc -p tsconfig.build.json && node -e \"require('fs').copyFileSync('src/entry.js','dist/entry.js'); require('fs').copyFileSync('src/esm-loader.js','dist/esm-loader.js')\"",
