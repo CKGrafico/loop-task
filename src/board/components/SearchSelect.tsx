@@ -51,7 +51,9 @@ export function SearchSelect(props: {
   useEffect(() => {
     if (focused) {
       const idx = filtered.findIndex((o) => o.value === value);
-      setSelectedIndex(idx >= 0 ? idx : 0);
+      const target = idx >= 0 ? idx : 0;
+      setSelectedIndex(target);
+      scrollRef.current?.scrollChildIntoView(`select-option-${target}`);
     } else {
       setFilter("");
     }
