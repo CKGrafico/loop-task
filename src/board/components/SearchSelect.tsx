@@ -148,7 +148,11 @@ export function SearchSelect(props: {
 
   useEffect(() => {
     scrollRef.current?.scrollChildIntoView(`select-option-${clampedSelected}`);
-  }, [clampedSelected]);
+  }, [clampedSelected, filter]);
+
+  useEffect(() => {
+    scrollRef.current?.scrollChildIntoView(`select-option-${currentIdx >= 0 ? currentIdx : 0}`);
+  }, [currentIdx, scrollRef.current]);
 
   return (
     <box
