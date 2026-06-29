@@ -10,11 +10,6 @@ export interface SearchSelectOption {
   color?: string;
 }
 
-interface SelectState {
-  filter: string;
-  selectedIndex: number;
-}
-
 export function SearchSelect(props: {
   options: SearchSelectOption[];
   value: string;
@@ -26,45 +21,63 @@ export function SearchSelect(props: {
   const { options, value, onChange, focused, height } = props;
   const placeholder = props.placeholder ?? t("board.searchSelectPlaceholder");
   const maxHeight = height ?? SEARCH_SELECT_HEIGHT;
-  const [state, setState] = useState<SelectState>({ filter: "", selectedIndex: 0 });
+  const [filter, setFilter] = useState("");
+  const [selectedIndex, setSelectedIndex] = useState(0);
+
+  const filterRef = useRef(filter);
+  filterRef.current = filter;
 
   const filtered = useMemo(() => {
-    if (!state.filter) return options;
-    const q = state.filter.toLowerCase();
+    if (!filter) return options;
+    const q = filter.toLowerCase();
     return options.filter((o) =>
       o.name.toLowerCase().includes(q) || o.value.toLowerCase().includes(q)
     );
-  }, [options, state.filter]);
+  }, [options, filter]);
 
-  const clampedSelected = Math.min(state.selectedIndex, Math.max(0, filtered.length - 1));
+  const clampedSelected = Math.min(selectedIndex, Math.max(0, filtered.length - 1));
 
-  const ref = useRef({ filtered, clampedSelected, focused, onChange });
-  ref.current = { filtered, clampedSelected, focused, onChange };
+  const filteredRef = useRef(filtered);
+  filteredRef.current = filtered;
+  const selectedRef = useRef(clampedSelected);
+  selectedRef.current = clampedSelected;
+  const focusedRef = useRef(focused);
+  focusedRef.current = focused;
+  const onChangeRef = useRef(onChange);
+  onChangeRef.current = onChange;
 
   const scrollRef = useRef<ScrollBoxRenderable | null>(null);
 
   useEffect(() => {
     if (focused) {
-      const idx = ref.current.filtered.findIndex((o) => o.value === value);
-      setState({ filter: "", selectedIndex: idx >= 0 ? idx : 0 });
+      const idx = filtered.findIndex((o) => o.value === value);
+      setSelectedIndex(idx >= 0 ? idx : 0);
     } else {
-      setState({ filter: "", selectedIndex: 0 });
+      setFilter("");
     }
   }, [focused]);
 
   useEffect(() => {
     scrollRef.current?.scrollChildIntoView(`select-option-${clampedSelected}`);
-  }, [clampedSelected, state.filter]);
+  }, [clampedSelected, filter]);
+
+  const computeFiltered = (f: string) => {
+    if (!f) return options;
+    const q = f.toLowerCase();
+    return options.filter((o) =>
+      o.name.toLowerCase().includes(q) || o.value.toLowerCase().includes(q)
+    );
+  };
 
   useKeyboard((key) => {
-    const s = ref.current;
-    if (!s.focused) return;
+    if (!focusedRef.current) return;
     const name = key.name;
 
     if (name === "up" || name === "k") {
-      if (s.filtered.length > 0) {
-        const cur = s.clampedSelected;
-        setState(prev => ({ ...prev, selectedIndex: cur <= 0 ? s.filtered.length - 1 : cur - 1 }));
+      const list = computeFiltered(filterRef.current);
+      if (list.length > 0) {
+        const cur = Math.min(selectedRef.current, list.length - 1);
+        setSelectedIndex(cur <= 0 ? list.length - 1 : cur - 1);
       }
       key.preventDefault();
       key.stopPropagation();
@@ -72,9 +85,10 @@ export function SearchSelect(props: {
     }
 
     if (name === "down" || name === "j") {
-      if (s.filtered.length > 0) {
-        const cur = s.clampedSelected;
-        setState(prev => ({ ...prev, selectedIndex: cur >= s.filtered.length - 1 ? 0 : cur + 1 }));
+      const list = computeFiltered(filterRef.current);
+      if (list.length > 0) {
+        const cur = Math.min(selectedRef.current, list.length - 1);
+        setSelectedIndex(cur >= list.length - 1 ? 0 : cur + 1);
       }
       key.preventDefault();
       key.stopPropagation();
@@ -82,9 +96,11 @@ export function SearchSelect(props: {
     }
 
     if (name === "return" || name === "enter") {
-      const option = s.filtered[s.clampedSelected];
+      const list = computeFiltered(filterRef.current);
+      const cur = Math.min(selectedRef.current, list.length - 1);
+      const option = list[cur];
       if (option) {
-        s.onChange(option.value);
+        onChangeRef.current(option.value);
       }
       key.preventDefault();
       key.stopPropagation();
@@ -92,14 +108,18 @@ export function SearchSelect(props: {
     }
 
     if (name === "escape") {
-      setState({ filter: "", selectedIndex: 0 });
+      setFilter("");
+      setSelectedIndex(0);
       key.preventDefault();
       key.stopPropagation();
       return;
     }
 
     if (name === "backspace") {
-      setState(prev => ({ filter: prev.filter.slice(0, -1), selectedIndex: 0 }));
+      const newFilter = filterRef.current.slice(0, -1);
+      filterRef.current = newFilter;
+      setFilter(newFilter);
+      setSelectedIndex(0);
       key.preventDefault();
       key.stopPropagation();
       return;
@@ -115,7 +135,10 @@ export function SearchSelect(props: {
     }
 
     if (char) {
-      setState(prev => ({ filter: prev.filter + char, selectedIndex: 0 }));
+      const newFilter = filterRef.current + char;
+      filterRef.current = newFilter;
+      setFilter(newFilter);
+      setSelectedIndex(0);
       key.preventDefault();
       key.stopPropagation();
       return;
@@ -132,7 +155,7 @@ export function SearchSelect(props: {
     >
       <box style={{ height: 3, flexDirection: "row", alignItems: "center", paddingLeft: 1 }}>
         <text fg="#6b7280">{"/ "}</text>
-        <text fg={state.filter ? "#e5e7eb" : "#6b7280"}>{state.filter || placeholder}</text>
+        <text fg={filter ? "#e5e7eb" : "#6b7280"}>{filter || placeholder}</text>
       </box>
       <scrollbox ref={scrollRef} style={{ height: listHeight, backgroundColor: "#0b0b0b" }}>
         {filtered.map((option, i) => {
