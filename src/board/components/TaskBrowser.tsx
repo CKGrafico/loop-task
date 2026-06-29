@@ -167,7 +167,7 @@ export function TaskInspector(props: { task: TaskDefinition | null; onCopy?: (te
           style={{ paddingLeft: 1, paddingRight: 1, marginLeft: 1, backgroundColor: isHovered ? HOVER_BG : "#0b0b0b" }}
           {...hoverProps}
         >
-          <text fg={isHovered ? "#38bdf8" : "#6b7280"}>{"\u2349"}</text>
+          <text fg={isHovered ? "#38bdf8" : "#6b7280"}>{"\u2398"}</text>
         </box>
       </box>
       <text><strong>{t("board.taskLabelOnSuccess")}</strong> {task.onSuccessTaskId ?? t("board.taskNone")}</text>
