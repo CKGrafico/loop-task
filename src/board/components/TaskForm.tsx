@@ -165,6 +165,7 @@ export function TaskForm(props: {
                 hints={hints}
                 chainOptions={chainOptions}
                 inputRef={inputRef}
+                onCopy={props.onCopy}
                 style={{ width: "50%", paddingRight: 1 }}
               />
               {rightField ? (
@@ -181,6 +182,7 @@ export function TaskForm(props: {
                   hints={hints}
                   chainOptions={chainOptions}
                   inputRef={inputRef}
+                  onCopy={props.onCopy}
                   style={{ width: "50%" }}
                 />
               ) : (
@@ -275,7 +277,7 @@ function TaskFormRow(props: {
               style={{ width: "15%", height: 3, justifyContent: "center", alignItems: "center", backgroundColor: copyHover.isHovered ? HOVER_BG : "#0b0b0b" }}
               {...copyHover.hoverProps}
             >
-              <text fg={copyHover.isHovered ? "#38bdf8" : "#6b7280"}>{"\u2398 Copy"}</text>
+              <text fg={copyHover.isHovered ? "#38bdf8" : "#6b7280"}>{"\u2398"}</text>
             </box>
           ) : null}
         </box>
