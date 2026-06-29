@@ -53,7 +53,9 @@ export function SearchSelect(props: {
       const idx = filtered.findIndex((o) => o.value === value);
       const target = idx >= 0 ? idx : 0;
       setSelectedIndex(target);
-      scrollRef.current?.scrollChildIntoView(`select-option-${target}`);
+      requestAnimationFrame(() => {
+        scrollRef.current?.scrollChildIntoView(`select-option-${target}`);
+      });
     } else {
       setFilter("");
     }
