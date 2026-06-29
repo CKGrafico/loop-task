@@ -250,7 +250,7 @@ function TaskFormRow(props: {
           <box
             border
             borderColor={focused ? "#38bdf8" : undefined}
-            style={{ height: 3, width: field === "command" ? "85%" : "100%", backgroundColor: "#0b0b0b" }}
+            style={{ height: 3, width: field === "command" ? "92%" : "100%", backgroundColor: "#0b0b0b" }}
           >
             <input
               ref={inputRef}
@@ -274,7 +274,7 @@ function TaskFormRow(props: {
               border
               borderColor={copyHover.isHovered ? "#38bdf8" : "#374151"}
               onMouseDown={() => { copyToClipboard(valuesRef.current.command); onCopy?.(valuesRef.current.command); }}
-              style={{ width: "15%", height: 3, justifyContent: "center", alignItems: "center", backgroundColor: copyHover.isHovered ? HOVER_BG : "#0b0b0b" }}
+              style={{ width: "8%", height: 3, justifyContent: "center", alignItems: "center", backgroundColor: copyHover.isHovered ? HOVER_BG : "#0b0b0b" }}
               {...copyHover.hoverProps}
             >
               <text fg={copyHover.isHovered ? "#38bdf8" : "#6b7280"}>{"\u2398"}</text>
