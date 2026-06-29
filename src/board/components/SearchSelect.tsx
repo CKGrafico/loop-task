@@ -10,6 +10,11 @@ export interface SearchSelectOption {
   color?: string;
 }
 
+interface SelectState {
+  filter: string;
+  selectedIndex: number;
+}
+
 export function SearchSelect(props: {
   options: SearchSelectOption[];
   value: string;
@@ -21,48 +26,45 @@ export function SearchSelect(props: {
   const { options, value, onChange, focused, height } = props;
   const placeholder = props.placeholder ?? t("board.searchSelectPlaceholder");
   const maxHeight = height ?? SEARCH_SELECT_HEIGHT;
-  const [filter, setFilter] = useState("");
-  const [selectedIndex, setSelectedIndex] = useState(0);
+  const [state, setState] = useState<SelectState>({ filter: "", selectedIndex: 0 });
 
   const filtered = useMemo(() => {
-    if (!filter) return options;
-    const q = filter.toLowerCase();
+    if (!state.filter) return options;
+    const q = state.filter.toLowerCase();
     return options.filter((o) =>
       o.name.toLowerCase().includes(q) || o.value.toLowerCase().includes(q)
     );
-  }, [options, filter]);
+  }, [options, state.filter]);
 
-  const currentIdx = filtered.findIndex((o) => o.value === value);
-  const clampedSelected = Math.min(selectedIndex, Math.max(0, filtered.length - 1));
-  const finalSelected = clampedSelected;
+  const clampedSelected = Math.min(state.selectedIndex, Math.max(0, filtered.length - 1));
 
-  const stateRef = useRef({ filtered, finalSelected, focused, onChange, filter });
-  stateRef.current = { filtered, finalSelected, focused, onChange, filter };
+  const ref = useRef({ filtered, clampedSelected, focused, onChange });
+  ref.current = { filtered, clampedSelected, focused, onChange };
 
   const scrollRef = useRef<ScrollBoxRenderable | null>(null);
 
   useEffect(() => {
     if (focused) {
-      const idx = stateRef.current.filtered.findIndex((o) => o.value === value);
-      setSelectedIndex(idx >= 0 ? idx : 0);
+      const idx = ref.current.filtered.findIndex((o) => o.value === value);
+      setState({ filter: "", selectedIndex: idx >= 0 ? idx : 0 });
     } else {
-      setFilter("");
+      setState({ filter: "", selectedIndex: 0 });
     }
   }, [focused]);
 
   useEffect(() => {
-    scrollRef.current?.scrollChildIntoView(`select-option-${finalSelected}`);
-  }, [finalSelected, filter]);
+    scrollRef.current?.scrollChildIntoView(`select-option-${clampedSelected}`);
+  }, [clampedSelected, state.filter]);
 
   useKeyboard((key) => {
-    const s = stateRef.current;
+    const s = ref.current;
     if (!s.focused) return;
     const name = key.name;
 
     if (name === "up" || name === "k") {
       if (s.filtered.length > 0) {
-        const cur = s.finalSelected;
-        setSelectedIndex(cur <= 0 ? s.filtered.length - 1 : cur - 1);
+        const cur = s.clampedSelected;
+        setState(prev => ({ ...prev, selectedIndex: cur <= 0 ? s.filtered.length - 1 : cur - 1 }));
       }
       key.preventDefault();
       key.stopPropagation();
@@ -71,8 +73,8 @@ export function SearchSelect(props: {
 
     if (name === "down" || name === "j") {
       if (s.filtered.length > 0) {
-        const cur = s.finalSelected;
-        setSelectedIndex(cur >= s.filtered.length - 1 ? 0 : cur + 1);
+        const cur = s.clampedSelected;
+        setState(prev => ({ ...prev, selectedIndex: cur >= s.filtered.length - 1 ? 0 : cur + 1 }));
       }
       key.preventDefault();
       key.stopPropagation();
@@ -80,7 +82,7 @@ export function SearchSelect(props: {
     }
 
     if (name === "return" || name === "enter") {
-      const option = s.filtered[s.finalSelected];
+      const option = s.filtered[s.clampedSelected];
       if (option) {
         s.onChange(option.value);
       }
@@ -90,16 +92,14 @@ export function SearchSelect(props: {
     }
 
     if (name === "escape") {
-      setFilter("");
-      setSelectedIndex(0);
+      setState({ filter: "", selectedIndex: 0 });
       key.preventDefault();
       key.stopPropagation();
       return;
     }
 
     if (name === "backspace") {
-      setFilter((f) => f.slice(0, -1));
-      setSelectedIndex(0);
+      setState(prev => ({ filter: prev.filter.slice(0, -1), selectedIndex: 0 }));
       key.preventDefault();
       key.stopPropagation();
       return;
@@ -115,8 +115,7 @@ export function SearchSelect(props: {
     }
 
     if (char) {
-      setFilter((f) => f + char);
-      setSelectedIndex(0);
+      setState(prev => ({ filter: prev.filter + char, selectedIndex: 0 }));
       key.preventDefault();
       key.stopPropagation();
       return;
@@ -133,11 +132,11 @@ export function SearchSelect(props: {
     >
       <box style={{ height: 3, flexDirection: "row", alignItems: "center", paddingLeft: 1 }}>
         <text fg="#6b7280">{"/ "}</text>
-        <text fg={filter ? "#e5e7eb" : "#6b7280"}>{filter || placeholder}</text>
+        <text fg={state.filter ? "#e5e7eb" : "#6b7280"}>{state.filter || placeholder}</text>
       </box>
       <scrollbox ref={scrollRef} style={{ height: listHeight, backgroundColor: "#0b0b0b" }}>
         {filtered.map((option, i) => {
-          const isSelected = i === finalSelected;
+          const isSelected = i === clampedSelected;
           const isActive = option.value === value;
           const prefix = isSelected ? "› " : "  ";
           const colorIndicator = option.color ? `\u25cf ` : "";
