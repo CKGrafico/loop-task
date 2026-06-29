@@ -296,6 +296,15 @@ export function useBoardKeybindings(params: BoardKeybindingParams): void {
   useKeyboard((key) => {
     const name = key.name;
 
+    if (key.ctrl && name === "c") {
+      if (!logModalRun && !confirm && !helpOpen) {
+        onQuit();
+        key.preventDefault();
+        key.stopPropagation();
+        return;
+      }
+    }
+
     if (confirm) {
       CONFIRM_KEYS[name]?.({ confirm, confirmChoice, setConfirm, setConfirmChoice });
       key.preventDefault();
