@@ -161,11 +161,13 @@ export function TaskInspector(props: { task: TaskDefinition | null; onCopy?: (te
       <box style={{ flexDirection: "row" }}>
         <text><strong>{t("board.fieldCommand")}</strong> {cmd}</text>
         <box
+          border
+          borderColor={isHovered ? "#38bdf8" : "#374151"}
           onMouseDown={() => { copyToClipboard(cmd); onCopy?.(cmd); }}
-          style={{ paddingLeft: 1, backgroundColor: isHovered ? HOVER_BG : undefined }}
+          style={{ paddingLeft: 1, paddingRight: 1, marginLeft: 1, backgroundColor: isHovered ? HOVER_BG : "#0b0b0b" }}
           {...hoverProps}
         >
-          <text fg={isHovered ? "#e5e7eb" : "#6b7280"}>{"\u2349"}</text>
+          <text fg={isHovered ? "#38bdf8" : "#6b7280"}>{"\u2349"}</text>
         </box>
       </box>
       <text><strong>{t("board.taskLabelOnSuccess")}</strong> {task.onSuccessTaskId ?? t("board.taskNone")}</text>

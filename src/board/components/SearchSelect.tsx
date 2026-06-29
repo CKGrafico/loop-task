@@ -35,8 +35,9 @@ export function SearchSelect(props: {
   }, [options, filter]);
 
   const currentIdx = filtered.findIndex((o) => o.value === value);
-  const safeSelected = currentIdx >= 0 ? currentIdx : selectedIndex;
-  const clampedSelected = Math.min(safeSelected, Math.max(0, filtered.length - 1));
+  const clampedSelected = selectedIndex >= 0 && selectedIndex < filtered.length
+    ? selectedIndex
+    : Math.max(0, currentIdx);
 
   const filteredRef = useRef(filtered);
   filteredRef.current = filtered;
@@ -50,6 +51,7 @@ export function SearchSelect(props: {
   useEffect(() => {
     if (!focused) {
       setFilter("");
+      setSelectedIndex(currentIdx >= 0 ? currentIdx : 0);
     }
   }, [focused]);
 
