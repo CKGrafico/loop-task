@@ -297,6 +297,8 @@
   "board.toastTaskCreated": "Task created {id}",
   "board.toastTaskUpdated": "Task updated {id}",
   "board.toastTaskSelected": "Selected task \"{desc}\"",
+  "board.toastCopied": "Copied to clipboard",
+  "board.copyCommand": "Copy",
   "board.logWaiting": "  Waiting for live output...",
   "board.logStreamError": "Log stream error: {message}",
   "board.hintSearch": "search",

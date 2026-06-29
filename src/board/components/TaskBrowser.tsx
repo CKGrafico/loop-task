@@ -5,6 +5,7 @@ import { t } from "../../i18n/index.js";
 import { commandLine, truncate } from "../format.js";
 import { useHoverState } from "../hooks/useHoverState.js";
 import { HOVER_BG, ENTITY_COLORS } from "../../config/constants.js";
+import { copyToClipboard } from "../../shared/clipboard.js";
 import type { ScrollBoxRenderable } from "@opentui/core";
 
 function fit(text: string, width: number): string {
@@ -140,8 +141,8 @@ function TaskNavRow(props: {
   );
 }
 
-export function TaskInspector(props: { task: TaskDefinition | null }): React.ReactNode {
-  const { task } = props;
+export function TaskInspector(props: { task: TaskDefinition | null; onCopy?: (text: string) => void }): React.ReactNode {
+  const { task, onCopy } = props;
   if (!task) {
     return (
       <box title={t("board.inspectorTitle")} border style={{ backgroundColor: "#0b0b0b" }}>
@@ -151,12 +152,22 @@ export function TaskInspector(props: { task: TaskDefinition | null }): React.Rea
   }
 
   const cmd = commandLine(task.command, task.commandArgs);
+  const { isHovered, hoverProps } = useHoverState();
 
   return (
     <box title={t("board.inspectorTitle")} border style={{ flexDirection: "column", backgroundColor: "#0b0b0b" }}>
       <text><strong>{t("board.fieldId")}</strong> {task.id}</text>
       <text><strong>{t("board.taskLabelName")}</strong> {task.name}</text>
-      <text><strong>{t("board.fieldCommand")}</strong> {cmd}</text>
+      <box style={{ flexDirection: "row" }}>
+        <text><strong>{t("board.fieldCommand")}</strong> {cmd}</text>
+        <box
+          onMouseDown={() => { copyToClipboard(cmd); onCopy?.(cmd); }}
+          style={{ paddingLeft: 1, backgroundColor: isHovered ? HOVER_BG : undefined }}
+          {...hoverProps}
+        >
+          <text fg={isHovered ? "#e5e7eb" : "#6b7280"}>{"\u2349"}</text>
+        </box>
+      </box>
       <text><strong>{t("board.taskLabelOnSuccess")}</strong> {task.onSuccessTaskId ?? t("board.taskNone")}</text>
       <text><strong>{t("board.taskLabelOnFailure")}</strong> {task.onFailureTaskId ?? t("board.taskNone")}</text>
     </box>

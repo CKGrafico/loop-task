@@ -527,6 +527,7 @@ export function App(props: { onQuit: () => void }): React.ReactNode {
             editTask={editTask}
             onCancel={cancelTask}
             onDone={onTaskDone}
+            onCopy={() => pushToast("success", t("board.toastCopied"))}
           />
         ) : view === "task-list" ? (
           <box style={{ flexDirection: breakpoint === "narrow" ? "column" : "row", flexGrow: 1, backgroundColor: "#0b0b0b" }}>
@@ -540,7 +541,7 @@ export function App(props: { onQuit: () => void }): React.ReactNode {
               onActivate={(index) => { setTaskSelectedIndex(index); setEditTask(filteredTasks[index] ?? null); push("task-edit"); }}
             />
             <box style={{ flexDirection: "column", flexGrow: 1, backgroundColor: "#0b0b0b", overflow: "hidden" }}>
-              <TaskInspector key={`ti-${selectedTask?.id}`} task={selectedTask} />
+              <TaskInspector key={`ti-${selectedTask?.id}`} task={selectedTask} onCopy={() => pushToast("success", t("board.toastCopied"))} />
               <TaskActionButtons
                 key={`tab-${selectedTask?.id}`}
                 task={selectedTask}

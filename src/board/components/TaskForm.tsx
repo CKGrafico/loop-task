@@ -8,6 +8,7 @@ import { createTask, updateTask, listTasks } from "../daemon.js";
 import { useHoverState } from "../hooks/useHoverState.js";
 import { useInputShortcuts } from "../hooks/useInputShortcuts.js";
 import { useTabNav } from "../hooks/useTabNav.js";
+import { copyToClipboard } from "../../shared/clipboard.js";
 import { HOVER_BG } from "../../config/constants.js";
 import { SearchSelect } from "./SearchSelect.js";
 
@@ -31,6 +32,7 @@ export function TaskForm(props: {
   editTask: TaskDefinition | null;
   onCancel: () => void;
   onDone: (updated: boolean, id: string) => void;
+  onCopy?: (text: string) => void;
 }): React.ReactNode {
   const [values, setValues] = useState<Record<TaskField, string>>(taskInitialValues(props.editTask));
   const valuesRef = useRef(values);
@@ -222,11 +224,13 @@ function TaskFormRow(props: {
   hints: Record<TaskField, string>;
   chainOptions: { name: string; description: string; value: string }[];
   inputRef: React.MutableRefObject<InputRenderable | null>;
+  onCopy?: (text: string) => void;
   style?: { width?: number | `${number}%` | "auto"; flexGrow?: number; marginRight?: number; paddingRight?: number };
 }): React.ReactNode {
-  const { field, index, focused, values, valuesRef, updateValues, setFocusIndex, submit, labels, hints, chainOptions, inputRef, style } = props;
+  const { field, index, focused, values, valuesRef, updateValues, setFocusIndex, submit, labels, hints, chainOptions, inputRef, onCopy, style } = props;
   const isSelect = field === "onSuccessTaskId" || field === "onFailureTaskId";
   const selectOpts = isSelect ? chainOptions : [];
+  const copyHover = useHoverState();
 
   return (
     <box style={{ flexDirection: "column", ...style }}>
@@ -240,27 +244,38 @@ function TaskFormRow(props: {
           focused={focused}
         />
       ) : (
-        <box
-          border
-          borderColor={focused ? "#38bdf8" : undefined}
-          style={{ height: 3, backgroundColor: "#0b0b0b" }}
-        >
-          <input
-            ref={inputRef}
-            focused={focused}
-            value={values[field]}
-            placeholder={field === "command" ? t("board.exampleCommand") : ""}
-            onInput={(value: string) =>
-              updateValues({ ...valuesRef.current, [field]: value })
-            }
-            onSubmit={() => {
-              if (index < taskFields.length - 1) {
-                setFocusIndex(index + 1);
-              } else {
-                void submit(valuesRef.current);
+        <box style={{ flexDirection: "row" }}>
+          <box
+            border
+            borderColor={focused ? "#38bdf8" : undefined}
+            style={{ height: 3, flexGrow: 1, backgroundColor: "#0b0b0b" }}
+          >
+            <input
+              ref={inputRef}
+              focused={focused}
+              value={values[field]}
+              placeholder={field === "command" ? t("board.exampleCommand") : ""}
+              onInput={(value: string) =>
+                updateValues({ ...valuesRef.current, [field]: value })
               }
-            }}
-          />
+              onSubmit={() => {
+                if (index < taskFields.length - 1) {
+                  setFocusIndex(index + 1);
+                } else {
+                  void submit(valuesRef.current);
+                }
+              }}
+            />
+          </box>
+          {field === "command" ? (
+            <box
+              onMouseDown={() => { copyToClipboard(valuesRef.current.command); onCopy?.(valuesRef.current.command); }}
+              style={{ paddingLeft: 1, paddingRight: 1, justifyContent: "center", alignItems: "center", backgroundColor: copyHover.isHovered ? HOVER_BG : "#0b0b0b" }}
+              {...copyHover.hoverProps}
+            >
+              <text fg={copyHover.isHovered ? "#e5e7eb" : "#6b7280"}>{"\u2349"}</text>
+            </box>
+          ) : null}
         </box>
       )}
     </box>
