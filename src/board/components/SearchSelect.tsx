@@ -141,16 +141,9 @@ export function SearchSelect(props: {
     >
       <box style={{ height: 3, flexDirection: "row", alignItems: "center" }}>
         <text fg="#6b7280">{"  / "}</text>
-        <input
-          ref={inputRef}
-          focused={focused}
-          value={filter}
-          placeholder={placeholder}
-          onInput={(v: string) => {
-            setFilter(v);
-            setSelectedIndex(0);
-          }}
-        />
+        <box style={{ flexGrow: 1 }}>
+          <text fg={filter ? "#e5e7eb" : "#6b7280"}>{filter || placeholder}</text>
+        </box>
       </box>
       <box style={{ flexDirection: "column", height: listHeight }}>
         {filtered.map((option, i) => {
