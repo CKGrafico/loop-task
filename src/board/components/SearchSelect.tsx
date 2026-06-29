@@ -114,6 +114,33 @@ export function SearchSelect(props: {
       key.stopPropagation();
       return;
     }
+
+    if (name === "backspace") {
+      setFilter((f) => f.slice(0, -1));
+      setSelectedIndex(0);
+      setUserNavigated(false);
+      key.preventDefault();
+      key.stopPropagation();
+      return;
+    }
+
+    if (key.ctrl) return;
+
+    let char: string | null = null;
+    if (name && name.length === 1 && /[a-z0-9 _\-./]/i.test(name)) {
+      char = name;
+    } else if (key.sequence && key.sequence.length === 1 && /[a-z0-9 _\-./]/i.test(key.sequence)) {
+      char = key.sequence;
+    }
+
+    if (char) {
+      setFilter((f) => f + char);
+      setSelectedIndex(0);
+      setUserNavigated(false);
+      key.preventDefault();
+      key.stopPropagation();
+      return;
+    }
   });
 
   const listHeight = Math.min(filtered.length, maxHeight);
@@ -122,24 +149,11 @@ export function SearchSelect(props: {
     <box
       border
       borderColor={focused ? "#38bdf8" : undefined}
-      style={{ flexDirection: "column", backgroundColor: "#0b0b0b" }}
-      onMouseDown={() => { if (inputRef.current) inputRef.current.focus(); }}
+      style={{ flexDirection: "column", backgroundColor: focused ? "#0f172a" : "#0b0b0b" }}
     >
-      <box style={{ height: 3, flexDirection: "row", alignItems: "center" }}>
-        <text fg="#6b7280">{"  / "}</text>
-        <input
-          ref={inputRef}
-          focused={focused}
-          value={filter}
-          placeholder={placeholder}
-          style={{ flexGrow: 1 }}
-          keyBindings={[]}
-          onInput={(v: string) => {
-            setFilter(v);
-            setSelectedIndex(0);
-            setUserNavigated(false);
-          }}
-        />
+      <box style={{ height: 3, flexDirection: "row", alignItems: "center", paddingLeft: 1 }}>
+        <text fg="#6b7280">{"/ "}</text>
+        <text fg={filter ? "#e5e7eb" : "#6b7280"}>{filter || placeholder}</text>
       </box>
       <box style={{ flexDirection: "column", height: listHeight }}>
         {filtered.map((option, i) => {
