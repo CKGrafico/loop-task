@@ -143,7 +143,7 @@ export function SearchSelect(props: {
     }
   });
 
-  const listHeight = Math.min(filtered.length, maxHeight);
+  const listHeight = filter ? Math.min(filtered.length, maxHeight) : filtered.length;
   const scrollRef = useRef<ScrollBoxRenderable | null>(null);
 
   useEffect(() => {
