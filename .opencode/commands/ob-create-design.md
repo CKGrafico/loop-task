@@ -24,7 +24,7 @@ Examples from the spec repo:
 
 2. **Check for source roots**
 
-   Load `.agents/source-roots.json` when present. Only analyze those roots.
+   Load `.opencode/source-roots.json` when present. Only analyze those roots.
 
 3. **Analyze the codebase**
 

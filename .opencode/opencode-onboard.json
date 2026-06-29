@@ -1,7 +1,7 @@
 {
   "schema": 1,
-  "generatedAt": "2026-06-24T15:16:45.376Z",
-  "onboardVersion": "0.7.0",
+  "generatedAt": "2026-06-29T21:23:07.683Z",
+  "onboardVersion": "1.0.0",
   "opencodeVersion": "1.16.2",
   "wizard": {
     "platform": "github",
@@ -9,7 +9,7 @@
     "sourceRoots": [
       "C:\\Projects\\Personal\\loop-cli"
     ],
-    "maxConcurrentAgents": 2,
+    "maxConcurrentAgents": 3,
     "preserved": {
       "design": true,
       "architecture": true,
@@ -21,8 +21,8 @@
     },
     "additionalSkillsProvider": "npx-skills",
     "models": {
-      "plan": "opencode/qwen3.6-plus",
-      "build": "opencode/big-pickle",
+      "plan": "opencode-go/glm-5.2",
+      "build": "opencode/glm-5.1",
       "fast": "opencode/big-pickle"
     },
     "optionalTools": {

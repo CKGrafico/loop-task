@@ -136,7 +136,7 @@ Agent files live in `.opencode/agents/`. The set is dynamic — users add specia
 | Agent | File | Role |
 |-------|------|------|
 | `basic-engineer` | `.opencode/agents/basic-engineer.md` | Fallback implementation worker. Used when no custom engineer matches the task domain. |
-| `development-engineer` | `.opencode/agents/development-engineer.md` | TypeScript, React, testing, and project tooling specialist. |
+| `frontend-engineer` | `.opencode/agents/frontend-engineer.md` | OpenTUI/React 19 TUI board components, keyboard navigation, forms, SearchSelect, i18n. |
 | `*-engineer` | `.opencode/agents/*-engineer.md` | User-created specialists. Preferred over `basic-engineer` when their domain matches the task. |
 
 Before spawning, inspect `.opencode/agents/` to build the actual list — never assume which custom engineers exist.
@@ -149,7 +149,7 @@ Every agent file declares an `## Abilities` section that maps roles to `@skill-n
 
 ```markdown
 ## Abilities
-- Guardrails: @ob-generic-guardrails, @ob-default
+- Guardrails: @ob-generic-guardrails, @project-guardrails
 - Development: @ob-default
 - Testing: @ob-default
 - Infrastructure: @ob-default

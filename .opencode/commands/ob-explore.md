@@ -7,10 +7,12 @@ description: Think through an idea, investigate a problem, or clarify requiremen
 Apply `## Optimizations` from AGENTS.md (RTK, codegraph, memory, etc.).
 
 
-**Step 0 - Check for unarchived changes**
+**Step 0.a - Check for unarchived changes**
 
-Before exploring a new idea, inspect `openspec/changes/` (ignore `openspec/changes/archive`).
-If any unarchived change (`us-{id}-{slug}`) folders exist, list them and warn the user with this exact prompt:
+**IMPORTANT**: Never skip this step. User must give a response before proceeding.
+
+Before exploring a new idea, inspect `openspec/changes/` (ignore `openspec/changes/archive`). 
+If any folder (`us-{id}-{slug}`) exist in `openspec/changes/`, list them and warn the user with this exact prompt:
 
 ```text
 There are unarchived changes pending to be archived:
@@ -18,10 +20,13 @@ There are unarchived changes pending to be archived:
   Name: {change-name}
   ...
 
-Do you want to continue with the proposal or stop to archive the change first? [continue/stop]
+Do you want to continue with the exploration or stop to archive the change first? [continue/stop]
 ```
 
-If the user answers `stop`, end the command without generating a proposal.
-If the user answers `continue`, proceed to the next step.
+Wait for the user to respond: 
+- If the user answers `stop`, end the command without generating a proposal.
+- If the user answers `continue`, proceed to the next step.
+
+**Step 0.b - Load exploration skill**
 
 Load `@openspec-explore` skill and follow its instructions.

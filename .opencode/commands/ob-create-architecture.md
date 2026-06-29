@@ -19,7 +19,7 @@ Reference material:
 
 2. **Check for source roots**
 
-   Load `.agents/source-roots.json` when present. Only analyze those roots plus this repo's docs/config files.
+   Load `.opencode/source-roots.json` when present. Only analyze those roots plus this repo's docs/config files.
 
 3. **Analyze the codebase**
 

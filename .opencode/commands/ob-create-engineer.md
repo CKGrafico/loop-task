@@ -2,11 +2,11 @@
 description: Create a custom engineer agent from a description, with skills from skills.sh
 ---
 
-Create a new custom engineer agent based on the `basic-engineer.md` template. One file per engineer — no variants. The engineer's **model is fixed by its tier** (chosen here), since OpenCode resolves a subagent's model from its agent file.
+Create a new custom engineer agent based on the `basic-engineer.md` template. The agent file is a **template** — it has NO `model:` field. The `ob-subagent-tiers` plugin reads it at startup and injects tier variants (`<name>.build`, `<name>.fast`, `<name>.plan`) into the live config with models from `wizard.models`.
 
 **Usage**: `/ob-create-engineer <name> <tier> "<description>"`
 
-- `<tier>` — one of `plan`, `build`, `fast`. Maps to `.opencode/opencode-onboard.json` → `wizard.models[<tier>]`. Use `build` for most specialists, `plan` for heavy-reasoning roles (e.g. an architect), `fast` for light helpers.
+- `<tier>` — one of `plan`, `build`, `fast`. This is the **default tier** the engineer is associated with (used for AGENTS.md documentation and user reference). The `ob-subagent-tiers` plugin creates all three tier variants at startup regardless — this just records the intended primary tier. Use `build` for most specialists, `plan` for heavy-reasoning roles (e.g. an architect), `fast` for light helpers.
 
 Example: `/ob-create-engineer frontend-engineer build "A frontend engineer specialized in React, Next.js, and CSS"`
 
@@ -49,7 +49,6 @@ Example: `/ob-create-engineer frontend-engineer build "A frontend engineer speci
    ---
    description: <description>
    mode: subagent
-   model: <wizard.models[<tier>] from .opencode/opencode-onboard.json>
    color: <pick a theme color: primary|secondary|accent|success|warning|error|info>
    permission:
      edit: allow
@@ -66,7 +65,7 @@ Example: `/ob-create-engineer frontend-engineer build "A frontend engineer speci
    - Infrastructure: <@installed-skill-for-devops-cicd>, ...
 ```
 
-   Keep the file minimal — **identity + abilities + model only**, exactly like `basic-engineer.md`. Do **NOT** add a `## Workflow` section: the engineer workflow is defined once in `@ob-generic-guardrails` (every engineer loads it via its Guardrails ability), so it must not be duplicated in each agent file.
+   Keep the file minimal — **identity + abilities only**, exactly like `basic-engineer.md`. Do **NOT** add a `model:` field — the agent file is a template. Do **NOT** add a `## Workflow` section: the engineer workflow is defined once in `@ob-generic-guardrails` (every engineer loads it via its Guardrails ability), so it must not be duplicated in each agent file.
 
    Place the installed skills under the most relevant ability category:
    - **Development** — language frameworks, UI libraries, application code skills
@@ -75,9 +74,7 @@ Example: `/ob-create-engineer frontend-engineer build "A frontend engineer speci
 
    Distribute skills across ALL categories that apply. Only include categories that have at least one real skill assigned (besides Guardrails which is always present).
 
-5. **Resolve the model from the tier**
-
-   Read `wizard.models[<tier>]` from `.opencode/opencode-onboard.json` and put it in the agent file's `model:` frontmatter line (step 4). This is the model the engineer runs on — OpenCode reads it from the agent file when the lead spawns it. If that tier's model is unset, omit `model:` (the engineer inherits the lead's model) and warn the user to run `/ob-set-model <tier> <model>`.
+5. **No model in the agent file.** The agent file is a template with no `model:` field. The `ob-subagent-tiers` plugin reads it at startup and creates tier variants (`<name>.build`, `<name>.fast`, `<name>.plan`) with models from `wizard.models`. If all tiers are unset, warn the user to run `/ob-set-model <tier> <model>` and restart.
 
 6. **Update AGENTS.md**
 
@@ -89,7 +86,7 @@ Example: `/ob-create-engineer frontend-engineer build "A frontend engineer speci
 7. **Show summary**
 
    Report:
-    - Agent file created at `.opencode/agents/<name>.md` (tier `<tier>` → model `<resolved id>`)
+    - Agent file created at `.opencode/agents/<name>.md` (template, no model — tier variants injected by `ob-subagent-tiers` plugin at startup)
    - Skills installed (list each with source)
    - How to use: "This agent will be spawned by the lead during `/ob-apply` for tasks matching its specialty."
 
@@ -102,4 +99,4 @@ Example: `/ob-create-engineer frontend-engineer build "A frontend engineer speci
 - Pick a color that doesn't conflict with existing agents (basic-engineer uses #68A063)
 - Skills should match both the agent description AND the project's tech stack
 - If `npx skills` CLI is not available, manually reference skills by their `owner/repo` name in the abilities section and tell the user to install them
-- One file per engineer — do NOT create `-build`/`-fast` variant files. The model comes from the chosen tier and is stamped into the single agent file.
+- One file per engineer — do NOT create `-build`/`-fast` variant files. The agent file is a template with no `model:`. The `ob-subagent-tiers` plugin injects tier variants at startup.

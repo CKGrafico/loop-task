@@ -18,7 +18,7 @@ You are the **lead**. You orchestrate from this session only; you spawn workers 
 
 **1. Branch.** Create `feature/{change-slug}` if not already on one.
 
-**2. Load the plan.** Parse `tasks.md`. Each task carries `<!-- agent, depends_on, touches -->` (from `/ob-propose`). The model is a property of the **agent** (set in its agent file), not the task. Read `.opencode/opencode-onboard.json` → `wizard.maxConcurrentAgents` (the wave cap, 1–5).
+**2. Load the plan.** Parse `tasks.md`. Each task carries `<!-- agent, depends_on, touches -->` (from `/ob-propose`). The agent name includes a tier suffix (e.g. `backend-engineer.build`, `basic-engineer.fast`) — the `ob-subagent-tiers` plugin resolved the model at startup from `wizard.models[<tier>]` and injected these tier-suffixed agents into the config. You do not worry about models. Read `.opencode/opencode-onboard.json` → `wizard.maxConcurrentAgents` (the wave cap, 1–5).
 
 **3. Hydrate the Todo board.** `todowrite` one item per task: `pending`. **The Todo pane is the visible subagent board** (opencode plugins cannot draw a custom pane, so the native Todo widget is the live UI). While a task is in flight, its label must carry the worker — `<agent> · <model>` — so the pane shows which agent on which model is doing what. The Todo list is a **projection only**: never read it for recovery; rebuild it from `tasks.md` + git + `.opencode/.ob-run.json`.
 
@@ -44,10 +44,10 @@ wave     = pick groups whose file-sets are pairwise DISJOINT, capped at maxConcu
 - basic-memory `search` for prior decisions and the `change-<slug>-context` note (write that context note once before wave 1).
 
 **7. Spawn the wave — one assistant turn, multiple `task()` calls (they run in parallel).** For each group:
-- `subagent_type` = the task's `agent` **exactly as written** in `tasks.md` (e.g. `frontend-engineer`). It must be an agent file present in `.opencode/agents/`. If that agent is missing, fall back to `basic-engineer`. **Never** spawn the built-in `general` agent for implementation work — its model is wrong. The agent's own file carries its model.
+- `subagent_type` = the task's `agent` **exactly as written** in `tasks.md` (e.g. `frontend-engineer.build`, `basic-engineer.fast`). This is a tier-suffixed agent injected at startup by the `ob-subagent-tiers` plugin — it carries the model from `wizard.models[<tier>]`. If that agent is missing (plugin not loaded or tier model unset), fall back to the base template agent (strip the `.<tier>` suffix, e.g. `frontend-engineer`) which inherits the lead's model. **Never** spawn the built-in `general` agent for implementation work — its model is wrong.
 - `description` = `"<task-ids> — <short label>"` (e.g. `"2.1,2.2 — RPC endpoints"`) so the subagent is legible in the `←`/`→` list and the monitor.
 - `prompt` must contain: the exact task IDs + text, and the gathered context (codegraph symbols + relevant basic-memory notes). The worker follows the **Engineer workflow** defined once in `@ob-generic-guardrails` (load abilities → implement in dependency order → write a `task-<id>-result` note → return a summary) — do not restate it in the prompt.
-- Flip each spawned task's Todo item to `in_progress` and prefix its label with `<agent> · <model> — ` (e.g. `frontend-engineer · sonnet — 2.1 Consolidate logic`) so the running worker is visible in the Todo pane. On completion, drop the prefix and mark `completed`.
+- Flip each spawned task's Todo item to `in_progress` and prefix its label with `<agent> — ` (e.g. `frontend-engineer.build — 2.1 Consolidate logic`) so the running worker is visible in the Todo pane. On completion, drop the prefix and mark `completed`.
 
 **8. Collect the wave.** Each foreground `task()` returns its result to you. For each group:
 - **success** → `git add` the group's `touches` paths and commit `"{ids}: {summary}"`; mark its Todo items `completed`; check `[x]` in `tasks.md`.

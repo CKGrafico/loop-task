@@ -8,11 +8,10 @@ permission:
   read: allow
   glob: allow
   grep: allow
-model: opencode/big-pickle
 ---
 
 ## Abilities
-- Guardrails: @ob-generic-guardrails, @ob-default
+- Guardrails: @ob-generic-guardrails, @project-guardrails, @ob-default
 - Development: @ob-default
 - Testing: @ob-default
 - Infrastructure: @ob-default

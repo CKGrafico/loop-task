@@ -50,6 +50,14 @@
   ],
   "author": "Quique Fdez Guerra",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/CKGrafico/loop-cli.git"
+  },
+  "homepage": "https://github.com/CKGrafico/loop-cli",
+  "bugs": {
+    "url": "https://github.com/CKGrafico/loop-cli/issues"
+  },
   "engines": {
     "node": ">=20.0.0"
   },

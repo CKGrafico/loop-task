@@ -1,15 +1,17 @@
 ---
-description: Set the model for a tier (plan, build, or fast) in opencode-onboard.json and re-stamp engineers on that tier.
+description: Set the model for a tier (plan, build, or fast). Team-wide or user-local override.
 ---
 
-Set the concrete model for one tier in `.opencode/opencode-onboard.json` → `wizard.models`, then re-stamp the `model:` line of every engineer assigned to that tier (one file per engineer — no variants), so the change takes effect on your next `/ob-apply`.
+Set the concrete model for one tier. Writes to `wizard.models` in either the team config (shared, git-tracked) or a user-local override (gitignored).
 
 Usage:
 
 ```
 /ob-set-model <tier> <model>
+/ob-set-model user <tier> <model>
 ```
 
+- `user` — optional prefix. If present, writes to `.opencode/opencode-onboard.user.json` (gitignored, overrides team config for this machine only). If absent, writes to `.opencode/opencode-onboard.json` (shared with the team).
 - `<tier>` — one of `plan`, `build`, `fast`.
 - `<model>` — a fully-qualified model id (e.g. `opencode/big-pickle`) OR the keyword `current` to use the model active in this session.
 
@@ -17,28 +19,30 @@ Arguments: `$ARGUMENTS`
 
 **Steps**
 
-1. **Parse `$ARGUMENTS`** by whitespace: first token = `<tier>`, second token = `<model>`.
-   - If `$ARGUMENTS` is empty: read `.opencode/opencode-onboard.json` and show the current `wizard.models` mapping (`plan`, `build`, `fast` → id, or `unset`), then show the usage above. Change nothing.
+1. **Parse `$ARGUMENTS`** by whitespace.
+   - If first token is `user`: `isUser = true`, `<tier>` = second token, `<model>` = third token.
+   - Otherwise: `isUser = false`, `<tier>` = first token, `<model>` = second token.
+   - If `$ARGUMENTS` is empty: read both `.opencode/opencode-onboard.json` and `.opencode/opencode-onboard.user.json` and show the current `wizard.models` from each (team first, user override second), then show the usage above. Change nothing.
    - If `<tier>` is not exactly one of `plan` / `build` / `fast`, or `<model>` is missing: print the usage and stop. Change nothing.
 
 2. **Resolve `<model>`:**
    - If it is the literal `current`: use the model id active in THIS session (as shown in the opencode status line). Never substitute a guessed model.
    - Otherwise use the value verbatim. It must look like `provider/model-id`. If it contains no `/`, warn that it looks malformed and ask the user to confirm before writing.
 
-3. **Read `.opencode/opencode-onboard.json`.** If it does not exist, stop and tell the user onboarding has not generated it yet.
+3. **Determine target file.**
+   - `isUser = false` → `.opencode/opencode-onboard.json` (team). If it does not exist, stop and tell the user onboarding has not generated it yet.
+   - `isUser = true` → `.opencode/opencode-onboard.user.json` (user override). If it does not exist, create it with `{ "wizard": { "models": {} } }`.
 
-4. **Update the config.** Note the PREVIOUS value of `wizard.models.<tier>` (needed in step 5). Then set `wizard.models.<tier>` to the resolved model id (create `wizard.models` if absent). Do NOT touch any other field. Preserve the existing 2-space JSON formatting, then write the file back.
+4. **Update the config.** Read the target file, set `wizard.models.<tier>` to the resolved model id (create `wizard.models` if absent). Do NOT touch any other field. Preserve the existing 2-space JSON formatting, then write the file back.
 
-5. **Re-stamp engineers on that tier.** There are no variant files — each engineer is a single agent file carrying its own `model:`. For every `*-engineer.md` in `.opencode/agents/` whose current `model:` equals the tier's PREVIOUS value (from step 4), set its `model:` to the new id. By convention `basic-engineer` is the `fast` tier. For tier `plan` (the lead/primary session model) there is usually no engineer file to change — tell the user to select it when launching opencode.
-
-6. **Confirm:**
+5. **Confirm:**
 
    ```
-   opencode-onboard.json updated
+   <team|user> config updated
      <tier> model -> <resolved-id>
-     re-stamped: <list of engineer files updated>
+     file: <path written>
    ```
 
-   It takes effect on your next `/ob-apply`: engineers on that tier now carry the new model. No restart required.
+   **Restart opencode** for the change to take effect. The `ob-subagent-tiers` plugin reads the model configs at startup and injects tier-suffixed agent variants (`<engineer>.<tier>`) into the live config. After restart, `/ob-apply` will spawn agents on the new model.
 
-**This command edits `.opencode/opencode-onboard.json` and the `model:` line of engineer files on that tier.** It never modifies `opencode.json` or `tasks.md`.
+**This command edits `opencode-onboard.json` (team) or `opencode-onboard.user.json` (user) only.** It never modifies agent files, `opencode.json`, or `tasks.md`. Tier variants are generated in-memory by the `ob-subagent-tiers` plugin at startup — no file re-stamping needed.

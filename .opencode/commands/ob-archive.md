@@ -87,7 +87,7 @@ Find the oldest unarchived OpenSpec change that has a completed PR, archive it, 
       --repo {owner}/{repo} \
       --base main \
       --head archive/{id}-{slug} \
-      --title "archive(#{id}): {title}" \
+      --title "archive: {title} ({id})" \
       --body "Archive SDD artifacts for {id} after merge."
    ```
 

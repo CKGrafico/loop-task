@@ -22,18 +22,29 @@ export const ObSubagentMonitor = async ({ directory, client }) => {
 
   const state = { updatedAt: null, agents: {} }
 
-  // Read the model the engineer runs on from its own agent file (one file per
-  // engineer; the model is stamped into the frontmatter).
+  // Resolve the model for a tier-suffixed agent name (e.g. "backend-engineer.build").
+  // Reads wizard.models from opencode-onboard.user.json (user override) first,
+  // then opencode-onboard.json (team). Returns null if not found.
   async function modelForAgent(agent) {
     if (!agent) return null
-    try {
-      const raw = await fs.readFile(path.join(root, ".opencode", "agents", `${agent}.md`), "utf-8")
-      const fm = raw.match(/^---\r?\n([\s\S]*?)\r?\n---/)
-      const m = fm && /^model:\s*(\S+)/m.exec(fm[1])
-      return m ? m[1] : null
-    } catch {
+
+    // Check for tier suffix: <name>.<tier>
+    const dotIdx = agent.lastIndexOf(".")
+    const tier = dotIdx !== -1 ? agent.slice(dotIdx + 1) : null
+    if (tier && ["build", "fast", "plan"].includes(tier)) {
+      try {
+        for (const file of ["opencode-onboard.user.json", "opencode-onboard.json"]) {
+          const raw = await fs.readFile(path.join(root, ".opencode", file), "utf-8")
+          const data = JSON.parse(raw)
+          const model = data?.wizard?.models?.[tier]
+          if (model) return model
+        }
+      } catch {}
       return null
     }
+
+    // Base template agents have no model — return null (inherits lead's model)
+    return null
   }
 
   // Tasks are encoded at the front of the spawn description, e.g.

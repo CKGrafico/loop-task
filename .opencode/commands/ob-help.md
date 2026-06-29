@@ -20,6 +20,8 @@ Display the following reference to the user exactly as written. Do not summarize
 
 **`/ob-main <task>`** — Skip the whole OpenSpec/wave flow. Just do the task directly in the current session. Best for small, focused changes that don't need a plan or parallel agents.
 
+**`/ob-autopilot <feature or URL>`** — Fully autonomous, no confirmations. Branches off `main`, then runs propose → apply → archive on that branch (each phase its own commit). Default: merges to `main` and deletes the branch. Add `push` keyword to push the branch only. Add `pr` keyword to push + create a PR via `@ob-pullrequest`. Built for loop-engineering / unattended runs. Stops only on a hard failure, leaving the branch unmerged.
+
 ---
 
 ### Done implementing?
@@ -32,13 +34,15 @@ Display the following reference to the user exactly as written. Do not summarize
 
 ### Maintaining the project?
 
-**`/ob-create-engineer <name> "<description>"`** — Add a custom specialist engineer to the team. Installs the right skills from skills.sh automatically. Future `/ob-apply` runs will prefer it when its domain matches.
+**`/ob-create-engineer <name> <tier> "<description>"`** — Add a custom specialist engineer to the team. Installs the right skills from skills.sh automatically. The agent file is a template (no model); the `ob-subagent-tiers` plugin creates tier variants at startup. Future `/ob-apply` runs will prefer it when its domain matches.
 
 **`/ob-create-architecture`** — Regenerate `ARCHITECTURE.md` from the current codebase. Safe to rerun any time the architecture evolves.
 
 **`/ob-create-design`** — Regenerate `DESIGN.md` from the design system (Tailwind, CSS vars, tokens, etc.).
 
-**`/ob-set-model <tier> <model>`** — Set the model for a tier (`plan`, `build`, or `fast`) in `.opencode/opencode-onboard.json` (`wizard.models`) and re-stamp the engineers assigned to that tier. Use a model id (e.g. `/ob-set-model fast opencode/big-pickle`) or `current` to use the active session model (e.g. `/ob-set-model plan current`). Engineers on that tier pick it up on the next `/ob-apply`.
+**`/ob-create-project-guardrails`** — Generate a `project-guardrails` skill from `ARCHITECTURE.md` and project config files. Extracts concrete rules (architecture boundaries, naming, code style, testing, git workflow) that all agents must follow. Updates every `*-engineer.md` to load the skill.
+
+**`/ob-set-model <tier> <model>`** — Set the model for a tier (`plan`, `build`, or `fast`). Writes to `.opencode/opencode-onboard.json` (`wizard.models`). Use `user` prefix for a personal override: `/ob-set-model user fast opencode/big-pickle`. Use a model id or `current` for the active session model. Restart opencode for the `ob-subagent-tiers` plugin to rebuild tier agents.
 
 ---
 

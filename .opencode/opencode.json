@@ -9,7 +9,10 @@
     "@mohak34/opencode-notifier@latest",
     "@slkiser/opencode-quota@latest"
   ],
-  "model": "opencode/big-pickle",
+  "experimental": {
+    "mcp_timeout": 300000
+  },
+  "model": "opencode/glm-5.1",
   "mcp": {
     "codegraph": {
       "type": "local",
@@ -29,7 +32,7 @@
         "mcp"
       ],
       "enabled": true,
-      "timeout": 120000
+      "timeout": 300000
     }
   }
 }
