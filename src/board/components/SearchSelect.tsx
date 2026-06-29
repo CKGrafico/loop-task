@@ -34,8 +34,7 @@ export function SearchSelect(props: {
 
   const currentIdx = filtered.findIndex((o) => o.value === value);
   const clampedSelected = Math.min(selectedIndex, Math.max(0, filtered.length - 1));
-  const displaySelected = Math.max(clampedSelected, currentIdx >= 0 ? currentIdx : 0);
-  const finalSelected = Math.min(displaySelected, Math.max(0, filtered.length - 1));
+  const finalSelected = clampedSelected;
 
   const stateRef = useRef({ filtered, finalSelected, focused, onChange, filter });
   stateRef.current = { filtered, finalSelected, focused, onChange, filter };
