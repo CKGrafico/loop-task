@@ -25,6 +25,7 @@ export function SearchSelect(props: {
   const inputRef = useRef<InputRenderable | null>(null);
   const [filter, setFilter] = useState("");
   const [selectedIndex, setSelectedIndex] = useState(0);
+  const [userNavigated, setUserNavigated] = useState(false);
 
   const filtered = useMemo(() => {
     if (!filter) return options;
@@ -35,23 +36,27 @@ export function SearchSelect(props: {
   }, [options, filter]);
 
   const currentIdx = filtered.findIndex((o) => o.value === value);
-  const clampedSelected = selectedIndex >= 0 && selectedIndex < filtered.length
-    ? selectedIndex
-    : Math.max(0, currentIdx);
+  const displaySelected = userNavigated ? selectedIndex : (currentIdx >= 0 ? currentIdx : 0);
+  const clampedSelected = Math.min(displaySelected, Math.max(0, filtered.length - 1));
 
   const filteredRef = useRef(filtered);
   filteredRef.current = filtered;
-  const selectedRef = useRef(clampedSelected);
-  selectedRef.current = clampedSelected;
+  const selectedIdxRef = useRef(clampedSelected);
+  selectedIdxRef.current = clampedSelected;
   const focusedRef = useRef(focused);
   focusedRef.current = focused;
   const onChangeRef = useRef(onChange);
   onChangeRef.current = onChange;
+  const filterRef = useRef(filter);
+  filterRef.current = filter;
 
   useEffect(() => {
-    if (!focused) {
-      setFilter("");
+    if (focused) {
+      setUserNavigated(false);
       setSelectedIndex(currentIdx >= 0 ? currentIdx : 0);
+    } else {
+      setFilter("");
+      setUserNavigated(false);
     }
   }, [focused]);
 
@@ -64,8 +69,10 @@ export function SearchSelect(props: {
     if (name === "up" || name === "k") {
       const list = filteredRef.current;
       if (list.length > 0) {
-        const current = selectedRef.current;
-        setSelectedIndex(current <= 0 ? list.length - 1 : current - 1);
+        const cur = selectedIdxRef.current;
+        const next = cur <= 0 ? list.length - 1 : cur - 1;
+        setSelectedIndex(next);
+        setUserNavigated(true);
       }
       key.preventDefault();
       key.stopPropagation();
@@ -75,8 +82,10 @@ export function SearchSelect(props: {
     if (name === "down" || name === "j") {
       const list = filteredRef.current;
       if (list.length > 0) {
-        const current = selectedRef.current;
-        setSelectedIndex(current >= list.length - 1 ? 0 : current + 1);
+        const cur = selectedIdxRef.current;
+        const next = cur >= list.length - 1 ? 0 : cur + 1;
+        setSelectedIndex(next);
+        setUserNavigated(true);
       }
       key.preventDefault();
       key.stopPropagation();
@@ -85,7 +94,7 @@ export function SearchSelect(props: {
 
     if (name === "return" || name === "enter") {
       const list = filteredRef.current;
-      const option = list[selectedRef.current];
+      const option = list[selectedIdxRef.current];
       if (option) {
         onChangeRef.current(option.value);
       }
@@ -95,9 +104,10 @@ export function SearchSelect(props: {
     }
 
     if (name === "escape") {
-      if (filter) {
+      if (filterRef.current) {
         setFilter("");
         setSelectedIndex(0);
+        setUserNavigated(false);
       }
       key.preventDefault();
       key.stopPropagation();
@@ -107,6 +117,7 @@ export function SearchSelect(props: {
     if (name === "backspace") {
       setFilter((f) => f.slice(0, -1));
       setSelectedIndex(0);
+      setUserNavigated(false);
       key.preventDefault();
       key.stopPropagation();
       return;
@@ -114,17 +125,17 @@ export function SearchSelect(props: {
 
     if (key.ctrl) return;
 
+    let char: string | null = null;
     if (name && name.length === 1 && /[a-z0-9 _\-./]/i.test(name)) {
-      setFilter((f) => f + name);
-      setSelectedIndex(0);
-      key.preventDefault();
-      key.stopPropagation();
-      return;
+      char = name;
+    } else if (key.sequence && key.sequence.length === 1 && /[a-z0-9 _\-./]/i.test(key.sequence)) {
+      char = key.sequence;
     }
 
-    if (key.sequence && key.sequence.length === 1 && /[a-z0-9 _\-./]/i.test(key.sequence)) {
-      setFilter((f) => f + key.sequence);
+    if (char) {
+      setFilter((f) => f + char);
       setSelectedIndex(0);
+      setUserNavigated(false);
       key.preventDefault();
       key.stopPropagation();
       return;
@@ -138,12 +149,22 @@ export function SearchSelect(props: {
       border
       borderColor={focused ? "#38bdf8" : undefined}
       style={{ flexDirection: "column", backgroundColor: "#0b0b0b" }}
+      onMouseDown={() => { if (inputRef.current) inputRef.current.focus(); }}
     >
       <box style={{ height: 3, flexDirection: "row", alignItems: "center" }}>
         <text fg="#6b7280">{"  / "}</text>
-        <box style={{ flexGrow: 1 }}>
-          <text fg={filter ? "#e5e7eb" : "#6b7280"}>{filter || placeholder}</text>
-        </box>
+        <input
+          ref={inputRef}
+          focused={focused}
+          value={filter}
+          placeholder={placeholder}
+          style={{ flexGrow: 1 }}
+          onInput={(v: string) => {
+            setFilter(v);
+            setSelectedIndex(0);
+            setUserNavigated(false);
+          }}
+        />
       </box>
       <box style={{ flexDirection: "column", height: listHeight }}>
         {filtered.map((option, i) => {
