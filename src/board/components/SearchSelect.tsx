@@ -1,6 +1,6 @@
 import { useRef, useState, useMemo, useEffect } from "react";
 import { useKeyboard } from "@opentui/react";
-import type { InputRenderable } from "@opentui/core";
+import type { InputRenderable, ScrollBoxRenderable } from "@opentui/core";
 import { t } from "../../i18n/index.js";
 import { useInputShortcuts } from "../hooks/useInputShortcuts.js";
 import { SEARCH_SELECT_HEIGHT } from "../../config/constants.js";
@@ -144,6 +144,11 @@ export function SearchSelect(props: {
   });
 
   const listHeight = Math.min(filtered.length, maxHeight);
+  const scrollRef = useRef<ScrollBoxRenderable | null>(null);
+
+  useEffect(() => {
+    scrollRef.current?.scrollChildIntoView(`select-option-${clampedSelected}`);
+  }, [clampedSelected]);
 
   return (
     <box
@@ -155,7 +160,7 @@ export function SearchSelect(props: {
         <text fg="#6b7280">{"/ "}</text>
         <text fg={filter ? "#e5e7eb" : "#6b7280"}>{filter || placeholder}</text>
       </box>
-      <box style={{ flexDirection: "column", height: listHeight }}>
+      <scrollbox ref={scrollRef} style={{ height: listHeight, backgroundColor: "#0b0b0b" }}>
         {filtered.map((option, i) => {
           const isSelected = i === clampedSelected;
           const isActive = option.value === value;
@@ -164,12 +169,12 @@ export function SearchSelect(props: {
           const bg = isSelected ? "#1e3a8a" : undefined;
           const fg = isSelected ? "#ffffff" : isActive ? "#38bdf8" : "#9ca3af";
           return (
-            <box key={option.value} style={{ flexDirection: "row", backgroundColor: bg }}>
+            <box key={option.value} id={`select-option-${i}`} style={{ flexDirection: "row", backgroundColor: bg }}>
               <text fg={fg}>{`${prefix}${colorIndicator}${option.name}`}</text>
             </box>
           );
         })}
-      </box>
+      </scrollbox>
     </box>
   );
 }
