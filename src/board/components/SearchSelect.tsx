@@ -108,34 +108,8 @@ export function SearchSelect(props: {
         setFilter("");
         setSelectedIndex(0);
         setUserNavigated(false);
+        if (inputRef.current) inputRef.current.value = "";
       }
-      key.preventDefault();
-      key.stopPropagation();
-      return;
-    }
-
-    if (name === "backspace") {
-      setFilter((f) => f.slice(0, -1));
-      setSelectedIndex(0);
-      setUserNavigated(false);
-      key.preventDefault();
-      key.stopPropagation();
-      return;
-    }
-
-    if (key.ctrl) return;
-
-    let char: string | null = null;
-    if (name && name.length === 1 && /[a-z0-9 _\-./]/i.test(name)) {
-      char = name;
-    } else if (key.sequence && key.sequence.length === 1 && /[a-z0-9 _\-./]/i.test(key.sequence)) {
-      char = key.sequence;
-    }
-
-    if (char) {
-      setFilter((f) => f + char);
-      setSelectedIndex(0);
-      setUserNavigated(false);
       key.preventDefault();
       key.stopPropagation();
       return;
@@ -159,6 +133,7 @@ export function SearchSelect(props: {
           value={filter}
           placeholder={placeholder}
           style={{ flexGrow: 1 }}
+          keyBindings={[]}
           onInput={(v: string) => {
             setFilter(v);
             setSelectedIndex(0);
