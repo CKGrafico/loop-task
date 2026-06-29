@@ -541,7 +541,7 @@ export function App(props: { onQuit: () => void }): React.ReactNode {
               onActivate={(index) => { setTaskSelectedIndex(index); setEditTask(filteredTasks[index] ?? null); push("task-edit"); }}
             />
             <box style={{ flexDirection: "column", flexGrow: 1, backgroundColor: "#0b0b0b", overflow: "hidden" }}>
-              <TaskInspector key={`ti-${selectedTask?.id}`} task={selectedTask} onCopy={() => pushToast("success", t("board.toastCopied"))} />
+              <TaskInspector key={`ti-${selectedTask?.id}`} task={selectedTask} />
               <TaskActionButtons
                 key={`tab-${selectedTask?.id}`}
                 task={selectedTask}

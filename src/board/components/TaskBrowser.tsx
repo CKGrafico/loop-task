@@ -141,8 +141,8 @@ function TaskNavRow(props: {
   );
 }
 
-export function TaskInspector(props: { task: TaskDefinition | null; onCopy?: (text: string) => void }): React.ReactNode {
-  const { task, onCopy } = props;
+export function TaskInspector(props: { task: TaskDefinition | null }): React.ReactNode {
+  const { task } = props;
   if (!task) {
     return (
       <box title={t("board.inspectorTitle")} border style={{ backgroundColor: "#0b0b0b" }}>
@@ -152,24 +152,12 @@ export function TaskInspector(props: { task: TaskDefinition | null; onCopy?: (te
   }
 
   const cmd = commandLine(task.command, task.commandArgs);
-  const { isHovered, hoverProps } = useHoverState();
 
   return (
     <box title={t("board.inspectorTitle")} border style={{ flexDirection: "column", backgroundColor: "#0b0b0b" }}>
       <text><strong>{t("board.fieldId")}</strong> {task.id}</text>
       <text><strong>{t("board.taskLabelName")}</strong> {task.name}</text>
-      <box style={{ flexDirection: "row" }}>
-        <text><strong>{t("board.fieldCommand")}</strong> {cmd}</text>
-        <box
-          border
-          borderColor={isHovered ? "#38bdf8" : "#374151"}
-          onMouseDown={() => { copyToClipboard(cmd); onCopy?.(cmd); }}
-          style={{ paddingLeft: 1, paddingRight: 1, marginLeft: 1, backgroundColor: isHovered ? HOVER_BG : "#0b0b0b" }}
-          {...hoverProps}
-        >
-          <text fg={isHovered ? "#38bdf8" : "#6b7280"}>{"\u2398"}</text>
-        </box>
-      </box>
+      <text><strong>{t("board.fieldCommand")}</strong> {cmd}</text>
       <text><strong>{t("board.taskLabelOnSuccess")}</strong> {task.onSuccessTaskId ?? t("board.taskNone")}</text>
       <text><strong>{t("board.taskLabelOnFailure")}</strong> {task.onFailureTaskId ?? t("board.taskNone")}</text>
     </box>
