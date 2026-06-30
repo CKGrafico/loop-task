@@ -9,13 +9,11 @@ import { FocusableInput } from "./FocusableInput.js";
 interface FilterBarProps {
   filters: { query: string; status: string };
   sort: string;
-  searchActive: boolean;
   onStatusCycle: () => void;
   onSortCycle: () => void;
   onSelectProject?: () => void;
   currentProjectName?: string;
   onQueryChange: (value: string) => void;
-  onSearchActivate: () => void;
   onSearchDismiss: () => void;
 }
 
@@ -23,12 +21,12 @@ export function FilterBar(props: FilterBarProps): React.ReactNode {
   const {
     filters,
     sort,
-    searchActive,
     onStatusCycle,
     onSortCycle,
     onSelectProject,
     currentProjectName,
     onQueryChange,
+    onSearchDismiss,
   } = props;
 
   const statusLabel = `${t("board.statusFilterTitle")} ${filters.status}`;
@@ -38,28 +36,14 @@ export function FilterBar(props: FilterBarProps): React.ReactNode {
   return (
     <Box flexDirection="column" height={3}>
       <Box>
-        {searchActive ? (
-          <Box width={currentProjectName ? 36 : 48}>
-            <FocusableInput
-              value={filters.query}
-              onChange={onQueryChange}
-              placeholder={t("board.searchPlaceholder")}
-            />
-          </Box>
-        ) : (
-          <Box
-            borderStyle="single"
-            borderColor={theme.border.dim}
-            backgroundColor={theme.bg.input}
-            paddingX={1}
-            width={currentProjectName ? 36 : 48}
-            onPress={props.onSearchActivate}
-          >
-            <Text color={theme.text.muted}>
-              {filters.query || t("board.searchEmpty")}
-            </Text>
-          </Box>
-        )}
+        <Box width={currentProjectName ? 36 : 48}>
+          <FocusableInput
+            value={filters.query}
+            onChange={onQueryChange}
+            onSubmit={onSearchDismiss}
+            placeholder={t("board.searchPlaceholder")}
+          />
+        </Box>
 
         {onSelectProject ? (
           <Box marginLeft={1}>
@@ -88,9 +72,7 @@ export function FilterBar(props: FilterBarProps): React.ReactNode {
         </Box>
       </Box>
       <Box>
-        {searchActive && (
-          <Text color={theme.text.muted}>{t("board.searchPlaceholder")}</Text>
-        )}
+        <Text color={theme.text.muted}>{t("board.searchPlaceholder")}</Text>
       </Box>
     </Box>
   );
