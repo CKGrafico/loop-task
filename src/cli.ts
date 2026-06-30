@@ -199,25 +199,7 @@ projectCmd
   });
 
 program.action(async () => {
-  if (!process.execPath.includes("bun")) {
-    const { spawn } = await import("node:child_process");
-    const child = spawn("bun", [process.argv[1]], {
-      stdio: "inherit",
-      env: { ...process.env },
-      shell: true,
-    });
-    child.on("error", () => {
-      console.error(
-        "The board requires the Bun runtime for OpenTUI native FFI.\n" +
-        "Install Bun: npm install -g bun\n" +
-        "Then run: loop-task"
-      );
-      process.exit(1);
-    });
-    child.on("exit", (code) => process.exit(code ?? 0));
-    return;
-  }
-  const { launchBoard } = await import("./board/index.js");
+  const { launchBoard } = await import("./tui/index.js");
   await launchBoard();
 });
 
