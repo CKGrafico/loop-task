@@ -17,9 +17,18 @@ importers:
       ink:
         specifier: ^7.1.0
         version: 7.1.0(@types/react@19.2.17)(react-devtools-core@7.0.1)(react@19.2.7)
+      ink-combobox:
+        specifier: ^0.2.0
+        version: 0.2.0(chalk@5.6.2)(ink@7.1.0(@types/react@19.2.17)(react-devtools-core@7.0.1)(react@19.2.7))(react@19.2.7)
+      ink-scroll-list:
+        specifier: ^0.4.1
+        version: 0.4.1(ink@7.1.0(@types/react@19.2.17)(react-devtools-core@7.0.1)(react@19.2.7))(react@19.2.7)
       ink-select-input:
         specifier: ^6.2.0
         version: 6.2.0(ink@7.1.0(@types/react@19.2.17)(react-devtools-core@7.0.1)(react@19.2.7))(react@19.2.7)
+      ink-spinner:
+        specifier: ^5.0.0
+        version: 5.0.0(ink@7.1.0(@types/react@19.2.17)(react-devtools-core@7.0.1)(react@19.2.7))(react@19.2.7)
       ink-text-input:
         specifier: ^6.0.0
         version: 6.0.0(ink@7.1.0(@types/react@19.2.17)(react-devtools-core@7.0.1)(react@19.2.7))(react@19.2.7)
@@ -843,6 +852,10 @@ packages:
     resolution: {integrity: sha512-VGtlMu3x/4DOtIUwEkRezxUZ2lBacNJCHash0N0WeZDBS+7Ux1dm3XWAgWYxLJFMMdOeXMHXorshEFhbMSGelg==}
     engines: {node: ^12.20.0 || ^14.13.1 || >=16.0.0}
 
+  cli-spinners@2.9.2:
+    resolution: {integrity: sha512-ywqV+5MmyL4E7ybXgKys4DugZbX0FC6LnwrhjuykIjnK9k8OQacQ7axGKnjDXWNhns0xot3bZI5h55H8yo9cJg==}
+    engines: {node: '>=6'}
+
   cli-truncate@6.1.0:
     resolution: {integrity: sha512-ofWtXdvPO1WepoE9Gn4dPdZw+ADud1Yz9K+xm9FjK5vvrs/D60vrlKIQeSw1wJX4cphW2bnWi8GZSKvf9T6shw==}
     engines: {node: '>=22'}
@@ -1084,11 +1097,38 @@ packages:
     resolution: {integrity: sha512-m6FAo/spmsW2Ab2fU35JTYwtOKa2yAwXSwgjSv1TJzh4Mh7mC3lzAOVLBprb72XsTrgkEIsl7YrFNAiDiRhIGg==}
     engines: {node: '>=12'}
 
+  ink-combobox@0.2.0:
+    resolution: {integrity: sha512-0HZVKm0WVNvrJSLj+aYR8HbWOuSFkaYtq5LSYcZQQNC77JpNYfbxzxSyTakXZQu5LIyQ0A6a3v7/nrsmlrFzNg==}
+    engines: {node: '>=20'}
+    peerDependencies:
+      chalk: ^5.0.0
+      ink: '>=6.0.0'
+      react: '>=19.0.0'
+
+  ink-scroll-list@0.4.1:
+    resolution: {integrity: sha512-2GcjnBXRe0sTSMC03SCKX6IkNAsYYgcpvAN+ggAiaqeg+s+qA9Ls0iVTOmB+Ize/9AVts8xloG4aRcrOy/7Xxg==}
+    peerDependencies:
+      ink: '>=6'
+      react: '>=19'
+
+  ink-scroll-view@0.3.7:
+    resolution: {integrity: sha512-lUBLxSbVry/+UtJhuvRu6wumP43+ScVp69J7e+hmYwz1kTkahWfkVwWOu7Mn1DMPb8AU8bnsmEsr6kvSJvnaRw==}
+    peerDependencies:
+      ink: ^5 || ^6 || ^7
+      react: ^18 || ^19
+
   ink-select-input@6.2.0:
     resolution: {integrity: sha512-304fZXxkpYxJ9si5lxRCaX01GNlmPBgOZumXXRnPYbHW/iI31cgQynqk2tRypGLOF1cMIwPUzL2LSm6q4I5rQQ==}
     engines: {node: '>=18'}
     peerDependencies:
       ink: '>=5.0.0'
+      react: '>=18.0.0'
+
+  ink-spinner@5.0.0:
+    resolution: {integrity: sha512-EYEasbEjkqLGyPOUc8hBJZNuC5GvXGMLu0w5gdTNskPc7Izc5vO3tdQEYnzvshucyGCBXc86ig0ujXPMWaQCdA==}
+    engines: {node: '>=14.16'}
+    peerDependencies:
+      ink: '>=4.0.0'
       react: '>=18.0.0'
 
   ink-text-input@6.0.0:
@@ -2264,6 +2304,8 @@ snapshots:
     dependencies:
       restore-cursor: 4.0.0
 
+  cli-spinners@2.9.2: {}
+
   cli-truncate@6.1.0:
     dependencies:
       slice-ansi: 9.0.0
@@ -2543,12 +2585,35 @@ snapshots:
 
   indent-string@5.0.0: {}
 
+  ink-combobox@0.2.0(chalk@5.6.2)(ink@7.1.0(@types/react@19.2.17)(react-devtools-core@7.0.1)(react@19.2.7))(react@19.2.7):
+    dependencies:
+      chalk: 5.6.2
+      ink: 7.1.0(@types/react@19.2.17)(react-devtools-core@7.0.1)(react@19.2.7)
+      react: 19.2.7
+
+  ink-scroll-list@0.4.1(ink@7.1.0(@types/react@19.2.17)(react-devtools-core@7.0.1)(react@19.2.7))(react@19.2.7):
+    dependencies:
+      ink: 7.1.0(@types/react@19.2.17)(react-devtools-core@7.0.1)(react@19.2.7)
+      ink-scroll-view: 0.3.7(ink@7.1.0(@types/react@19.2.17)(react-devtools-core@7.0.1)(react@19.2.7))(react@19.2.7)
+      react: 19.2.7
+
+  ink-scroll-view@0.3.7(ink@7.1.0(@types/react@19.2.17)(react-devtools-core@7.0.1)(react@19.2.7))(react@19.2.7):
+    dependencies:
+      ink: 7.1.0(@types/react@19.2.17)(react-devtools-core@7.0.1)(react@19.2.7)
+      react: 19.2.7
+
   ink-select-input@6.2.0(ink@7.1.0(@types/react@19.2.17)(react-devtools-core@7.0.1)(react@19.2.7))(react@19.2.7):
     dependencies:
       figures: 6.1.0
       ink: 7.1.0(@types/react@19.2.17)(react-devtools-core@7.0.1)(react@19.2.7)
       react: 19.2.7
       to-rotated: 1.0.0
+
+  ink-spinner@5.0.0(ink@7.1.0(@types/react@19.2.17)(react-devtools-core@7.0.1)(react@19.2.7))(react@19.2.7):
+    dependencies:
+      cli-spinners: 2.9.2
+      ink: 7.1.0(@types/react@19.2.17)(react-devtools-core@7.0.1)(react@19.2.7)
+      react: 19.2.7
 
   ink-text-input@6.0.0(ink@7.1.0(@types/react@19.2.17)(react-devtools-core@7.0.1)(react@19.2.7))(react@19.2.7):
     dependencies:

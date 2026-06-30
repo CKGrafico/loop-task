@@ -47,3 +47,30 @@ export const ENTITY_COLORS = {
   task: "#a78bfa",    // purple
   project: "#34d399", // green
 } as const;
+
+// ── Wizard step counts ──────────────────────────────────────────────
+export const WIZARD_LOOP_REQUIRED_STEPS = 3;
+export const WIZARD_LOOP_TOTAL_STEPS = 7;
+export const WIZARD_TASK_REQUIRED_STEPS = 2;
+export const WIZARD_TASK_TOTAL_STEPS = 4;
+
+// ── Command tiers ───────────────────────────────────────────────────
+export const COMMAND_TIER_ACTION = "action";
+export const COMMAND_TIER_CONFIRM = "confirm";
+export const COMMAND_TIER_GLOBAL = "global";
+
+// ── Confirm keywords ────────────────────────────────────────────────
+export const CONFIRM_YES = "yes";
+export const CONFIRM_CANCEL = "cancel";
+
+// ── Panel focus types ───────────────────────────────────────────────
+export const PANEL_LEFT = "left";
+export const PANEL_RIGHT = "right";
+
+// ── Command input constants ─────────────────────────────────────────
+export const COMMAND_INPUT_HEIGHT = 3;
+export const COMMAND_INPUT_DROPDOWN_MAX_VISIBLE = 6;
+
+// ── Ctrl shortcut hints (for display) ───────────────────────────────
+export const CTRL_SHORTCUT_EDIT = "Ctrl+E";
+export const CTRL_SHORTCUT_DELETE = "Ctrl+D";
