@@ -4,12 +4,12 @@ import { darkTheme as theme } from "../theme.js";
 import type { DaemonStatus, View } from "../types.js";
 import { ENTITY_COLORS, HEADER_COMPACT_WIDTH } from "../../config/constants.js";
 import { t } from "../../i18n/index.js";
+import { FocusableButton } from "./FocusableButton.js";
 
 interface HeaderProps {
   daemonStatus: DaemonStatus;
   counts: { total: number; running: number; waiting: number; paused: number; idle: number };
   view: View;
-  focusedButton?: number | null;
   onViewLoops: () => void;
   onViewTasks: () => void;
   onViewProjects: () => void;
@@ -21,7 +21,6 @@ interface HeaderProps {
 interface ActionButton {
   label: string;
   color: string;
-  focused?: boolean;
   onPress: () => void;
 }
 
@@ -56,48 +55,33 @@ function actionButtons(view: View, props: HeaderProps): ActionButton[] {
   const newLoopLabel = t("board.newLoopLabel");
   const taskActionNew = t("board.taskActionNew");
   const newProjectLabel = t("project.newProjectLabel");
-  const focused = props.focusedButton ?? null;
 
   switch (view) {
     case "board":
       return [
-        { label: manageLabel, color: ENTITY_COLORS.project, focused: focused === 0, onPress: props.onViewProjects },
-        { label: viewTasksLabel, color: ENTITY_COLORS.task, focused: focused === 1, onPress: props.onViewTasks },
-        { label: newLoopLabel, color: ENTITY_COLORS.loop, focused: focused === 2, onPress: props.onAddLoop },
+        { label: manageLabel, color: ENTITY_COLORS.project, onPress: props.onViewProjects },
+        { label: viewTasksLabel, color: ENTITY_COLORS.task, onPress: props.onViewTasks },
+        { label: newLoopLabel, color: ENTITY_COLORS.loop, onPress: props.onAddLoop },
       ];
     case "task-list":
       return [
-        { label: manageLabel, color: ENTITY_COLORS.project, focused: focused === 0, onPress: props.onViewProjects },
-        { label: viewLoopsLabel, color: ENTITY_COLORS.loop, focused: focused === 1, onPress: props.onViewLoops },
-        { label: taskActionNew, color: ENTITY_COLORS.task, focused: focused === 2, onPress: props.onAddTask },
+        { label: manageLabel, color: ENTITY_COLORS.project, onPress: props.onViewProjects },
+        { label: viewLoopsLabel, color: ENTITY_COLORS.loop, onPress: props.onViewLoops },
+        { label: taskActionNew, color: ENTITY_COLORS.task, onPress: props.onAddTask },
       ];
     case "projects":
       return [
-        { label: viewLoopsLabel, color: ENTITY_COLORS.loop, focused: focused === 0, onPress: props.onViewLoops },
-        { label: viewTasksLabel, color: ENTITY_COLORS.task, focused: focused === 1, onPress: props.onViewTasks },
-        { label: newProjectLabel, color: ENTITY_COLORS.project, focused: focused === 2, onPress: props.onAddProject },
+        { label: viewLoopsLabel, color: ENTITY_COLORS.loop, onPress: props.onViewLoops },
+        { label: viewTasksLabel, color: ENTITY_COLORS.task, onPress: props.onViewTasks },
+        { label: newProjectLabel, color: ENTITY_COLORS.project, onPress: props.onAddProject },
       ];
     default:
       return [
-        { label: manageLabel, color: ENTITY_COLORS.project, focused: focused === 0, onPress: props.onViewProjects },
-        { label: viewTasksLabel, color: ENTITY_COLORS.task, focused: focused === 1, onPress: props.onViewTasks },
-        { label: newLoopLabel, color: ENTITY_COLORS.loop, focused: focused === 2, onPress: props.onAddLoop },
+        { label: manageLabel, color: ENTITY_COLORS.project, onPress: props.onViewProjects },
+        { label: viewTasksLabel, color: ENTITY_COLORS.task, onPress: props.onViewTasks },
+        { label: newLoopLabel, color: ENTITY_COLORS.loop, onPress: props.onAddLoop },
       ];
   }
-}
-
-function HeaderButton(props: { btn: ActionButton }): React.ReactNode {
-  const { label, color, focused, onPress } = props.btn;
-  return (
-    <Box
-      borderStyle="single"
-      borderColor={focused ? theme.accent.focus : color}
-      backgroundColor={focused ? theme.bg.active : undefined}
-      paddingX={1}
-    >
-      <Text color={focused ? theme.text.inverse : color} bold>{label}</Text>
-    </Box>
-  );
 }
 
 export function Header(props: HeaderProps): React.ReactNode {
@@ -135,9 +119,12 @@ export function Header(props: HeaderProps): React.ReactNode {
 
         <Box>
           {buttons.map((btn, i) => (
-            <Box key={i} marginRight={i < buttons.length - 1 ? 1 : 0}>
-              <HeaderButton btn={btn} />
-            </Box>
+            <FocusableButton
+              key={i}
+              label={btn.label}
+              color={btn.color}
+              onPress={btn.onPress}
+            />
           ))}
         </Box>
       </Box>

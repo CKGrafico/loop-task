@@ -1,30 +1,14 @@
 import React from "react";
-import { Box, Text, useInput } from "ink";
+import { Box, Text } from "ink";
 import { darkTheme as theme } from "../theme.js";
+import { Modal } from "./Modal.js";
 import { t } from "../../i18n/index.js";
 
 export function ContextHelpModal(props: {
   onClose: () => void;
 }): React.ReactNode {
-  useInput(() => {
-    props.onClose();
-  });
-
   return (
-    <Box
-      flexDirection="column"
-      borderStyle="round"
-      borderColor={theme.accent.task}
-      backgroundColor={theme.bg.elevated}
-      padding={1}
-      width={64}
-    >
-      <Box marginBottom={1}>
-        <Text color={theme.accent.task} bold>
-          {t("context.helpTitle")}
-        </Text>
-      </Box>
-
+    <Modal title={t("context.helpTitle")} onClose={props.onClose} width={64}>
       <Box marginBottom={1}>
         <Text color={theme.text.primary}>{t("context.helpRules")}</Text>
       </Box>
@@ -40,6 +24,6 @@ export function ContextHelpModal(props: {
       <Box>
         <Text color={theme.text.secondary}>{t("context.helpJqTip")}</Text>
       </Box>
-    </Box>
+    </Modal>
   );
 }

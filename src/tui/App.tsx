@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useRef, useCallback } from "react";
-import { Box, Text, useInput, useApp, useFocusManager } from "ink";
+import { Box, Text, useInput, useApp } from "ink";
 import type { LoopMeta, RunRecord, TaskDefinition, Project, LoopOptions } from "../types.js";
 import type { ConfirmState, View, DaemonStatus, Mode } from "./types.js";
 import { useLoopPolling } from "./hooks/useLoopPolling.js";
@@ -88,7 +88,6 @@ export function App(props: { onQuit: () => void }): React.ReactNode {
   const { toasts, push: pushToast } = useToasts();
   const breakpoint = useBreakpoint();
   const createProjectTriggerRef = useRef<(() => void) | null>(null);
-  const [panelFocus, setPanelFocus] = useState<string>("navigator");
 
   const visible = useMemo(
     () => applyLoopFilters(
@@ -243,26 +242,23 @@ export function App(props: { onQuit: () => void }): React.ReactNode {
     pushToast("success", updated ? t("board.toastTaskUpdated", { id }) : t("board.toastTaskCreated", { id }));
   };
 
-  // Header navigation: 1/2/3 triggers the 3 header buttons
-  function triggerHeaderButton(index: number): void {
-    if (view === "projects") {
-      if (index === 0) replace("board");
-      else if (index === 1) { void refreshTasks(); push("task-list"); }
-      else { createProjectTriggerRef.current?.(); }
-    } else if (view === "task-list") {
-      if (index === 0) push("projects");
-      else if (index === 1) replace("board");
-      else { setEditTask(null); push("task-create"); }
-    } else {
-      if (index === 0) push("projects");
-      else if (index === 1) { void refreshTasks(); push("task-list"); }
+  const headerActions = [
+    () => {
+      if (view === "projects") replace("board");
+      else push("projects");
+    },
+    () => {
+      if (view === "task-list") replace("board");
+      else { void refreshTasks(); push("task-list"); }
+    },
+    () => {
+      if (view === "projects") createProjectTriggerRef.current?.();
+      else if (view === "task-list") { setEditTask(null); push("task-create"); }
       else { setEditTarget(null); push("create"); }
-    }
-  }
+    },
+  ];
 
-  // Keyboard input
   useInput((input, key) => {
-    // Ctrl+C quits (unless a modal is open)
     if (key.ctrl && input === "c") {
       if (!logModalRun && !confirm && !helpOpen) {
         onQuit();
@@ -271,7 +267,6 @@ export function App(props: { onQuit: () => void }): React.ReactNode {
       }
     }
 
-    // Handle confirm modal
     if (confirm) {
       if (key.leftArrow || key.rightArrow || input === "h" || input === "l") {
         setConfirmChoice((c) => (c === 1 ? 0 : 1));
@@ -286,7 +281,6 @@ export function App(props: { onQuit: () => void }): React.ReactNode {
       return;
     }
 
-    // Handle log modal
     if (logModalRun) {
       if (key.escape || input === "q") {
         setLogModalRun(null);
@@ -294,7 +288,6 @@ export function App(props: { onQuit: () => void }): React.ReactNode {
       return;
     }
 
-    // Handle help modal
     if (helpOpen) {
       if (input === "h" || key.escape) {
         setHelpOpen(false);
@@ -307,13 +300,11 @@ export function App(props: { onQuit: () => void }): React.ReactNode {
       return;
     }
 
-    // Don't handle global keys in form views
     if (FORM_VIEWS.includes(view)) {
       if (key.escape) pop();
       return;
     }
 
-    // Search mode
     if (searchActive) {
       if (key.escape) {
         setSearchActive(false);
@@ -322,7 +313,6 @@ export function App(props: { onQuit: () => void }): React.ReactNode {
       return;
     }
 
-    // Global keys
     if (input === "h") { setHelpOpen(true); return; }
     if (input === "n" && view === "board") { setEditTarget(null); push("create"); return; }
     if (input === "t" && view === "board") { setEditTask(null); push("task-create"); return; }
@@ -335,36 +325,10 @@ export function App(props: { onQuit: () => void }): React.ReactNode {
     if (input === "r" && view === "board") { setProjectsModalOpen(true); return; }
     if (input === "/" && view === "board") { setSearchActive(true); return; }
 
-    // Header navigation: 1, 2, 3 trigger the 3 header buttons
-    if (input === "1") { triggerHeaderButton(0); return; }
-    if (input === "2") { triggerHeaderButton(1); return; }
-    if (input === "3") { triggerHeaderButton(2); return; }
+    if (input === "1") { headerActions[0]!(); return; }
+    if (input === "2") { headerActions[1]!(); return; }
+    if (input === "3") { headerActions[2]!(); return; }
 
-    // Tab cycles: header-1 -> header-2 -> header-3 -> navigator -> run-history -> actions -> header-1
-    if (key.tab && view === "board") {
-      const cycle = ["header-1", "header-2", "header-3", "navigator", "run-history", "actions"];
-      if (key.shift) {
-        setPanelFocus((p) => {
-          const idx = cycle.indexOf(p);
-          return cycle[(idx - 1 + cycle.length) % cycle.length]!;
-        });
-      } else {
-        setPanelFocus((p) => {
-          const idx = cycle.indexOf(p);
-          return cycle[(idx + 1) % cycle.length]!;
-        });
-      }
-      return;
-    }
-
-    // Enter on header buttons triggers navigation
-    if (key.return && view === "board" && panelFocus.startsWith("header-")) {
-      const btnIdx = parseInt(panelFocus.split("-")[1]!) - 1;
-      triggerHeaderButton(btnIdx);
-      return;
-    }
-
-    // Escape to go back
     if (key.escape) {
       if (view === "projects") pop();
       else if (view === "task-list") pop();
@@ -390,7 +354,6 @@ export function App(props: { onQuit: () => void }): React.ReactNode {
         daemonStatus={daemonStatus}
         counts={counts}
         view={view}
-        focusedButton={panelFocus.startsWith("header-") ? parseInt(panelFocus.split("-")[1]!) - 1 : null}
         onViewLoops={() => replace("board")}
         onViewTasks={() => { void refreshTasks(); push("task-list"); }}
         onViewProjects={() => push("projects")}
@@ -403,21 +366,17 @@ export function App(props: { onQuit: () => void }): React.ReactNode {
         <FilterBar
           filters={filters}
           sort={sort}
-          searchActive={searchActive}
           onStatusCycle={() => setFilters((prev) => ({ ...prev, status: cycleStatusFilter(prev.status) }))}
           onSortCycle={() => setSort(cycleSortMode(sort))}
           onSelectProject={() => setProjectsModalOpen(true)}
           currentProjectName={currentProjectId === "all" ? t("project.showAll") : (projects.find(p => p.id === currentProjectId)?.name ?? "Default")}
           onQueryChange={(value) => setFilters((prev) => ({ ...prev, query: value }))}
-          onSearchActivate={() => setSearchActive(true)}
           onSearchDismiss={() => setSearchActive(false)}
         />
       ) : view === "task-list" ? (
         <TaskFilterBar
           query={taskQuery}
-          searchActive={taskSearchActive}
           onQueryChange={setTaskQuery}
-          onSearchActivate={() => setTaskSearchActive(true)}
           onSearchDismiss={() => setTaskSearchActive(false)}
         />
       ) : null}
@@ -450,7 +409,6 @@ export function App(props: { onQuit: () => void }): React.ReactNode {
               visible={filteredTasks}
               total={tasks.length}
               selectedIndex={taskClampedIndex}
-              focused={taskSearchActive ? false : true}
               query={taskQuery}
               onSelect={(index) => setTaskSelectedIndex(index)}
               onActivate={(index) => { setTaskSelectedIndex(index); setEditTask(filteredTasks[index] ?? null); push("task-edit"); }}
@@ -460,8 +418,6 @@ export function App(props: { onQuit: () => void }): React.ReactNode {
               <TaskActionButtons
                 key={`tab-${selectedTask?.id}`}
                 task={selectedTask}
-                focused={!taskSearchActive}
-                selectedAction={taskSelectedAction}
                 selectable={stack.includes("create") || stack.includes("task-edit")}
                 onAction={handleTaskAction}
               />
@@ -491,7 +447,6 @@ export function App(props: { onQuit: () => void }): React.ReactNode {
               filters={filters}
               sort={sort}
               breakpoint={breakpoint}
-              focused={searchActive ? false : panelFocus === "navigator"}
               projects={projects}
               onSelect={(index) => setSelectedIndex(index)}
               onActivate={(index) => { setSelectedIndex(index); const loop = visible[index]; if (loop) { setEditTarget(loop); push("create"); } }}
@@ -501,14 +456,11 @@ export function App(props: { onQuit: () => void }): React.ReactNode {
               <RunHistory
                 loop={selected}
                 selectedRunIndex={selectedRunIndex}
-                focused={!searchActive && panelFocus === "run-history"}
                 onSelectRun={(index) => setSelectedRunIndex(index)}
                 onOpenRun={handleOpenRunLog}
               />
               <ActionButtons
                 loop={selected}
-                focused={!searchActive && panelFocus === "actions"}
-                selectedAction={selectedAction}
                 onAction={handleAction}
               />
             </Box>
@@ -521,13 +473,12 @@ export function App(props: { onQuit: () => void }): React.ReactNode {
       {confirm ? (
         <ConfirmModal
           message={confirm.message}
-          choice={confirmChoice}
           onYes={() => { const action = confirm.action; setConfirm(null); void action(); }}
           onNo={() => setConfirm(null)}
         />
       ) : null}
 
-      {helpOpen ? <HelpModal view={view} /> : null}
+      {helpOpen ? <HelpModal view={view} onClose={() => setHelpOpen(false)} /> : null}
       {contextHelpOpen ? <ContextHelpModal onClose={() => setContextHelpOpen(false)} /> : null}
 
       {logModalRun ? (

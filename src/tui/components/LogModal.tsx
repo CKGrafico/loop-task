@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { Box, Text, useInput } from "ink";
 import type { RunRecord } from "../../types.js";
 import { darkTheme as theme } from "../theme.js";
+import { Modal } from "./Modal.js";
 import { t } from "../../i18n/index.js";
 import { streamRunLog } from "../daemon.js";
 import { copyToClipboard } from "../../shared/clipboard.js";
@@ -87,11 +88,6 @@ export function LogModal(props: {
 
   useInput((input, key) => {
     if (searchMode) {
-      if (key.escape) {
-        setSearchMode(false);
-        setSearchQuery("");
-        return;
-      }
       if (key.return) {
         setSearchMode(false);
         return;
@@ -107,7 +103,7 @@ export function LogModal(props: {
       return;
     }
 
-    if (key.escape || input === "q") {
+    if (input === "q") {
       props.onClose();
       return;
     }
@@ -139,7 +135,9 @@ export function LogModal(props: {
     }
     if (key.downArrow || input === "j") {
       setFollow(false);
-      setScrollOffset((o) => Math.min(o + 1, Math.max(0, totalLines - MAX_VISIBLE_LINES)));
+      setScrollOffset((o) =>
+        Math.min(o + 1, Math.max(0, totalLines - MAX_VISIBLE_LINES))
+      );
       return;
     }
     if (key.upArrow || input === "k") {
@@ -150,19 +148,41 @@ export function LogModal(props: {
   });
 
   const isLoading = props.loading || streaming;
-  const statusIcon = props.run.status === "running" ? "\u21bb" : props.run.exitCode === 0 ? "\u2713" : "\u2717";
-  const statusColor = props.run.status === "running" ? theme.semantic.warning : props.run.exitCode === 0 ? theme.semantic.success : theme.semantic.danger;
+  const statusIcon =
+    props.run.status === "running"
+      ? "\u21bb"
+      : props.run.exitCode === 0
+        ? "\u2713"
+        : "\u2717";
+  const statusColor =
+    props.run.status === "running"
+      ? theme.semantic.warning
+      : props.run.exitCode === 0
+        ? theme.semantic.success
+        : theme.semantic.danger;
 
   return (
-    <Box flexDirection="column" borderStyle="round" borderColor={theme.accent.focus} backgroundColor={theme.bg.elevated} paddingX={1}>
+    <Modal
+      title={`Run #${props.run.runNumber} - ${props.run.startedAt}`}
+      onClose={props.onClose}
+      width="80%"
+    >
       <Box marginBottom={1} justifyContent="space-between">
-        <Text color={theme.accent.focus} bold>
-          {` Run #${props.run.runNumber} - ${props.run.startedAt} `}
-          <Text color={statusColor}>{statusIcon} {props.run.status === "running" ? "Running" : `exit ${props.run.exitCode}`}</Text>
-          {props.run.duration > 0 ? <Text color={theme.text.muted}> {props.run.duration}ms</Text> : null}
+        <Text color={statusColor}>
+          {statusIcon}{" "}
+          {props.run.status === "running"
+            ? "Running"
+            : `exit ${props.run.exitCode}`}
         </Text>
+        {props.run.duration > 0 ? (
+          <Text color={theme.text.muted}> {props.run.duration}ms</Text>
+        ) : null}
         <Text color={theme.text.muted}>
-          {searchMode ? `/${searchQuery}` : follow ? "[Follow]" : `[${startIdx}-${endIdx}/${totalLines}]`}
+          {searchMode
+            ? `/${searchQuery}`
+            : follow
+              ? "[Follow]"
+              : `[${startIdx}-${endIdx}/${totalLines}]`}
         </Text>
       </Box>
 
@@ -176,16 +196,24 @@ export function LogModal(props: {
       <Box flexDirection="column">
         {visible.length === 0 ? (
           <Text color={theme.text.muted}>
-            {isLoading ? t("board.logModalLoading") : searchQuery ? "No matches" : t("board.logModalEmpty")}
+            {isLoading
+              ? t("board.logModalLoading")
+              : searchQuery
+                ? "No matches"
+                : t("board.logModalEmpty")}
           </Text>
         ) : (
           visible.map((line, i) => {
             const realIdx = startIdx + i;
-            const isFolded = isChainHeader(line) && foldedChains.has(
-              filtered.indexOf(line)
-            );
+            const isFolded =
+              isChainHeader(line) &&
+              foldedChains.has(filtered.indexOf(line));
             return (
-              <Text key={realIdx} color={colorForLine(line, props.run)} wrap="truncate">
+              <Text
+                key={realIdx}
+                color={colorForLine(line, props.run)}
+                wrap="truncate"
+              >
                 {isFolded ? `${line} [folded]` : line}
               </Text>
             );
@@ -195,10 +223,12 @@ export function LogModal(props: {
 
       <Box marginTop={1} justifyContent="space-between">
         <Text color={theme.text.muted}>
-          {searchMode ? "Type to filter, Enter to apply, Esc to clear" : "/:search  f:follow  u:fold  c:copy  j/k:scroll"}
+          {searchMode
+            ? "Type to filter, Enter to apply, Esc to close"
+            : "/:search  f:follow  u:fold  c:copy  j/k:scroll"}
         </Text>
         <Text color={theme.text.muted}>{t("board.logModalEscClose")}</Text>
       </Box>
-    </Box>
+    </Modal>
   );
 }
