@@ -1,9 +1,10 @@
 import React from "react";
 import { Box, Text } from "ink";
-import TextInput from "ink-text-input";
 import { darkTheme as theme } from "../theme.js";
 import { t } from "../../i18n/index.js";
 import type { Filters, SortMode } from "../state.js";
+import { FocusableButton } from "./FocusableButton.js";
+import { FocusableInput } from "./FocusableInput.js";
 
 interface FilterBarProps {
   filters: { query: string; status: string };
@@ -28,71 +29,62 @@ export function FilterBar(props: FilterBarProps): React.ReactNode {
     onSelectProject,
     currentProjectName,
     onQueryChange,
-    onSearchActivate,
-    onSearchDismiss,
   } = props;
+
+  const statusLabel = `${t("board.statusFilterTitle")} ${filters.status}`;
+  const sortLabel = `${t("board.sortTitle")} ${sort}`;
+  const projectLabel = currentProjectName ?? t("project.showAll");
 
   return (
     <Box flexDirection="column" height={3}>
       <Box>
-        <Box
-          borderStyle="single"
-          borderColor={searchActive ? theme.accent.focus : theme.border.dim}
-          backgroundColor={theme.bg.input}
-          paddingX={1}
-          width={currentProjectName ? 36 : 48}
-        >
-          {searchActive ? (
-            <TextInput
+        {searchActive ? (
+          <Box width={currentProjectName ? 36 : 48}>
+            <FocusableInput
               value={filters.query}
               onChange={onQueryChange}
               placeholder={t("board.searchPlaceholder")}
             />
-          ) : (
+          </Box>
+        ) : (
+          <Box
+            borderStyle="single"
+            borderColor={theme.border.dim}
+            backgroundColor={theme.bg.input}
+            paddingX={1}
+            width={currentProjectName ? 36 : 48}
+            onPress={props.onSearchActivate}
+          >
             <Text color={theme.text.muted}>
               {filters.query || t("board.searchEmpty")}
             </Text>
-          )}
-        </Box>
+          </Box>
+        )}
 
         {onSelectProject ? (
-          <Box
-            borderStyle="single"
-            borderColor={theme.accent.project}
-            backgroundColor={theme.bg.surface}
-            paddingX={1}
-            marginLeft={1}
-          >
-            <Text color={theme.accent.project} bold>
-              {currentProjectName ?? t("project.showAll")}
-            </Text>
+          <Box marginLeft={1}>
+            <FocusableButton
+              label={projectLabel}
+              color={theme.accent.project}
+              onPress={onSelectProject}
+            />
           </Box>
         ) : null}
 
-        <Box
-          borderStyle="single"
-          borderColor={theme.border.dim}
-          backgroundColor={theme.bg.surface}
-          paddingX={1}
-          marginLeft={1}
-        >
-          <Text color={theme.text.secondary} bold>
-            {t("board.statusFilterTitle")}
-          </Text>
-          <Text color={theme.text.primary}> {filters.status}</Text>
+        <Box marginLeft={1}>
+          <FocusableButton
+            label={statusLabel}
+            color={theme.accent.focus}
+            onPress={onStatusCycle}
+          />
         </Box>
 
-        <Box
-          borderStyle="single"
-          borderColor={theme.border.dim}
-          backgroundColor={theme.bg.surface}
-          paddingX={1}
-          marginLeft={1}
-          >
-          <Text color={theme.text.secondary} bold>
-            {t("board.sortTitle")}
-          </Text>
-          <Text color={theme.text.primary}> {sort}</Text>
+        <Box marginLeft={1}>
+          <FocusableButton
+            label={sortLabel}
+            color={theme.accent.focus}
+            onPress={onSortCycle}
+          />
         </Box>
       </Box>
       <Box>

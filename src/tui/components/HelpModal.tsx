@@ -2,6 +2,7 @@ import React from "react";
 import { Box, Text } from "ink";
 import type { View } from "../types.js";
 import { darkTheme as theme } from "../theme.js";
+import { Modal } from "./Modal.js";
 import { t } from "../../i18n/index.js";
 
 interface HelpEntry {
@@ -60,28 +61,20 @@ function helpEntries(view: View): HelpEntry[] {
   }
 }
 
-export function HelpModal(props: { view: View }): React.ReactNode {
+export function HelpModal(props: {
+  view: View;
+  onClose: () => void;
+}): React.ReactNode {
   const entries = helpEntries(props.view);
 
   return (
-    <Box
-      flexDirection="column"
-      borderStyle="round"
-      backgroundColor={theme.bg.elevated}
-      padding={1}
-    >
-      <Box marginBottom={1}>
-        <Text color={theme.accent.focus} bold>
-          Shortcuts
-        </Text>
-      </Box>
-
+    <Modal title="Shortcuts" onClose={props.onClose} width="60%">
       {entries.map((entry, i) => (
         <Box key={i}>
           <Text color={theme.accent.focus}>{entry.key.padEnd(16)}</Text>
           <Text color={theme.text.primary}>{entry.desc}</Text>
         </Box>
       ))}
-    </Box>
+    </Modal>
   );
 }

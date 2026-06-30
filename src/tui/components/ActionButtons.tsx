@@ -1,8 +1,9 @@
-import React, { useState, useEffect } from "react";
-import { Box, Text, useInput } from "ink";
+import React from "react";
+import { Box, Text } from "ink";
 import type { LoopMeta, LoopStatus } from "../../types.js";
 import { darkTheme as theme } from "../theme.js";
 import { t } from "../../i18n/index.js";
+import { FocusableButton } from "./FocusableButton.js";
 
 export interface ActionDef {
   key: string;
@@ -44,42 +45,17 @@ export function getActionCount(status: LoopStatus): number {
 
 export function ActionButtons(props: {
   loop: LoopMeta | null;
-  focused: boolean;
-  selectedAction: number;
   onAction: (action: string) => void;
 }): React.ReactNode {
-  const { loop, focused, selectedAction, onAction } = props;
+  const { loop, onAction } = props;
 
   const actions = loop ? getActions(loop.status) : [];
-  const [cursor, setCursor] = useState(selectedAction);
-
-  useEffect(() => {
-    setCursor(Math.min(selectedAction, Math.max(0, actions.length - 1)));
-  }, [selectedAction, actions.length]);
-
-  useInput((_input, key) => {
-    if (!focused || !loop) return;
-    if (actions.length === 0) return;
-    if (key.upArrow || key.downArrow) {
-      const dir = key.upArrow ? -1 : 1;
-      const next = (cursor + dir + actions.length) % actions.length;
-      setCursor(next);
-      return;
-    }
-    if (key.return) {
-      const action = actions[cursor];
-      if (action) onAction(action.key);
-      return;
-    }
-  });
-
-  const activeIndex = Math.min(cursor, Math.max(0, actions.length - 1));
 
   if (!loop) {
     return (
       <Box
         borderStyle="single"
-        borderColor={focused ? theme.accent.focus : theme.border.default}
+        borderColor={theme.border.default}
         flexDirection="row"
         height={3}
         backgroundColor={theme.bg.surface}
@@ -92,26 +68,26 @@ export function ActionButtons(props: {
   return (
     <Box
       borderStyle="single"
-      borderColor={focused ? theme.accent.focus : theme.border.default}
+      borderColor={theme.border.default}
       flexDirection="row"
       height={3}
       backgroundColor={theme.bg.surface}
     >
-      {actions.map((action, i) => {
-        const isSelected = focused && activeIndex === i;
-        const bg = isSelected ? theme.bg.active : undefined;
-        const fg = isSelected ? theme.text.inverse : theme.text.secondary;
+      {actions.map((action) => {
+        const color = action.key === "delete" || action.key === "stop"
+          ? theme.semantic.danger
+          : theme.accent.focus;
+        const variant = action.key === "delete" || action.key === "stop"
+          ? "danger"
+          : "default";
         return (
-          <Box
+          <FocusableButton
             key={action.key}
-            borderStyle="single"
-            borderColor={isSelected ? theme.accent.focus : theme.border.dim}
-            backgroundColor={bg}
-            paddingX={1}
-            marginRight={1}
-          >
-            <Text bold color={fg}>{action.label}</Text>
-          </Box>
+            label={action.label}
+            color={color}
+            variant={variant}
+            onPress={() => onAction(action.key)}
+          />
         );
       })}
     </Box>
