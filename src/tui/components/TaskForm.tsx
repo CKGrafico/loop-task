@@ -157,7 +157,9 @@ export function TaskForm(props: TaskFormProps): React.ReactNode {
         backgroundColor={isFocused ? theme.bg.active : theme.bg.surface}
         justifyContent="center"
       >
-        <Text color={isFocused ? theme.text.inverse : theme.text.secondary}>{"\u2398"}</Text>
+        <Text
+          color={isFocused ? theme.text.inverse : theme.text.secondary}
+        >{"\u2398"}</Text>
       </Box>
     );
   }
@@ -177,6 +179,8 @@ export function TaskForm(props: TaskFormProps): React.ReactNode {
                 value={name}
                 onChange={setName}
                 placeholder={t("board.taskHintName")}
+                showCursor
+                focus={currentField === "name"}
               />
             </Box>
           </Box>
@@ -189,6 +193,8 @@ export function TaskForm(props: TaskFormProps): React.ReactNode {
                 value={command}
                 onChange={setCommand}
                 placeholder={t("board.exampleCommand")}
+                showCursor
+                focus={currentField === "command"}
               />
             </Box>
             {renderCopyButton()}
