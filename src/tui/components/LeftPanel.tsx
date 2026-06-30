@@ -78,8 +78,7 @@ export function LeftPanel(props: {
           projects={projects}
           onSelect={onSelect}
           onActivate={onActivate}
-          // isFocused will be added in task 4.2
-          {...({ isFocused } as Record<string, unknown>)}
+          isFocused={isFocused}
         />
       ) : activeTab === "tasks" ? (
         <TaskNavigator
@@ -89,8 +88,7 @@ export function LeftPanel(props: {
           query={query}
           onSelect={onTaskSelect}
           onActivate={onTaskActivate}
-          // isFocused will be added in task 4.3
-          {...({ isFocused } as Record<string, unknown>)}
+          isFocused={isFocused}
         />
       ) : (
         <Box paddingLeft={1}>

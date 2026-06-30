@@ -1,10 +1,10 @@
 import React from "react";
-import { Box, Text, useFocus } from "ink";
+import { Box, Text, useInput } from "ink";
+import { ScrollList } from "ink-scroll-list";
 import type { LoopMeta, Project } from "../../types.js";
 import { darkTheme as theme, statusColor } from "../theme.js";
 import { describeLoop, sinceLabel, statusLabel, timingLabel, truncate } from "../format.js";
 import { t } from "../../i18n/index.js";
-import { FocusableList } from "./FocusableList.js";
 
 const DESC_WIDTH = 32;
 const SINCE_WIDTH = 13;
@@ -23,9 +23,32 @@ export function Navigator(props: {
   projects: Project[];
   onSelect: (index: number) => void;
   onActivate: (index: number) => void;
+  isFocused: boolean;
 }): React.ReactNode {
-  const { visible, total, selectedIndex, filters, sort, projects, onSelect, onActivate } = props;
-  const { isFocused } = useFocus();
+  const { visible, total, selectedIndex, filters, sort, projects, onSelect, onActivate, isFocused } = props;
+
+  const n = visible.length;
+
+  useInput(
+    (input, key) => {
+      if (n === 0) return;
+      if (key.upArrow || input === "k") {
+        const next = selectedIndex <= 0 ? n - 1 : selectedIndex - 1;
+        onSelect(next);
+        return;
+      }
+      if (key.downArrow || input === "j") {
+        const next = selectedIndex >= n - 1 ? 0 : selectedIndex + 1;
+        onSelect(next);
+        return;
+      }
+      if (key.return) {
+        onActivate(selectedIndex);
+        return;
+      }
+    },
+    { isActive: isFocused },
+  );
 
   const statusFilter = filters?.status ?? "all";
   const title = t("board.navigatorTitle", {
@@ -82,15 +105,23 @@ export function Navigator(props: {
             <Text color={theme.text.muted}>{t("board.headerTiming")}</Text>
           </Box>
           <Box paddingLeft={1}>
-            <FocusableList
-              items={visible}
-              selectedIndex={selectedIndex}
-              isFocused={isFocused}
-              limit={LIMIT}
-              onSelect={onSelect}
-              onActivate={onActivate}
-              renderItem={renderLoop}
-            />
+            <ScrollList selectedIndex={selectedIndex} height={LIMIT}>
+              {visible.map((loop, i) => {
+                const isSelected = i === selectedIndex;
+                const indicator = isSelected ? "\u203a " : "  ";
+                return (
+                  <Box
+                    key={i}
+                    backgroundColor={isSelected ? theme.bg.active : undefined}
+                  >
+                    <Text color={isSelected ? theme.text.inverse : theme.text.primary}>
+                      {indicator}
+                    </Text>
+                    {renderLoop(loop, isSelected)}
+                  </Box>
+                );
+              })}
+            </ScrollList>
           </Box>
         </Box>
       )}

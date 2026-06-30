@@ -410,6 +410,7 @@ export function App(props: { onQuit: () => void }): React.ReactNode {
               total={tasks.length}
               selectedIndex={taskClampedIndex}
               query={taskQuery}
+              isFocused={true}
               onSelect={(index) => setTaskSelectedIndex(index)}
               onActivate={(index) => { setTaskSelectedIndex(index); setEditTask(filteredTasks[index] ?? null); push("task-edit"); }}
             />

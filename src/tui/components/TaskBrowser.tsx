@@ -1,10 +1,10 @@
 import React from "react";
-import { Box, Text, useFocus } from "ink";
+import { Box, Text, useInput } from "ink";
+import { ScrollList } from "ink-scroll-list";
 import type { TaskDefinition } from "../../types.js";
 import { darkTheme as theme } from "../theme.js";
 import { commandLine } from "../format.js";
 import { t } from "../../i18n/index.js";
-import { FocusableList } from "./FocusableList.js";
 import { FocusableButton } from "./FocusableButton.js";
 
 const NAME_WIDTH = 24;
@@ -16,16 +16,29 @@ export function TaskNavigator(props: {
   total: number;
   selectedIndex: number;
   query: string;
+  isFocused: boolean;
   onSelect: (index: number) => void;
   onActivate: (index: number) => void;
 }): React.ReactNode {
-  const { visible, total, selectedIndex, onSelect, onActivate } = props;
-  const { isFocused } = useFocus();
+  const { visible, total, selectedIndex, isFocused, onSelect, onActivate } = props;
 
   const title = t("board.taskBrowserTitle", {
     visible: String(visible.length),
     total: String(total),
   });
+
+  useInput(
+    (input, key) => {
+      if (key.upArrow || input === "k") {
+        onSelect(Math.max(selectedIndex - 1, 0));
+      } else if (key.downArrow || input === "j") {
+        onSelect(Math.min(selectedIndex + 1, visible.length - 1));
+      } else if (key.return) {
+        onActivate(selectedIndex);
+      }
+    },
+    { isActive: isFocused },
+  );
 
   function chainsLabel(task: TaskDefinition): string {
     const hasSuccess = task.onSuccessTaskId !== null;
@@ -37,7 +50,8 @@ export function TaskNavigator(props: {
     });
   }
 
-  function renderTask(task: TaskDefinition, isSelected: boolean): React.ReactNode {
+  function renderTask(task: TaskDefinition, index: number): React.ReactNode {
+    const isSelected = index === selectedIndex;
     const name = task.name.length > NAME_WIDTH
       ? task.name.slice(0, NAME_WIDTH - 3) + "..."
       : task.name.padEnd(NAME_WIDTH);
@@ -48,11 +62,11 @@ export function TaskNavigator(props: {
     const chains = chainsLabel(task);
     const fg = isSelected ? theme.text.inverse : theme.text.primary;
     return (
-      <>
+      <Box>
         <Text color={fg}>{name}</Text>
         <Text color={fg}>{cmdDisplay}</Text>
         <Text color={fg}>{chains}</Text>
-      </>
+      </Box>
     );
   }
 
@@ -78,15 +92,17 @@ export function TaskNavigator(props: {
             <Text color={theme.text.muted}>{t("board.taskHeaderChains")}</Text>
           </Box>
           <Box paddingLeft={1}>
-            <FocusableList
-              items={visible}
+            <ScrollList
+              height={LIMIT}
               selectedIndex={selectedIndex}
-              isFocused={isFocused}
-              limit={LIMIT}
-              onSelect={onSelect}
-              onActivate={onActivate}
-              renderItem={renderTask}
-            />
+              scrollAlignment="auto"
+            >
+              {visible.map((task, i) => (
+                <React.Fragment key={task.id}>
+                  {renderTask(task, i)}
+                </React.Fragment>
+              ))}
+            </ScrollList>
           </Box>
         </Box>
       )}
