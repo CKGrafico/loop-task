@@ -1,5 +1,6 @@
 import React from "react";
 import { Box, Text, useInput } from "ink";
+import Spinner from "ink-spinner";
 import { ScrollList } from "ink-scroll-list";
 import type { LoopMeta, Project } from "../../types.js";
 import { darkTheme as theme, statusColor } from "../theme.js";
@@ -79,6 +80,9 @@ export function Navigator(props: {
         <Text color={fg}>{String(loop.skippedCount).padEnd(SKIPPED_WIDTH)}</Text>
         <Text color={isSelected ? theme.text.inverse : sColor}>{sLabel.padEnd(STATUS_WIDTH)}</Text>
         <Text color={fg}>{timing}</Text>
+        {loop.status === "running" ? (
+          <Text color={theme.semantic.success}><Spinner type="dots" /></Text>
+        ) : null}
       </>
     );
   }

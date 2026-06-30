@@ -28,6 +28,11 @@ export function LeftPanel(props: {
   taskSelectedIndex: number;
   onTaskSelect: (index: number) => void;
   onTaskActivate: (index: number) => void;
+  // Optional filter bar controls (for loops tab)
+  onStatusCycle?: () => void;
+  onSortCycle?: () => void;
+  onSelectProject?: () => void;
+  currentProjectName?: string;
 }): React.ReactNode {
   const {
     isFocused,
@@ -46,6 +51,10 @@ export function LeftPanel(props: {
     taskSelectedIndex,
     onTaskSelect,
     onTaskActivate,
+    onStatusCycle,
+    onSortCycle,
+    onSelectProject,
+    currentProjectName,
   } = props;
 
   const borderColor = isFocused ? theme.accent.focus : theme.border.default;
@@ -65,6 +74,23 @@ export function LeftPanel(props: {
           placeholder={t("board.searchPlaceholder")}
         />
       </Box>
+
+      {/* Filter status labels - loops tab only */}
+      {activeTab === "loops" ? (
+        <Box paddingLeft={1} gap={1}>
+          {currentProjectName != null ? (
+            <Text color={theme.text.muted}>
+              [project: {currentProjectName}]
+            </Text>
+          ) : null}
+          <Text color={theme.text.muted}>
+            [status: {filters.status}]
+          </Text>
+          <Text color={theme.text.muted}>
+            [sort: {sort}]
+          </Text>
+        </Box>
+      ) : null}
 
       {/* Content area based on active tab */}
       {activeTab === "loops" ? (
