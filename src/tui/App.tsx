@@ -486,8 +486,9 @@ export function App(props: { onQuit: () => void }): React.ReactNode {
     }
   });
 
-  // Any modal open disables panel input behind it
-  const anyModalOpen = !!(logModalRun || commandsBrowserOpen || confirmState || searchState?.active);
+  // Modals disable panel input behind them; CommandInput stays active for confirm/search
+  const anyModalOpen = !!(logModalRun || commandsBrowserOpen);
+  const commandInputDisabled = anyModalOpen;
 
   const counts = {
     total: loops.length,
@@ -578,7 +579,7 @@ export function App(props: { onQuit: () => void }): React.ReactNode {
           onSearchCancel={handleSearchCancel}
           onConfirmYes={handleConfirmYes}
           onConfirmCancel={handleConfirmCancel}
-          disabled={anyModalOpen}
+          disabled={commandInputDisabled}
         />
       ) : null}
 

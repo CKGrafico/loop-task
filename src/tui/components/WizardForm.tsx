@@ -1,10 +1,7 @@
 import React, { useState, useCallback } from "react";
-import { Box, Text, useInput, useFocus } from "ink";
+import { Box, Text, useInput } from "ink";
 import { darkTheme as theme } from "../theme.js";
 import { t } from "../../i18n/index.js";
-import { FocusableInput } from "./FocusableInput.js";
-
-// ── Step config ─────────────────────────────────────────────────────
 
 export interface WizardStepConfig {
   key: string;
@@ -16,8 +13,6 @@ export interface WizardStepConfig {
   defaultValue?: string;
 }
 
-// ── Props ───────────────────────────────────────────────────────────
-
 export interface WizardFormProps {
   title: string;
   steps: WizardStepConfig[];
@@ -25,26 +20,61 @@ export interface WizardFormProps {
   onCancel: () => void;
 }
 
-// ── Select step (suggestions picker) ────────────────────────────────
+function TextField({
+  value,
+  hint,
+  isActive,
+}: {
+  value: string;
+  hint: string;
+  isActive: boolean;
+}): React.ReactNode {
+  const borderColor = isActive ? theme.accent.brand : theme.border.dim;
+  const backgroundColor = isActive ? theme.bg.input : undefined;
+  const showHint = value.length === 0;
 
-function WizardSelect({
+  return (
+    <Box
+      borderStyle="single"
+      borderColor={borderColor}
+      backgroundColor={backgroundColor}
+      paddingLeft={1}
+      overflow="hidden"
+    >
+      <Text color={showHint ? theme.text.muted : theme.text.primary}>
+        {showHint ? hint : value}
+      </Text>
+      {isActive ? <Text inverse> </Text> : null}
+    </Box>
+  );
+}
+
+function SelectField({
   suggestions,
-  focusedIndex,
+  selectedIndex,
+  isActive,
 }: {
   suggestions: string[];
-  focusedIndex: number;
+  selectedIndex: number;
+  isActive: boolean;
 }): React.ReactNode {
+  if (!isActive) {
+    return (
+      <Text color={theme.text.secondary}>
+        {suggestions[selectedIndex] ?? suggestions[0] ?? ""}
+      </Text>
+    );
+  }
   return (
     <Box flexDirection="column">
       {suggestions.map((s, i) => {
-        const isFocused = i === focusedIndex;
-        const pointer = isFocused ? "\u276F" : " ";
+        const isSel = i === selectedIndex;
         return (
           <Box key={s}>
-            <Text color={isFocused ? theme.accent.brand : undefined}>
-              {pointer}{" "}
+            <Text color={isSel ? theme.accent.brand : theme.text.muted}>
+              {isSel ? "\u276F " : "  "}
             </Text>
-            <Text color={isFocused ? theme.accent.brand : theme.text.secondary}>
+            <Text color={isSel ? theme.accent.brand : theme.text.secondary}>
               {s}
             </Text>
           </Box>
@@ -54,165 +84,135 @@ function WizardSelect({
   );
 }
 
-// ── Main component ──────────────────────────────────────────────────
-
 export function WizardForm(props: WizardFormProps): React.ReactNode {
   const { title, steps, onComplete, onCancel } = props;
 
-  const [currentStep, setCurrentStep] = useState(0);
   const [values, setValues] = useState<Record<string, string>>({});
-  const [selectIndex, setSelectIndex] = useState(0);
+  const [activeField, setActiveField] = useState(0);
 
-  // Focus the input so FocusableInput picks it up
-  useFocus();
-  const step = steps[currentStep];
-  const currentValue = values[step?.key] ?? "";
-  const isFirstStep = currentStep === 0;
-  const isLastStep = currentStep === steps.length - 1;
+  const step = steps[activeField];
 
-  // Build the final values map, filling remaining steps with defaults
-  const buildFinalValues = useCallback(
-    (collected: Record<string, string>): Record<string, string> => {
-      const result: Record<string, string> = {};
-      for (const s of steps) {
-        result[s.key] = collected[s.key] ?? s.defaultValue ?? "";
-      }
-      return result;
-    },
-    [steps],
+  const valueFor = useCallback(
+    (s: WizardStepConfig): string => values[s.key] ?? s.defaultValue ?? "",
+    [values],
   );
 
-  const advance = useCallback(() => {
-    const stepConfig = steps[currentStep];
-    // Required step: block advance on empty value
-    if (stepConfig.required && currentValue.trim().length === 0) {
+  const setValue = useCallback((key: string, next: string) => {
+    setValues((prev) => ({ ...prev, [key]: next }));
+  }, []);
+
+  const submit = useCallback(() => {
+    const missing = steps.find(
+      (s) => s.required && !valueFor(s).trim(),
+    );
+    if (missing) {
+      setActiveField(steps.indexOf(missing));
       return;
     }
+    const result: Record<string, string> = {};
+    for (const s of steps) result[s.key] = valueFor(s);
+    onComplete(result);
+  }, [steps, valueFor, onComplete]);
 
-    if (isLastStep) {
-      onComplete(buildFinalValues(values));
-      return;
-    }
+  const moveField = useCallback(
+    (delta: number) => {
+      setActiveField((prev) => {
+        const next = prev + delta;
+        if (next < 0) return steps.length - 1;
+        if (next >= steps.length) return 0;
+        return next;
+      });
+    },
+    [steps.length],
+  );
 
-    setCurrentStep((prev) => prev + 1);
-    setSelectIndex(0);
-  }, [currentStep, currentValue, isLastStep, onComplete, values, steps, buildFinalValues]);
-
-  const goBack = useCallback(() => {
-    if (isFirstStep) {
+  useInput((input, key) => {
+    if (key.escape) {
       onCancel();
       return;
     }
-    setCurrentStep((prev) => prev - 1);
-    setSelectIndex(0);
-  }, [isFirstStep, onCancel]);
-
-  const skipToSave = useCallback(() => {
-    onComplete(buildFinalValues(values));
-  }, [onComplete, values, buildFinalValues]);
-
-  // ── Keyboard handling ────────────────────────────────────────────
-  useInput(
-    (input, key) => {
-      // Ctrl+S: skip to save
-      if (input === "s" && key.ctrl) {
-        skipToSave();
-        return;
-      }
-
-      // Esc: go back or cancel
-      if (key.escape) {
-        goBack();
-        return;
-      }
-
-      // Enter: advance
-      if (key.return) {
-        if (step.inputType === "select") {
-          // For select steps, pick the focused suggestion on Enter
-          const selected = step.suggestions?.[selectIndex];
-          if (selected !== undefined) {
-            const next = { ...values, [step.key]: selected };
-            setValues(next);
-            // Check if this completes the wizard
-            if (isLastStep) {
-              onComplete(buildFinalValues(next));
-              return;
-            }
-            setCurrentStep((prev) => prev + 1);
-            setSelectIndex(0);
-          }
-        } else {
-          advance();
-        }
-        return;
-      }
-
-      // Select navigation (up/down arrows)
-      if (step.inputType === "select" && step.suggestions) {
-        if (key.upArrow) {
-          setSelectIndex((prev) =>
-            prev > 0 ? prev - 1 : step.suggestions!.length - 1,
-          );
-          return;
-        }
-        if (key.downArrow) {
-          setSelectIndex((prev) =>
-            prev < step.suggestions!.length - 1 ? prev + 1 : 0,
-          );
-          return;
-        }
-      }
-
-      // For text input, let FocusableInput handle regular keys
-      // Text input changes happen through FocusableInput's onChange
-    },
-    { isActive: true },
-  );
-
-  // ── Handle text input change ─────────────────────────────────────
-  const handleInputChange = useCallback(
-    (newValue: string) => {
-      setValues((prev) => ({ ...prev, [step.key]: newValue }));
-    },
-    [step.key],
-  );
-
-  // ── Breadcrumb line ──────────────────────────────────────────────
-  const breadcrumbParts: React.ReactNode[] = [];
-  // Title
-  breadcrumbParts.push(
-    <Text key="title" color={theme.accent.loop} bold>
-      {title}
-    </Text>,
-  );
-  // Completed step values
-  for (let i = 0; i < currentStep; i++) {
-    const s = steps[i];
-    const val = values[s.key];
-    if (val) {
-      breadcrumbParts.push(
-        <Text key={`sep-${i}`} color={theme.text.muted}>
-          {" . "}
-        </Text>,
-      );
-      breadcrumbParts.push(
-        <Text key={`val-${i}`} color={theme.text.secondary}>
-          {val}
-        </Text>,
-      );
+    if (key.ctrl && input === "s") {
+      submit();
+      return;
     }
-  }
+    if (key.tab) {
+      moveField(key.shift ? -1 : 1);
+      return;
+    }
+    if (!step) return;
 
-  // ── Step counter ─────────────────────────────────────────────────
-  const stepOf = t("wizard.stepOf", {
-    current: String(currentStep + 1),
-    total: String(steps.length),
+    if (step.inputType === "select" && step.suggestions) {
+      const options = step.suggestions;
+      const current = options.indexOf(valueFor(step));
+      const idx = current >= 0 ? current : 0;
+      if (key.upArrow) {
+        setValue(step.key, options[idx > 0 ? idx - 1 : options.length - 1]!);
+        return;
+      }
+      if (key.downArrow) {
+        setValue(step.key, options[idx < options.length - 1 ? idx + 1 : 0]!);
+        return;
+      }
+      if (key.return) {
+        if (current < 0) setValue(step.key, options[0]!);
+        moveField(1);
+      }
+      return;
+    }
+
+    // Text field editing
+    if (key.return) {
+      moveField(1);
+      return;
+    }
+    if (key.delete || key.backspace) {
+      setValue(step.key, valueFor(step).slice(0, -1));
+      return;
+    }
+    if (input.length === 1 && input >= " " && input <= "~") {
+      setValue(step.key, valueFor(step) + input);
+    }
   });
 
-  // ── Navigation hints ─────────────────────────────────────────────
-  const ctrlSaveHint = t("wizard.ctrlSave");
-  const escBackHint = t("wizard.escBack");
+  const mid = Math.ceil(steps.length / 2);
+  const columns: [WizardStepConfig[], number][] = [
+    [steps.slice(0, mid), 0],
+    [steps.slice(mid), mid],
+  ];
+
+  const filledCount = steps.filter((s) => valueFor(s).trim().length > 0).length;
+
+  function renderField(s: WizardStepConfig, fieldIdx: number): React.ReactNode {
+    const isActive = fieldIdx === activeField;
+    const val = valueFor(s);
+    return (
+      <Box key={s.key} flexDirection="column" marginBottom={1}>
+        <Box>
+          <Text color={isActive ? theme.accent.brand : theme.text.muted} bold>
+            {isActive ? "\u203a " : "  "}
+          </Text>
+          <Text
+            color={isActive ? theme.accent.brand : theme.text.secondary}
+            bold
+          >
+            {s.prompt}
+          </Text>
+          {s.required ? <Text color={theme.semantic.danger}>*</Text> : null}
+        </Box>
+        <Box paddingLeft={2}>
+          {s.inputType === "select" && s.suggestions ? (
+            <SelectField
+              suggestions={s.suggestions}
+              selectedIndex={Math.max(0, s.suggestions.indexOf(val))}
+              isActive={isActive}
+            />
+          ) : (
+            <TextField value={val} hint={s.hint} isActive={isActive} />
+          )}
+        </Box>
+      </Box>
+    );
+  }
 
   return (
     <Box
@@ -222,53 +222,23 @@ export function WizardForm(props: WizardFormProps): React.ReactNode {
       paddingX={2}
       flexGrow={1}
     >
-      {/* Top: breadcrumb + step counter */}
-      <Box justifyContent="space-between">
-        <Box>{breadcrumbParts}</Box>
-        <Text color={theme.text.muted}>{stepOf}</Text>
-      </Box>
-
-      {/* Spacer */}
-      <Box height={1} />
-
-      {/* Center: prompt + input + hint */}
-      <Box flexDirection="column" flexGrow={1} justifyContent="center">
-        {/* Prompt */}
-        <Text bold color={theme.text.primary}>
-          {step.prompt}
+      <Box justifyContent="space-between" marginBottom={1}>
+        <Text color={theme.accent.loop} bold>
+          {title}
         </Text>
-
-        <Box height={1} />
-
-        {/* Input area */}
-        {step.inputType === "select" && step.suggestions ? (
-          <WizardSelect
-            suggestions={step.suggestions}
-            focusedIndex={selectIndex}
-          />
-        ) : (
-          <FocusableInput
-            value={currentValue}
-            onChange={handleInputChange}
-            placeholder={step.defaultValue ?? ""}
-          />
-        )}
-
-        <Box height={1} />
-
-        {/* Hint */}
-        <Text color={theme.text.muted}>{step.hint}</Text>
-      </Box>
-
-      {/* Bottom: navigation hints */}
-      <Box>
         <Text color={theme.text.muted}>
-          Enter to continue{" "}
-          <Text color={theme.text.muted}>{" . "}</Text>
-          {escBackHint}
-          <Text color={theme.text.muted}>{" . "}</Text>
-          {ctrlSaveHint}
+          {t("wizard.filled", { filled: filledCount, total: steps.length })}
+          {" . "}
+          {t("wizard.footerHints")}
         </Text>
+      </Box>
+
+      <Box flexDirection="row" gap={4}>
+        {columns.map(([col, offset]) => (
+          <Box key={offset} flexDirection="column" width="50%">
+            {col.map((s, i) => renderField(s, i + offset))}
+          </Box>
+        ))}
       </Box>
     </Box>
   );

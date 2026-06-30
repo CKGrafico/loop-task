@@ -61,9 +61,14 @@ license: MIT
 ## Testing
 
 - **Framework**: Vitest 3 with `globals: true` and v8 coverage. Config in `vitest.config.ts`.
-- **Location**: Test files in `tests/` directory. Naming: `*.test.ts`.
+- **Location**: Test files in `tests/` directory. Naming: `*.test.ts` for logic, `*.test.tsx` for Ink components.
 - **Coverage gates**: 90% lines/functions/branches/statements. Excludes `src/cli.ts`, `src/types.ts`, `src/daemon/index.ts`, `src/tui/**`, `src/board/**`.
-- **TUI components are untested**: Coverage `exclude` covers `src/tui/**`. Ink components are tested manually via the dev command.
+- **TUI components are tested with `ink-testing-library`** (https://github.com/vadimdemedes/ink-testing-library): render components with `render()`, assert on `lastFrame()` output, and drive interaction via `stdin.write()`. Component tests live in `tests/*.test.tsx`. Although `src/tui/**` is excluded from coverage gates, new/changed Ink components SHOULD ship with a `.test.tsx`.
+- **ink-testing-library rules**:
+  - **Sized wrapper for absolute/100% layouts**: Components using `position="absolute"` or `width/height="100%"` (e.g. `Modal`, `ToastStack`) render empty in the test env. Wrap them in a parent `<Box height={N} width={N}>` so Yoga can lay them out.
+  - **Type one char at a time**: `stdin.write("abc")` arrives as a single multi-char input event; components that gate on `input.length === 1` (real per-keystroke handling) will reject it. Write chars individually with a small `await delay()` between them.
+  - **Await async key handling**: Ink buffers escape sequences and processes input on the next tick. After `stdin.write()` (especially lone Escape `\u001B` or Ctrl combos like `\u0013`), `await` a short delay before asserting on spies.
+  - **Ctrl combos**: A control byte (e.g. `\u0013`) is delivered to `useInput` as `input="s", key.ctrl=true`.
 - **Known stale tests**: `tests/cli.test.ts` has pre-existing failures (version assertion, `--description` flag requirement). `tests/loop-controller.test.ts` has timer mock issues. `tests/projects.test.ts` has cleanup issues. Confirm a failure is genuinely yours before touching assertions.
 - **Use `LOOP_CLI_HOME`** to isolate daemon state in tests; never write to the real state dir from tests.
 - **Gate order**: `typecheck` -> `lint` -> `test` -> `build`. Always run all four before claiming done.
@@ -100,7 +105,7 @@ license: MIT
 
 - **Package manager**: `pnpm`. `pnpm-lock.yaml` is committed.
 - **Runtime deps**: `ink` (^7.1.0), `react` (^19.2.7), `commander`, `execa`, `ms`, `ink-combobox` (^0.2.0), `ink-scroll-list` (^0.4.1), `ink-select-input` (^6.2.0), `ink-spinner` (^5.0.0), `ink-text-input` (^6.0.0).
-- **Dev deps**: `typescript` (^5.8.0), `typescript-eslint` (^8.30.0), `vitest` (^3.1.0), `eslint` (^9.25.0), `tsx` (^4.19.0), `@types/node`, `@types/react`, `@vitest/coverage-v8`.
+- **Dev deps**: `typescript` (^5.8.0), `typescript-eslint` (^8.30.0), `vitest` (^3.1.0), `eslint` (^9.25.0), `tsx` (^4.19.0), `ink-testing-library` (^4.0.0), `@types/node`, `@types/react`, `@vitest/coverage-v8`.
 - **No lockfile rules**: `pnpm-lock.yaml` is committed. Do NOT use `npm` for installs.
 - **Old `src/board/` deps removed**: No `@opentui/core` or `@opentui/react`. Bun is no longer a dependency.
 
