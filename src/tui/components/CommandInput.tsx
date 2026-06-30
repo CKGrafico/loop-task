@@ -241,6 +241,7 @@ function CommandMode({
   useInput(
     (input, key) => {
       if (key.ctrl) return;
+      if (input.includes("\n")) return;
 
       if (key.escape) { dispatch({ type: "CLOSE" }); return; }
       if (key.return) {
@@ -342,6 +343,7 @@ function ConfirmMode({
   useInput(
     (_input, key) => {
       if (key.ctrl) return;
+      if (_input.includes("\n")) return;
       if (key.escape) { onConfirmCancel(); return; }
       if (key.return) {
         if (state.isOpen && state.filteredOptions.length > 0 && state.focusedIndex < state.filteredOptions.length) {
@@ -389,9 +391,10 @@ function SearchMode({
   onSearchSubmit: () => void;
   onSearchCancel: () => void;
 }): React.ReactNode {
-  useInput(
+   useInput(
     (input, key) => {
       if (key.ctrl) return;
+      if (input.includes("\n")) return;
       if (key.escape) { onSearchCancel(); return; }
       if (key.return) { onSearchSubmit(); return; }
       if (key.backspace || key.delete) { onSearchChange(value.slice(0, -1)); return; }
