@@ -88,6 +88,7 @@ export function App(props: { onQuit: () => void }): React.ReactNode {
   const { toasts, push: pushToast } = useToasts();
   const breakpoint = useBreakpoint();
   const createProjectTriggerRef = useRef<(() => void) | null>(null);
+  const [panelFocus, setPanelFocus] = useState<"navigator" | "actions" | "run-history">("navigator");
 
   const visible = useMemo(
     () => applyLoopFilters(
@@ -242,6 +243,23 @@ export function App(props: { onQuit: () => void }): React.ReactNode {
     pushToast("success", updated ? t("board.toastTaskUpdated", { id }) : t("board.toastTaskCreated", { id }));
   };
 
+  // Header navigation: 1/2/3 triggers the 3 header buttons
+  function triggerHeaderButton(index: number): void {
+    if (view === "projects") {
+      if (index === 0) replace("board");
+      else if (index === 1) { void refreshTasks(); push("task-list"); }
+      else { createProjectTriggerRef.current?.(); }
+    } else if (view === "task-list") {
+      if (index === 0) push("projects");
+      else if (index === 1) replace("board");
+      else { setEditTask(null); push("task-create"); }
+    } else {
+      if (index === 0) push("projects");
+      else if (index === 1) { void refreshTasks(); push("task-list"); }
+      else { setEditTarget(null); push("create"); }
+    }
+  }
+
   // Keyboard input
   useInput((input, key) => {
     // Ctrl+C quits (unless a modal is open)
@@ -308,14 +326,29 @@ export function App(props: { onQuit: () => void }): React.ReactNode {
     if (input === "h") { setHelpOpen(true); return; }
     if (input === "n" && view === "board") { setEditTarget(null); push("create"); return; }
     if (input === "t" && view === "board") { setEditTask(null); push("task-create"); return; }
-    if (input === "e" && view === "board") { handleAction("edit"); return; }
-    if (input === "d" && view === "board") { handleAction("delete"); return; }
+    if (input === "e") { handleAction("edit"); return; }
+    if (input === "d") { handleAction("delete"); return; }
     if (input === "c" && view === "board") { handleAction("clone"); return; }
     if (input === "p" && view === "board") { handleAction("pause-or-play"); return; }
     if (input === "s" && view === "board") { handleAction("stop"); return; }
     if (input === "f" && view === "board") { handleAction("trigger"); return; }
     if (input === "r" && view === "board") { setProjectsModalOpen(true); return; }
     if (input === "/" && view === "board") { setSearchActive(true); return; }
+
+    // Header navigation: 1, 2, 3 trigger the 3 header buttons
+    if (input === "1") { triggerHeaderButton(0); return; }
+    if (input === "2") { triggerHeaderButton(1); return; }
+    if (input === "3") { triggerHeaderButton(2); return; }
+
+    // Tab cycles panels
+    if (key.tab && view === "board") {
+      if (key.shift) {
+        setPanelFocus((p) => p === "navigator" ? "actions" : p === "actions" ? "run-history" : "navigator");
+      } else {
+        setPanelFocus((p) => p === "navigator" ? "run-history" : p === "run-history" ? "actions" : "navigator");
+      }
+      return;
+    }
 
     // Escape to go back
     if (key.escape) {
@@ -443,7 +476,7 @@ export function App(props: { onQuit: () => void }): React.ReactNode {
               filters={filters}
               sort={sort}
               breakpoint={breakpoint}
-              focused={searchActive ? false : true}
+              focused={searchActive ? false : panelFocus === "navigator"}
               projects={projects}
               onSelect={(index) => setSelectedIndex(index)}
               onActivate={(index) => { setSelectedIndex(index); const loop = visible[index]; if (loop) { setEditTarget(loop); push("create"); } }}
@@ -453,13 +486,13 @@ export function App(props: { onQuit: () => void }): React.ReactNode {
               <RunHistory
                 loop={selected}
                 selectedRunIndex={selectedRunIndex}
-                focused={!searchActive}
+                focused={!searchActive && panelFocus === "run-history"}
                 onSelectRun={(index) => setSelectedRunIndex(index)}
                 onOpenRun={handleOpenRunLog}
               />
               <ActionButtons
                 loop={selected}
-                focused={!searchActive}
+                focused={!searchActive && panelFocus === "actions"}
                 selectedAction={selectedAction}
                 onAction={handleAction}
               />
