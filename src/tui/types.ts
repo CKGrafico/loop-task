@@ -12,7 +12,7 @@ export type PanelFocus = "left" | "right";
 
 export type CommandTier = "action" | "confirm" | "global";
 
-export type CommandCategory = "global" | "loop" | "task" | "project";
+export type CommandCategory = "global" | "filters" | "loop" | "task" | "project";
 
 export interface Command {
   label: string;

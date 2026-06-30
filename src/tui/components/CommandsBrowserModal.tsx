@@ -5,11 +5,12 @@ import { t } from "../../i18n/index.js";
 import { buildTabCommands } from "../commands.js";
 import type { Command, CommandCategory, CommandContext } from "../types.js";
 
-const CATEGORY_ORDER: CommandCategory[] = ["global", "loop", "task", "project"];
+const CATEGORY_ORDER: CommandCategory[] = ["global", "filters", "loop", "task", "project"];
 
 function categoryLabel(cat: CommandCategory): string {
   switch (cat) {
     case "global": return t("cmdsBrowser.groupGlobal");
+    case "filters": return t("cmdsBrowser.groupFilters");
     case "loop": return t("cmdsBrowser.groupLoop");
     case "task": return t("cmdsBrowser.groupTask");
     case "project": return t("cmdsBrowser.groupProject");
