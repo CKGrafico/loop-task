@@ -27,7 +27,7 @@ export function buildCommands(context: CommandContext): Command[] {
 
   commands.push(
     { label: newLabel, value: newValue, hint: '', tier: COMMAND_TIER_ACTION, category: cat, shortcut: 'ctrl+a+n' },
-    { label: t('cmd.help'), value: 'help', hint: '', tier: COMMAND_TIER_GLOBAL, category: COMMAND_CATEGORY_GLOBAL, shortcut: 'ctrl+h' },
+    { label: t('cmd.help'), value: 'help', hint: '', tier: COMMAND_TIER_GLOBAL, category: COMMAND_CATEGORY_GLOBAL, shortcut: 'ctrl+p' },
     { label: t('cmd.debug'), value: 'debug', hint: '', tier: COMMAND_TIER_GLOBAL, category: COMMAND_CATEGORY_GLOBAL, shortcut: 'ctrl+b' },
     { label: t('cmd.api'), value: 'api', hint: '', tier: COMMAND_TIER_GLOBAL, category: COMMAND_CATEGORY_GLOBAL, shortcut: 'ctrl+g' },
     { label: t('cmd.export'), value: 'export', hint: '', tier: COMMAND_TIER_GLOBAL, category: COMMAND_CATEGORY_GLOBAL, shortcut: 'ctrl+x' },
@@ -94,7 +94,7 @@ export function buildTabCommands(context: CommandContext): Command[] {
     : 'new-project';
 
   commands.push(
-    { label: t('cmd.help'), value: 'help', hint: '', tier: COMMAND_TIER_GLOBAL, category: COMMAND_CATEGORY_GLOBAL, shortcut: 'ctrl+h' },
+    { label: t('cmd.help'), value: 'help', hint: '', tier: COMMAND_TIER_GLOBAL, category: COMMAND_CATEGORY_GLOBAL, shortcut: 'ctrl+p' },
     { label: t('cmd.debug'), value: 'debug', hint: '', tier: COMMAND_TIER_GLOBAL, category: COMMAND_CATEGORY_GLOBAL, shortcut: 'ctrl+b' },
     { label: t('cmd.api'), value: 'api', hint: '', tier: COMMAND_TIER_GLOBAL, category: COMMAND_CATEGORY_GLOBAL, shortcut: 'ctrl+g' },
     { label: t('cmd.export'), value: 'export', hint: '', tier: COMMAND_TIER_GLOBAL, category: COMMAND_CATEGORY_GLOBAL, shortcut: 'ctrl+x' },

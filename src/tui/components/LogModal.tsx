@@ -20,16 +20,13 @@ function colorForLine(line: string, run: RunRecord): string {
   return theme.text.primary;
 }
 
-function isChainHeader(line: string): boolean {
-  return line.includes("--- Chain:");
-}
-
 export function LogModal(props: {
   loopId: string | null;
   run: RunRecord;
   logLines: string[];
   loading: boolean;
   onClose: () => void;
+  onCopy?: () => void;
 }): React.ReactNode {
   const [lines, setLines] = useState<string[]>(props.logLines);
   const [streaming, setStreaming] = useState(false);
@@ -37,7 +34,6 @@ export function LogModal(props: {
   const [searchQuery, setSearchQuery] = useState("");
   const [follow, setFollow] = useState(true);
   const [scrollOffset, setScrollOffset] = useState(0);
-  const [foldedChains, setFoldedChains] = useState<Set<number>>(new Set());
 
   useEffect(() => {
     setLines(props.logLines);
@@ -62,33 +58,16 @@ export function LogModal(props: {
     ? lines.filter((l) => l.toLowerCase().includes(searchQuery.toLowerCase()))
     : lines;
 
-  const displayLines: string[] = [];
-  for (let i = 0; i < filtered.length; i++) {
-    if (isChainHeader(filtered[i]!) && foldedChains.has(i)) {
-      displayLines.push(filtered[i]!);
-      let j = i + 1;
-      let count = 0;
-      while (j < filtered.length && !isChainHeader(filtered[j]!)) {
-        count++;
-        j++;
-      }
-      displayLines.push(`  [${count} lines folded - press 'u' to unfold]`);
-      i = j - 1;
-    } else {
-      displayLines.push(filtered[i]!);
-    }
-  }
-
-  const totalLines = displayLines.length;
+  const totalLines = filtered.length;
   const startIdx = follow
     ? Math.max(0, totalLines - MAX_VISIBLE_LINES)
     : scrollOffset;
   const endIdx = startIdx + MAX_VISIBLE_LINES;
-  const visible = displayLines.slice(startIdx, endIdx);
+  const visible = filtered.slice(startIdx, endIdx);
 
   useInput((input, key) => {
     if (searchMode) {
-      if (key.return) {
+      if (key.escape || key.return) {
         setSearchMode(false);
         return;
       }
@@ -96,14 +75,14 @@ export function LogModal(props: {
         setSearchQuery((q) => q.slice(0, -1));
         return;
       }
-      if (input && !key.ctrl && input.length === 1) {
+      if (input && !key.ctrl && input.length === 1 && input >= " " && input <= "~") {
         setSearchQuery((q) => q + input);
         return;
       }
       return;
     }
 
-    if (input === "q") {
+    if (key.escape) {
       props.onClose();
       return;
     }
@@ -112,35 +91,17 @@ export function LogModal(props: {
       setSearchQuery("");
       return;
     }
-    if (input === "f") {
-      setFollow((f) => !f);
-      return;
-    }
     if (input === "c" && !key.ctrl) {
       copyToClipboard(lines.join("\n"));
+      props.onCopy?.();
       return;
     }
-    if (input === "u") {
-      setFoldedChains((prev) => {
-        const next = new Set(prev);
-        if (next.size > 0) next.clear();
-        else {
-          for (let i = 0; i < filtered.length; i++) {
-            if (isChainHeader(filtered[i]!)) next.add(i);
-          }
-        }
-        return next;
-      });
-      return;
-    }
-    if (key.downArrow || input === "j") {
+    if (key.downArrow) {
       setFollow(false);
-      setScrollOffset((o) =>
-        Math.min(o + 1, Math.max(0, totalLines - MAX_VISIBLE_LINES))
-      );
+      setScrollOffset((o) => Math.min(o + 1, Math.max(0, totalLines - MAX_VISIBLE_LINES)));
       return;
     }
-    if (key.upArrow || input === "k") {
+    if (key.upArrow) {
       setFollow(false);
       setScrollOffset((o) => Math.max(0, o - 1));
       return;
@@ -165,7 +126,8 @@ export function LogModal(props: {
     <Modal
       title={`Run #${props.run.runNumber} - ${props.run.startedAt}`}
       onClose={props.onClose}
-      width="80%"
+      width="95%"
+      height="70%"
     >
       <Box marginBottom={1} justifyContent="space-between">
         <Text color={statusColor}>
@@ -205,16 +167,13 @@ export function LogModal(props: {
         ) : (
           visible.map((line, i) => {
             const realIdx = startIdx + i;
-            const isFolded =
-              isChainHeader(line) &&
-              foldedChains.has(filtered.indexOf(line));
             return (
               <Text
                 key={realIdx}
                 color={colorForLine(line, props.run)}
                 wrap="truncate"
               >
-                {isFolded ? `${line} [folded]` : line}
+                {line}
               </Text>
             );
           })
@@ -224,10 +183,9 @@ export function LogModal(props: {
       <Box marginTop={1} justifyContent="space-between">
         <Text color={theme.text.muted}>
           {searchMode
-            ? "Type to filter, Enter to apply, Esc to close"
-            : "/:search  f:follow  u:fold  c:copy  j/k:scroll"}
+            ? "type to filter, enter to apply, esc to close"
+            : "/:search  c:copy  up/down:scroll  esc:close"}
         </Text>
-        <Text color={theme.text.muted}>{t("board.logModalEscClose")}</Text>
       </Box>
     </Modal>
   );

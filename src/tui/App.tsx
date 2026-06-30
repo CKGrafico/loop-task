@@ -344,23 +344,24 @@ export function App(props: { onQuit: () => void }): React.ReactNode {
       setDebugEntries((prev) => [entry, ...prev].slice(0, MAX_ENTRIES));
     }
 
-    // Ctrl+P opens commands browser (kept for muscle memory)
-    if (key.ctrl && input === "p" && isBoardView(view)) {
-      setCommandsBrowserOpen(true);
-      return;
-    }
-
     // Ctrl+Enter: open log (right panel) or edit (left panel)
     // Detection across terminals:
     //   - proper terminals: key.ctrl && key.return
     //   - Linux: input === "\x0e"
-    //   - VS Code: input contains "\n" (sends "\r\n" or "\n", all key flags zero)
-    const isCtrlEnter = (key.ctrl && key.return) || input === "\x0e" || input.includes("\n");
-    if (isBoardView(view) && !logModalRun && !commandsBrowserOpen && !confirmState && !searchState?.active && isCtrlEnter) {
+    //   - VS Code: a multi-char sequence containing \r (13) or \n (10),
+    //     e.g. "\\\r" (codes 92,13) - all key flags zero. Plain Enter is "\r" (len 1).
+    const isMultiCharEnter = input.length > 1 && (input.includes("\r") || input.includes("\n"));
+    const isCtrlEnter = (key.ctrl && key.return) || input === "\x0e" || isMultiCharEnter;
+    if (isCtrlEnter && isBoardView(view) && !logModalRun && !commandsBrowserOpen && !confirmState && !searchState?.active) {
+      if (chordState) setChordState(null);
       if (focusedPanel === "right" && selected) {
         const runs = selected.runHistory;
         if (runs && runs.length > 0) {
           handleOpenRunLog(runs[runs.length - 1]!);
+        } else {
+          setCloneMode(false);
+          setEditTarget(selected);
+          push("create");
         }
       } else if (focusedPanel === "left" && selected) {
         setCloneMode(false);
@@ -374,7 +375,7 @@ export function App(props: { onQuit: () => void }): React.ReactNode {
     const canShortcut = key.ctrl && isBoardView(view) && !logModalRun && !commandsBrowserOpen && !confirmState && !searchState?.active;
     if (canShortcut) {
       const globalShortcuts: Record<string, () => void> = {
-        h: () => setCommandsBrowserOpen(true),
+        p: () => setCommandsBrowserOpen(true),
         b: () => handleCommand("debug"),
         g: () => handleCommand("api"),
         x: () => handleCommand("export"),
@@ -577,6 +578,7 @@ export function App(props: { onQuit: () => void }): React.ReactNode {
           onSearchCancel={handleSearchCancel}
           onConfirmYes={handleConfirmYes}
           onConfirmCancel={handleConfirmCancel}
+          disabled={anyModalOpen}
         />
       ) : null}
 
@@ -596,6 +598,7 @@ export function App(props: { onQuit: () => void }): React.ReactNode {
           logLines={logModalLines}
           loading={logModalLoading}
           onClose={() => setLogModalRun(null)}
+          onCopy={() => pushToast("success", t("board.toastCopied"))}
         />
       ) : null}
 

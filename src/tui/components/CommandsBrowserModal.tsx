@@ -23,8 +23,7 @@ interface FlatItem {
   category: CommandCategory;
 }
 
-const LABEL_WIDTH = 26;
-const MAX_VISIBLE = 14;
+const MAX_VISIBLE = 16;
 
 export function CommandsBrowserModal(props: {
   context: CommandContext;
@@ -32,28 +31,11 @@ export function CommandsBrowserModal(props: {
   onExecute: (value: string) => void;
 }): React.ReactNode {
   const allCommands = useMemo(() => buildTabCommands(props.context), [props.context]);
-  const [searchQuery, setSearchQuery] = useState("");
-
-  const filteredCommands = useMemo(() => {
-    if (!searchQuery) return allCommands;
-    const q = searchQuery.toLowerCase();
-    return allCommands.filter(
-      (c) => c.label.toLowerCase().includes(q) || c.value.toLowerCase().includes(q)
-    );
-  }, [allCommands, searchQuery]);
 
   const flatItems: FlatItem[] = useMemo(() => {
     const items: FlatItem[] = [];
-    if (searchQuery) {
-      if (filteredCommands.length === 0) return items;
-      items.push({ command: { label: "Results", value: "__header_results", hint: "", tier: "global", category: "global" }, isHeader: true, category: "global" });
-      for (const cmd of filteredCommands) {
-        items.push({ command: cmd, isHeader: false, category: cmd.category });
-      }
-      return items;
-    }
     for (const cat of CATEGORY_ORDER) {
-      const cmds = allCommands.filter((c) => c.category === cat);
+      const cmds = allCommands.filter((c) => c.category === cat).sort((a, b) => a.label.localeCompare(b.label));
       if (cmds.length === 0) continue;
       items.push({ command: { label: categoryLabel(cat), value: `__header_${cat}`, hint: "", tier: "global", category: cat }, isHeader: true, category: cat });
       for (const cmd of cmds) {
@@ -61,7 +43,7 @@ export function CommandsBrowserModal(props: {
       }
     }
     return items;
-  }, [allCommands, filteredCommands, searchQuery]);
+  }, [allCommands]);
 
   const selectableIndices = useMemo(() => {
     return flatItems
@@ -74,7 +56,6 @@ export function CommandsBrowserModal(props: {
 
   const currentFlatIdx = selectableIndices[cursor] ?? 0;
 
-  // Intercept keys — search input first, then navigation
   useInput((input, key) => {
     if (key.escape) { props.onClose(); return; }
 
@@ -94,16 +75,6 @@ export function CommandsBrowserModal(props: {
           props.onExecute(item.command.value);
         }
       }
-      return;
-    }
-    if (key.backspace || key.delete) {
-      setSearchQuery((prev) => prev.slice(0, -1));
-      setCursor(0);
-      return;
-    }
-    if (input && !key.ctrl && !key.meta && input.length === 1) {
-      setSearchQuery((prev) => prev + input);
-      setCursor(0);
       return;
     }
   });
@@ -135,16 +106,6 @@ export function CommandsBrowserModal(props: {
       <Box justifyContent="space-between" paddingY={0}>
         <Text bold color={theme.text.primary}>{t("cmdsBrowser.title")}</Text>
         <Text color={theme.text.muted}>esc</Text>
-      </Box>
-
-      {/* Search input */}
-      <Box borderStyle="single" borderColor={theme.border.dim} marginBottom={0}>
-        <Text color={theme.text.muted}>{"  "}</Text>
-        {searchQuery.length > 0 ? (
-          <Text color={theme.text.primary}>{searchQuery}<Text color={theme.text.inverse}>{"\u2588"}</Text></Text>
-        ) : (
-          <Text color={theme.text.muted}>Search</Text>
-        )}
       </Box>
 
       {/* Command list */}

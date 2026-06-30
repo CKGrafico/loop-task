@@ -7,6 +7,7 @@ export function Modal(props: {
   children: React.ReactNode;
   onClose: () => void;
   width?: number | string;
+  height?: number | string;
 }): React.ReactNode {
   useInput((_input, key) => {
     if (key.escape) {
@@ -32,11 +33,12 @@ export function Modal(props: {
         paddingY={1}
         flexDirection="column"
         width={props.width ?? "60%"}
+        height={props.height}
       >
         <Text color={theme.accent.brand} bold>
           {props.title}
         </Text>
-        <Box flexDirection="column" marginTop={1}>
+        <Box flexDirection="column" marginTop={1} flexGrow={1}>
           {props.children}
         </Box>
       </Box>

@@ -28,6 +28,7 @@ export interface CommandInputProps {
   onSearchCancel: () => void;
   onConfirmYes: () => void;
   onConfirmCancel: () => void;
+  disabled?: boolean;
 }
 
 // ── Rendered input with cursor ───────────────────────────────────────
@@ -222,9 +223,11 @@ function KeyHint({ keyLabel, action }: { keyLabel: string; action: string }): Re
 function CommandMode({
   context,
   onCommand,
+  disabled,
 }: {
   context: CommandContext;
   onCommand: (value: string) => void;
+  disabled?: boolean;
 }): React.ReactNode {
   const commands = useMemo(() => buildCommands(context), [context]);
   const options = useMemo(
@@ -241,7 +244,7 @@ function CommandMode({
   useInput(
     (input, key) => {
       if (key.ctrl) return;
-      if (input.includes("\n")) return;
+      if (input.length > 1 && (input.includes("\r") || input.includes("\n"))) return;
 
       if (key.escape) { dispatch({ type: "CLOSE" }); return; }
       if (key.return) {
@@ -266,7 +269,7 @@ function CommandMode({
         dispatch({ type: "INSERT_TEXT", text: input });
       }
     },
-    { isActive: true },
+    { isActive: !disabled },
   );
 
   const isEmpty = state.inputValue.length === 0;
@@ -310,10 +313,12 @@ function ConfirmMode({
   confirmState,
   onConfirmYes,
   onConfirmCancel,
+  disabled,
 }: {
   confirmState: ConfirmState;
   onConfirmYes: () => void;
   onConfirmCancel: () => void;
+  disabled?: boolean;
 }): React.ReactNode {
   const yesLabel = t("cmdInput.confirmYes");
   const cancelLabel = t("cmdInput.confirmCancel");
@@ -343,7 +348,7 @@ function ConfirmMode({
   useInput(
     (_input, key) => {
       if (key.ctrl) return;
-      if (_input.includes("\n")) return;
+      if (_input.length > 1 && (_input.includes("\r") || _input.includes("\n"))) return;
       if (key.escape) { onConfirmCancel(); return; }
       if (key.return) {
         if (state.isOpen && state.filteredOptions.length > 0 && state.focusedIndex < state.filteredOptions.length) {
@@ -355,7 +360,7 @@ function ConfirmMode({
       if (key.downArrow) { dispatch({ type: "FOCUS_NEXT" }); return; }
       if (key.upArrow) { dispatch({ type: "FOCUS_PREV" }); return; }
     },
-    { isActive: true },
+    { isActive: !disabled },
   );
 
   return (
@@ -385,22 +390,24 @@ function SearchMode({
   onSearchChange,
   onSearchSubmit,
   onSearchCancel,
+  disabled,
 }: {
   value: string;
   onSearchChange: (value: string) => void;
   onSearchSubmit: () => void;
   onSearchCancel: () => void;
+  disabled?: boolean;
 }): React.ReactNode {
    useInput(
     (input, key) => {
       if (key.ctrl) return;
-      if (input.includes("\n")) return;
+      if (input.length > 1 && (input.includes("\r") || input.includes("\n"))) return;
       if (key.escape) { onSearchCancel(); return; }
       if (key.return) { onSearchSubmit(); return; }
       if (key.backspace || key.delete) { onSearchChange(value.slice(0, -1)); return; }
       if (input && !key.ctrl && !key.meta && input.length === 1) { onSearchChange(value + input); return; }
     },
-    { isActive: true },
+    { isActive: !disabled },
   );
 
   const placeholder = t("cmdInput.searchPlaceholder");
@@ -459,14 +466,16 @@ export function CommandInput(props: CommandInputProps): React.ReactNode {
           onSearchChange={onSearchChange}
           onSearchSubmit={onSearchSubmit}
           onSearchCancel={onSearchCancel}
+          disabled={props.disabled}
         />
       ) : confirmState === null ? (
-        <CommandMode context={context} onCommand={onCommand} />
+        <CommandMode context={context} onCommand={onCommand} disabled={props.disabled} />
       ) : (
         <ConfirmMode
           confirmState={confirmState}
           onConfirmYes={onConfirmYes}
           onConfirmCancel={onConfirmCancel}
+          disabled={props.disabled}
         />
       )}
     </Box>
