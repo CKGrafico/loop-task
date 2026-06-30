@@ -22,6 +22,7 @@ import { ConfirmModal } from "./components/ConfirmModal.js";
 import { HelpModal } from "./components/HelpModal.js";
 import { ContextHelpModal } from "./components/ContextHelpModal.js";
 import { ProjectsPage } from "./components/ProjectsPage.js";
+import { WelcomeScreen } from "./components/WelcomeScreen.js";
 import { fetchRunLog, deleteLoop, pauseLoop, resumeLoop, stopLoop, playLoop, triggerLoop, listTasks, deleteTask, listProjects } from "./daemon.js";
 import { applyLoopFilters, cycleSortMode, cycleStatusFilter, defaultFilters, type Filters, type SortMode } from "./state.js";
 import { t } from "../i18n/index.js";
@@ -426,6 +427,12 @@ export function App(props: { onQuit: () => void }): React.ReactNode {
             onRefresh={refreshProjects}
             onOpenCreate={(trigger) => { createProjectTriggerRef.current = trigger; }}
             onToast={(msg: string) => pushToast("success", msg)}
+          />
+        ) : loops.length === 0 ? (
+          <WelcomeScreen
+            onCreateEmpty={() => { setEditTarget(null); push("create"); }}
+            onCreateLoop={() => { void refresh(); }}
+            onRefresh={refresh}
           />
         ) : (
           <Box flexDirection={breakpoint === "narrow" ? "column" : "row"} flexGrow={1}>
