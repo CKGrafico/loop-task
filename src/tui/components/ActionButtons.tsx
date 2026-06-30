@@ -86,6 +86,7 @@ export function ActionButtons(props: {
             label={action.label}
             color={color}
             variant={variant}
+            bordered={false}
             onPress={() => onAction(action.key)}
           />
         );

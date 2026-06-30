@@ -7,8 +7,9 @@ export function FocusableButton(props: {
   color: string;
   onPress?: () => void;
   variant?: "default" | "danger";
+  bordered?: boolean;
 }): React.ReactNode {
-  const { label, color, onPress, variant = "default" } = props;
+  const { label, color, onPress, variant = "default", bordered = true } = props;
   const { isFocused } = useFocus();
 
   useInput(
@@ -28,16 +29,16 @@ export function FocusableButton(props: {
     : theme.border.dim;
   const backgroundColor = isFocused
     ? theme.bg.active
-    : theme.bg.surface;
+    : undefined;
   const textColor = isFocused ? theme.text.inverse : theme.text.primary;
 
   return (
     <Box
-      borderStyle="single"
-      borderColor={borderColor}
+      {...(bordered ? { borderStyle: "single" as const, borderColor } : {})}
       backgroundColor={backgroundColor}
       paddingX={1}
       marginRight={1}
+      flexShrink={0}
     >
       <Text color={textColor} bold>{label}</Text>
     </Box>

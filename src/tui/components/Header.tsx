@@ -94,13 +94,14 @@ export function Header(props: HeaderProps): React.ReactNode {
     <Box flexDirection="column">
       <Box>
         <Text color="#a3e635" bold>{t("board.appName")}</Text>
+        <Text> </Text>
         <Text color={theme.text.muted}>{t("board.appTagline")}</Text>
       </Box>
 
       <Box justifyContent="space-between">
-        <Box>
+        <Box gap={1}>
           <Text color={daemonColor(props.daemonStatus)}>{daemonSymbol(props.daemonStatus)}</Text>
-          <Text color={theme.text.secondary}> {daemonText(props.daemonStatus)}</Text>
+          <Text color={theme.text.secondary}>{daemonText(props.daemonStatus)}</Text>
           {!compact && (
             <>
               <Text color={theme.text.muted}>{t("board.loopsLabel")}</Text>
@@ -117,7 +118,7 @@ export function Header(props: HeaderProps): React.ReactNode {
           )}
         </Box>
 
-        <Box>
+        <Box gap={1}>
           {buttons.map((btn, i) => (
             <FocusableButton
               key={i}
