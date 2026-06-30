@@ -32,7 +32,7 @@ function viewKey(view: View, editTarget: LoopMeta | null, editTask: TaskDefiniti
 }
 
 function isBoardView(view: View): boolean {
-  return view === "board" || view === "task-list" || view === "projects";
+  return view === "board";
 }
 
 export function App(props: { onQuit: () => void }): React.ReactNode {
@@ -210,7 +210,7 @@ export function App(props: { onQuit: () => void }): React.ReactNode {
         push("task-create");
         break;
       case "new-project":
-        push("projects");
+        setActiveTab("projects");
         break;
       case "help":
         setHelpOpen(true);
@@ -258,7 +258,7 @@ export function App(props: { onQuit: () => void }): React.ReactNode {
   const cancelCreate = () => { setEditTarget(null); setCloneMode(false); setPendingTaskSelection(null); pop(); };
   const cancelTask = () => { setEditTask(null); pop(); };
 
-  const handleChooseTask = () => { void refreshTasks(); push("task-list"); };
+  const handleChooseTask = () => { void refreshTasks(); setActiveTab("tasks"); };
 
   const onCreateDone = (updated: boolean, _id: string, desc: string) => {
     setEditTarget(null);
@@ -437,7 +437,7 @@ export function App(props: { onQuit: () => void }): React.ReactNode {
         />
       ) : null}
 
-      {helpOpen ? <HelpModal view={view} onClose={() => setHelpOpen(false)} /> : null}
+      {helpOpen ? <HelpModal view={isBoardView(view) ? activeTab : view} onClose={() => setHelpOpen(false)} /> : null}
       {contextHelpOpen ? <ContextHelpModal onClose={() => setContextHelpOpen(false)} /> : null}
 
       {logModalRun ? (
