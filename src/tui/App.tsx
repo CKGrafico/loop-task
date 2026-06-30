@@ -71,6 +71,7 @@ export function App(props: { onQuit: () => void }): React.ReactNode {
   const [searchValue, setSearchValue] = useState("");
   const [debugMode, setDebugMode] = useState(false);
   const [debugEntries, setDebugEntries] = useState<DebugEntry[]>([]);
+  const [chordState, setChordState] = useState<"ctrl+f" | "ctrl+a" | null>(null);
   const { toasts, push: pushToast } = useToasts();
   const breakpoint = useBreakpoint();
   const visible = useMemo(
@@ -208,6 +209,7 @@ export function App(props: { onQuit: () => void }): React.ReactNode {
     "new-task": () => { setEditTask(null); push("task-create"); },
     "new-project": () => { setActiveTab("projects"); },
     "all-commands": () => { setCommandsBrowserOpen(true); },
+    help: () => { setCommandsBrowserOpen(true); },
     search: () => { setSearchValue(""); setSearchState({ active: true }); },
     "filter-status": () => { setFilters((prev) => ({ ...prev, status: cycleStatusFilter(prev.status) })); },
     sort: () => { setSort((prev) => cycleSortMode(prev)); },
@@ -342,7 +344,7 @@ export function App(props: { onQuit: () => void }): React.ReactNode {
       setDebugEntries((prev) => [entry, ...prev].slice(0, MAX_ENTRIES));
     }
 
-    // Ctrl+P opens commands browser from anywhere on board
+    // Ctrl+P opens commands browser (kept for muscle memory)
     if (key.ctrl && input === "p" && isBoardView(view)) {
       setCommandsBrowserOpen(true);
       return;
@@ -369,11 +371,52 @@ export function App(props: { onQuit: () => void }): React.ReactNode {
     }
 
     // Ctrl shortcuts: dispatch to command handler (bottom input ignores all ctrl)
-    if (key.ctrl && isBoardView(view) && !logModalRun && !commandsBrowserOpen && !confirmState && !searchState?.active) {
-      if (input === "n") { handleCommand("new-loop"); return; }
-      if (input === "f") { handleCommand("search"); return; }
-      if (input === "e") { handleCommand("edit"); return; }
-      if (input === "d") { handleCommand("delete"); return; }
+    const canShortcut = key.ctrl && isBoardView(view) && !logModalRun && !commandsBrowserOpen && !confirmState && !searchState?.active;
+    if (canShortcut) {
+      const globalShortcuts: Record<string, () => void> = {
+        n: () => handleCommand("new-loop"),
+        h: () => setCommandsBrowserOpen(true),
+        b: () => handleCommand("debug"),
+        a: () => handleCommand("api"),
+        e: () => handleCommand("export"),
+        i: () => handleCommand("import"),
+        s: () => handleCommand("status"),
+      };
+      const filterShortcuts: Record<string, () => void> = {
+        s: () => handleCommand("search"),
+        t: () => handleCommand("filter-status"),
+        o: () => handleCommand("sort"),
+        p: () => handleCommand("filter-project"),
+      };
+      const actionShortcuts: Record<string, () => void> = {
+        e: () => handleCommand("edit"),
+        p: () => handleCommand("pause"),
+        r: () => handleCommand("play"),
+        s: () => handleCommand("stop"),
+        t: () => handleCommand("trigger"),
+        c: () => handleCommand("clone"),
+        d: () => handleCommand("delete"),
+        o: () => handleCommand("logs"),
+      };
+
+      if (chordState === "ctrl+f" && filterShortcuts[input]) {
+        filterShortcuts[input]!();
+        setChordState(null);
+        return;
+      }
+      if (chordState === "ctrl+a" && actionShortcuts[input]) {
+        actionShortcuts[input]!();
+        setChordState(null);
+        return;
+      }
+      if (chordState) {
+        setChordState(null);
+      }
+
+      if (input === "f") { setChordState("ctrl+f"); return; }
+      if (input === "a") { setChordState("ctrl+a"); return; }
+      const globalHandler = globalShortcuts[input];
+      if (globalHandler) { globalHandler(); return; }
     }
 
     // Confirm mode is handled by CommandInput component, not here

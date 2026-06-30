@@ -61,6 +61,7 @@ export const COMMAND_TIER_GLOBAL = "global";
 
 // ── Command categories ─────────────────────────────────────────────
 export const COMMAND_CATEGORY_GLOBAL = "global";
+export const COMMAND_CATEGORY_FILTERS = "filters";
 export const COMMAND_CATEGORY_LOOP = "loop";
 export const COMMAND_CATEGORY_TASK = "task";
 export const COMMAND_CATEGORY_PROJECT = "project";
