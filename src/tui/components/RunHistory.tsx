@@ -15,6 +15,63 @@ function runIconColor(run: RunRecord): string {
   return run.exitCode === 0 ? theme.semantic.success : theme.semantic.danger;
 }
 
+const SPARK_CHARS = ["\u2581", "\u2582", "\u2583", "\u2584", "\u2585", "\u2586", "\u2587", "\u2588"];
+
+function sparkline(durations: number[]): string {
+  if (durations.length === 0) return "";
+  const max = Math.max(...durations, 1);
+  const min = Math.min(...durations, 0);
+  const range = max - min || 1;
+  return durations.map((d) => {
+    const level = Math.round(((d - min) / range) * (SPARK_CHARS.length - 1));
+    return SPARK_CHARS[level] ?? SPARK_CHARS[0]!;
+  }).join("");
+}
+
+function computeTrends(runs: RunRecord[]): {
+  sparkline: string;
+  avgDuration: number;
+  successStreak: number;
+  failureStreak: number;
+  lastFailureAgo: string | null;
+} {
+  if (runs.length === 0) {
+    return { sparkline: "", avgDuration: 0, successStreak: 0, failureStreak: 0, lastFailureAgo: null };
+  }
+
+  const recent = runs.slice(-20);
+  const durations = recent.map((r) => r.duration).filter((d) => d > 0);
+  const avgDuration = durations.length > 0 ? durations.reduce((a, b) => a + b, 0) / durations.length : 0;
+
+  let successStreak = 0;
+  let failureStreak = 0;
+  for (let i = runs.length - 1; i >= 0; i--) {
+    const r = runs[i]!;
+    if (r.exitCode === 0 && failureStreak === 0) successStreak++;
+    else if (r.exitCode !== 0 && successStreak === 0) failureStreak++;
+    else break;
+  }
+
+  let lastFailureAgo: string | null = null;
+  for (let i = runs.length - 1; i >= 0; i--) {
+    if (runs[i]!.exitCode !== 0) {
+      const diff = Date.now() - new Date(runs[i]!.startedAt).getTime();
+      const hours = Math.floor(diff / 3600000);
+      const mins = Math.floor(diff / 60000);
+      lastFailureAgo = hours > 0 ? `${hours}h ago` : `${mins}m ago`;
+      break;
+    }
+  }
+
+  return {
+    sparkline: sparkline(durations),
+    avgDuration: Math.round(avgDuration),
+    successStreak,
+    failureStreak,
+    lastFailureAgo,
+  };
+}
+
 export function RunHistory(props: {
   loop: LoopMeta | null;
   selectedRunIndex: number;
@@ -48,6 +105,7 @@ export function RunHistory(props: {
   });
 
   const title = focused ? t("board.runHistoryTitleHint") : t("board.runHistoryTitle");
+  const trends = computeTrends(runs);
 
   return (
     <Box borderStyle="single" borderColor={focused ? theme.accent.focus : theme.border.default} flexDirection="column">
@@ -60,6 +118,22 @@ export function RunHistory(props: {
         </Box>
       ) : (
         <Box flexDirection="column">
+          {trends.sparkline ? (
+            <Box paddingLeft={1} marginBottom={0}>
+              <Text color={theme.text.muted}>Durations: </Text>
+              <Text color={theme.semantic.info}>{trends.sparkline}</Text>
+              <Text color={theme.text.muted}> avg:{trends.avgDuration}ms </Text>
+              {trends.successStreak > 0 ? (
+                <Text color={theme.semantic.success}>streak:{trends.successStreak} ok</Text>
+              ) : null}
+              {trends.failureStreak > 0 ? (
+                <Text color={theme.semantic.danger}>streak:{trends.failureStreak} fail</Text>
+              ) : null}
+              {trends.lastFailureAgo ? (
+                <Text color={theme.semantic.warning}> last fail:{trends.lastFailureAgo}</Text>
+              ) : null}
+            </Box>
+          ) : null}
           <Box paddingLeft={1}>
             <Text color={theme.text.muted}>{t("board.runHistoryTime").padEnd(10)}</Text>
             <Text color={theme.text.muted}>{"  "}</Text>
