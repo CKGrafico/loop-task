@@ -2,7 +2,6 @@ import React, { useState, useMemo, useEffect } from "react";
 import { Box, Text, useInput } from "ink";
 import type { TaskDefinition } from "../../types.js";
 import { darkTheme as theme } from "../theme.js";
-import { t } from "../../i18n/index.js";
 import { listTasks } from "../daemon.js";
 import { commandLine } from "../format.js";
 

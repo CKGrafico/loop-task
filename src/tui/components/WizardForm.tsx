@@ -64,8 +64,7 @@ export function WizardForm(props: WizardFormProps): React.ReactNode {
   const [selectIndex, setSelectIndex] = useState(0);
 
   // Focus the input so FocusableInput picks it up
-  const { isFocused } = useFocus();
-
+  useFocus();
   const step = steps[currentStep];
   const currentValue = values[step?.key] ?? "";
   const isFirstStep = currentStep === 0;

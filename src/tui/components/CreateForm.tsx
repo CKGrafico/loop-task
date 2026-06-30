@@ -1,7 +1,6 @@
 import React, { useState, useMemo, useCallback } from "react";
-import { Box, Text } from "ink";
+
 import type { Project, LoopOptions } from "../../types.js";
-import { darkTheme as theme } from "../theme.js";
 import { createLoop, updateLoop } from "../daemon.js";
 import { t } from "../../i18n/index.js";
 import { WizardForm, type WizardStepConfig } from "./WizardForm.js";
@@ -56,35 +55,13 @@ export function CreateView(props: CreateViewProps): React.ReactNode {
     initial,
     selectedTaskId,
     selectedTaskName,
-    projects,
     currentProjectId,
     onCancel,
     onDone,
-    onChooseTask,
   } = props;
 
   // Track task mode so steps can be conditional
-  const [taskMode, setTaskMode] = useState<string>(
-    initial.taskMode === "existing" ? "Existing task" : "Inline command",
-  );
-
-  // When user selects "Existing task" in the wizard, trigger task picker
-  const [pendingTaskPick, setPendingTaskPick] = useState(false);
-
-  // When task mode changes to "Existing task", open the task picker
-  const handleTaskModeChange = useCallback(
-    (values: Record<string, string>) => {
-      const newMode = values.taskMode ?? taskMode;
-      if (newMode !== taskMode) {
-        setTaskMode(newMode);
-      }
-      if (newMode === "Existing task" && !selectedTaskId && !pendingTaskPick) {
-        setPendingTaskPick(true);
-        onChooseTask();
-      }
-    },
-    [taskMode, selectedTaskId, pendingTaskPick, onChooseTask],
-  );
+  const taskMode = initial.taskMode === "existing" ? "Existing task" : "Inline command";
 
   // ── Build wizard steps ──────────────────────────────────────────
 

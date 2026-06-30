@@ -3,7 +3,6 @@ import { Box, Text, useInput } from "ink";
 import {
   useAutocompleteState,
   type AutocompleteState,
-  type AutocompleteAction,
 } from "ink-combobox";
 import { darkTheme as theme } from "../theme.js";
 import { t } from "../../i18n/index.js";
@@ -13,8 +12,6 @@ import {
   COMMAND_INPUT_HEIGHT,
   CONFIRM_YES,
   CONFIRM_CANCEL,
-  CTRL_SHORTCUT_EDIT,
-  CTRL_SHORTCUT_DELETE,
 } from "../../config/constants.js";
 import type { CommandContext, ConfirmState } from "../types.js";
 

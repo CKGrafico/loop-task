@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect } from "react";
+import React, { useState, useCallback } from "react";
 import { Box, Text } from "ink";
 import { darkTheme as theme } from "../theme.js";
 

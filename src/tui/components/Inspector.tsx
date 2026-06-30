@@ -36,7 +36,6 @@ export function Inspector(props: { loop: LoopMeta | null }): React.ReactNode {
   }
 
   const sColor = statusColor(loop.status);
-  const maxRuns = loop.maxRuns ?? Infinity;
   const maxRunsLabel = loop.maxRuns ? String(loop.maxRuns) : t("board.unlimited");
   const lastRun = loop.lastRunAt ?? t("format.dash");
   const lastExit = loop.lastExitCode !== null ? String(loop.lastExitCode) : t("format.dash");

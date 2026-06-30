@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useMemo, useRef, useCallback } from "react";
-import { Box, Text, useInput, useApp } from "ink";
+import React, { useState, useEffect, useMemo, useCallback } from "react";
+import { Box, useInput, useApp } from "ink";
 import type { LoopMeta, RunRecord, TaskDefinition, Project } from "../types.js";
 import type { ConfirmState, View, TabName, PanelFocus, CommandContext } from "./types.js";
 import { useLoopPolling } from "./hooks/useLoopPolling.js";
@@ -15,7 +15,7 @@ import { CreateView } from "./components/CreateForm.js";
 import { LogModal } from "./components/LogModal.js";
 import { HelpModal } from "./components/HelpModal.js";
 import { ContextHelpModal } from "./components/ContextHelpModal.js";
-import { fetchRunLog, deleteLoop, pauseLoop, resumeLoop, stopLoop, playLoop, triggerLoop, listTasks, deleteTask, listProjects } from "./daemon.js";
+import { fetchRunLog, deleteLoop, pauseLoop, resumeLoop, stopLoop, triggerLoop, listTasks, deleteTask, listProjects } from "./daemon.js";
 import { applyLoopFilters, cycleSortMode, cycleStatusFilter, defaultFilters, type Filters, type SortMode } from "./state.js";
 import { t } from "../i18n/index.js";
 import { POLL_MS } from "../config/constants.js";
@@ -39,7 +39,7 @@ export function App(props: { onQuit: () => void }): React.ReactNode {
   const { onQuit } = props;
   const { exit } = useApp();
   const { loops, daemonStatus, refresh } = useLoopPolling();
-  const { view, stack, push, replace, pop } = useRouter("board");
+  const { view, push, pop } = useRouter("board");
   // ── Tab and panel state (8.1, 8.2) ──
   const [activeTab, setActiveTab] = useState<TabName>("loops");
   const [focusedPanel, setFocusedPanel] = useState<PanelFocus>("left");
@@ -59,7 +59,7 @@ export function App(props: { onQuit: () => void }): React.ReactNode {
   const [taskSelectedIndex, setTaskSelectedIndex] = useState(0);
   const [taskQuery, setTaskQuery] = useState("");
   const [projects, setProjects] = useState<Project[]>([]);
-  const [currentProjectId, setCurrentProjectId] = useState<string>("all");
+  const [currentProjectId] = useState<string>("all");
   // ── Overlay state ──
   const [helpOpen, setHelpOpen] = useState(false);
   const [contextHelpOpen, setContextHelpOpen] = useState(false);
@@ -67,8 +67,6 @@ export function App(props: { onQuit: () => void }): React.ReactNode {
   const [confirmState, setConfirmState] = useState<ConfirmState | null>(null);
   const { toasts, push: pushToast } = useToasts();
   const breakpoint = useBreakpoint();
-  const createProjectTriggerRef = useRef<(() => void) | null>(null);
-
   const visible = useMemo(
     () => applyLoopFilters(
       currentProjectId === "all" ? loops : loops.filter((l) => (l.projectId ?? "default") === currentProjectId),
@@ -83,7 +81,7 @@ export function App(props: { onQuit: () => void }): React.ReactNode {
 
   useEffect(() => { setSelectedRunIndex(0); }, [selected?.id]);
 
-  const { destroy: destroyLogSocket } = useLogStream(
+  useLogStream(
     selectedId,
     view,
     (error) => pushToast("error", error.message)

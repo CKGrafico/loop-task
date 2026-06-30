@@ -30,7 +30,6 @@ export function PatchEditForm(props: PatchEditFormProps): React.ReactNode {
     onActiveFieldCommit,
     onActiveFieldCancel,
     pendingChanges,
-    onSave,
     onCancel,
   } = props;
 

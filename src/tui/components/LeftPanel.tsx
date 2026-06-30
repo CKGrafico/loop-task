@@ -51,9 +51,6 @@ export function LeftPanel(props: {
     taskSelectedIndex,
     onTaskSelect,
     onTaskActivate,
-    onStatusCycle,
-    onSortCycle,
-    onSelectProject,
     currentProjectName,
   } = props;
 

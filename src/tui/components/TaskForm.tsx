@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useMemo, useCallback } from "react";
-import { Box, Text } from "ink";
+
 import type { TaskDefinition } from "../../types.js";
-import { darkTheme as theme } from "../theme.js";
 import { WizardForm, type WizardStepConfig } from "./WizardForm.js";
 import { PatchEditForm } from "./PatchEditForm.js";
 import { createTask, updateTask, listTasks } from "../daemon.js";

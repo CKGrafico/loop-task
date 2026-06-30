@@ -1,5 +1,5 @@
 import React from "react";
-import { Box, Text, useFocus } from "ink";
+import { Box, useFocus } from "ink";
 import TextInput from "ink-text-input";
 import { darkTheme as theme } from "../theme.js";
 
@@ -24,6 +24,7 @@ export function FocusableInput(props: FocusableInputProps): React.ReactNode {
       borderColor={borderColor}
       backgroundColor={backgroundColor}
       paddingLeft={1}
+      overflow="hidden"
     >
       <TextInput
         value={value}

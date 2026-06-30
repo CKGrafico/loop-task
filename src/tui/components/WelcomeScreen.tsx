@@ -1,7 +1,6 @@
 import React from "react";
 import { Box, Text, useInput } from "ink";
 import { darkTheme as theme } from "../theme.js";
-import { t } from "../../i18n/index.js";
 import { createLoop } from "../daemon.js";
 import { parseDuration } from "../../duration.js";
 import type { LoopOptions } from "../../types.js";
