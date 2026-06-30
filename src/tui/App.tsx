@@ -88,7 +88,7 @@ export function App(props: { onQuit: () => void }): React.ReactNode {
   const { toasts, push: pushToast } = useToasts();
   const breakpoint = useBreakpoint();
   const createProjectTriggerRef = useRef<(() => void) | null>(null);
-  const [panelFocus, setPanelFocus] = useState<"navigator" | "actions" | "run-history">("navigator");
+  const [panelFocus, setPanelFocus] = useState<string>("navigator");
 
   const visible = useMemo(
     () => applyLoopFilters(
@@ -340,13 +340,27 @@ export function App(props: { onQuit: () => void }): React.ReactNode {
     if (input === "2") { triggerHeaderButton(1); return; }
     if (input === "3") { triggerHeaderButton(2); return; }
 
-    // Tab cycles panels
+    // Tab cycles: header-1 -> header-2 -> header-3 -> navigator -> run-history -> actions -> header-1
     if (key.tab && view === "board") {
+      const cycle = ["header-1", "header-2", "header-3", "navigator", "run-history", "actions"];
       if (key.shift) {
-        setPanelFocus((p) => p === "navigator" ? "actions" : p === "actions" ? "run-history" : "navigator");
+        setPanelFocus((p) => {
+          const idx = cycle.indexOf(p);
+          return cycle[(idx - 1 + cycle.length) % cycle.length]!;
+        });
       } else {
-        setPanelFocus((p) => p === "navigator" ? "run-history" : p === "run-history" ? "actions" : "navigator");
+        setPanelFocus((p) => {
+          const idx = cycle.indexOf(p);
+          return cycle[(idx + 1) % cycle.length]!;
+        });
       }
+      return;
+    }
+
+    // Enter on header buttons triggers navigation
+    if (key.return && view === "board" && panelFocus.startsWith("header-")) {
+      const btnIdx = parseInt(panelFocus.split("-")[1]!) - 1;
+      triggerHeaderButton(btnIdx);
       return;
     }
 
@@ -376,6 +390,7 @@ export function App(props: { onQuit: () => void }): React.ReactNode {
         daemonStatus={daemonStatus}
         counts={counts}
         view={view}
+        focusedButton={panelFocus.startsWith("header-") ? parseInt(panelFocus.split("-")[1]!) - 1 : null}
         onViewLoops={() => replace("board")}
         onViewTasks={() => { void refreshTasks(); push("task-list"); }}
         onViewProjects={() => push("projects")}
