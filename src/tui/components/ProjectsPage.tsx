@@ -1,8 +1,11 @@
 import React, { useState } from "react";
-import { Box, Text, useInput } from "ink";
-import TextInput from "ink-text-input";
+import { Box, Text, useInput, useFocus } from "ink";
 import type { Project, LoopMeta } from "../../types.js";
 import { darkTheme as theme } from "../theme.js";
+import { FocusableInput } from "./FocusableInput.js";
+import { FocusableList } from "./FocusableList.js";
+import { FocusableButton } from "./FocusableButton.js";
+import { Modal } from "./Modal.js";
 import { t } from "../../i18n/index.js";
 import { createProject, updateProject, deleteProject } from "../daemon.js";
 import { PROJECT_COLORS, PROJECT_COLOR_KEYS } from "../../config/constants.js";
@@ -22,36 +25,94 @@ function loopCountFor(loops: LoopMeta[], projectId: string): number {
   return loops.filter((l) => l.projectId === projectId).length;
 }
 
-function ColorPicker(props: {
+function ColorCyclerButton(props: {
+  direction: "left" | "right";
   selected: string;
   onSelect: (color: string) => void;
-  focused: boolean;
 }): React.ReactNode {
-  const idx = Math.max(0, PROJECT_COLOR_KEYS.indexOf(props.selected as typeof PROJECT_COLOR_KEYS[number]));
+  const { isFocused } = useFocus();
+
+  useInput(
+    (input, key) => {
+      if (key.return || input === " ") {
+        const idx = Math.max(0, PROJECT_COLOR_KEYS.indexOf(props.selected as typeof PROJECT_COLOR_KEYS[number]));
+        const len = PROJECT_COLOR_KEYS.length;
+        const nextIdx = props.direction === "left"
+          ? (idx - 1 + len) % len
+          : (idx + 1) % len;
+        const nextKey = PROJECT_COLOR_KEYS[nextIdx];
+        props.onSelect(PROJECT_COLORS[nextKey]);
+      }
+    },
+    { isActive: isFocused },
+  );
+
+  const label = props.direction === "left" ? "\u2039" : "\u203a";
+  const borderColor = isFocused ? theme.accent.focus : theme.border.dim;
+  const backgroundColor = isFocused ? theme.bg.active : theme.bg.surface;
 
   return (
-    <Box>
-      {PROJECT_COLOR_KEYS.map((key, i) => {
-        const color = PROJECT_COLORS[key];
-        const isActive = props.selected === color;
-        const bg = isActive ? color : undefined;
-        const fg = isActive ? theme.text.inverse : theme.text.secondary;
+    <Box
+      borderStyle="single"
+      borderColor={borderColor}
+      backgroundColor={backgroundColor}
+      paddingX={1}
+      marginRight={1}
+    >
+      <Text color={isFocused ? theme.text.inverse : theme.text.primary} bold>
+        {label}
+      </Text>
+    </Box>
+  );
+}
 
-        return (
-          <Box key={key} marginRight={i < PROJECT_COLOR_KEYS.length - 1 ? 1 : 0}>
-            <Box
-              borderStyle="single"
-              borderColor={isActive ? theme.accent.focus : theme.border.dim}
-              backgroundColor={bg}
-              paddingX={1}
-              >
-              <Text color={fg} bold>
-                {key}
-              </Text>
-            </Box>
-          </Box>
-        );
-      })}
+function ColorPickerRow(props: {
+  selected: string;
+  onSelect: (color: string) => void;
+}): React.ReactNode {
+  const selectedKey = (() => {
+    const idx = PROJECT_COLOR_KEYS.findIndex(
+      (k) => PROJECT_COLORS[k] === props.selected,
+    );
+    return idx >= 0 ? PROJECT_COLOR_KEYS[idx] : "white";
+  })();
+
+  const color = PROJECT_COLORS[selectedKey as typeof PROJECT_COLOR_KEYS[number]];
+
+  return (
+    <Box flexDirection="row" alignItems="center">
+      <ColorCyclerButton
+        direction="left"
+        selected={props.selected}
+        onSelect={props.onSelect}
+      />
+      <Box marginRight={1}>
+        <Box
+          borderStyle="single"
+          borderColor={theme.accent.focus}
+          backgroundColor={color}
+          paddingX={1}
+        >
+          <Text color={theme.text.inverse} bold>{selectedKey}</Text>
+        </Box>
+      </Box>
+      <ColorCyclerButton
+        direction="right"
+        selected={props.selected}
+        onSelect={props.onSelect}
+      />
+    </Box>
+  );
+}
+
+function LabeledField(props: {
+  label: string;
+  children: React.ReactNode;
+}): React.ReactNode {
+  return (
+    <Box marginBottom={1} flexDirection="column">
+      <Text color={theme.text.secondary}>{props.label}</Text>
+      <Box marginTop={1}>{props.children}</Box>
     </Box>
   );
 }
@@ -66,63 +127,35 @@ function CreateProjectModal(props: {
   saving: boolean;
 }): React.ReactNode {
   return (
-    <Box
-      flexDirection="column"
-      borderStyle="round"
-      borderColor={theme.accent.focus}
-      backgroundColor={theme.bg.elevated}
-      padding={1}
-      width={48}
-    >
-      <Box marginBottom={1}>
-        <Text color={theme.accent.focus} bold>
-          {t("project.createTitle")}
-        </Text>
-      </Box>
-
-      <Box marginBottom={1}>
-        <Box width={6}>
-          <Text color={theme.text.secondary}>{t("project.labelName")}</Text>
-        </Box>
-        <Box
-          borderStyle="single"
-          borderColor={theme.border.focus}
-          backgroundColor={theme.bg.input}
-          paddingX={1}
-        >
-          <TextInput value={props.name} onChange={props.onNameChange} placeholder={t("project.hintName")} />
-        </Box>
-      </Box>
-
-      <Box marginBottom={1} flexDirection="column">
-        <Text color={theme.text.secondary}>{t("project.labelColor")}</Text>
+    <Modal title={t("project.createTitle")} onClose={props.onCancel} width={50}>
+      <Box flexDirection="column" marginBottom={1}>
+        <Text color={theme.text.secondary}>{t("project.labelName")}</Text>
         <Box marginTop={1}>
-          <ColorPicker selected={props.color} onSelect={props.onColorChange} focused={false} />
+          <FocusableInput
+            value={props.name}
+            onChange={props.onNameChange}
+            placeholder={t("project.hintName")}
+          />
         </Box>
       </Box>
 
-      <Box justifyContent="flex-end">
-        <Box
-          borderStyle="single"
-          borderColor={props.saving ? theme.semantic.warning : theme.accent.focus}
-          backgroundColor={theme.bg.active}
-          paddingX={2}
-          >
-          <Text color={theme.text.inverse} bold>
-            {props.saving ? t("board.saving") : t("board.create")}
-          </Text>
-        </Box>
-        <Box
-          borderStyle="single"
-          borderColor={theme.border.dim}
-          backgroundColor={theme.bg.surface}
-          paddingX={2}
-          marginLeft={1}
-          >
-          <Text color={theme.text.primary}>{t("board.cancel")}</Text>
-        </Box>
+      <LabeledField label={t("project.labelColor")}>
+        <ColorPickerRow selected={props.color} onSelect={props.onColorChange} />
+      </LabeledField>
+
+      <Box marginTop={1}>
+        <FocusableButton
+          label={props.saving ? t("board.saving") : t("board.create")}
+          color={theme.accent.project}
+          onPress={props.onSave}
+        />
+        <FocusableButton
+          label={t("board.cancel")}
+          color={theme.text.secondary}
+          onPress={props.onCancel}
+        />
       </Box>
-    </Box>
+    </Modal>
   );
 }
 
@@ -137,63 +170,35 @@ function EditProjectModal(props: {
   saving: boolean;
 }): React.ReactNode {
   return (
-    <Box
-      flexDirection="column"
-      borderStyle="round"
-      borderColor={theme.accent.focus}
-      backgroundColor={theme.bg.elevated}
-      padding={1}
-      width={48}
-    >
-      <Box marginBottom={1}>
-        <Text color={theme.accent.focus} bold>
-          {t("project.editTitle")}
-        </Text>
-      </Box>
-
-      <Box marginBottom={1}>
-        <Box width={6}>
-          <Text color={theme.text.secondary}>{t("project.labelName")}</Text>
-        </Box>
-        <Box
-          borderStyle="single"
-          borderColor={theme.border.focus}
-          backgroundColor={theme.bg.input}
-          paddingX={1}
-        >
-          <TextInput value={props.name} onChange={props.onNameChange} placeholder={t("project.hintName")} />
-        </Box>
-      </Box>
-
-      <Box marginBottom={1} flexDirection="column">
-        <Text color={theme.text.secondary}>{t("project.labelColor")}</Text>
+    <Modal title={t("project.editTitle")} onClose={props.onCancel} width={50}>
+      <Box flexDirection="column" marginBottom={1}>
+        <Text color={theme.text.secondary}>{t("project.labelName")}</Text>
         <Box marginTop={1}>
-          <ColorPicker selected={props.color} onSelect={props.onColorChange} focused={false} />
+          <FocusableInput
+            value={props.name}
+            onChange={props.onNameChange}
+            placeholder={t("project.hintName")}
+          />
         </Box>
       </Box>
 
-      <Box justifyContent="flex-end">
-        <Box
-          borderStyle="single"
-          borderColor={props.saving ? theme.semantic.warning : theme.accent.focus}
-          backgroundColor={theme.bg.active}
-          paddingX={2}
-          >
-          <Text color={theme.text.inverse} bold>
-            {props.saving ? t("board.saving") : t("board.save")}
-          </Text>
-        </Box>
-        <Box
-          borderStyle="single"
-          borderColor={theme.border.dim}
-          backgroundColor={theme.bg.surface}
-          paddingX={2}
-          marginLeft={1}
-          >
-          <Text color={theme.text.primary}>{t("board.cancel")}</Text>
-        </Box>
+      <LabeledField label={t("project.labelColor")}>
+        <ColorPickerRow selected={props.color} onSelect={props.onColorChange} />
+      </LabeledField>
+
+      <Box marginTop={1}>
+        <FocusableButton
+          label={props.saving ? t("board.saving") : t("board.save")}
+          color={theme.accent.project}
+          onPress={props.onSave}
+        />
+        <FocusableButton
+          label={t("board.cancel")}
+          color={theme.text.secondary}
+          onPress={props.onCancel}
+        />
       </Box>
-    </Box>
+    </Modal>
   );
 }
 
@@ -204,20 +209,7 @@ function DeleteConfirm(props: {
   onCancel: () => void;
 }): React.ReactNode {
   return (
-    <Box
-      flexDirection="column"
-      borderStyle="round"
-      borderColor={theme.semantic.danger}
-      backgroundColor={theme.bg.elevated}
-      padding={1}
-      width={48}
-    >
-      <Box marginBottom={1}>
-        <Text color={theme.semantic.danger} bold>
-          {t("project.deleteTitle")}
-        </Text>
-      </Box>
-
+    <Modal title={t("project.deleteTitle")} onClose={props.onCancel} width={50}>
       <Box marginBottom={1}>
         <Text color={theme.text.primary}>
           {t("project.deleteConfirm", { name: props.project.name })}
@@ -230,28 +222,67 @@ function DeleteConfirm(props: {
         </Text>
       </Box>
 
-      <Box>
-        <Box
-          borderStyle="single"
-          borderColor={theme.semantic.danger}
-          backgroundColor={theme.semantic.danger}
-          paddingX={2}
-          >
-          <Text color={theme.text.inverse} bold>
-            {t("board.yes")}
-          </Text>
-        </Box>
-        <Box
-          borderStyle="single"
-          borderColor={theme.border.dim}
-          backgroundColor={theme.bg.surface}
-          paddingX={2}
-          marginLeft={1}
-          >
-          <Text color={theme.text.primary}>{t("board.no")}</Text>
-        </Box>
+      <Box marginTop={1}>
+        <FocusableButton
+          label={t("board.yes")}
+          color={theme.semantic.danger}
+          onPress={props.onConfirm}
+          variant="danger"
+        />
+        <FocusableButton
+          label={t("board.no")}
+          color={theme.text.secondary}
+          onPress={props.onCancel}
+        />
       </Box>
-    </Box>
+    </Modal>
+  );
+}
+
+function ListFocusWrapper(props: {
+  projects: Project[];
+  loops: LoopMeta[];
+  selectedIndex: number;
+  onSelect: (index: number) => void;
+  onActivate: (index: number) => void;
+  children: React.ReactNode;
+}): React.ReactNode {
+  const { isFocused } = useFocus();
+
+  if (props.projects.length === 0) {
+    return (
+      <Box paddingX={1}>
+        <Text color={theme.text.muted}>{t("project.noLoops")}</Text>
+      </Box>
+    );
+  }
+
+  return (
+    <React.Fragment>
+      <FocusableList
+        items={props.projects}
+        selectedIndex={props.selectedIndex}
+        isFocused={isFocused}
+        limit={10}
+        onSelect={props.onSelect}
+        onActivate={props.onActivate}
+        renderItem={(project, isSelected) => {
+          const count = loopCountFor(props.loops, project.id);
+          const fg = isSelected ? theme.text.inverse : theme.text.primary;
+          const countFg = isSelected ? theme.text.inverse : theme.text.muted;
+          return (
+            <React.Fragment>
+              <Text color={project.color}>{"\u25CF"}</Text>
+              <Text color={fg}> {project.name.padEnd(20)}</Text>
+              <Text color={countFg}>
+                {t("project.loopCount", { count })}
+              </Text>
+            </React.Fragment>
+          );
+        }}
+      />
+      {props.children}
+    </React.Fragment>
   );
 }
 
@@ -261,65 +292,16 @@ export function ProjectsPage(props: ProjectsPageProps): React.ReactNode {
   const [projectName, setProjectName] = useState("");
   const [selectedColor, setSelectedColor] = useState(PROJECT_COLORS.white);
   const [saving, setSaving] = useState(false);
-  const [focusMode, setFocusMode] = useState<"list" | "actions">("list");
 
   const selected = props.projects[selectedIndex];
   const loopCount = selected ? loopCountFor(props.loops, selected.id) : 0;
 
   useInput((input, key) => {
-    if (subModal !== "none") {
-      if (key.escape) {
-        setSubModal("none");
-        setSaving(false);
-      }
-      return;
-    }
+    if (subModal !== "none") return;
 
     if (key.escape) {
-      if (focusMode === "actions") {
-        setFocusMode("list");
-      } else {
-        props.onClose();
-      }
+      props.onClose();
       return;
-    }
-
-    if (focusMode === "list") {
-      if (key.upArrow) {
-        setSelectedIndex((prev) => (prev <= 0 ? Math.max(0, props.projects.length - 1) : prev - 1));
-        return;
-      }
-
-      if (key.downArrow) {
-        setSelectedIndex((prev) => (prev >= props.projects.length - 1 ? 0 : prev + 1));
-        return;
-      }
-
-      if (key.return && selected) {
-        setFocusMode("actions");
-        return;
-      }
-    }
-
-    if (focusMode === "actions" && selected) {
-      if (key.return) {
-        setSubModal("edit");
-        setProjectName(selected.name);
-        setSelectedColor(selected.color);
-        return;
-      }
-
-      if (input === "e") {
-        setSubModal("edit");
-        setProjectName(selected.name);
-        setSelectedColor(selected.color);
-        return;
-      }
-
-      if (input === "d") {
-        setSubModal("delete");
-        return;
-      }
     }
 
     if (input === "n") {
@@ -449,24 +431,23 @@ export function ProjectsPage(props: ProjectsPageProps): React.ReactNode {
               <Text color={theme.text.muted}>{t("project.noLoops")}</Text>
             </Box>
           ) : (
-            <Box flexDirection="column">
-              {props.projects.map((project, i) => {
-                const isSelected = i === selectedIndex && focusMode === "list";
-                const count = loopCountFor(props.loops, project.id);
-                const bg = isSelected ? theme.bg.active : undefined;
-                const fg = isSelected ? theme.text.inverse : theme.text.primary;
-
-                return (
-                  <Box key={project.id} backgroundColor={bg} paddingLeft={1}>
-                    <Text color={project.color}>{"\u25CF"}</Text>
-                    <Text color={fg}> {project.name.padEnd(20)}</Text>
-                    <Text color={isSelected ? theme.text.inverse : theme.text.muted}>
-                      {t("project.loopCount", { count })}
-                    </Text>
-                  </Box>
-                );
-              })}
-            </Box>
+            <ListFocusWrapper
+              projects={props.projects}
+              loops={props.loops}
+              selectedIndex={selectedIndex}
+              onSelect={setSelectedIndex}
+              onActivate={(idx) => {
+                setSelectedIndex(idx);
+                setSubModal("edit");
+                const p = props.projects[idx];
+                if (p) {
+                  setProjectName(p.name);
+                  setSelectedColor(p.color);
+                }
+              }}
+            >
+              {null}
+            </ListFocusWrapper>
           )}
         </Box>
 
@@ -508,40 +489,28 @@ export function ProjectsPage(props: ProjectsPageProps): React.ReactNode {
               </Box>
 
               <Box marginTop={1} flexDirection="column">
-                {focusMode === "actions" ? (
-                  <Box>
-                    <Box
-                      borderStyle="single"
-                      borderColor={theme.accent.focus}
-                      backgroundColor={theme.bg.active}
-                      paddingX={2}
-                    >
-                      <Text color={theme.text.inverse} bold>
-                        {`${t("project.editProjectLabel")} (${t("project.keyEditHint")})`}
-                      </Text>
-                    </Box>
-                    <Box
-                      borderStyle="single"
-                      borderColor={theme.semantic.danger}
-                      backgroundColor={theme.bg.surface}
-                      paddingX={2}
-                      marginLeft={1}
-                    >
-                      <Text color={theme.semantic.danger} bold>
-                        {`${t("project.deleteProjectLabel")} (${t("project.keyDeleteHint")})`}
-                      </Text>
-                    </Box>
-                  </Box>
-                ) : (
-                  <Box flexDirection="column">
-                    <Text color={theme.text.muted}>
-                      {`${t("project.keyNewHint")} | ${t("project.keyEditHint")} | ${t("project.keyDeleteHint")}`}
-                    </Text>
-                    <Text color={theme.text.muted}>
-                      {`${t("board.hintKeyEnter")} ${t("project.editProjectLabel")}`}
-                    </Text>
-                  </Box>
-                )}
+                <Box marginTop={1} flexDirection="row">
+                  <FocusableButton
+                    label={`${t("project.editProjectLabel")} (${t("project.keyEditHint")})`}
+                    color={theme.accent.focus}
+                    onPress={() => {
+                      setSubModal("edit");
+                      setProjectName(selected.name);
+                      setSelectedColor(selected.color);
+                    }}
+                  />
+                  <FocusableButton
+                    label={`${t("project.deleteProjectLabel")} (${t("project.keyDeleteHint")})`}
+                    color={theme.semantic.danger}
+                    variant="danger"
+                    onPress={() => setSubModal("delete")}
+                  />
+                </Box>
+                <Box marginTop={1}>
+                  <Text color={theme.text.muted}>
+                    {`${t("project.keyNewHint")} | ${t("project.keyEditHint")} | ${t("project.keyDeleteHint")}`}
+                  </Text>
+                </Box>
               </Box>
             </React.Fragment>
           ) : (

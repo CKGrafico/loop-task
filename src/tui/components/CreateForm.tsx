@@ -1,9 +1,10 @@
 import React, { useState, useMemo } from "react";
-import { Box, Text, useInput } from "ink";
-import TextInput from "ink-text-input";
+import { Box, Text, useInput, useFocus } from "ink";
 import type { Project, LoopOptions } from "../../types.js";
 import { darkTheme as theme } from "../theme.js";
-import { SearchSelect, type SearchSelectOption } from "./SearchSelect.js";
+import { FocusableInput } from "./FocusableInput.js";
+import { FocusableSearchSelect, type FocusableSearchSelectOption } from "./FocusableSearchSelect.js";
+import { FocusableButton } from "./FocusableButton.js";
 import { createLoop, updateLoop } from "../daemon.js";
 import { t } from "../../i18n/index.js";
 
@@ -45,6 +46,59 @@ function parseInterval(input: string): { interval: number; intervalHuman: string
   return { interval: num * multipliers[unit], intervalHuman: input.trim() };
 }
 
+function Toggle(props: {
+  label: string;
+  isActive: boolean;
+  onActivate: () => void;
+}): React.ReactNode {
+  const { isFocused } = useFocus();
+
+  const borderColor = isFocused || props.isActive
+    ? theme.accent.focus
+    : theme.border.dim;
+  const backgroundColor = props.isActive
+    ? theme.bg.active
+    : isFocused
+      ? theme.bg.hover
+      : theme.bg.surface;
+  const textColor = props.isActive || isFocused
+    ? theme.text.inverse
+    : theme.text.secondary;
+
+  useInput(
+    (input, key) => {
+      if (key.return || input === " ") {
+        props.onActivate();
+      }
+    },
+    { isActive: isFocused },
+  );
+
+  return (
+    <Box
+      borderStyle="single"
+      borderColor={borderColor}
+      backgroundColor={backgroundColor}
+      paddingX={1}
+      marginRight={1}
+    >
+      <Text bold color={textColor}>{props.label}</Text>
+    </Box>
+  );
+}
+
+function renderField(field: FieldConfig, children: React.ReactNode): React.ReactNode {
+  return (
+    <Box flexDirection="column" marginBottom={1}>
+      <Box>
+        <Text bold color={theme.text.secondary}>{field.label}</Text>
+      </Box>
+      {children}
+      <Text color={theme.text.muted}>  {field.hint}</Text>
+    </Box>
+  );
+}
+
 export function CreateView(props: CreateViewProps): React.ReactNode {
   const {
     mode,
@@ -63,16 +117,15 @@ export function CreateView(props: CreateViewProps): React.ReactNode {
   const [taskMode, setTaskMode] = useState<"inline" | "existing">((initial.taskMode as "inline" | "existing") ?? "inline");
   const [command, setCommand] = useState(initial.command ?? "");
   const [cwd, setCwd] = useState(initial.cwd ?? "");
-  const [taskId, setTaskId] = useState(selectedTaskId ?? initial.taskId ?? "");
+  const taskId = selectedTaskId ?? initial.taskId ?? "";
   const [description, setDescription] = useState(initial.description ?? "");
   const [runNow, setRunNow] = useState(initial.runNow === "true" || initial.runNow === "yes");
   const [maxRuns, setMaxRuns] = useState(initial.maxRuns ?? "");
   const [project, setProject] = useState(currentProjectId || initial.project || "");
   const [saving, setSaving] = useState(false);
-  const [focusIndex, setFocusIndex] = useState(0);
 
   const fields: FieldConfig[] = useMemo(() => {
-    const list = [
+    const list: FieldConfig[] = [
       { key: "interval", label: t("board.labelInterval"), hint: t("board.hintInterval") },
       { key: "taskMode", label: t("board.labelTaskMode"), hint: t("board.hintTaskMode") },
     ];
@@ -89,17 +142,7 @@ export function CreateView(props: CreateViewProps): React.ReactNode {
     return list;
   }, [taskMode]);
 
-  const focusOrder = useMemo(() => [...fields.map((f) => f.key), "save", "cancel"], [fields]);
-  const currentField = focusOrder[focusIndex];
-
-  function clampFocus(idx: number): number {
-    const max = focusOrder.length - 1;
-    if (idx < 0) return max;
-    if (idx > max) return 0;
-    return idx;
-  }
-
-  const projectOptions = useMemo<SearchSelectOption[]>(() => {
+  const projectOptions = useMemo<FocusableSearchSelectOption[]>(() => {
     return projects.map((p) => ({ name: p.name, value: p.id, color: p.color }));
   }, [projects]);
 
@@ -139,57 +182,16 @@ export function CreateView(props: CreateViewProps): React.ReactNode {
     }
   }
 
-  useInput((input, key) => {
+  useInput((_input, key) => {
     if (saving) return;
-    if (key.tab) {
-      const dir = key.shift ? -1 : 1;
-      setFocusIndex((prev) => clampFocus(prev + dir));
-      return;
-    }
     if (key.escape) {
       onCancel();
-      return;
-    }
-    if (key.return) {
-      if (currentField === "save") {
-        submit();
-        return;
-      }
-      if (currentField === "cancel") {
-        onCancel();
-        return;
-      }
-      setFocusIndex((prev) => clampFocus(prev + 1));
-      return;
-    }
-    if (input === " " && currentField === "taskMode") {
-      setTaskMode((prev) => (prev === "inline" ? "existing" : "inline"));
-      return;
-    }
-    if (input === " " && currentField === "runNow") {
-      setRunNow((prev) => !prev);
       return;
     }
   });
 
   function commandLine(command: string, args: string[]): string {
     return [command, ...args].join(" ").trim();
-  }
-
-  function renderField(field: FieldConfig, children: React.ReactNode): React.ReactNode {
-    const idx = fields.indexOf(field);
-    const isFocused = focusIndex === idx && !saving;
-    return (
-      <Box flexDirection="column" marginBottom={1}>
-        <Box>
-          <Text bold color={isFocused ? theme.accent.focus : theme.text.secondary}>
-            {field.label}
-          </Text>
-        </Box>
-        {children}
-        <Text color={theme.text.muted}>  {field.hint}</Text>
-      </Box>
-    );
   }
 
   const intervalField = fields.find((f) => f.key === "interval");
@@ -211,171 +213,113 @@ export function CreateView(props: CreateViewProps): React.ReactNode {
       </Box>
       <Box flexDirection="column" paddingX={1}>
         {intervalField && renderField(intervalField, (
-          <Box>
-            <Box flexGrow={1}>
-              <TextInput
-                value={interval}
-                onChange={setIntervalValue}
-                placeholder={t("board.placeholderExample", { example: t("board.exampleInterval") })}
-              />
-            </Box>
-          </Box>
+          <FocusableInput
+            value={interval}
+            onChange={setIntervalValue}
+            placeholder={t("board.placeholderExample", { example: t("board.exampleInterval") })}
+          />
         ))}
 
         {taskModeField && renderField(taskModeField, (
           <Box flexDirection="row">
-            <Box marginRight={2}>
-              <Box
-                borderStyle="single"
-                borderColor={taskMode === "inline" ? theme.accent.focus : theme.border.dim}
-                backgroundColor={taskMode === "inline" ? theme.bg.active : undefined}
-                paddingX={1}
-              >
-                <Text bold color={taskMode === "inline" ? theme.text.inverse : theme.text.secondary}>
-                  {t("board.taskModeInline")}
-                </Text>
-              </Box>
-            </Box>
-            <Box>
-              <Box
-                borderStyle="single"
-                borderColor={taskMode === "existing" ? theme.accent.focus : theme.border.dim}
-                backgroundColor={taskMode === "existing" ? theme.bg.active : undefined}
-                paddingX={1}
-              >
-                <Text bold color={taskMode === "existing" ? theme.text.inverse : theme.text.secondary}>
-                  {t("board.taskModeExisting")}
-                </Text>
-              </Box>
-            </Box>
+            <Toggle
+              label={t("board.taskModeInline")}
+              isActive={taskMode === "inline"}
+              onActivate={() => setTaskMode("inline")}
+            />
+            <Toggle
+              label={t("board.taskModeExisting")}
+              isActive={taskMode === "existing"}
+              onActivate={() => setTaskMode("existing")}
+            />
           </Box>
         ))}
 
         {commandField && renderField(commandField, (
-          <Box flexGrow={1}>
-            <TextInput
-              value={command}
-              onChange={setCommand}
-              placeholder={t("board.placeholderExample", { example: t("board.exampleCommand") })}
+          <Box flexDirection="row">
+            <Box flexGrow={1}>
+              <FocusableInput
+                value={command}
+                onChange={setCommand}
+                placeholder={t("board.placeholderExample", { example: t("board.exampleCommand") })}
+              />
+            </Box>
+            <FocusableButton
+              label={"\u2398"}
+              color={theme.text.secondary}
+              onPress={() => {}}
             />
           </Box>
         ))}
 
         {taskIdField && renderField(taskIdField, (
-          <Box
-            borderStyle="single"
-            borderColor={focusIndex === fields.indexOf(taskIdField) && !saving ? theme.accent.focus : theme.border.dim}
-            backgroundColor={theme.bg.input}
-            paddingX={1}
-            >
-            <Text color={selectedTaskName ? theme.text.primary : theme.text.muted}>
-              {selectedTaskName ?? t("board.chooseTask")}
-            </Text>
-          </Box>
+          <FocusableButton
+            label={selectedTaskName ?? t("board.chooseTask")}
+            color={theme.accent.task}
+            onPress={onChooseTask}
+          />
         ))}
 
         {cwdField && renderField(cwdField, (
-          <Box flexGrow={1}>
-            <TextInput
-              value={cwd}
-              onChange={setCwd}
-              placeholder={t("board.hintCwd")}
-            />
-          </Box>
+          <FocusableInput
+            value={cwd}
+            onChange={setCwd}
+            placeholder={t("board.hintCwd")}
+          />
         ))}
 
         {descriptionField && renderField(descriptionField, (
-          <Box flexGrow={1}>
-            <TextInput
-              value={description}
-              onChange={setDescription}
-              placeholder={t("board.placeholderExample", { example: t("board.exampleDescription") })}
-            />
-          </Box>
+          <FocusableInput
+            value={description}
+            onChange={setDescription}
+            placeholder={t("board.placeholderExample", { example: t("board.exampleDescription") })}
+          />
         ))}
 
         {runNowField && renderField(runNowField, (
           <Box flexDirection="row">
-            <Box marginRight={2}>
-              <Box
-                borderStyle="single"
-                borderColor={!runNow ? theme.accent.focus : theme.border.dim}
-                backgroundColor={!runNow ? theme.bg.active : undefined}
-                paddingX={1}
-              >
-                <Text bold color={!runNow ? theme.text.inverse : theme.text.secondary}>
-                  {t("board.runNowNo")}
-                </Text>
-              </Box>
-            </Box>
-            <Box>
-              <Box
-                borderStyle="single"
-                borderColor={runNow ? theme.accent.focus : theme.border.dim}
-                backgroundColor={runNow ? theme.bg.active : undefined}
-                paddingX={1}
-              >
-                <Text bold color={runNow ? theme.text.inverse : theme.text.secondary}>
-                  {t("board.runNowYes")}
-                </Text>
-              </Box>
-            </Box>
-          </Box>
-        ))}
-
-        {maxRunsField && renderField(maxRunsField, (
-          <Box flexGrow={1}>
-            <TextInput
-              value={maxRuns}
-              onChange={setMaxRuns}
-              placeholder={t("board.placeholderBlank")}
+            <Toggle
+              label={t("board.runNowNo")}
+              isActive={!runNow}
+              onActivate={() => setRunNow(false)}
+            />
+            <Toggle
+              label={t("board.runNowYes")}
+              isActive={runNow}
+              onActivate={() => setRunNow(true)}
             />
           </Box>
         ))}
 
+        {maxRunsField && renderField(maxRunsField, (
+          <FocusableInput
+            value={maxRuns}
+            onChange={setMaxRuns}
+            placeholder={t("board.placeholderBlank")}
+          />
+        ))}
+
         {projectField && renderField(projectField, (
-          <SearchSelect
+          <FocusableSearchSelect
             options={projectOptions}
             value={project}
             onChange={setProject}
-            focused={focusIndex === fields.indexOf(projectField) && !saving}
             placeholder={t("project.hintName")}
           />
         ))}
       </Box>
 
       <Box flexDirection="row" paddingX={1} marginBottom={1}>
-        {(() => {
-          const isFocused = focusIndex === focusOrder.length - 2 && !saving;
-          return (
-            <Box
-              marginRight={2}
-              borderStyle="single"
-              borderColor={isFocused ? theme.accent.focus : theme.border.dim}
-              backgroundColor={isFocused ? theme.bg.active : undefined}
-              paddingX={2}
-            >
-              <Text bold color={isFocused ? theme.text.inverse : theme.text.secondary}>
-                {saving ? t("board.saving") : mode === "edit" ? t("board.save") : t("board.create")}
-              </Text>
-            </Box>
-          );
-        })()}
-        {(() => {
-          const isFocused = focusIndex === focusOrder.length - 1 && !saving;
-          return (
-            <Box
-              borderStyle="single"
-              borderColor={isFocused ? theme.accent.focus : theme.border.dim}
-              backgroundColor={isFocused ? theme.bg.active : undefined}
-              paddingX={2}
-            >
-              <Text bold color={isFocused ? theme.text.inverse : theme.text.secondary}>
-                {t("board.cancel")}
-              </Text>
-            </Box>
-          );
-        })()}
+        <FocusableButton
+          label={saving ? t("board.saving") : mode === "edit" ? t("board.save") : t("board.create")}
+          color={theme.accent.loop}
+          onPress={submit}
+        />
+        <FocusableButton
+          label={t("board.cancel")}
+          color={theme.text.secondary}
+          onPress={onCancel}
+        />
       </Box>
 
       <Box paddingLeft={1} marginBottom={1}>
