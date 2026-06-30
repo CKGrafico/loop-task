@@ -120,4 +120,15 @@ export class ProjectManager {
     this.projects.delete(id);
     this.saveAllProjects();
   }
+
+  reload(newProjects: Project[]): void {
+    this.projects.clear();
+    for (const project of newProjects) {
+      this.projects.set(project.id, project);
+    }
+    if (!this.projects.has("default")) {
+      this.createDefaultProject();
+    }
+    daemonLog(`reloaded ${newProjects.length} project(s) from external change`);
+  }
 }

@@ -265,6 +265,98 @@ export class LoopManager {
     this.loops.clear();
   }
 
+  reconcile(newLoops: LoopMeta[]): void {
+    const newIds = new Set(newLoops.map((l) => l.id));
+    const shouldAutoStart = (s: string) => s !== "stopped" && s !== "idle";
+
+    for (const [existingId, entry] of this.loops) {
+      if (!newIds.has(existingId)) {
+        void entry.controller.stop().then(() => {
+          this.loops.delete(existingId);
+          this.lastSerialized.delete(existingId);
+          deleteLoopState(existingId);
+        });
+      }
+    }
+
+    for (const meta of newLoops) {
+      const existing = this.loops.get(meta.id);
+      if (existing) {
+        const configChanged =
+          existing.options.interval !== meta.interval ||
+          existing.options.command !== meta.command ||
+          existing.options.cwd !== (meta.cwd ?? "");
+        if (configChanged) {
+          void existing.controller.stop().then(() => {
+            const options: LoopOptions = {
+              interval: meta.interval,
+              taskId: meta.taskId ?? null,
+              command: meta.command,
+              commandArgs: meta.commandArgs,
+              cwd: meta.cwd ?? "",
+              immediate: false,
+              maxRuns: meta.maxRuns,
+              verbose: meta.verbose,
+              description: meta.description ?? "",
+              projectId: (meta as LoopMeta & { projectId?: string }).projectId ?? "default",
+              offset: (meta as LoopMeta & { offset?: number | null }).offset ?? null,
+            };
+            const logPath = getLogPath(meta.id);
+            const controller = new LoopController(meta.id, options, logPath, this.taskResolver, {
+              status: meta.status,
+              createdAt: meta.createdAt,
+              runCount: meta.runCount,
+              sessionStartedAt: meta.sessionStartedAt,
+              lastRunAt: meta.lastRunAt,
+              lastExitCode: meta.lastExitCode,
+              lastDuration: meta.lastDuration,
+              nextRunAt: meta.nextRunAt,
+              remainingDelayMs: meta.remainingDelayMs,
+              runHistory: meta.runHistory,
+            });
+            this.loops.set(meta.id, { controller, options, intervalHuman: meta.intervalHuman });
+            this.wireEvents(meta.id, controller, options, meta.intervalHuman);
+            if (shouldAutoStart(meta.status)) {
+              controller.start();
+            }
+          });
+        }
+      } else {
+        const options: LoopOptions = {
+          interval: meta.interval,
+          taskId: meta.taskId ?? null,
+          command: meta.command,
+          commandArgs: meta.commandArgs,
+          cwd: meta.cwd ?? "",
+          immediate: false,
+          maxRuns: meta.maxRuns,
+          verbose: meta.verbose,
+          description: meta.description ?? "",
+          projectId: (meta as LoopMeta & { projectId?: string }).projectId ?? "default",
+          offset: (meta as LoopMeta & { offset?: number | null }).offset ?? null,
+        };
+        const logPath = getLogPath(meta.id);
+        const controller = new LoopController(meta.id, options, logPath, this.taskResolver, {
+          status: meta.status,
+          createdAt: meta.createdAt,
+          runCount: meta.runCount,
+          sessionStartedAt: meta.sessionStartedAt,
+          lastRunAt: meta.lastRunAt,
+          lastExitCode: meta.lastExitCode,
+          lastDuration: meta.lastDuration,
+          nextRunAt: meta.nextRunAt,
+          remainingDelayMs: meta.remainingDelayMs,
+          runHistory: meta.runHistory,
+        });
+        this.loops.set(meta.id, { controller, options, intervalHuman: meta.intervalHuman });
+        this.wireEvents(meta.id, controller, options, meta.intervalHuman);
+        if (shouldAutoStart(meta.status)) {
+          controller.start();
+        }
+      }
+    }
+  }
+
   private wireEvents(
     id: string,
     controller: LoopController,

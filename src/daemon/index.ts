@@ -1,6 +1,7 @@
 import { LoopManager } from "./manager.js";
 import { TaskManager } from "./task-manager.js";
 import { IpcServer } from "./server.js";
+import { FileWatcher } from "./file-watcher.js";
 import {
   writeDaemonPid,
   removeDaemonPid,
@@ -33,8 +34,14 @@ async function main(): Promise<void> {
   writeDaemonSignature(computeCodeSignature());
   daemonLog(`started pid=${process.pid}`);
 
+  const fileWatcher = new FileWatcher();
+  fileWatcher.setManagers(manager, taskManager, manager["projectManager"]);
+  fileWatcher.start();
+  daemonLog(`file watcher started for hot-reloading JSON configs`);
+
   const cleanup = async () => {
     daemonLog(`shutting down pid=${process.pid}`);
+    fileWatcher.stop();
     removeDaemonPid();
     removeDaemonSignature();
     await manager.shutdown();

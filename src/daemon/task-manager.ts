@@ -62,4 +62,12 @@ export class TaskManager {
       onFailureTaskId: null,
     });
   }
+
+  reload(newTasks: TaskDefinition[]): void {
+    this.tasks.clear();
+    for (const task of newTasks) {
+      this.tasks.set(task.id, task);
+    }
+    daemonLog(`reloaded ${newTasks.length} task(s) from external change`);
+  }
 }

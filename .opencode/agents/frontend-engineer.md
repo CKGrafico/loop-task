@@ -1,5 +1,5 @@
 ---
-description: Frontend engineer specialized in OpenTUI/React 19 TUI board components, SearchSelect, forms, keyboard navigation, and i18n for the loop-task terminal UI.
+description: Frontend engineer specialized in Ink 7 / React 19 TUI board components, CommandInput palette, WizardForm, PatchEditForm, keyboard navigation, and i18n for the loop-task terminal UI.
 mode: subagent
 color: info
 permission:

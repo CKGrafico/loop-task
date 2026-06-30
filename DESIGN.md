@@ -1,306 +1,305 @@
 ---
 tokens:
   colors:
-    # Status indicators — action-based semantic colors
-    success:
-      value: "#4ade80"
-      description: "Running state; success; positive actions"
-    info:
+    # Primary colors - 4 entity accents that drive the entire palette
+    brand:
+      value: "#fbbf24"
+      description: "App name, input bar accent, generic UI elements, modal borders, command palette highlights"
+    brand_light:
+      value: "#d97706"
+      description: "Light theme brand variant"
+    loop:
       value: "#38bdf8"
-      description: "Waiting state; information; focus; primary interactive"
-    warning:
-      value: "#facc15"
-      description: "Paused state; caution; secondary interactive"
-    pending:
-      value: "#fb923c"
-      description: "Idle state; pending action"
-    error:
-      value: "#f87171"
-      description: "Stopped state; error; destructive actions"
-    
-    # UI neutrals — surface and contrast
-    neutral_900:
-      value: "#0b0b0b"
-      description: "Dark background; main surfaces (near-black)"
-    neutral_800:
-      value: "#1e1e1e"
-      description: "Secondary surfaces; hover states"
-    neutral_600:
-      value: "#4b5563"
-      description: "Dividers; muted text"
-    neutral_500:
-      value: "#6b7280"
-      description: "Labels; secondary text"
-    neutral_400:
-      value: "#9ca3af"
-      description: "Tertiary text; hints"
-    neutral_300:
-      value: "#d1d5db"
-      description: "Borders; subtle separators"
-    neutral_200:
-      value: "#e5e7eb"
-      description: "Primary text; strong contrast"
-    neutral_100:
-      value: "#f3f4f6"
-      description: "Light text; emphasis (rarely used)"
-    
-    # Accent
-    accent:
-      value: "#a3e635"
-      description: "Brand/primary accent; app title; important highlights"
-    
-    # Interactive states
-    hover_bg:
-      value: "#1e3a5f"
-      description: "Hover background overlay on buttons and rows"
-    focus_blue:
-      value: "#1e3a8a"
-      description: "Selected button background; strong focus"
-  
+      description: "Loops tab: panel borders, selected row indicator, status dots, title text"
+    loop_light:
+      value: "#0284c7"
+      description: "Light theme loop variant"
+    task:
+      value: "#a78bfa"
+      description: "Tasks tab: panel borders, selected row indicator, chain editor accent"
+    task_light:
+      value: "#7c3aed"
+      description: "Light theme task variant"
+    project:
+      value: "#34d399"
+      description: "Projects tab: panel borders, selected row indicator, search mode accent"
+    project_light:
+      value: "#059669"
+      description: "Light theme project variant"
+
+    # Semantic colors - status-driven, not decorative
+    semantic:
+      success:
+        value: "#4ade80"
+        description: "Exit code 0, running status spinner, success toasts, streak indicators"
+      success_light:
+        value: "#16a34a"
+      warning:
+        value: "#facc15"
+        description: "Paused status, warning toasts, debug panel border, last-failure indicator"
+      warning_light:
+        value: "#ca8a04"
+      danger:
+        value: "#f87171"
+        description: "Exit code non-zero, stopped status, destructive actions, confirm mode accent bar, error toasts"
+      danger_light:
+        value: "#dc2626"
+      idle:
+        value: "#fb923c"
+        description: "Idle loop status, pending action indicator"
+      idle_light:
+        value: "#ea580c"
+
+    # Status-to-color mapping (derived from semantic palette)
+    status:
+      running:
+        value: "#4ade80"
+        description: "Maps to semantic.success"
+      waiting:
+        value: "#38bdf8"
+        description: "Maps to accent.loop"
+      paused:
+        value: "#facc15"
+        description: "Maps to semantic.warning"
+      idle:
+        value: "#fb923c"
+        description: "Maps to semantic.idle"
+      stopped:
+        value: "#f87171"
+        description: "Maps to semantic.danger"
+
+    # Background scale - 6 tones from near-black to input surface
+    bg:
+      base:
+        value: "#0a0e14"
+        description: "Root application background"
+      surface:
+        value: "#111827"
+        description: "Panel backgrounds, debug panel"
+      elevated:
+        value: "#1e293b"
+        description: "Modal backgrounds, toast backgrounds, command browser"
+      hover:
+        value: "#1e3a5f"
+        description: "Hover background overlay (defined, minimal usage)"
+      active:
+        value: "#1e3a8a"
+        description: "Selected row background, focused button fill, dropdown focused row"
+      input:
+        value: "#0f172a"
+        description: "Focused input field background"
+
+    # Text scale - 4 tones from primary to inverse
+    text:
+      primary:
+        value: "#e5e7eb"
+        description: "Normal text content, field values, list items"
+      secondary:
+        value: "#9ca3af"
+        description: "Labels, secondary descriptions"
+      muted:
+        value: "#6b7280"
+        description: "Hints, placeholders, column headers, status bar labels, dot separators"
+      inverse:
+        value: "#ffffff"
+        description: "Text on active/selected backgrounds (high contrast)"
+
+    # Border scale - 2 tones
+    border:
+      default:
+        value: "#1e293b"
+        description: "Panel borders at rest, unfocused state"
+      dim:
+        value: "#374151"
+        description: "Unfocused input/button borders, command input container border"
+
+  # Spacing scale - character-width units for terminal layout
+  spacing:
+    xs:
+      value: 1
+      description: "Tight padding inside list items, between indicator and content"
+    sm:
+      value: 1
+      description: "Padding left/right inside panels, gap between tab labels"
+    md:
+      value: 2
+      description: "Modal padding, form field spacing"
+    lg:
+      value: 4
+      description: "Welcome screen padding"
+    xl:
+      value: 4
+      description: "Maximum spacing unit"
+
+  # Layout dimensions
+  layout:
+    left_panel_width:
+      value: "60%"
+      description: "Left panel (list) width with flexShrink=0"
+    right_panel_width:
+      value: "40%"
+      description: "Right panel (detail) width"
+    debug_panel_width:
+      value: "22%"
+      description: "Debug panel width when debug mode is on"
+    command_input_height:
+      value: 6
+      description: "Bottom command input total height in rows"
+    dropdown_max_visible:
+      value: 6
+      description: "Maximum visible items in command autocomplete dropdown"
+    modal_default_width:
+      value: "60%"
+      description: "Default modal width"
+    log_modal_width:
+      value: "95%"
+      description: "Log viewer modal width"
+    commands_browser_width:
+      value: 56
+      description: "Commands browser modal width in characters"
+
+  # Typography
   typography:
-    # Terminal typography uses monospace (system default)
-    # Font selection is delegated to terminal emulator
-    # Text styling is applied via OpenTUI text properties (fg, bg, bold, dim, etc.)
-    font_family: "monospace (system terminal default)"
-    
+    font_family:
+      value: "monospace"
+      description: "Terminal system default monospace font"
     heading:
       weight: "bold"
-      size: "terminal-relative"
-      description: "Used for section titles, dialog titles, emphasis"
-    
+      description: "Tab labels, modal titles, app name, section headers"
     body:
       weight: "normal"
-      size: "terminal-relative"
-      description: "Standard text content, labels"
-    
+      description: "List items, field values, input text"
     hint:
       weight: "normal"
-      size: "terminal-relative"
-      fg: "#9ca3af"
-      description: "Dimmed helper text, hints, secondary information"
-    
-    label:
-      weight: "normal"
-      size: "terminal-relative"
       fg: "#6b7280"
-      description: "Form labels, section headers"
-  
-  spacing:
-    # Terminal grid uses character-width units
-    xs:
-      value: "0.5 (half char width)"
-      description: "Minimal padding within compact items"
-    sm:
-      value: "1 (char width)"
-      description: "Standard padding; default gutters between elements"
-    md:
-      value: "2 (2 char widths)"
-      description: "Medium spacing between sections"
-    lg:
-      value: "3 (3 char widths)"
-      description: "Large spacing between major panels"
-    xl:
-      value: "4+ (4+ char widths)"
-      description: "Extra-large spacing in dialogs and detail views"
-  
+      description: "Placeholders, key hints, status labels"
+
+  # Borders
   borders:
-    # Box border style for panels, dialogs, forms
-    default_style: "single-line box (┌─┐│└─┘)"
-    focus_color: "#38bdf8"
-    default_color: "inherit (neutral)"
-    width: "1 character"
-  
+    panel:
+      style: "single"
+      description: "Single-line box drawing for LeftPanel, RightPanel, Navigator lists"
+    modal:
+      style: "round"
+      description: "Rounded corners for modal dialogs, toast notifications"
+    accent_bar:
+      char: "│"
+      description: "Left vertical accent bar in CommandInput (brand color for command mode, danger for confirm, project green for search)"
+
+  # Elevation
   elevation:
     base:
-      value: "terminal surface (no shadow equivalent)"
-    modal:
-      value: "centered overlay; full-width focus"
-      description: "Modals occupy the full terminal; underlying content dims or becomes inaccessible"
-  
-  animation:
-    transitions:
-      description: "No CSS transitions in terminal UI; updates are instant"
-    interactions:
-      value: "synchronous"
-      description: "Keyboard and mouse events trigger immediate re-renders"
-  
-  interaction:
-    keyboard:
-      - "↑ / ↓ : Navigate lists; cycle through items"
-      - "← / → : Cycle between panels; navigate form fields; cancel/confirm in dialogs"
-      - "Enter / Space : Activate buttons; toggle switches"
-      - "q / Escape : Quit board / close modal"
-      - "/ : Enter search mode"
-      - "h : Toggle help modal"
-      - "e : Edit selected loop"
-      - "d / del : Delete selected loop"
-      - "p : Pause (if waiting) or Play (if idle/stopped)"
-      - "s : Stop (if waiting/paused)"
-      - "f : Force run (if not running)"
-      - "o : Cycle sort order"
-      - "Tab : Move focus in forms (forward); Shift+Tab : backward"
-    mouse:
-      - "Click : Select items; activate buttons; open dropdowns"
-      - "Hover : Visual feedback on clickable elements"
-  
-  density:
-    list_items: "1–2 lines per loop row; compact header + data columns"
-    modals: "Centered; ~50% terminal height/width"
-    forms: "2-column layout; labels above inputs"
+      bg: "#0a0e14"
+      description: "Root level"
+    surface:
+      bg: "#111827"
+      description: "Panel level"
+    elevated:
+      bg: "#1e293b"
+      description: "Modal overlay level"
+    floating:
+      position: "absolute"
+      description: "Toasts (bottom-right) and command dropdown (above input) use absolute positioning to float over content"
+
+  # Motion (terminal has no CSS animations; spinners are the only motion)
+  motion:
+    spinner:
+      type: "dots"
+      description: "ink-spinner dots animation for running loops inline in the list"
+    spinner_color:
+      value: "#4ade80"
+      description: "Green semantic.success for running status spinner"
+    toast_timeout:
+      value: 3500
+      unit: "ms"
+      description: "Auto-dismiss duration for toast notifications"
+    toast_max:
+      value: 4
+      description: "Maximum simultaneous visible toasts"
 ---
 
-# Design System — loop-task Board
+# Design System
 
-The **loop-task** board is an interactive terminal UI built with OpenTUI + React. It provides a cohesive, keyboard-first design optimized for rapid loop management on any terminal emulator.
+## Design Philosophy
 
-## Visual Identity
+loop-task is a **command-first terminal application** built on Ink 7 + React 19. The design rejects the "web app in a terminal" metaphor in favor of CLI-native patterns: a persistent command input at the bottom, keyboard-only navigation, and inline information density.
 
-The board uses a **dark, high-contrast palette** designed for extended terminal sessions:
+Inspired by `lazygit`, Claude Code, and `gh`, the UI prioritizes:
+- **Always-focused input** at the bottom where all actions begin
+- **Tab-based context switching** (Loops / Tasks / Projects) with distinct accent colors
+- **Two-panel layout** (list left, detail right) with Tab cycling between them
+- **Floating elements** (toasts, dropdowns, modals) that overlay content without pushing layout
+- **Minimal chrome** - one status line header, one hint line footer, no decorative borders
 
-- **Dark backgrounds** (`#0b0b0b` neutral-900) reduce eye strain
-- **Semantic status colors** make loop state instantly recognizable at a glance
-- **Bright, readable text** (`#e5e7eb` neutral-200) ensures legibility even in noisy environments
-- **Focused, minimal UI** keeps distractions out and command focus in
+## Color Philosophy
 
-The design draws inspiration from modern terminal tools (Vim, fzf, Tmux) and applies the same philosophy: **every keystroke counts, every pixel matters**.
+The palette is intentionally limited to **4 primary colors + 4 semantic + grays**. No decorative colors exist outside this set.
 
-### Color Semantics
+- **Brand** (amber `#fbbf24`) is the generic accent for UI elements that don't belong to a specific entity: app name, input bar, modal borders, command palette highlights.
+- **Loop** (blue `#38bdf8`), **Task** (purple `#a78bfa`), **Project** (green `#34d399`) are entity-specific. When the active tab changes, the panel borders, filter labels, and selected-row indicators all shift to the active entity's color via `tabAccentColor()`.
+- **Semantic** colors (success/warning/danger/idle) are reserved for status communication - never decorative.
+- **Grays** form a 6-tone background scale and 4-tone text scale. Selected rows use `bg.active` with `text.inverse` for maximum contrast.
 
-Loop status is communicated through a consistent, semantic color system:
+## Layout Architecture
 
-| State | Color | Use | Meaning |
-|-------|-------|-----|---------|
-| **Running** | `#4ade80` (green) | Status indicator; "play" buttons; active execution | Actively running; success; go |
-| **Waiting** | `#38bdf8` (cyan) | Status indicator; primary buttons; focused elements | Next run scheduled; awaiting interval; ready |
-| **Paused** | `#facc15` (yellow) | Status indicator; pause buttons; warnings | Paused by user; needs attention |
-| **Idle** | `#fb923c` (orange) | Status indicator; secondary emphasis | Not running; empty schedule; can be started |
-| **Stopped** | `#f87171` (red) | Status indicator; delete/stop buttons; errors | Stopped by user; loop removed from active schedule |
+The board view is a vertical stack:
 
-Neutral colors provide hierarchy and reduce cognitive load:
+1. **Header** (3 rows): App name + tagline, daemon status + loop counts + tab bar, separator line
+2. **Content area** (flexGrow): Horizontal split of LeftPanel (60%) + RightPanel (40%), optional DebugPanel (22%) when debug mode is on
+3. **Command input** (6 rows): Bordered box with accent bar, input line with inline placeholder, and hint bar
 
-- **Primary text** (`#e5e7eb`): Content, commands, data
-- **Secondary text** (`#6b7280`): Labels, structure, dividers
-- **Tertiary text** (`#9ca3af`): Hints, help, disabled state
-- **Accent** (`#a3e635`): Brand logo ("loop-task"); major highlights
+### Panel Focus Model
 
-## Interaction Model
+Panels receive focus via the `isFocused` prop (not Ink's native `useFocus()`). When focused:
+- Panel border shifts to the active tab's accent color
+- Arrow keys navigate within that panel's list
+- Tab/Shift+Tab toggles between left and right panels (never into header or input)
 
-### Keyboard-First Navigation
+When any modal is open, `isFocused` is false for both panels - blocking all arrow key input from reaching the lists behind the modal.
 
-The board prioritizes keyboard control. Every action has a single-key binding:
+## Command Input
 
-- **Panel cycling**: `←` and `→` rotate through the main panels (Navigator, Inspector, Actions, Timeline). Navigation is **circular** — reaching the rightmost panel and pressing `→` wraps to the leftmost.
-- **List navigation**: `↑` and `↓` move focus within the Navigator list.
-- **Form navigation**: `Tab` / `Shift+Tab` step through fields; `←` and `→` cycle between buttons.
-- **Quick actions**: `e` (edit), `d` (delete), `p` (pause/play), `s` (stop), `f` (force run), `o` (cycle sort order).
+The bottom input is the heart of the interaction model. It has three modes, each with a distinct accent bar color:
 
-### Modal Dialogs
+- **Command mode** (amber `│`): Fuzzy autocomplete via `ink-combobox` headless hooks. Dropdown floats above the input with `position="absolute"`. Placeholder: "Start typing an action or say help..."
+- **Confirm mode** (red `│`): Destructive commands transition here. Shows the confirmation prompt, offers yes/cancel options. No text input - only navigation.
+- **Search mode** (green `│`): Typing "search" + Enter transitions here. Filters the active list in real-time. Placeholder: "Write something to filter about..."
 
-Modals (confirm, help, log viewer, create/edit) are **centered** and **full-screen**. They:
+The input ignores all Ctrl key combos (`if (key.ctrl) return`) - these are handled by the global `useInput` in App.tsx for shortcuts like Ctrl+N (new), Ctrl+E (edit), Ctrl+D (delete), Ctrl+P (commands browser), Ctrl+Enter (panel action), Ctrl+Arrow (tab switching).
 
-- Dim or hide the underlying board
-- Capture all keyboard input
-- Provide yes/no or save/cancel buttons navigable via `↑` / `↓` or `←` / `→`
-- Dismiss on `Escape` or `q`
+Only single printable ASCII characters (`input.length === 1 && input >= " " && input <= "~"`) are inserted as text - this prevents multi-char sequences like `\r\n` (VS Code Ctrl+Enter) from injecting newlines.
 
-### Search
+## Forms
 
-Pressing `/` enters **search mode** (a single-line text input). Type to filter loops by description/command; `Escape` or `Enter` closes search and applies the filter.
+- **Create**: `WizardForm` - one field per screen with breadcrumb progress. Ctrl+S skips optional fields. Esc goes back one step (or cancels from step 1). Uses `FocusableInput` for text steps and arrow-key select for suggestion steps.
+- **Edit**: `PatchEditForm` - read-only labeled table of all current values. The command input suggests `change <field>` commands. Selecting one activates that row's inline input. Pending changes shown with a `●` indicator and count in the header. `save` commits, `cancel` discards.
 
-## Layout & Hierarchy
+## Floating Elements
 
-### Board Panels
+- **Toasts**: `position="absolute" bottom={0} right={0}` - float over content in the bottom-right corner. Round border, elevated background, auto-dismiss after 3.5s. Max 4 visible.
+- **Command dropdown**: `position="absolute" bottom={3}` - floats above the input row without pushing layout. Selected row uses `bg.active` highlight.
+- **Modals**: `position="absolute"` centered overlays with `borderStyle="round"`. Escape to close. CommandsBrowserModal is centered with search + grouped command list.
+- **DebugPanel**: Optional 22% right column (toggled via "debug" command). Shows last 12 keypresses with char codes and modifier flags. Warning-yellow border.
 
-The main board uses a **responsive two-column grid** (narrow: full-width stack):
+## Key Hints
 
-1. **Navigator** (left/top) — sorted list of loops with status, timing, run count
-2. **Inspector** (right/bottom) — details of the selected loop (metadata, last run, next run, exit code)
-3. **Timeline** (far right/bottom) — scrollable run history for the selected loop
-4. **Action buttons** (bottom) — context-sensitive actions (Edit, Delete, Pause, Play, Force Run, Stop)
+The hint bar at the bottom of the command input shows contextual shortcuts:
+- Left side: `······· esc cancel` (dots as visual separator)
+- Right side: `tab panels  ctrl+p commands` (command mode), `enter confirm` (confirm mode), `enter apply` (search mode)
 
-Column widths adapt to terminal size; the description column is capped at 22 characters to keep navigation responsive.
+Key hints use bold for the key label and muted for the action description.
 
-### Header
+## Status Indicators
 
-The header spans the full width and shows:
+Loop status is communicated via color:
+- Running loops show a green `ink-spinner` (dots animation) inline in the list row
+- Status text in the list uses semantic colors (running=green, waiting=blue, paused=yellow, idle=orange, stopped=red)
+- Run history sparkline uses blue bars with success/danger streak indicators
+- Run exit codes use checkmark (`✓` green) or cross (`✗` red) icons
 
-- App name in accent color (`#a3e635`)
-- Daemon connection status (green ✓, red ✗, yellow …)
-- Loop counts by status (collapsed on narrow terminals)
+## Constraints
 
-### Footer
-
-The footer shows:
-
-- Keyboard help hints (e.g., "e: edit, d: delete, ?: search, h: help")
-- Daemon diagnostics (if relevant)
-- Toast notifications (temporary, auto-dismiss after 3.5s; max 4 on screen)
-
-## Component Patterns
-
-### Status Badge
-
-Each loop row displays its status in a consistent **8-character-wide field**, colored by state:
-
-```
-┌─ running (green)
-├─ waiting (cyan)
-├─ paused (yellow)
-├─ idle (orange)
-└─ stopped (red)
-```
-
-### Text Truncation
-
-Long text (descriptions, commands) is truncated with ellipsis (`…`) and fit to allocated column widths to prevent line wrapping and maintain grid alignment.
-
-### Hover State
-
-Interactive elements (rows, buttons) respond to mouse hover and keyboard focus with a background color change to `#1e3a5f` (subtle blue overlay). This signals clickability without overwhelming the visual hierarchy.
-
-### Buttons
-
-Buttons use:
-
-- **Border**: Visible when focused; removed when unfocused (reduces visual noise)
-- **Focus color**: `#38bdf8` (cyan border) when selected
-- **Selected button bg**: `#1e3a8a` (dark blue) when focused
-- **Text**: Bold white for emphasis
-- **Width**: Computed dynamically to fit available space (6–14 chars typical)
-
-### Input Fields
-
-Form inputs (text, select) are:
-
-- **Bordered** with color change on focus (`#38bdf8`)
-- **Dark background** (`#0b0b0b`) consistent with surfaces
-- **Labeled above** with helper text below
-- **Arranged in 2-column grid** (left/right pairs) to save vertical space
-
-## Accessibility & Usability
-
-1. **High contrast**: All text on background meets WCAG AA standards (7:1+ ratio typical)
-2. **Monospace font**: Terminal emulator default; guaranteed legibility
-3. **No color-only information**: Status is indicated by color + label/icon (e.g., "running" text + green color)
-4. **Keyboard equivalents for all actions**: Every UI action has a keyboard shortcut; mouse is optional
-5. **Responsive to terminal size**: Panels reflow and text truncates gracefully on small screens
-
-## Theming & Customization
-
-Currently, **no user-facing theme customization** is available. The color palette is hard-coded in `src/board/format.ts` (STATUS_COLORS map) and component files.
-
-Future consideration: support `LOOP_TASK_THEME` environment variable or a `.loop-cli/theme.json` file to allow custom color overrides while maintaining the design system's intent.
-
-## Implementation Notes
-
-- Colors are specified as **hex strings** (e.g., `#4ade80`) in JSX `fg`/`bg` props
-- Text styling uses OpenTUI text properties: `fg` (foreground), `bold`, `dim`, `italic` (where supported by terminal)
-- Layout uses flexbox-like properties: `flexDirection`, `justifyContent`, `alignItems`, `padding`, `margin`, `width`, `height`
-- Responsive breakpoints are simple: **narrow** (<80 chars) stacks panels vertically; **wide** uses side-by-side layout
-- No CSS; all styling is inline JSX object properties
-
----
-
-**Last updated**: 2026-06-15  
-**Maintained by**: Quique Fdez Guerra  
-**Framework**: OpenTUI (`@opentui/core`, `@opentui/react` 0.4.x) + React 19
+- **No mouse** - Ink has no mouse API. All interaction is keyboard.
+- **No CSS animations** - Terminal rendering. The only motion is `ink-spinner`.
+- **Terminal-width dependent** - Responsive breakpoint at 80 columns switches panel layout from row to column.
+- **Color compatibility** - Uses 24-bit ANSI true color. Falls back gracefully on terminals without true color support via Ink's color handling.

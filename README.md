@@ -12,6 +12,20 @@
 [![license](https://img.shields.io/npm/l/loop-task?style=flat-square&color=black)](./LICENSE)
 [![node](https://img.shields.io/node/v/loop-task?style=flat-square&color=black)](https://nodejs.org)
 
+## What's new in v2.0.0
+
+- **Ink 5 TUI**: Rebuilt the entire terminal UI on [Ink](https://github.com/vadimdemedes/ink) (React for CLI). No more Bun dependency - runs on any Node >= 20.
+- **Hot-reloading configs**: Edit `~/.loop-cli/loops.json`, `tasks.json`, or `projects.json` in any editor and the daemon auto-reloads in real-time.
+- **Export/Import**: `loop-task export > backup.json` and `loop-task import backup.json` for backup and sharing.
+- **CLI API**: `loop-task status --json` for scripting and automation.
+- **Rich log viewer**: Search/filter log output, fold chain sections, scroll lock, copy to clipboard.
+- **Run history trends**: Sparklines of durations, success/failure streaks, average duration.
+- **Chain visual editor**: Tree view of task chains with success/failure branches.
+- **First-run onboarding**: Welcome screen with example loops when no loops exist.
+- **Daemon push notifications**: Subscribe to real-time events (no more 2s polling).
+- **Docker support**: `docker run -v ~/.loop-cli:/root/.loop-cli loop-task`.
+- **GitHub Actions CI**: Runs typecheck, lint, test, build on ubuntu/macos/windows.
+
 </div>
 
 ## Loop engineering
@@ -134,13 +148,16 @@ Colors can be a name (`white`, `cyan`, `green`, `yellow`, `orange`, `pink`) or a
 
 | Command | Description |
 | ------- | ----------- |
-| `loop-task` | Open the interactive board (requires Bun) |
+| `loop-task` | Open the interactive board |
 | `loop-task start` | Start the background daemon, restore persisted loops |
 | `loop-task new <interval> -- <command>` | Create a background loop (creates an inline task) |
 | `loop-task new <interval> --project <name> -- <command>` | Create a loop assigned to a project |
 | `loop-task run <interval> -- <command>` | Run a loop in the foreground |
 | `loop-task stop <id>` | Stop a loop and interrupt its running child process |
 | `loop-task restart` | Kill the daemon and all running loops, then restart fresh |
+| `loop-task status [--json]` | Show status of all loops (JSON optional for scripting) |
+| `loop-task export [file]` | Export all configs to JSON file (or stdout) |
+| `loop-task import <file>` | Import configs from file (triggers hot-reload) |
 | `loop-task project list` | List all projects |
 | `loop-task project new <name> [--color <color>]` | Create a project |
 | `loop-task project rename <id\|name> <new-name>` | Rename a project |
@@ -367,19 +384,32 @@ interpolated: `git push && git fetch origin && [ "$(git rev-parse HEAD)" = "$(gi
 
 The `git rev-parse` check ensures local and remote are in sync before closing - if the push failed or remote is ahead, the command fails and the issue stays open.
 
-## Development
-
-Requires [Bun](https://bun.sh) >= 1.2 for package management and the board, and [Node.js](https://nodejs.org) >= 20 for the CLI and daemon.
+## Docker
 
 ```bash
-bun install
+# Run the board in a container
+docker run -it -v ~/.loop-cli:/root/.loop-cli loop-task
+
+# Check status
+docker run -v ~/.loop-cli:/root/.loop-cli loop-task status --json
+
+# Create a background loop
+docker run -v ~/.loop-cli:/root/.loop-cli loop-task new 30m -- npm test
+```
+
+## Development
+
+Requires [Node.js](https://nodejs.org) >= 20. Uses [pnpm](https://pnpm.io) for package management.
+
+```bash
+pnpm install
 npm run build
 ```
 
 Run locally:
 
 ```bash
-bun run dev                                    # board
+tsx src/cli.ts                                   # board
 node dist/entry.js new --now 30m -- npm test   # background loop
 node dist/entry.js run --now --max-runs 1 10s -- echo hello  # foreground
 ```

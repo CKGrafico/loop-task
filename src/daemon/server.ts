@@ -17,6 +17,7 @@ export class IpcServer {
   private taskManager: TaskManager;
   private socketPath: string;
   private clients = new Set<net.Socket>();
+  private subscribers = new Set<net.Socket>();
 
   constructor(manager: LoopManager, taskManager: TaskManager) {
     this.manager = manager;
@@ -41,6 +42,7 @@ export class IpcServer {
       client.destroy();
     }
     this.clients.clear();
+    this.subscribers.clear();
     return new Promise((resolve) => {
       this.server.close(() => {
         removeSocketFile();
@@ -49,8 +51,22 @@ export class IpcServer {
     });
   }
 
+  pushEvent(event: string, data?: unknown): void {
+    for (const socket of this.subscribers) {
+      try {
+        send(socket, { type: "event", event, data });
+      } catch {
+        this.subscribers.delete(socket);
+      }
+    }
+  }
+
   private handleConnection(socket: net.Socket): void {
     this.clients.add(socket);
+    socket.on("close", () => {
+      this.clients.delete(socket);
+      this.subscribers.delete(socket);
+    });
     let buffer = "";
 
     socket.on("data", (chunk) => {
@@ -256,6 +272,12 @@ export class IpcServer {
         } catch (err) {
           send(socket, { type: "error", message: err instanceof Error ? err.message : String(err) });
         }
+        break;
+      }
+
+      case "subscribe": {
+        this.subscribers.add(socket);
+        send(socket, { type: "ok" });
         break;
       }
 

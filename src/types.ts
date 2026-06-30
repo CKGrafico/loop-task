@@ -115,10 +115,12 @@ export type IpcRequest =
   | { type: "project-create"; payload: { name: string; color: string } }
   | { type: "project-update"; payload: { id: string; name: string; color?: string } }
   | { type: "project-delete"; payload: { id: string } }
+  | { type: "subscribe" }
   | { type: "shutdown" };
 
 export type IpcResponse =
   | { type: "ok"; data?: unknown }
   | { type: "error"; message: string }
   | { type: "data"; line: string }
-  | { type: "end" };
+  | { type: "end" }
+  | { type: "event"; event: string; data?: unknown };

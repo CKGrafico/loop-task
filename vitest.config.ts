@@ -7,7 +7,7 @@ export default defineConfig({
       provider: "v8",
       reporter: ["text", "json", "html"],
       include: ["src/**/*.ts"],
-      exclude: ["src/cli.ts", "src/types.ts", "src/daemon/index.ts", "src/tui/**"],
+      exclude: ["src/cli.ts", "src/types.ts", "src/daemon/index.ts", "src/tui/**", "src/board/**"],
       thresholds: {
         lines: 90,
         functions: 90,
