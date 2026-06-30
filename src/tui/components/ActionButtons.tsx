@@ -58,7 +58,9 @@ export function ActionButtons(props: {
         borderColor={theme.border.default}
         flexDirection="row"
         height={3}
+        flexShrink={0}
         backgroundColor={theme.bg.surface}
+        alignItems="center"
       >
         <Text color={theme.text.muted}>{t("board.noActions")}</Text>
       </Box>
@@ -70,8 +72,10 @@ export function ActionButtons(props: {
       borderStyle="single"
       borderColor={theme.border.default}
       flexDirection="row"
-      height={3}
+      flexShrink={0}
       backgroundColor={theme.bg.surface}
+      alignItems="center"
+      paddingX={1}
     >
       {actions.map((action) => {
         const color = action.key === "delete" || action.key === "stop"
