@@ -21,14 +21,18 @@ export function buildCommands(context: CommandContext): Command[] {
     : context.activeTab === 'tasks' ? 'new-task'
     : 'new-project';
 
+  const cat = context.activeTab === 'loops' ? COMMAND_CATEGORY_LOOP
+    : context.activeTab === 'tasks' ? COMMAND_CATEGORY_TASK
+    : COMMAND_CATEGORY_PROJECT;
+
   commands.push(
-    { label: newLabel, value: newValue, hint: '', tier: COMMAND_TIER_GLOBAL, category: COMMAND_CATEGORY_GLOBAL, shortcut: 'ctrl+n' },
+    { label: newLabel, value: newValue, hint: '', tier: COMMAND_TIER_ACTION, category: cat, shortcut: 'ctrl+a+n' },
     { label: t('cmd.help'), value: 'help', hint: '', tier: COMMAND_TIER_GLOBAL, category: COMMAND_CATEGORY_GLOBAL, shortcut: 'ctrl+h' },
     { label: t('cmd.debug'), value: 'debug', hint: '', tier: COMMAND_TIER_GLOBAL, category: COMMAND_CATEGORY_GLOBAL, shortcut: 'ctrl+b' },
-    { label: t('cmd.api'), value: 'api', hint: '', tier: COMMAND_TIER_GLOBAL, category: COMMAND_CATEGORY_GLOBAL, shortcut: 'ctrl+a' },
-    { label: t('cmd.export'), value: 'export', hint: '', tier: COMMAND_TIER_GLOBAL, category: COMMAND_CATEGORY_GLOBAL, shortcut: 'ctrl+e' },
+    { label: t('cmd.api'), value: 'api', hint: '', tier: COMMAND_TIER_GLOBAL, category: COMMAND_CATEGORY_GLOBAL, shortcut: 'ctrl+g' },
+    { label: t('cmd.export'), value: 'export', hint: '', tier: COMMAND_TIER_GLOBAL, category: COMMAND_CATEGORY_GLOBAL, shortcut: 'ctrl+x' },
     { label: t('cmd.import'), value: 'import', hint: '', tier: COMMAND_TIER_GLOBAL, category: COMMAND_CATEGORY_GLOBAL, shortcut: 'ctrl+i' },
-    { label: t('cmd.status'), value: 'status', hint: '', tier: COMMAND_TIER_GLOBAL, category: COMMAND_CATEGORY_GLOBAL, shortcut: 'ctrl+s' },
+    { label: t('cmd.status'), value: 'status', hint: '', tier: COMMAND_TIER_GLOBAL, category: COMMAND_CATEGORY_GLOBAL, shortcut: 'ctrl+y' },
   );
 
   if (context.activeTab === 'loops') {
@@ -90,13 +94,12 @@ export function buildTabCommands(context: CommandContext): Command[] {
     : 'new-project';
 
   commands.push(
-    { label: newLabel, value: newValue, hint: '', tier: COMMAND_TIER_GLOBAL, category: COMMAND_CATEGORY_GLOBAL, shortcut: 'ctrl+n' },
     { label: t('cmd.help'), value: 'help', hint: '', tier: COMMAND_TIER_GLOBAL, category: COMMAND_CATEGORY_GLOBAL, shortcut: 'ctrl+h' },
     { label: t('cmd.debug'), value: 'debug', hint: '', tier: COMMAND_TIER_GLOBAL, category: COMMAND_CATEGORY_GLOBAL, shortcut: 'ctrl+b' },
-    { label: t('cmd.api'), value: 'api', hint: '', tier: COMMAND_TIER_GLOBAL, category: COMMAND_CATEGORY_GLOBAL, shortcut: 'ctrl+a' },
-    { label: t('cmd.export'), value: 'export', hint: '', tier: COMMAND_TIER_GLOBAL, category: COMMAND_CATEGORY_GLOBAL, shortcut: 'ctrl+e' },
+    { label: t('cmd.api'), value: 'api', hint: '', tier: COMMAND_TIER_GLOBAL, category: COMMAND_CATEGORY_GLOBAL, shortcut: 'ctrl+g' },
+    { label: t('cmd.export'), value: 'export', hint: '', tier: COMMAND_TIER_GLOBAL, category: COMMAND_CATEGORY_GLOBAL, shortcut: 'ctrl+x' },
     { label: t('cmd.import'), value: 'import', hint: '', tier: COMMAND_TIER_GLOBAL, category: COMMAND_CATEGORY_GLOBAL, shortcut: 'ctrl+i' },
-    { label: t('cmd.status'), value: 'status', hint: '', tier: COMMAND_TIER_GLOBAL, category: COMMAND_CATEGORY_GLOBAL, shortcut: 'ctrl+s' },
+    { label: t('cmd.status'), value: 'status', hint: '', tier: COMMAND_TIER_GLOBAL, category: COMMAND_CATEGORY_GLOBAL, shortcut: 'ctrl+y' },
   );
 
   if (context.activeTab === 'loops') {
@@ -105,6 +108,7 @@ export function buildTabCommands(context: CommandContext): Command[] {
       { label: t('cmd.filterStatus'), value: 'filter-status', hint: '', tier: COMMAND_TIER_ACTION, category: COMMAND_CATEGORY_FILTERS, shortcut: 'ctrl+f+t' },
       { label: t('cmd.sort'), value: 'sort', hint: '', tier: COMMAND_TIER_ACTION, category: COMMAND_CATEGORY_FILTERS, shortcut: 'ctrl+f+o' },
       { label: t('cmd.project'), value: 'filter-project', hint: '', tier: COMMAND_TIER_ACTION, category: COMMAND_CATEGORY_FILTERS, shortcut: 'ctrl+f+p' },
+      { label: newLabel, value: newValue, hint: '', tier: COMMAND_TIER_ACTION, category: COMMAND_CATEGORY_LOOP, shortcut: 'ctrl+a+n' },
       { label: t('cmd.edit'), value: 'edit', hint: '', tier: COMMAND_TIER_ACTION, category: COMMAND_CATEGORY_LOOP, shortcut: 'ctrl+a+e' },
       { label: t('cmd.pause'), value: 'pause', hint: '', tier: COMMAND_TIER_ACTION, category: COMMAND_CATEGORY_LOOP, shortcut: 'ctrl+a+p' },
       { label: t('cmd.play'), value: 'play', hint: '', tier: COMMAND_TIER_ACTION, category: COMMAND_CATEGORY_LOOP, shortcut: 'ctrl+a+r' },
@@ -118,6 +122,7 @@ export function buildTabCommands(context: CommandContext): Command[] {
 
   if (context.activeTab === 'tasks') {
     commands.push(
+      { label: newLabel, value: newValue, hint: '', tier: COMMAND_TIER_ACTION, category: COMMAND_CATEGORY_TASK, shortcut: 'ctrl+a+n' },
       { label: t('cmd.edit'), value: 'edit', hint: '', tier: COMMAND_TIER_ACTION, category: COMMAND_CATEGORY_TASK, shortcut: 'ctrl+a+e' },
       { label: t('cmd.delete'), value: 'delete', hint: '', tier: COMMAND_TIER_CONFIRM, category: COMMAND_CATEGORY_TASK, shortcut: 'ctrl+a+d' },
     );
@@ -125,6 +130,7 @@ export function buildTabCommands(context: CommandContext): Command[] {
 
   if (context.activeTab === 'projects') {
     commands.push(
+      { label: newLabel, value: newValue, hint: '', tier: COMMAND_TIER_ACTION, category: COMMAND_CATEGORY_PROJECT, shortcut: 'ctrl+a+n' },
       { label: t('cmd.edit'), value: 'edit', hint: '', tier: COMMAND_TIER_ACTION, category: COMMAND_CATEGORY_PROJECT, shortcut: 'ctrl+a+e' },
       { label: t('cmd.delete'), value: 'delete', hint: '', tier: COMMAND_TIER_CONFIRM, category: COMMAND_CATEGORY_PROJECT, shortcut: 'ctrl+a+d' },
     );

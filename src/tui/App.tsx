@@ -374,13 +374,12 @@ export function App(props: { onQuit: () => void }): React.ReactNode {
     const canShortcut = key.ctrl && isBoardView(view) && !logModalRun && !commandsBrowserOpen && !confirmState && !searchState?.active;
     if (canShortcut) {
       const globalShortcuts: Record<string, () => void> = {
-        n: () => handleCommand("new-loop"),
         h: () => setCommandsBrowserOpen(true),
         b: () => handleCommand("debug"),
-        a: () => handleCommand("api"),
-        e: () => handleCommand("export"),
+        g: () => handleCommand("api"),
+        x: () => handleCommand("export"),
         i: () => handleCommand("import"),
-        s: () => handleCommand("status"),
+        y: () => handleCommand("status"),
       };
       const filterShortcuts: Record<string, () => void> = {
         s: () => handleCommand("search"),
@@ -389,6 +388,7 @@ export function App(props: { onQuit: () => void }): React.ReactNode {
         p: () => handleCommand("filter-project"),
       };
       const actionShortcuts: Record<string, () => void> = {
+        n: () => handleCommand(activeTab === "loops" ? "new-loop" : activeTab === "tasks" ? "new-task" : "new-project"),
         e: () => handleCommand("edit"),
         p: () => handleCommand("pause"),
         r: () => handleCommand("play"),
