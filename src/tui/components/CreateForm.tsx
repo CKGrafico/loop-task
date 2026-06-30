@@ -5,6 +5,7 @@ import { darkTheme as theme } from "../theme.js";
 import { createLoop, updateLoop } from "../daemon.js";
 import { t } from "../../i18n/index.js";
 import { WizardForm, type WizardStepConfig } from "./WizardForm.js";
+import { PatchEditForm } from "./PatchEditForm.js";
 
 // ── Props ───────────────────────────────────────────────────────────
 
@@ -229,18 +230,90 @@ export function CreateView(props: CreateViewProps): React.ReactNode {
     [taskMode, selectedTaskId, mode, editId, currentProjectId, onDone],
   );
 
-  // ── Edit mode: placeholder (task 7.2) ───────────────────────────
+  // ── Edit mode: PatchEditForm ────────────────────────────────────
+
+  const [activeField, setActiveField] = useState<string | null>(null);
+  const [activeFieldValue, setActiveFieldValue] = useState("");
+  const [pendingChanges, setPendingChanges] = useState<Record<string, string>>({});
+
+  const editFields = useMemo(
+    () => [
+      { key: "interval", label: t("board.labelInterval"), value: initial.interval ?? "" },
+      { key: "command", label: t("board.labelCommand"), value: initial.command ?? "" },
+      { key: "cwd", label: t("board.labelCwd"), value: initial.cwd ?? "" },
+      { key: "description", label: t("board.labelDescription"), value: initial.description ?? "" },
+      { key: "runNow", label: t("board.labelRunNow"), value: initial.runNow ?? "" },
+      { key: "maxRuns", label: t("board.labelMaxRuns"), value: initial.maxRuns ?? "" },
+      { key: "project", label: t("board.labelTaskMode"), value: initial.project ?? "" },
+    ],
+    [initial],
+  );
+
+  const handleActiveFieldChange = useCallback((value: string) => {
+    setActiveFieldValue(value);
+  }, []);
+
+  const handleActiveFieldCommit = useCallback(() => {
+    if (activeField !== null) {
+      setPendingChanges((prev) => ({ ...prev, [activeField]: activeFieldValue }));
+      setActiveField(null);
+      setActiveFieldValue("");
+    }
+  }, [activeField, activeFieldValue]);
+
+  const handleActiveFieldCancel = useCallback(() => {
+    setActiveField(null);
+    setActiveFieldValue("");
+  }, []);
+
+  const handleEditSave = useCallback(() => {
+    if (!editId) return;
+
+    const merged = { ...initial, ...pendingChanges };
+    const intervalInput = merged.interval ?? "";
+    const parsed = parseInterval(intervalInput);
+    if (!parsed) return;
+
+    const cmd = merged.command ?? "";
+    const tokens = cmd.trim() ? parseArgs(cmd.trim()) : [];
+    const cmdOnly = tokens[0] ?? "";
+    const args = tokens.slice(1);
+
+    const options: LoopOptions = {
+      interval: parsed.interval,
+      taskId: merged.taskId?.trim() || null,
+      command: cmdOnly,
+      commandArgs: args,
+      cwd: (merged.cwd ?? "").trim() || process.cwd(),
+      immediate: merged.runNow === "true" || merged.runNow === "yes",
+      maxRuns: (merged.maxRuns ?? "").trim() ? parseInt(merged.maxRuns, 10) : null,
+      verbose: false,
+      description: (merged.description ?? "").trim(),
+      projectId: merged.project ?? currentProjectId,
+      offset: null,
+    };
+
+    const desc = (merged.description ?? "").trim() || commandLine(cmdOnly, args);
+
+    updateLoop(editId, options, parsed.intervalHuman)
+      .then((id) => onDone(true, id, desc))
+      .catch(() => { /* error handled silently */ });
+  }, [editId, initial, pendingChanges, currentProjectId, onDone]);
 
   if (mode === "edit") {
     return (
-      <Box
-        flexDirection="column"
-        paddingY={1}
-        paddingX={2}
-        flexGrow={1}
-      >
-        <Text color={theme.text.muted}>Edit mode coming in task 7.2</Text>
-      </Box>
+      <PatchEditForm
+        title={t("board.editTitle")}
+        fields={editFields}
+        activeField={activeField}
+        activeFieldValue={activeFieldValue}
+        onActiveFieldChange={handleActiveFieldChange}
+        onActiveFieldCommit={handleActiveFieldCommit}
+        onActiveFieldCancel={handleActiveFieldCancel}
+        pendingChanges={pendingChanges}
+        onSave={handleEditSave}
+        onCancel={onCancel}
+      />
     );
   }
 

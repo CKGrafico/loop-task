@@ -3,7 +3,8 @@ import { Box, Text } from "ink";
 import type { TaskDefinition } from "../../types.js";
 import { darkTheme as theme } from "../theme.js";
 import { WizardForm, type WizardStepConfig } from "./WizardForm.js";
-import { createTask, listTasks } from "../daemon.js";
+import { PatchEditForm } from "./PatchEditForm.js";
+import { createTask, updateTask, listTasks } from "../daemon.js";
 import crypto from "node:crypto";
 import { t } from "../../i18n/index.js";
 
@@ -118,13 +119,84 @@ export function TaskForm(props: TaskFormProps): React.ReactNode {
     [resolveChainId, onDone],
   );
 
-  // ── Edit mode placeholder (task 7.3) ────────────────────────────
+  // ── Edit mode state ──────────────────────────────────────────────
 
-  if (mode === "edit") {
+  const [activeField, setActiveField] = useState<string | null>(null);
+  const [activeFieldValue, setActiveFieldValue] = useState("");
+  const [pendingChanges, setPendingChanges] = useState<Record<string, string>>({});
+
+  const handleActiveFieldChange = useCallback((value: string) => {
+    setActiveFieldValue(value);
+  }, []);
+
+  const handleActiveFieldCommit = useCallback(() => {
+    if (activeField !== null) {
+      setPendingChanges((prev) => ({ ...prev, [activeField]: activeFieldValue }));
+      setActiveField(null);
+      setActiveFieldValue("");
+    }
+  }, [activeField, activeFieldValue]);
+
+  const handleActiveFieldCancel = useCallback(() => {
+    setActiveField(null);
+    setActiveFieldValue("");
+  }, []);
+
+  // ── Edit mode: PatchEditForm ─────────────────────────────────────
+
+  if (mode === "edit" && props.editTask) {
+    const et = props.editTask;
+
+    const editFields = [
+      { key: "name", label: t("board.taskLabelName"), value: et.name },
+      { key: "command", label: t("board.taskLabelCommand"), value: et.command },
+      {
+        key: "onSuccessTaskId",
+        label: t("board.taskLabelOnSuccess"),
+        value: et.onSuccessTaskId ?? "",
+      },
+      {
+        key: "onFailureTaskId",
+        label: t("board.taskLabelOnFailure"),
+        value: et.onFailureTaskId ?? "",
+      },
+    ];
+
+    const handleSave = () => {
+      const merged: Record<string, string> = {
+        name: et.name,
+        command: et.command,
+        onSuccessTaskId: et.onSuccessTaskId ?? "",
+        onFailureTaskId: et.onFailureTaskId ?? "",
+        ...pendingChanges,
+      };
+
+      const payload = {
+        name: merged.name,
+        command: merged.command,
+        commandArgs: parseArgs(merged.command),
+        onSuccessTaskId: merged.onSuccessTaskId || null,
+        onFailureTaskId: merged.onFailureTaskId || null,
+      };
+
+      updateTask(et.id, payload)
+        .then(() => props.onDone(true, et.id))
+        .catch(() => { /* error handled silently */ });
+    };
+
     return (
-      <Box paddingX={2} paddingY={1}>
-        <Text color={theme.text.muted}>Edit mode coming in task 7.3</Text>
-      </Box>
+      <PatchEditForm
+        title={t("board.taskEditTitle")}
+        fields={editFields}
+        activeField={activeField}
+        activeFieldValue={activeFieldValue}
+        onActiveFieldChange={handleActiveFieldChange}
+        onActiveFieldCommit={handleActiveFieldCommit}
+        onActiveFieldCancel={handleActiveFieldCancel}
+        pendingChanges={pendingChanges}
+        onSave={handleSave}
+        onCancel={props.onCancel}
+      />
     );
   }
 
