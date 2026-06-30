@@ -15,7 +15,7 @@ function toastColor(kind: Toast["kind"]): string {
   switch (kind) {
     case "success": return theme.semantic.success;
     case "error": return theme.semantic.danger;
-    case "info": return theme.semantic.info;
+    case "info": return theme.accent.loop;
   }
 }
 
@@ -46,7 +46,7 @@ export function ToastStack(props: { toasts: Toast[] }): React.ReactNode {
   if (props.toasts.length === 0) return null;
 
   return (
-    <Box flexDirection="column" marginTop={1}>
+    <Box position="absolute" bottom={0} right={0} flexDirection="column" alignItems="flex-end">
       {props.toasts.map((toast) => (
         <Box key={toast.id} borderStyle="round" borderColor={toastColor(toast.kind)} backgroundColor={theme.bg.elevated} paddingLeft={1} paddingRight={1} marginBottom={0}>
           <Text color={toastColor(toast.kind)}>{toastIcon(toast.kind)} </Text>

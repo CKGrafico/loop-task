@@ -17,7 +17,7 @@ export function Button(props: {
   const borderColor = focused
     ? variant === "danger"
       ? theme.semantic.danger
-      : theme.accent.focus
+      : theme.accent.brand
     : theme.border.dim;
   const fgColor = focused ? theme.text.inverse : theme.text.primary;
 

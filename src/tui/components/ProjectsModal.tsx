@@ -39,7 +39,7 @@ export function ProjectsModal(props: {
     <Box flexDirection="column" alignItems="center" justifyContent="center" width="100%">
       <Box
         borderStyle="round"
-        borderColor={theme.accent.focus}
+        borderColor={theme.accent.brand}
         backgroundColor={theme.bg.elevated}
         flexDirection="column"
         paddingX={2}
@@ -47,13 +47,13 @@ export function ProjectsModal(props: {
         minWidth={40}
         maxWidth={60}
       >
-        <Text color={theme.accent.focus} bold>{t("project.filterTitle")}</Text>
+        <Text color={theme.accent.brand} bold>{t("project.filterTitle")}</Text>
         {projects.map((project, i) => {
           const isSelected = i === selectedIndex;
           const isActive = project.id === currentProjectId;
           const prefix = isSelected ? "\u203a " : "  ";
           const bg = isSelected ? theme.bg.active : undefined;
-          const fg = isSelected ? theme.text.inverse : isActive ? theme.accent.focus : theme.text.primary;
+          const fg = isSelected ? theme.text.inverse : isActive ? theme.accent.brand : theme.text.primary;
           return (
             <Box key={project.id} backgroundColor={bg}>
               <Text color={fg}>

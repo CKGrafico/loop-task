@@ -59,6 +59,12 @@ export const COMMAND_TIER_ACTION = "action";
 export const COMMAND_TIER_CONFIRM = "confirm";
 export const COMMAND_TIER_GLOBAL = "global";
 
+// ── Command categories ─────────────────────────────────────────────
+export const COMMAND_CATEGORY_GLOBAL = "global";
+export const COMMAND_CATEGORY_LOOP = "loop";
+export const COMMAND_CATEGORY_TASK = "task";
+export const COMMAND_CATEGORY_PROJECT = "project";
+
 // ── Confirm keywords ────────────────────────────────────────────────
 export const CONFIRM_YES = "yes";
 export const CONFIRM_CANCEL = "cancel";
@@ -68,7 +74,7 @@ export const PANEL_LEFT = "left";
 export const PANEL_RIGHT = "right";
 
 // ── Command input constants ─────────────────────────────────────────
-export const COMMAND_INPUT_HEIGHT = 3;
+export const COMMAND_INPUT_HEIGHT = 6;
 export const COMMAND_INPUT_DROPDOWN_MAX_VISIBLE = 6;
 
 // ── Ctrl shortcut hints (for display) ───────────────────────────────

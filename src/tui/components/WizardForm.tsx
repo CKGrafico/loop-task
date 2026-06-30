@@ -41,10 +41,10 @@ function WizardSelect({
         const pointer = isFocused ? "\u276F" : " ";
         return (
           <Box key={s}>
-            <Text color={isFocused ? theme.accent.focus : undefined}>
+            <Text color={isFocused ? theme.accent.brand : undefined}>
               {pointer}{" "}
             </Text>
-            <Text color={isFocused ? theme.accent.focus : theme.text.secondary}>
+            <Text color={isFocused ? theme.accent.brand : theme.text.secondary}>
               {s}
             </Text>
           </Box>

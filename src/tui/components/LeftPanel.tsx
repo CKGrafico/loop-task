@@ -3,9 +3,8 @@ import { Box, Text } from "ink";
 import type { LoopMeta, TaskDefinition, Project } from "../../types.js";
 import type { TabName } from "../types.js";
 import type { Filters, SortMode } from "../state.js";
-import { darkTheme as theme } from "../theme.js";
+import { darkTheme as theme, tabAccentColor } from "../theme.js";
 import { t } from "../../i18n/index.js";
-import { FocusableInput } from "./FocusableInput.js";
 import { Navigator } from "./Navigator.js";
 import { TaskNavigator } from "./TaskBrowser.js";
 
@@ -13,7 +12,6 @@ export function LeftPanel(props: {
   isFocused: boolean;
   activeTab: TabName;
   query: string;
-  onQueryChange: (value: string) => void;
   // Loop list props
   loops: LoopMeta[];
   selectedIndex: number;
@@ -38,7 +36,6 @@ export function LeftPanel(props: {
     isFocused,
     activeTab,
     query,
-    onQueryChange,
     loops,
     selectedIndex,
     filters,
@@ -54,40 +51,41 @@ export function LeftPanel(props: {
     currentProjectName,
   } = props;
 
-  const borderColor = isFocused ? theme.accent.focus : theme.border.default;
+  const accentColor = tabAccentColor(activeTab);
+  const borderColor = isFocused ? accentColor : theme.border.default;
+  const hasFilter = query.length > 0;
 
   return (
     <Box
       flexDirection="column"
-      width="40%"
+      width="60%"
+      flexShrink={0}
       borderStyle="single"
       borderColor={borderColor}
     >
-      {/* Inline filter input */}
-      <Box height={3}>
-        <FocusableInput
-          value={query}
-          onChange={onQueryChange}
-          placeholder={t("board.searchPlaceholder")}
-        />
-      </Box>
-
-      {/* Filter status labels - loops tab only */}
-      {activeTab === "loops" ? (
-        <Box paddingLeft={1} gap={1}>
-          {currentProjectName != null ? (
+      {/* Filter status labels - shows active filter state */}
+      <Box paddingLeft={1} gap={1}>
+        {hasFilter ? (
+          <Text color={accentColor}>
+            filter: {query}
+          </Text>
+        ) : null}
+        {activeTab === "loops" ? (
+          <>
+            {currentProjectName != null ? (
+              <Text color={theme.text.muted}>
+                [project: {currentProjectName}]
+              </Text>
+            ) : null}
             <Text color={theme.text.muted}>
-              [project: {currentProjectName}]
+              [status: {filters.status}]
             </Text>
-          ) : null}
-          <Text color={theme.text.muted}>
-            [status: {filters.status}]
-          </Text>
-          <Text color={theme.text.muted}>
-            [sort: {sort}]
-          </Text>
-        </Box>
-      ) : null}
+            <Text color={theme.text.muted}>
+              [sort: {sort}]
+            </Text>
+          </>
+        ) : null}
+      </Box>
 
       {/* Content area based on active tab */}
       {activeTab === "loops" ? (

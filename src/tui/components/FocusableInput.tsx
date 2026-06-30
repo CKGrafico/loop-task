@@ -15,7 +15,7 @@ export function FocusableInput(props: FocusableInputProps): React.ReactNode {
   const placeholder = props.placeholder ?? "type here...";
   const { isFocused } = useFocus();
 
-  const borderColor = isFocused ? theme.accent.focus : theme.border.dim;
+  const borderColor = isFocused ? theme.accent.brand : theme.border.dim;
   const backgroundColor = isFocused ? theme.bg.input : undefined;
 
   return (

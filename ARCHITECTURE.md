@@ -17,12 +17,12 @@ transport** (Unix domain socket on POSIX, named pipe on Windows):
   foreground or talks to a background daemon.
 - A long-lived **background daemon** owns all managed loops, persists their state
   to disk, and streams their output to connected clients.
-- An interactive **terminal UI board** (OpenTUI + React) is the primary way to
+- An interactive **terminal UI board** (Ink 7 + React 19) is the primary way to
   create, inspect, and manage loops, driving the daemon entirely over IPC.
 
 The architecture is deliberately **filesystem-backed and serverless** (no network
 services, no database): all state lives under `~/.loop-cli`. The build step compiles
-TypeScript to `dist/` for npm distribution; the board requires Bun for OpenTUI native FFI.
+TypeScript to `dist/` for npm distribution; the board runs on Node >= 20 via `tsx` in dev.
 
 Major architectural style: **multi-process, event-driven, message-passing** (JSON
 lines over a socket), with a state-machine core per loop.
@@ -67,19 +67,22 @@ loop-cli/
 │   │   └── handlers/
 │   │       └── logs-stream.ts  # streamLogFollow: tail + fs.watch live log streaming
 │   │
-│   ├── board/                  # Interactive TUI (OpenTUI + React 19)
-│   │   ├── index.tsx           # launchBoard: createCliRenderer + React root
+│   ├── tui/                     # Interactive TUI (Ink 7 + React 19)
+│   │   ├── index.tsx           # launchBoard: Ink render(<App/>)
 │   │   ├── App.tsx             # Top-level board container + state orchestration
-│   │   ├── daemon.ts           # Board→daemon bridge (typed IPC calls)
-│   │   ├── state.ts            # Filters/sort logic (applyLoopFilters, cycles)
+│   │   ├── daemon.ts           # TUI -> daemon bridge (typed IPC calls)
+│   │   ├── state.ts            # Filters/sort logic (applyLoopFilters, cycleSortMode, cycleStatusFilter)
 │   │   ├── format.ts           # Display formatters (statusColor, timing, truncate)
-│   │   ├── toast.tsx           # Toast notifications
-│   │   ├── types.ts            # View/Mode/ConfirmState/DaemonStatus
-│   │   ├── components/         # Header, FilterBar, Navigator, Inspector, Timeline,
-│   │   │                       #   DetailView, CreateForm, TaskForm, SearchSelect,
-│   │   │                       #   ConfirmModal, HelpModal, ContextHelpModal, Footer
-│   │   └── hooks/              # useLoopPolling, useLogStream, useBoardKeybindings,
-│   │                           #   useTabNav, useInputShortcuts, useHoverState, useBreakpoint
+│   │   ├── types.ts            # View/Mode/TabName/PanelFocus/Command/CommandContext/ConfirmState
+│   │   ├── router.ts           # useRouter hook (push/pop/replace navigation stack)
+│   │   ├── commands.ts         # buildCommands/buildTabCommands (command registry, context-aware)
+│   │   ├── theme.ts            # Dark/light theme tokens + statusColor() helper
+│   │   ├── components/         # CommandInput, LeftPanel, RightPanel, TabBar, Header,
+│   │   │                       #   Navigator, Inspector, RunHistory, WizardForm, PatchEditForm,
+│   │   │                       #   CommandsBrowserModal, DebugPanel, LogModal, Toast,
+│   │   │                       #   CreateForm, TaskForm, TaskBrowser, ProjectsPage, Modal,
+│   │   │                       #   FocusableInput, FocusableButton, FocusableList, etc.
+│   │   └── hooks/              # useLoopPolling, useLogStream, useBreakpoint, useHoverState
 │   │
 │   ├── config/
 │   │   ├── constants.ts        # Magic numbers (POLL_MS, timeouts, log limits)

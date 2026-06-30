@@ -14,7 +14,7 @@ export function ContextHelpModal(props: {
       </Box>
 
       <Box marginBottom={1}>
-        <Text color={theme.accent.focus}>{t("context.helpTemplates")}</Text>
+        <Text color={theme.accent.brand}>{t("context.helpTemplates")}</Text>
       </Box>
 
       <Box marginBottom={1}>

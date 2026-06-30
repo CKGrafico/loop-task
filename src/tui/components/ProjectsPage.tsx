@@ -48,7 +48,7 @@ function ColorCyclerButton(props: {
   );
 
   const label = props.direction === "left" ? "\u2039" : "\u203a";
-  const borderColor = isFocused ? theme.accent.focus : theme.border.dim;
+  const borderColor = isFocused ? theme.accent.brand : theme.border.dim;
   const backgroundColor = isFocused ? theme.bg.active : theme.bg.surface;
 
   return (
@@ -89,7 +89,7 @@ function ColorPickerRow(props: {
       <Box marginRight={1}>
         <Box
           borderStyle="single"
-          borderColor={theme.accent.focus}
+          borderColor={theme.accent.brand}
           backgroundColor={color}
           paddingX={1}
         >
@@ -454,7 +454,7 @@ export function ProjectsPage(props: ProjectsPageProps): React.ReactNode {
         <Box flexGrow={1} flexDirection="column" marginLeft={1}>
           {selected ? (
             <React.Fragment>
-              <Box borderStyle="single" borderColor={theme.border.focus} padding={1} flexDirection="column">
+              <Box borderStyle="single" borderColor={theme.accent.brand} padding={1} flexDirection="column">
                 <Box marginBottom={1}>
                   <Text color={selected.color} bold>
                     {"\u25CF"}
@@ -492,7 +492,7 @@ export function ProjectsPage(props: ProjectsPageProps): React.ReactNode {
                 <Box marginTop={1} flexDirection="row">
                   <FocusableButton
                     label={`${t("project.editProjectLabel")} (${t("project.keyEditHint")})`}
-                    color={theme.accent.focus}
+                    color={theme.accent.brand}
                     onPress={() => {
                       setSubModal("edit");
                       setProjectName(selected.name);

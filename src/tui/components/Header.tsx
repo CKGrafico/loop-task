@@ -45,7 +45,7 @@ export function Header(props: HeaderProps): React.ReactNode {
   return (
     <Box flexDirection="column">
       <Box>
-        <Text color="#a3e635" bold>{t("board.appName")}</Text>
+        <Text color={theme.accent.brand} bold>{t("board.appName")}</Text>
         <Text> </Text>
         <Text color={theme.text.muted}>{t("board.appTagline")}</Text>
       </Box>
@@ -61,7 +61,7 @@ export function Header(props: HeaderProps): React.ReactNode {
               <Text color={theme.text.muted}>{t("board.runningLabel")}</Text>
               <Text color={theme.semantic.success}>{props.counts.running}</Text>
               <Text color={theme.text.muted}>{t("board.waitingLabel")}</Text>
-              <Text color={theme.semantic.info}>{props.counts.waiting}</Text>
+              <Text color={theme.accent.loop}>{props.counts.waiting}</Text>
               <Text color={theme.text.muted}>{t("board.pausedLabel")}</Text>
               <Text color={theme.semantic.warning}>{props.counts.paused}</Text>
               <Text color={theme.text.muted}>{t("board.idleLabel")}</Text>

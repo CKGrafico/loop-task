@@ -26,14 +26,14 @@ export function Modal(props: {
     >
       <Box
         borderStyle="round"
-        borderColor={theme.accent.focus}
+        borderColor={theme.accent.brand}
         backgroundColor={theme.bg.elevated}
         paddingX={2}
         paddingY={1}
         flexDirection="column"
         width={props.width ?? "60%"}
       >
-        <Text color={theme.accent.focus} bold>
+        <Text color={theme.accent.brand} bold>
           {props.title}
         </Text>
         <Box flexDirection="column" marginTop={1}>

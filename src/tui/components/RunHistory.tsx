@@ -12,7 +12,7 @@ function runIcon(run: RunRecord): string {
 }
 
 function runIconColor(run: RunRecord): string {
-  if (run.status === "running") return theme.semantic.info;
+  if (run.status === "running") return theme.accent.loop;
   return run.exitCode === 0 ? theme.semantic.success : theme.semantic.danger;
 }
 
@@ -101,7 +101,7 @@ export function RunHistory(props: {
         onSelectRun(next);
         return;
       }
-      if (key.return) {
+      if (key.ctrl && key.return) {
         const run = reversed[selectedRunIndex];
         if (run) onOpenRun(run);
         return;
@@ -133,7 +133,7 @@ export function RunHistory(props: {
   }
 
   return (
-    <Box borderStyle="single" borderColor={isFocused ? theme.accent.focus : theme.border.default} flexDirection="column">
+    <Box flexDirection="column" flexGrow={1}>
       <Box paddingLeft={1}>
         <Text color={theme.text.muted}>{title}</Text>
       </Box>
@@ -146,7 +146,7 @@ export function RunHistory(props: {
           {trends.sparkline ? (
             <Box paddingLeft={1} marginBottom={0}>
               <Text color={theme.text.muted}>Durations: </Text>
-              <Text color={theme.semantic.info}>{trends.sparkline}</Text>
+              <Text color={theme.accent.loop}>{trends.sparkline}</Text>
               <Text color={theme.text.muted}> avg:{trends.avgDuration}ms </Text>
               {trends.successStreak > 0 ? (
                 <Text color={theme.semantic.success}>streak:{trends.successStreak} ok</Text>

@@ -69,8 +69,8 @@ export function WelcomeScreen(props: {
 
   return (
     <Box flexDirection="column" alignItems="center" justifyContent="center" flexGrow={1}>
-      <Box borderStyle="round" borderColor={theme.accent.focus} backgroundColor={theme.bg.surface} paddingX={4} paddingY={1} flexDirection="column">
-        <Text color={theme.accent.focus} bold>{"\n"}Welcome to loop-task!{"\n"}</Text>
+      <Box borderStyle="round" borderColor={theme.accent.brand} backgroundColor={theme.bg.surface} paddingX={4} paddingY={1} flexDirection="column">
+        <Text color={theme.accent.brand} bold>{"\n"}Welcome to loop-task!{"\n"}</Text>
         <Text color={theme.text.secondary}>Loop engineering: define a purpose,</Text>
         <Text color={theme.text.secondary}>give it an interval, let it iterate.{"\n"}</Text>
         <Text color={theme.text.muted}>No loops yet. Here are some examples:{"\n"}</Text>
@@ -88,7 +88,7 @@ export function WelcomeScreen(props: {
         <Text color={theme.text.muted}>{"\n"}or press 'n' to create a custom loop</Text>
         <Text color={theme.text.muted}>press 'h' for keyboard shortcuts (from main view)</Text>
         {creating ? (
-          <Text color={theme.accent.focus}>{"\n"}Creating: {creating}...</Text>
+          <Text color={theme.accent.brand}>{"\n"}Creating: {creating}...</Text>
         ) : null}
       </Box>
     </Box>

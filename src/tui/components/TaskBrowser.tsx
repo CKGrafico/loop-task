@@ -33,7 +33,7 @@ export function TaskNavigator(props: {
         onSelect(Math.max(selectedIndex - 1, 0));
       } else if (key.downArrow || input === "j") {
         onSelect(Math.min(selectedIndex + 1, visible.length - 1));
-      } else if (key.return) {
+      } else if (key.ctrl && key.return) {
         onActivate(selectedIndex);
       }
     },

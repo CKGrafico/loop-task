@@ -10,7 +10,7 @@ import { copyToClipboard } from "../../shared/clipboard.js";
 const MAX_VISIBLE_LINES = 20;
 
 function colorForLine(line: string, run: RunRecord): string {
-  if (line.includes("[Run #")) return theme.semantic.info;
+  if (line.includes("[Run #")) return theme.accent.loop;
   if (line.includes("--- Chain:")) return theme.accent.task;
   if (line.trimStart().startsWith("[exit")) {
     const match = /\[exit\s+(\d+)/.exec(line);

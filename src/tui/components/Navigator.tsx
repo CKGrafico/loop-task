@@ -43,7 +43,7 @@ export function Navigator(props: {
         onSelect(next);
         return;
       }
-      if (key.return) {
+      if (key.ctrl && key.return) {
         onActivate(selectedIndex);
         return;
       }
@@ -88,7 +88,7 @@ export function Navigator(props: {
   }
 
   return (
-    <Box flexDirection="column" borderStyle="single" borderColor={isFocused ? theme.accent.loop : theme.border.default}>
+    <Box flexDirection="column" flexGrow={1}>
       <Box paddingLeft={1}>
         <Text color={theme.text.muted}>{title}</Text>
       </Box>

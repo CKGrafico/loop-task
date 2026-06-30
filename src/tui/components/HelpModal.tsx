@@ -71,7 +71,7 @@ export function HelpModal(props: {
     <Modal title="Shortcuts" onClose={props.onClose} width="60%">
       {entries.map((entry, i) => (
         <Box key={i}>
-          <Text color={theme.accent.focus}>{entry.key.padEnd(16)}</Text>
+          <Text color={theme.accent.brand}>{entry.key.padEnd(16)}</Text>
           <Text color={theme.text.primary}>{entry.desc}</Text>
         </Box>
       ))}

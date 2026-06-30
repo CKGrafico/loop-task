@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo, useCallback } from "react";
 import { Box, useInput, useApp } from "ink";
 import type { LoopMeta, RunRecord, TaskDefinition, Project } from "../types.js";
-import type { ConfirmState, View, TabName, PanelFocus, CommandContext } from "./types.js";
+import type { ConfirmState, View, TabName, PanelFocus, CommandContext, SearchState } from "./types.js";
 import { useLoopPolling } from "./hooks/useLoopPolling.js";
 import { useLogStream } from "./hooks/useLogStream.js";
 import { useBreakpoint } from "./hooks/useBreakpoint.js";
@@ -13,7 +13,8 @@ import { CommandInput } from "./components/CommandInput.js";
 import { TaskForm } from "./components/TaskForm.js";
 import { CreateView } from "./components/CreateForm.js";
 import { LogModal } from "./components/LogModal.js";
-import { HelpModal } from "./components/HelpModal.js";
+import { CommandsBrowserModal } from "./components/CommandsBrowserModal.js";
+import { DebugPanel, MAX_ENTRIES, type DebugEntry } from "./components/DebugPanel.js";
 import { ContextHelpModal } from "./components/ContextHelpModal.js";
 import { fetchRunLog, deleteLoop, pauseLoop, resumeLoop, stopLoop, triggerLoop, listTasks, deleteTask, listProjects } from "./daemon.js";
 import { applyLoopFilters, cycleSortMode, cycleStatusFilter, defaultFilters, type Filters, type SortMode } from "./state.js";
@@ -61,10 +62,15 @@ export function App(props: { onQuit: () => void }): React.ReactNode {
   const [projects, setProjects] = useState<Project[]>([]);
   const [currentProjectId] = useState<string>("all");
   // ── Overlay state ──
-  const [helpOpen, setHelpOpen] = useState(false);
+  const [commandsBrowserOpen, setCommandsBrowserOpen] = useState(false);
   const [contextHelpOpen, setContextHelpOpen] = useState(false);
   // ── Confirm state (8.3) ──
   const [confirmState, setConfirmState] = useState<ConfirmState | null>(null);
+  // ── Search state (command-driven search) ──
+  const [searchState, setSearchState] = useState<SearchState | null>(null);
+  const [searchValue, setSearchValue] = useState("");
+  const [debugMode, setDebugMode] = useState(false);
+  const [debugEntries, setDebugEntries] = useState<DebugEntry[]>([]);
   const { toasts, push: pushToast } = useToasts();
   const breakpoint = useBreakpoint();
   const visible = useMemo(
@@ -143,101 +149,96 @@ export function App(props: { onQuit: () => void }): React.ReactNode {
       });
   }
 
-  // ── Command handler (8.3) ──
-  function handleCommand(value: string): void {
-    switch (value) {
-      case "edit":
-        if (activeTab === "loops" && selected) {
-          setCloneMode(false);
-          setEditTarget(selected);
-          push("create");
-        } else if (activeTab === "tasks" && selectedTask) {
-          setEditTask(selectedTask);
-          push("task-edit");
-        }
-        break;
-      case "clone":
-        if (selected) {
-          setCloneMode(true);
-          setEditTarget(selected);
-          push("create");
-        }
-        break;
-      case "delete":
-        if (activeTab === "loops" && selected) {
-          setConfirmState({
-            prompt: t("confirm.deleteLoop", { name: selected.description || selected.id }),
-            onConfirm: () => { void deleteLoop(selected.id).then(() => { void refresh(); }); },
-          });
-        } else if (activeTab === "tasks" && selectedTask) {
-          setConfirmState({
-            prompt: t("confirm.deleteTask", { id: selectedTask.id }),
-            onConfirm: () => { void deleteTask(selectedTask.id).then(() => { void refreshTasks(); }); },
-          });
-        }
-        break;
-      case "pause":
-        if (selected) {
-          void runAction(t("board.toastPaused", { desc: selected.description }), () => pauseLoop(selected.id))();
-        }
-        break;
-      case "play":
-        if (selected) {
-          void runAction(t("board.toastResumed", { desc: selected.description }), () => resumeLoop(selected.id))();
-        }
-        break;
-      case "stop":
-        if (selected) {
-          setConfirmState({
-            prompt: t("confirm.stopLoop", { name: selected.description || selected.id }),
-            onConfirm: () => { void stopLoop(selected.id).then(() => { void refresh(); }); },
-          });
-        }
-        break;
-      case "trigger":
-        if (selected) {
-          void runAction(t("board.toastTriggered", { desc: selected.description }), () => triggerLoop(selected.id))();
-        }
-        break;
-      case "new-loop":
-        setEditTarget(null);
+  // ── Command handler — dictionary dispatch, no switch/case ──
+  const commandHandlers: Record<string, () => void> = {
+    edit: () => {
+      if (activeTab === "loops" && selected) {
+        setCloneMode(false);
+        setEditTarget(selected);
         push("create");
-        break;
-      case "new-task":
-        setEditTask(null);
-        push("task-create");
-        break;
-      case "new-project":
-        setActiveTab("projects");
-        break;
-      case "help":
-        setHelpOpen(true);
-        break;
-      case "quit":
-        onQuit();
-        exit();
-        break;
-      case "logs":
-        if (selected) {
-          const runs = selected.runHistory;
-          if (runs && runs.length > 0) {
-            handleOpenRunLog(runs[0]!);
-          }
+      } else if (activeTab === "tasks" && selectedTask) {
+        setEditTask(selectedTask);
+        push("task-edit");
+      }
+    },
+    clone: () => {
+      if (selected) {
+        setCloneMode(true);
+        setEditTarget(selected);
+        push("create");
+      }
+    },
+    delete: () => {
+      if (activeTab === "loops" && selected) {
+        setConfirmState({
+          prompt: t("confirm.deleteLoop", { name: selected.description || selected.id }),
+          onConfirm: () => { void deleteLoop(selected.id).then(() => { void refresh(); }); },
+        });
+      } else if (activeTab === "tasks" && selectedTask) {
+        setConfirmState({
+          prompt: t("confirm.deleteTask", { id: selectedTask.id }),
+          onConfirm: () => { void deleteTask(selectedTask.id).then(() => { void refreshTasks(); }); },
+        });
+      }
+    },
+    pause: () => {
+      if (selected) {
+        void runAction(t("board.toastPaused", { desc: selected.description }), () => pauseLoop(selected.id))();
+      }
+    },
+    play: () => {
+      if (selected) {
+        void runAction(t("board.toastResumed", { desc: selected.description }), () => resumeLoop(selected.id))();
+      }
+    },
+    stop: () => {
+      if (selected) {
+        setConfirmState({
+          prompt: t("confirm.stopLoop", { name: selected.description || selected.id }),
+          onConfirm: () => { void stopLoop(selected.id).then(() => { void refresh(); }); },
+        });
+      }
+    },
+    trigger: () => {
+      if (selected) {
+        void runAction(t("board.toastTriggered", { desc: selected.description }), () => triggerLoop(selected.id))();
+      }
+    },
+    "new-loop": () => { setEditTarget(null); push("create"); },
+    "new-task": () => { setEditTask(null); push("task-create"); },
+    "new-project": () => { setActiveTab("projects"); },
+    "all-commands": () => { setCommandsBrowserOpen(true); },
+    search: () => { setSearchValue(""); setSearchState({ active: true }); },
+    "filter-status": () => { setFilters((prev) => ({ ...prev, status: cycleStatusFilter(prev.status) })); },
+    sort: () => { setSort((prev) => cycleSortMode(prev)); },
+    "filter-project": () => { setActiveTab("projects"); },
+    debug: () => { setDebugMode((prev) => !prev); },
+    logs: () => {
+      if (selected) {
+        const runs = selected.runHistory;
+        if (runs && runs.length > 0) {
+          handleOpenRunLog(runs[0]!);
         }
-        break;
-      case "select":
-        if (selectedTask) {
-          setPendingTaskSelection({ id: selectedTask.id, name: selectedTask.name });
-          pop();
-        }
-        break;
-      // api, status, export, import, new-project are stubs for now
-      case "api":
-      case "status":
-      case "export":
-      case "import":
-        pushToast("info", `Command "${value}" coming soon`);
-        break;
+      }
+    },
+    select: () => {
+      if (selectedTask) {
+        setPendingTaskSelection({ id: selectedTask.id, name: selectedTask.name });
+        pop();
+      }
+    },
+    api: () => { pushToast("info", `Command "api" coming soon`); },
+    status: () => { pushToast("info", `Command "status" coming soon`); },
+    export: () => { pushToast("info", `Command "export" coming soon`); },
+    import: () => { pushToast("info", `Command "import" coming soon`); },
+  };
+
+  function handleCommand(value: string): void {
+    const handler = commandHandlers[value];
+    if (handler) {
+      handler();
+    } else {
+      pushToast("error", `Unknown command: ${value}`);
     }
   }
 
@@ -274,11 +275,34 @@ export function App(props: { onQuit: () => void }): React.ReactNode {
     pushToast("success", updated ? t("board.toastTaskUpdated", { id }) : t("board.toastTaskCreated", { id }));
   };
 
-  // ── Resolve query for LeftPanel based on activeTab (8.1) ──
-  const leftPanelQuery = activeTab === "tasks" ? taskQuery : filters.query;
-  const handleLeftPanelQueryChange = activeTab === "tasks"
-    ? setTaskQuery
-    : (value: string) => setFilters((prev) => ({ ...prev, query: value }));
+  // ── Resolve query for LeftPanel based on activeTab + search state ──
+  const leftPanelQuery = searchState?.active
+    ? searchValue
+    : activeTab === "tasks" ? taskQuery : filters.query;
+
+  // ── Search handlers ──
+  const handleSearchChange = useCallback((value: string) => {
+    setSearchValue(value);
+    if (activeTab === "tasks") {
+      setTaskQuery(value);
+    } else {
+      setFilters((prev) => ({ ...prev, query: value }));
+    }
+  }, [activeTab]);
+
+  const handleSearchSubmit = useCallback(() => {
+    setSearchState(null);
+  }, []);
+
+  const handleSearchCancel = useCallback(() => {
+    setSearchValue("");
+    if (activeTab === "tasks") {
+      setTaskQuery("");
+    } else {
+      setFilters((prev) => ({ ...prev, query: "" }));
+    }
+    setSearchState(null);
+  }, [activeTab]);
 
   // ── Command context (8.3) ──
   const commandContext: CommandContext = useMemo(
@@ -290,15 +314,73 @@ export function App(props: { onQuit: () => void }): React.ReactNode {
   useInput((input, key) => {
     // Ctrl+C always quits if no modal open
     if (key.ctrl && input === "c") {
-      if (!logModalRun && !confirmState && !helpOpen) {
+      if (!logModalRun && !confirmState && !commandsBrowserOpen) {
         onQuit();
         exit();
         return;
       }
     }
 
+    // Debug: capture key info if debug mode is on
+    if (debugMode) {
+      const entry: DebugEntry = {
+        id: Date.now(),
+        input,
+        len: input.length,
+        ctrl: key.ctrl,
+        return: key.return,
+        shift: key.shift,
+        meta: key.meta,
+        tab: key.tab,
+        upArrow: key.upArrow,
+        downArrow: key.downArrow,
+        leftArrow: key.leftArrow,
+        rightArrow: key.rightArrow,
+        escape: key.escape,
+        codes: Array.from(input).map((c: string) => c.charCodeAt(0)).join(","),
+      };
+      setDebugEntries((prev) => [entry, ...prev].slice(0, MAX_ENTRIES));
+    }
+
+    // Ctrl+P opens commands browser from anywhere on board
+    if (key.ctrl && input === "p" && isBoardView(view)) {
+      setCommandsBrowserOpen(true);
+      return;
+    }
+
+    // Ctrl+Enter: open log (right panel) or edit (left panel)
+    // Detection across terminals:
+    //   - proper terminals: key.ctrl && key.return
+    //   - Linux: input === "\x0e"
+    //   - VS Code: input contains "\n" (sends "\r\n" or "\n", all key flags zero)
+    const isCtrlEnter = (key.ctrl && key.return) || input === "\x0e" || input.includes("\n");
+    if (isBoardView(view) && !logModalRun && !commandsBrowserOpen && !confirmState && !searchState?.active && isCtrlEnter) {
+      if (focusedPanel === "right" && selected) {
+        const runs = selected.runHistory;
+        if (runs && runs.length > 0) {
+          handleOpenRunLog(runs[runs.length - 1]!);
+        }
+      } else if (focusedPanel === "left" && selected) {
+        setCloneMode(false);
+        setEditTarget(selected);
+        push("create");
+      }
+      return;
+    }
+
+    // Ctrl shortcuts: dispatch to command handler (bottom input ignores all ctrl)
+    if (key.ctrl && isBoardView(view) && !logModalRun && !commandsBrowserOpen && !confirmState && !searchState?.active) {
+      if (input === "n") { handleCommand("new-loop"); return; }
+      if (input === "f") { handleCommand("search"); return; }
+      if (input === "e") { handleCommand("edit"); return; }
+      if (input === "d") { handleCommand("delete"); return; }
+    }
+
     // Confirm mode is handled by CommandInput component, not here
     if (confirmState) return;
+
+    // Search mode is handled by CommandInput component, not here
+    if (searchState?.active) return;
 
     if (logModalRun) {
       if (key.escape || input === "q") {
@@ -307,10 +389,8 @@ export function App(props: { onQuit: () => void }): React.ReactNode {
       return;
     }
 
-    if (helpOpen) {
-      if (input === "h" || key.escape) {
-        setHelpOpen(false);
-      }
+    if (commandsBrowserOpen) {
+      if (key.escape) { setCommandsBrowserOpen(false); }
       return;
     }
 
@@ -318,6 +398,9 @@ export function App(props: { onQuit: () => void }): React.ReactNode {
       setContextHelpOpen(false);
       return;
     }
+
+    // Any other modal open: block all input from reaching panels
+    if (logModalRun) return;
 
     // Full-screen form views: only escape
     if (FORM_VIEWS.includes(view)) {
@@ -327,6 +410,16 @@ export function App(props: { onQuit: () => void }): React.ReactNode {
 
     // Board view: Tab cycles panels (8.2), 1/2/3 switch tabs (8.1)
     if (isBoardView(view)) {
+      // Ctrl+Arrow: cycle tabs in a loop (loops -> tasks -> projects -> loops)
+      if (key.ctrl && key.rightArrow) {
+        setActiveTab((prev) => prev === "loops" ? "tasks" : prev === "tasks" ? "projects" : "loops");
+        return;
+      }
+      if (key.ctrl && key.leftArrow) {
+        setActiveTab((prev) => prev === "loops" ? "projects" : prev === "tasks" ? "loops" : "tasks");
+        return;
+      }
+
       if (key.tab) {
         if (key.shift) {
           setFocusedPanel((prev) => prev === "left" ? "right" : "left");
@@ -348,6 +441,9 @@ export function App(props: { onQuit: () => void }): React.ReactNode {
       return;
     }
   });
+
+  // Any modal open disables panel input behind it
+  const anyModalOpen = !!(logModalRun || commandsBrowserOpen || confirmState || searchState?.active);
 
   const counts = {
     total: loops.length,
@@ -389,13 +485,12 @@ export function App(props: { onQuit: () => void }): React.ReactNode {
             onCopy={() => pushToast("success", t("board.toastCopied"))}
           />
         ) : (
-          // Board view: left panel + right panel (8.1, 8.2)
+          // Board view: left panel + right panel (+ optional debug panel)
           <Box flexDirection={breakpoint === "narrow" ? "column" : "row"} flexGrow={1}>
             <LeftPanel
-              isFocused={focusedPanel === "left"}
+              isFocused={focusedPanel === "left" && !anyModalOpen}
               activeTab={activeTab}
               query={leftPanelQuery}
-              onQueryChange={handleLeftPanelQueryChange}
               loops={visible}
               selectedIndex={clampedIndex}
               filters={filters}
@@ -414,12 +509,14 @@ export function App(props: { onQuit: () => void }): React.ReactNode {
               currentProjectName={currentProjectId === "all" ? t("project.showAll") : (projects.find(p => p.id === currentProjectId)?.name ?? "Default")}
             />
             <RightPanel
-              isFocused={focusedPanel === "right"}
+              isFocused={focusedPanel === "right" && !anyModalOpen}
+              activeTab={activeTab}
               loop={selected}
               selectedRunIndex={selectedRunIndex}
               onSelectRun={(index) => setSelectedRunIndex(index)}
               onOpenRun={handleOpenRunLog}
             />
+            {debugMode ? <DebugPanel entries={debugEntries} /> : null}
           </Box>
         )}
       </Box>
@@ -430,12 +527,23 @@ export function App(props: { onQuit: () => void }): React.ReactNode {
           context={commandContext}
           onCommand={handleCommand}
           confirmState={confirmState}
+          searchState={searchState}
+          searchValue={searchValue}
+          onSearchChange={handleSearchChange}
+          onSearchSubmit={handleSearchSubmit}
+          onSearchCancel={handleSearchCancel}
           onConfirmYes={handleConfirmYes}
           onConfirmCancel={handleConfirmCancel}
         />
       ) : null}
 
-      {helpOpen ? <HelpModal view={isBoardView(view) ? activeTab : view} onClose={() => setHelpOpen(false)} /> : null}
+      {commandsBrowserOpen ? (
+        <CommandsBrowserModal
+          context={commandContext}
+          onClose={() => setCommandsBrowserOpen(false)}
+          onExecute={(value) => { setCommandsBrowserOpen(false); handleCommand(value); }}
+        />
+      ) : null}
       {contextHelpOpen ? <ContextHelpModal onClose={() => setContextHelpOpen(false)} /> : null}
 
       {logModalRun ? (

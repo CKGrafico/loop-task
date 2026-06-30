@@ -14,7 +14,7 @@ export const darkTheme = {
     inverse: "#ffffff",
   },
   accent: {
-    focus: "#38bdf8",
+    brand: "#fbbf24",
     loop: "#38bdf8",
     task: "#a78bfa",
     project: "#34d399",
@@ -24,11 +24,9 @@ export const darkTheme = {
     warning: "#facc15",
     danger: "#f87171",
     idle: "#fb923c",
-    info: "#38bdf8",
   },
   border: {
     default: "#1e293b",
-    focus: "#38bdf8",
     dim: "#374151",
   },
 } as const;
@@ -49,7 +47,7 @@ export const lightTheme = {
     inverse: "#0f172a",
   },
   accent: {
-    focus: "#0284c7",
+    brand: "#d97706",
     loop: "#0284c7",
     task: "#7c3aed",
     project: "#059669",
@@ -59,11 +57,9 @@ export const lightTheme = {
     warning: "#ca8a04",
     danger: "#dc2626",
     idle: "#ea580c",
-    info: "#0284c7",
   },
   border: {
     default: "#cbd5e1",
-    focus: "#0284c7",
     dim: "#94a3b8",
   },
 } as const;
@@ -94,4 +90,13 @@ export const STATUS_COLORS: Record<string, string> = {
 
 export function statusColor(status: string): string {
   return STATUS_COLORS[status] ?? "#9ca3af";
+}
+
+export function tabAccentColor(tab: string): string {
+  const map: Record<string, string> = {
+    loops: darkTheme.accent.loop,
+    tasks: darkTheme.accent.task,
+    projects: darkTheme.accent.project,
+  };
+  return map[tab] ?? darkTheme.accent.brand;
 }

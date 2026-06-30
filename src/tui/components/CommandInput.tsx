@@ -13,7 +13,7 @@ import {
   CONFIRM_YES,
   CONFIRM_CANCEL,
 } from "../../config/constants.js";
-import type { CommandContext, ConfirmState } from "../types.js";
+import type { CommandContext, ConfirmState, SearchState } from "../types.js";
 
 // ── Props ────────────────────────────────────────────────────────────
 
@@ -21,18 +21,13 @@ export interface CommandInputProps {
   context: CommandContext;
   onCommand: (value: string) => void;
   confirmState: ConfirmState | null;
+  searchState: SearchState | null;
+  searchValue: string;
+  onSearchChange: (value: string) => void;
+  onSearchSubmit: () => void;
+  onSearchCancel: () => void;
   onConfirmYes: () => void;
   onConfirmCancel: () => void;
-}
-
-// ── Separator ────────────────────────────────────────────────────────
-
-function Separator(): React.ReactNode {
-  return (
-    <Text color={theme.border.dim}>
-      {"─".repeat(60)}
-    </Text>
-  );
 }
 
 // ── Rendered input with cursor ───────────────────────────────────────
@@ -43,16 +38,6 @@ function renderInputLine(
   placeholder: string,
 ): string {
   if (value.length === 0) {
-    if (placeholder.length > 0) {
-      return (
-        "\x1b[7m" +
-        placeholder[0] +
-        "\x1b[27m" +
-        "\x1b[2m" +
-        placeholder.slice(1) +
-        "\x1b[22m"
-      );
-    }
     return "\x1b[7m \x1b[27m";
   }
 
@@ -84,7 +69,7 @@ function renderHighlightedLabel(
 ): string {
   if (matchRanges.length === 0) {
     return isFocused
-      ? `\x1b[38;2;56;189;248m${label}\x1b[39m`
+      ? `\x1b[38;2;251;191;36m${label}\x1b[39m`
       : label;
   }
 
@@ -94,17 +79,17 @@ function renderHighlightedLabel(
     if (pos < range.start) {
       const segment = label.slice(pos, range.start);
       result += isFocused
-        ? `\x1b[38;2;56;189;248m${segment}\x1b[39m`
+        ? `\x1b[38;2;251;191;36m${segment}\x1b[39m`
         : segment;
     }
     const matched = label.slice(range.start, range.end);
-    result += `\x1b[1m\x1b[38;2;56;189;248m${matched}\x1b[39m\x1b[22m`;
+    result += `\x1b[1m\x1b[38;2;251;191;36m${matched}\x1b[39m\x1b[22m`;
     pos = range.end;
   }
   if (pos < label.length) {
     const segment = label.slice(pos);
     result += isFocused
-      ? `\x1b[38;2;56;189;248m${segment}\x1b[39m`
+      ? `\x1b[38;2;251;191;36m${segment}\x1b[39m`
       : segment;
   }
   return result;
@@ -127,7 +112,7 @@ function CommandDropdown({
   if (visibleOptions.length === 0) {
     if (state.inputValue.length > 0) {
       return (
-        <Box marginLeft={2}>
+        <Box paddingLeft={3} position="absolute" bottom={3}>
           <Text color={theme.text.muted}>
             {t("cmdInput.noMatches")}
           </Text>
@@ -142,14 +127,13 @@ function CommandDropdown({
     state.filteredOptions.length - state.visibleToIndex;
 
   return (
-    <Box flexDirection="column" marginLeft={2}>
+    <Box flexDirection="column" paddingLeft={3} position="absolute" bottom={3}>
       {aboveCount > 0 && (
-        <Text color={theme.text.muted}>{`  ↑ ${aboveCount} more`}</Text>
+        <Text color={theme.text.muted}>{`  \u2191 ${aboveCount} more`}</Text>
       )}
       {visibleOptions.map((match, i) => {
         const actualIndex = state.visibleFromIndex + i;
         const isFocused = actualIndex === state.focusedIndex;
-        const pointer = isFocused ? "\u276F" : " ";
         const label = renderHighlightedLabel(
           match.option.label,
           match.matchRanges,
@@ -157,18 +141,16 @@ function CommandDropdown({
         );
 
         return (
-          <Box key={match.option.value}>
-            <Text
-              color={isFocused ? theme.accent.focus : undefined}
-            >
-              {pointer}{" "}
+          <Box key={match.option.value} backgroundColor={isFocused ? theme.bg.active : undefined}>
+            <Text color={isFocused ? theme.text.inverse : theme.text.muted}>
+              {isFocused ? "\u276f " : "  "}
             </Text>
-            <Text>{label}</Text>
+            <Text color={isFocused ? theme.text.inverse : undefined}>{label}</Text>
           </Box>
         );
       })}
       {belowCount > 0 && (
-        <Text color={theme.text.muted}>{`  ↓ ${belowCount} more`}</Text>
+        <Text color={theme.text.muted}>{`  \u2193 ${belowCount} more`}</Text>
       )}
     </Box>
   );
@@ -191,23 +173,46 @@ function ConfirmDropdown({
   ];
 
   return (
-    <Box flexDirection="column" marginLeft={2}>
+    <Box flexDirection="column" paddingLeft={3}>
       {items.map((item, i) => {
         const isFocused = i === focusedIndex;
-        const pointer = isFocused ? "\u276F" : " ";
         return (
-          <Box key={item.value}>
-            <Text color={isFocused ? theme.accent.focus : undefined}>
-              {pointer}{" "}
+          <Box key={item.value} backgroundColor={isFocused ? theme.bg.active : undefined}>
+            <Text color={isFocused ? theme.text.inverse : theme.text.muted}>
+              {isFocused ? "\u276f " : "  "}
             </Text>
-            <Text
-              color={isFocused ? theme.accent.focus : undefined}
-            >
+            <Text color={isFocused ? theme.text.inverse : theme.text.primary}>
               {item.label}
             </Text>
           </Box>
         );
       })}
+    </Box>
+  );
+}
+
+// ── Hint bar ──────────────────────────────────────────────────────────
+
+function HintBar({
+  leftHint,
+  rightHint,
+}: {
+  leftHint: React.ReactNode;
+  rightHint: React.ReactNode;
+}): React.ReactNode {
+  return (
+    <Box justifyContent="space-between" paddingX={1}>
+      <Box>{leftHint}</Box>
+      <Box>{rightHint}</Box>
+    </Box>
+  );
+}
+
+function KeyHint({ keyLabel, action }: { keyLabel: string; action: string }): React.ReactNode {
+  return (
+    <Box marginRight={2}>
+      <Text bold color={theme.text.primary}>{keyLabel}</Text>
+      <Text color={theme.text.muted}>{" " + action}</Text>
     </Box>
   );
 }
@@ -233,91 +238,68 @@ function CommandMode({
     onSelect: onCommand,
   });
 
-  // Key handler: intercept Ctrl+E/Ctrl+D first, then forward to combobox
   useInput(
     (input, key) => {
-      // Bypass shortcuts - fire immediately
-      if (input === "e" && key.ctrl) {
-        onCommand("edit");
-        return;
-      }
-      if (input === "d" && key.ctrl) {
-        onCommand("delete");
-        return;
-      }
+      if (key.ctrl) return;
 
-      // Standard combobox input handling
-      if (key.escape) {
-        dispatch({ type: "CLOSE" });
-        return;
-      }
+      if (key.escape) { dispatch({ type: "CLOSE" }); return; }
       if (key.return) {
-        if (
-          state.isOpen &&
-          state.filteredOptions.length > 0 &&
-          state.focusedIndex < state.filteredOptions.length
-        ) {
+        if (state.isOpen && state.filteredOptions.length > 0 && state.focusedIndex < state.filteredOptions.length) {
           const focused = state.filteredOptions[state.focusedIndex];
-          dispatch({
-            type: "SELECT",
-            value: focused.option.value,
-            label: focused.option.label,
-          });
+          dispatch({ type: "CLOSE" });
+          for (let i = 0; i <= state.inputValue.length; i++) {
+            dispatch({ type: "DELETE_BACKWARD" });
+          }
+          onCommand(focused.option.value);
         }
         return;
       }
-      if (key.tab) {
-        dispatch({ type: "ACCEPT" });
-        return;
-      }
-      if (key.downArrow) {
-        dispatch({ type: "FOCUS_NEXT" });
-        return;
-      }
-      if (key.upArrow) {
-        dispatch({ type: "FOCUS_PREV" });
-        return;
-      }
-      if (key.backspace || key.delete) {
-        dispatch({ type: "DELETE_BACKWARD" });
-        return;
-      }
-      if (key.leftArrow) {
-        dispatch({ type: "MOVE_CURSOR_LEFT" });
-        return;
-      }
-      if (key.rightArrow) {
-        dispatch({ type: "MOVE_CURSOR_RIGHT" });
-        return;
-      }
-      if (input === "a" && key.ctrl) {
-        dispatch({ type: "MOVE_CURSOR_START" });
-        return;
-      }
-      // Ctrl+E is handled above as bypass - do not fall through
-      // Ctrl+D is handled above as bypass - do not fall through
-      if (input && !key.ctrl && !key.meta) {
+      if (key.tab) { dispatch({ type: "ACCEPT" }); return; }
+      if (key.downArrow) { dispatch({ type: "FOCUS_NEXT" }); return; }
+      if (key.upArrow) { dispatch({ type: "FOCUS_PREV" }); return; }
+      if (key.backspace || key.delete) { dispatch({ type: "DELETE_BACKWARD" }); return; }
+      if (key.leftArrow) { dispatch({ type: "MOVE_CURSOR_LEFT" }); return; }
+      if (key.rightArrow) { dispatch({ type: "MOVE_CURSOR_RIGHT" }); return; }
+      if (input === "a" && key.ctrl) { dispatch({ type: "MOVE_CURSOR_START" }); return; }
+      if (input.length === 1 && !key.ctrl && !key.meta && !key.return && !key.tab && !key.escape && input >= " " && input <= "~") {
         dispatch({ type: "INSERT_TEXT", text: input });
       }
     },
     { isActive: true },
   );
 
-  const placeholder = t("cmdInput.placeholder");
-  const inputLine = renderInputLine(
-    state.inputValue,
-    state.cursorOffset,
-    placeholder,
-  );
+  const isEmpty = state.inputValue.length === 0;
+  const cursor = "\x1b[7m \x1b[27m";
+  const inputContent = isEmpty ? cursor : renderInputLine(state.inputValue, state.cursorOffset, "");
 
   return (
-    <Box flexDirection="column">
+    <>
       <CommandDropdown state={state} />
+      {/* Input row with left accent bar — placeholder inline when empty */}
       <Box>
-        <Text color={theme.accent.focus}>{"❯ "}</Text>
-        <Text>{inputLine}</Text>
+        <Text color={theme.accent.brand}>{"│ "}</Text>
+        {isEmpty ? (
+          <Text color={theme.text.muted}>{t("cmdInput.placeholder")}</Text>
+        ) : (
+          <Text>{inputContent}</Text>
+        )}
       </Box>
-    </Box>
+      {/* Hint bar */}
+      <HintBar
+        leftHint={
+          <Box>
+            <Text color={theme.text.muted}>{"\u00b7\u00b7\u00b7\u00b7\u00b7\u00b7\u00b7 "}</Text>
+            <KeyHint keyLabel="esc" action="cancel" />
+          </Box>
+        }
+        rightHint={
+          <Box>
+            <KeyHint keyLabel="tab" action="panels" />
+            <KeyHint keyLabel="ctrl+p" action="commands" />
+          </Box>
+        }
+      />
+    </>
   );
 }
 
@@ -335,7 +317,6 @@ function ConfirmMode({
   const yesLabel = t("cmdInput.confirmYes");
   const cancelLabel = t("cmdInput.confirmCancel");
 
-  // Use autocomplete state for the yes/cancel options
   const options = useMemo(
     () => [
       { label: yesLabel, value: CONFIRM_YES },
@@ -346,11 +327,8 @@ function ConfirmMode({
 
   const handleSelect = useCallback(
     (value: string) => {
-      if (value === CONFIRM_YES) {
-        onConfirmYes();
-      } else {
-        onConfirmCancel();
-      }
+      if (value === CONFIRM_YES) { onConfirmYes(); }
+      else { onConfirmCancel(); }
     },
     [onConfirmYes, onConfirmCancel],
   );
@@ -363,73 +341,123 @@ function ConfirmMode({
 
   useInput(
     (_input, key) => {
-      if (key.escape) {
-        onConfirmCancel();
-        return;
-      }
+      if (key.ctrl) return;
+      if (key.escape) { onConfirmCancel(); return; }
       if (key.return) {
-        if (
-          state.isOpen &&
-          state.filteredOptions.length > 0 &&
-          state.focusedIndex < state.filteredOptions.length
-        ) {
+        if (state.isOpen && state.filteredOptions.length > 0 && state.focusedIndex < state.filteredOptions.length) {
           const focused = state.filteredOptions[state.focusedIndex];
-          dispatch({
-            type: "SELECT",
-            value: focused.option.value,
-            label: focused.option.label,
-          });
-        } else {
-          // If dropdown closed or empty, treat Enter as confirm
-          onConfirmYes();
-        }
+          dispatch({ type: "SELECT", value: focused.option.value, label: focused.option.label });
+        } else { onConfirmYes(); }
         return;
       }
-      if (key.downArrow) {
-        dispatch({ type: "FOCUS_NEXT" });
-        return;
-      }
-      if (key.upArrow) {
-        dispatch({ type: "FOCUS_PREV" });
-        return;
-      }
-      // In confirm mode, block typing - only navigation + enter/esc
+      if (key.downArrow) { dispatch({ type: "FOCUS_NEXT" }); return; }
+      if (key.upArrow) { dispatch({ type: "FOCUS_PREV" }); return; }
     },
     { isActive: true },
   );
 
-  const placeholder = confirmState.prompt;
-  const inputLine = renderInputLine(
-    state.inputValue,
-    state.cursorOffset,
-    placeholder,
+  return (
+    <>
+      <ConfirmDropdown focusedIndex={state.focusedIndex} yesLabel={yesLabel} cancelLabel={cancelLabel} />
+      <Box>
+        <Text color={theme.semantic.danger}>{"│ "}</Text>
+        <Text color={theme.text.primary}>{confirmState.prompt}</Text>
+      </Box>
+      <HintBar
+        leftHint={
+          <Box>
+            <Text color={theme.text.muted}>{"\u00b7\u00b7\u00b7\u00b7\u00b7\u00b7\u00b7 "}</Text>
+            <KeyHint keyLabel="esc" action="cancel" />
+          </Box>
+        }
+        rightHint={<KeyHint keyLabel="enter" action="confirm" />}
+      />
+    </>
+  );
+}
+
+// ── Search mode ──────────────────────────────────────────────────────
+
+function SearchMode({
+  value,
+  onSearchChange,
+  onSearchSubmit,
+  onSearchCancel,
+}: {
+  value: string;
+  onSearchChange: (value: string) => void;
+  onSearchSubmit: () => void;
+  onSearchCancel: () => void;
+}): React.ReactNode {
+  useInput(
+    (input, key) => {
+      if (key.ctrl) return;
+      if (key.escape) { onSearchCancel(); return; }
+      if (key.return) { onSearchSubmit(); return; }
+      if (key.backspace || key.delete) { onSearchChange(value.slice(0, -1)); return; }
+      if (input && !key.ctrl && !key.meta && input.length === 1) { onSearchChange(value + input); return; }
+    },
+    { isActive: true },
   );
 
+  const placeholder = t("cmdInput.searchPlaceholder");
+  const cursor = "\x1b[7m \x1b[27m";
+
   return (
-    <Box flexDirection="column">
-      <ConfirmDropdown
-        focusedIndex={state.focusedIndex}
-        yesLabel={yesLabel}
-        cancelLabel={cancelLabel}
-      />
+    <>
       <Box>
-        <Text color={theme.semantic.danger}>{"❯ "}</Text>
-        <Text>{state.inputValue.length > 0 ? inputLine : placeholder}</Text>
+        <Text color={theme.accent.project}>{"│ "}</Text>
+        {value.length > 0 ? (
+          <Text>{value + cursor}</Text>
+        ) : (
+          <Text color={theme.text.muted}>{placeholder}</Text>
+        )}
       </Box>
-    </Box>
+      <HintBar
+        leftHint={
+          <Box>
+            <Text color={theme.text.muted}>{"\u00b7\u00b7\u00b7\u00b7\u00b7\u00b7\u00b7 "}</Text>
+            <KeyHint keyLabel="esc" action="cancel" />
+          </Box>
+        }
+        rightHint={<KeyHint keyLabel="enter" action="apply" />}
+      />
+    </>
   );
 }
 
 // ── Main component ───────────────────────────────────────────────────
 
 export function CommandInput(props: CommandInputProps): React.ReactNode {
-  const { context, onCommand, confirmState, onConfirmYes, onConfirmCancel } =
-    props;
+  const {
+    context,
+    onCommand,
+    confirmState,
+    searchState,
+    searchValue,
+    onSearchChange,
+    onSearchSubmit,
+    onSearchCancel,
+    onConfirmYes,
+    onConfirmCancel,
+  } = props;
 
   return (
-    <Box flexDirection="column" height={COMMAND_INPUT_HEIGHT}>
-      <Separator />
-      {confirmState === null ? (
+    <Box
+      flexDirection="column"
+      height={COMMAND_INPUT_HEIGHT}
+      borderStyle="single"
+      borderColor={theme.border.dim}
+      paddingY={1}
+    >
+      {searchState?.active ? (
+        <SearchMode
+          value={searchValue}
+          onSearchChange={onSearchChange}
+          onSearchSubmit={onSearchSubmit}
+          onSearchCancel={onSearchCancel}
+        />
+      ) : confirmState === null ? (
         <CommandMode context={context} onCommand={onCommand} />
       ) : (
         <ConfirmMode
