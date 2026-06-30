@@ -203,4 +203,77 @@ program.action(async () => {
   await launchBoard();
 });
 
+program
+  .command("status")
+  .description("Show status of all loops")
+  .option("--json", "Output as JSON")
+  .action(async (opts) => {
+    const { sendRequest } = await import("./client/ipc.js");
+    const response = await sendRequest({ type: "list" });
+    if (response.type !== "ok") {
+      console.error("Failed to get status");
+      process.exit(1);
+    }
+    const loops = response.data as import("./types.js").LoopMeta[];
+    if (opts.json) {
+      console.log(JSON.stringify(loops, null, 2));
+    } else {
+      for (const loop of loops) {
+        const { describeLoop, statusLabel } = await import("./board/format.js");
+        console.log(`${loop.id}  ${statusLabel(loop.status)}  ${describeLoop(loop)}`);
+      }
+    }
+  });
+
+program
+  .command("export")
+  .description("Export all configs to a JSON file (or stdout)")
+  .argument("[file]", "Output file (defaults to stdout)")
+  .action(async (file) => {
+    const { sendRequest } = await import("./client/ipc.js");
+    const [loopsRes, tasksRes, projectsRes] = await Promise.all([
+      sendRequest({ type: "list" }),
+      sendRequest({ type: "task-list" }),
+      sendRequest({ type: "project-list" }),
+    ]);
+    const exportData = {
+      version: 2,
+      exportedAt: new Date().toISOString(),
+      loops: loopsRes.type === "ok" ? loopsRes.data : [],
+      tasks: tasksRes.type === "ok" ? tasksRes.data : [],
+      projects: projectsRes.type === "ok" ? projectsRes.data : [],
+    };
+    const json = JSON.stringify(exportData, null, 2);
+    if (file) {
+      const { writeFile } = await import("node:fs/promises");
+      await writeFile(file, json, "utf-8");
+      console.log(`Exported to ${file}`);
+    } else {
+      console.log(json);
+    }
+  });
+
+program
+  .command("import")
+  .description("Import configs from a JSON file (triggers hot-reload)")
+  .argument("<file>", "Input file")
+  .action(async (file) => {
+    const { readFile } = await import("node:fs/promises");
+    const content = await readFile(file, "utf-8");
+    const data = JSON.parse(content);
+    if (!data.loops || !data.tasks || !data.projects) {
+      console.error("Invalid export file: missing loops, tasks, or projects");
+      process.exit(1);
+    }
+    const { getDataDir } = await import("./config/paths.js");
+    const { writeFile } = await import("node:fs/promises");
+    const path = await import("node:path");
+    const dataDir = getDataDir();
+    await writeFile(path.join(dataDir, "loops.json"), JSON.stringify(data.loops, null, 2));
+    await writeFile(path.join(dataDir, "tasks.json"), JSON.stringify(data.tasks, null, 2));
+    await writeFile(path.join(dataDir, "projects.json"), JSON.stringify(data.projects, null, 2));
+    console.log(`Imported ${data.loops.length} loops, ${data.tasks.length} tasks, ${data.projects.length} projects`);
+    console.log("Daemon will hot-reload automatically.");
+  });
+
 await program.parseAsync(process.argv);
