@@ -1,10 +1,10 @@
 import React from "react";
-import { Box, Text, useFocus } from "ink";
+import { Box, Text, useInput } from "ink";
+import { ScrollList } from "ink-scroll-list";
 import type { LoopMeta, RunRecord } from "../../types.js";
 import { darkTheme as theme } from "../theme.js";
 import { formatRunTime, formatRunDuration, formatFileSize } from "../format.js";
 import { t } from "../../i18n/index.js";
-import { FocusableList } from "./FocusableList.js";
 
 function runIcon(run: RunRecord): string {
   if (run.status === "running") return "\u21bb";
@@ -80,12 +80,35 @@ export function RunHistory(props: {
   selectedRunIndex: number;
   onSelectRun: (index: number) => void;
   onOpenRun: (run: RunRecord) => void;
+  isFocused: boolean;
 }): React.ReactNode {
-  const { loop, selectedRunIndex, onSelectRun, onOpenRun } = props;
-  const { isFocused } = useFocus();
+  const { loop, selectedRunIndex, onSelectRun, onOpenRun, isFocused } = props;
 
   const runs = loop?.runHistory ?? [];
   const reversed = [...runs].reverse();
+  const n = reversed.length;
+
+  useInput(
+    (input, key) => {
+      if (n === 0) return;
+      if (key.upArrow || input === "k") {
+        const next = selectedRunIndex <= 0 ? n - 1 : selectedRunIndex - 1;
+        onSelectRun(next);
+        return;
+      }
+      if (key.downArrow || input === "j") {
+        const next = selectedRunIndex >= n - 1 ? 0 : selectedRunIndex + 1;
+        onSelectRun(next);
+        return;
+      }
+      if (key.return) {
+        const run = reversed[selectedRunIndex];
+        if (run) onOpenRun(run);
+        return;
+      }
+    },
+    { isActive: isFocused },
+  );
 
   const title = isFocused ? t("board.runHistoryTitleHint") : t("board.runHistoryTitle");
   const trends = computeTrends(runs);
@@ -143,20 +166,23 @@ export function RunHistory(props: {
             <Text color={theme.text.muted}>{t("board.runHistorySize").padEnd(8)}</Text>
             <Text color={theme.text.muted}>{t("board.runHistoryDesc")}</Text>
           </Box>
-          <Box paddingLeft={1}>
-            <FocusableList
-              items={reversed}
-              selectedIndex={selectedRunIndex}
-              isFocused={isFocused}
-              limit={LIMIT}
-              onSelect={onSelectRun}
-              onActivate={(index) => {
-                const run = reversed[index];
-                if (run) onOpenRun(run);
-              }}
-              renderItem={renderRun}
-            />
-          </Box>
+          <ScrollList selectedIndex={selectedRunIndex} height={LIMIT}>
+            {reversed.map((run, i) => {
+              const isSelected = i === selectedRunIndex;
+              const indicator = isSelected ? "\u203a " : "  ";
+              return (
+                <Box
+                  key={i}
+                  backgroundColor={isSelected ? theme.bg.active : undefined}
+                >
+                  <Text color={isSelected ? theme.text.inverse : theme.text.primary}>
+                    {indicator}
+                  </Text>
+                  {renderRun(run, isSelected)}
+                </Box>
+              );
+            })}
+          </ScrollList>
         </Box>
       )}
     </Box>

@@ -8,20 +8,25 @@ import { t } from "../../i18n/index.js";
 function Field(props: { label: string; children: React.ReactNode }): React.ReactNode {
   return (
     <Box>
-      <Text bold color={theme.text.secondary}>{props.label}</Text>
+      <Text bold color={theme.text.muted}>{props.label}</Text>
       <Text color={theme.text.primary}>{props.children}</Text>
     </Box>
   );
 }
+
+const DIVIDER = "\u2500".repeat(40);
 
 export function Inspector(props: { loop: LoopMeta | null }): React.ReactNode {
   const { loop } = props;
 
   if (!loop) {
     return (
-      <Box borderStyle="single" borderColor={theme.border.default} flexDirection="column">
+      <Box flexDirection="column" paddingY={0}>
         <Box paddingLeft={1}>
           <Text color={theme.text.muted}>{t("board.inspectorTitle")}</Text>
+        </Box>
+        <Box paddingLeft={1}>
+          <Text color={theme.text.muted}>{DIVIDER}</Text>
         </Box>
         <Box paddingLeft={1}>
           <Text color={theme.text.muted}>{t("board.inspectorEmpty")}</Text>
@@ -39,9 +44,12 @@ export function Inspector(props: { loop: LoopMeta | null }): React.ReactNode {
   const pid = loop.pid ? String(loop.pid) : t("format.dash");
 
   return (
-    <Box borderStyle="single" borderColor={theme.border.default} flexDirection="column">
+    <Box flexDirection="column" paddingY={0}>
       <Box paddingLeft={1}>
         <Text color={theme.text.muted}>{t("board.inspectorTitle")}</Text>
+      </Box>
+      <Box paddingLeft={1}>
+        <Text color={theme.text.muted}>{DIVIDER}</Text>
       </Box>
       <Box flexDirection="column" paddingLeft={1}>
         <Field label={t("board.fieldId")}><Text color={theme.text.primary}>{loop.id}</Text></Field>
@@ -51,7 +59,7 @@ export function Inspector(props: { loop: LoopMeta | null }): React.ReactNode {
         <Field label={t("board.fieldDir")}><Text color={theme.text.primary}>{loop.cwd}</Text></Field>
         <Field label={t("board.fieldInterval")}><Text color={theme.text.primary}>{loop.intervalHuman}</Text></Field>
         <Box>
-          <Text bold color={theme.text.secondary}>{t("board.fieldStatus")}</Text>
+          <Text bold color={theme.text.muted}>{t("board.fieldStatus")}</Text>
           <Text color={sColor}>{loop.status}</Text>
         </Box>
         <Field label={t("board.fieldRuns")}><Text color={theme.text.primary}>{loop.runCount} / {maxRunsLabel}</Text></Field>
@@ -59,6 +67,9 @@ export function Inspector(props: { loop: LoopMeta | null }): React.ReactNode {
         <Field label={t("board.fieldLastExit")}><Text color={theme.text.primary}>{lastExit}</Text></Field>
         <Field label={t("board.fieldNextRun")}><Text color={theme.text.primary}>{nextRun}</Text></Field>
         <Field label={t("board.fieldPid")}><Text color={theme.text.primary}>{pid}</Text></Field>
+      </Box>
+      <Box paddingLeft={1}>
+        <Text color={theme.text.muted}>{DIVIDER}</Text>
       </Box>
     </Box>
   );

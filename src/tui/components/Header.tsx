@@ -1,27 +1,16 @@
 import React from "react";
 import { Box, Text, useStdout } from "ink";
 import { darkTheme as theme } from "../theme.js";
-import type { DaemonStatus, View } from "../types.js";
-import { ENTITY_COLORS, HEADER_COMPACT_WIDTH } from "../../config/constants.js";
+import type { DaemonStatus, TabName } from "../types.js";
+import { HEADER_COMPACT_WIDTH } from "../../config/constants.js";
 import { t } from "../../i18n/index.js";
-import { FocusableButton } from "./FocusableButton.js";
+import { TabBar } from "./TabBar.js";
 
 interface HeaderProps {
   daemonStatus: DaemonStatus;
   counts: { total: number; running: number; waiting: number; paused: number; idle: number };
-  view: View;
-  onViewLoops: () => void;
-  onViewTasks: () => void;
-  onViewProjects: () => void;
-  onAddLoop: () => void;
-  onAddTask: () => void;
-  onAddProject: () => void;
-}
-
-interface ActionButton {
-  label: string;
-  color: string;
-  onPress: () => void;
+  activeTab: TabName;
+  onTabChange: (tab: TabName) => void;
 }
 
 function daemonSymbol(status: DaemonStatus): string {
@@ -48,47 +37,10 @@ function daemonText(status: DaemonStatus): string {
   }
 }
 
-function actionButtons(view: View, props: HeaderProps): ActionButton[] {
-  const manageLabel = t("project.manageLabel");
-  const viewLoopsLabel = t("board.viewLoopsLabel");
-  const viewTasksLabel = t("board.viewTasksLabel");
-  const newLoopLabel = t("board.newLoopLabel");
-  const taskActionNew = t("board.taskActionNew");
-  const newProjectLabel = t("project.newProjectLabel");
-
-  switch (view) {
-    case "board":
-      return [
-        { label: manageLabel, color: ENTITY_COLORS.project, onPress: props.onViewProjects },
-        { label: viewTasksLabel, color: ENTITY_COLORS.task, onPress: props.onViewTasks },
-        { label: newLoopLabel, color: ENTITY_COLORS.loop, onPress: props.onAddLoop },
-      ];
-    case "task-list":
-      return [
-        { label: manageLabel, color: ENTITY_COLORS.project, onPress: props.onViewProjects },
-        { label: viewLoopsLabel, color: ENTITY_COLORS.loop, onPress: props.onViewLoops },
-        { label: taskActionNew, color: ENTITY_COLORS.task, onPress: props.onAddTask },
-      ];
-    case "projects":
-      return [
-        { label: viewLoopsLabel, color: ENTITY_COLORS.loop, onPress: props.onViewLoops },
-        { label: viewTasksLabel, color: ENTITY_COLORS.task, onPress: props.onViewTasks },
-        { label: newProjectLabel, color: ENTITY_COLORS.project, onPress: props.onAddProject },
-      ];
-    default:
-      return [
-        { label: manageLabel, color: ENTITY_COLORS.project, onPress: props.onViewProjects },
-        { label: viewTasksLabel, color: ENTITY_COLORS.task, onPress: props.onViewTasks },
-        { label: newLoopLabel, color: ENTITY_COLORS.loop, onPress: props.onAddLoop },
-      ];
-  }
-}
-
 export function Header(props: HeaderProps): React.ReactNode {
   const { stdout } = useStdout();
   const width = stdout?.columns ?? 80;
   const compact = width < HEADER_COMPACT_WIDTH;
-  const buttons = actionButtons(props.view, props);
 
   return (
     <Box flexDirection="column">
@@ -118,16 +70,7 @@ export function Header(props: HeaderProps): React.ReactNode {
           )}
         </Box>
 
-        <Box gap={1}>
-          {buttons.map((btn, i) => (
-            <FocusableButton
-              key={i}
-              label={btn.label}
-              color={btn.color}
-              onPress={btn.onPress}
-            />
-          ))}
-        </Box>
+        <TabBar activeTab={props.activeTab} onTabChange={props.onTabChange} />
       </Box>
 
       <Box>
