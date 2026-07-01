@@ -6,6 +6,7 @@ import { PatchEditForm } from "./PatchEditForm.js";
 import { createTask, updateTask, listTasks } from "../daemon.js";
 import crypto from "node:crypto";
 import { t } from "../../i18n/index.js";
+import { validateField } from "../utils/validation.js";
 
 // ── Props ───────────────────────────────────────────────────────────
 
@@ -123,6 +124,8 @@ export function TaskForm(props: TaskFormProps): React.ReactNode {
   const [activeField, setActiveField] = useState<string | null>(null);
   const [activeFieldValue, setActiveFieldValue] = useState("");
   const [pendingChanges, setPendingChanges] = useState<Record<string, string>>({});
+  const [focusedRowIndex, setFocusedRowIndex] = useState(0);
+  const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
 
   const handleActiveFieldChange = useCallback((value: string) => {
     setActiveFieldValue(value);
@@ -130,6 +133,16 @@ export function TaskForm(props: TaskFormProps): React.ReactNode {
 
   const handleActiveFieldCommit = useCallback(() => {
     if (activeField !== null) {
+      const error = validateField(activeField, activeFieldValue);
+      if (error) {
+        setValidationErrors((prev) => ({ ...prev, [activeField]: error }));
+      } else {
+        setValidationErrors((prev) => {
+          const next = { ...prev };
+          delete next[activeField];
+          return next;
+        });
+      }
       setPendingChanges((prev) => ({ ...prev, [activeField]: activeFieldValue }));
       setActiveField(null);
       setActiveFieldValue("");
@@ -139,6 +152,22 @@ export function TaskForm(props: TaskFormProps): React.ReactNode {
   const handleActiveFieldCancel = useCallback(() => {
     setActiveField(null);
     setActiveFieldValue("");
+  }, []);
+
+  const handleActiveFieldActivate = useCallback((key: string, value: string) => {
+    setActiveField(key);
+    setActiveFieldValue(value);
+  }, []);
+
+  const handleValidationError = useCallback((key: string, error: string | null) => {
+    setValidationErrors((prev) => {
+      if (error === null) {
+        const next = { ...prev };
+        delete next[key];
+        return next;
+      }
+      return { ...prev, [key]: error };
+    });
   }, []);
 
   // ── Edit mode: PatchEditForm ─────────────────────────────────────
@@ -170,6 +199,17 @@ export function TaskForm(props: TaskFormProps): React.ReactNode {
         ...pendingChanges,
       };
 
+      const errors: Record<string, string> = {};
+      for (const field of editFields) {
+        const shown = field.key in merged ? merged[field.key] : field.value;
+        const err = validateField(field.key, shown);
+        if (err) errors[field.key] = err;
+      }
+      if (Object.keys(errors).length > 0) {
+        setValidationErrors(errors);
+        return;
+      }
+
       const payload = {
         name: merged.name,
         command: merged.command,
@@ -192,9 +232,15 @@ export function TaskForm(props: TaskFormProps): React.ReactNode {
         onActiveFieldChange={handleActiveFieldChange}
         onActiveFieldCommit={handleActiveFieldCommit}
         onActiveFieldCancel={handleActiveFieldCancel}
+        onActiveFieldActivate={handleActiveFieldActivate}
         pendingChanges={pendingChanges}
+        focusedRowIndex={focusedRowIndex}
+        onFocusedRowChange={setFocusedRowIndex}
+        validationErrors={validationErrors}
+        onValidationError={handleValidationError}
         onSave={handleSave}
         onCancel={props.onCancel}
+        onCopy={props.onCopy ?? (() => {})}
       />
     );
   }

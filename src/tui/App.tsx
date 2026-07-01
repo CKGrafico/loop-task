@@ -520,6 +520,7 @@ export function App(props: { onQuit: () => void }): React.ReactNode {
             onCancel={cancelCreate}
             onDone={onCreateDone}
             onChooseTask={handleChooseTask}
+            onCopy={() => pushToast("success", t("board.toastCopied"))}
           />
         ) : TASK_FORM_VIEWS.has(view) ? (
           <TaskForm

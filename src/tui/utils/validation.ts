@@ -23,7 +23,7 @@ const validators: Record<string, ValidateFn> = {
   },
 
   description(value) {
-    if (!value.trim()) return t("errors.descriptionEmpty");
+    if (!value.trim()) return null;
     return null;
   },
 
