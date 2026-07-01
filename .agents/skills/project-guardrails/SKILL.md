@@ -69,9 +69,20 @@ license: MIT
   - **Type one char at a time**: `stdin.write("abc")` arrives as a single multi-char input event; components that gate on `input.length === 1` (real per-keystroke handling) will reject it. Write chars individually with a small `await delay()` between them.
   - **Await async key handling**: Ink buffers escape sequences and processes input on the next tick. After `stdin.write()` (especially lone Escape `\u001B` or Ctrl combos like `\u0013`), `await` a short delay before asserting on spies.
   - **Ctrl combos**: A control byte (e.g. `\u0013`) is delivered to `useInput` as `input="s", key.ctrl=true`.
-- **Known stale tests**: `tests/cli.test.ts` has pre-existing failures (version assertion, `--description` flag requirement). `tests/loop-controller.test.ts` has timer mock issues. `tests/projects.test.ts` has cleanup issues. Confirm a failure is genuinely yours before touching assertions.
 - **Use `LOOP_CLI_HOME`** to isolate daemon state in tests; never write to the real state dir from tests.
 - **Gate order**: `typecheck` -> `lint` -> `test` -> `build`. Always run all four before claiming done.
+- **Test patterns**:
+  - Pure functions: direct import + `it.each()` for table-driven cases (see `tests/scheduling.test.ts`, `tests/log-parser.test.ts`).
+  - Async state machines: `vi.useFakeTimers()` + `vi.advanceTimersByTimeAsync()` + mock `execa`/`executeCommand` (see `tests/loop-controller.test.ts`).
+  - Daemon modules: mock `LoopController`/`execa`, set `LOOP_CLI_HOME` to temp dir, verify persistence via fresh manager instance (see `tests/daemon-manager.test.ts`, `tests/daemon-state.test.ts`).
+  - IPC/socket: mock `node:net.createConnection` with `vi.hoisted()` + fake socket with emit, or use real Unix socket for integration-style server tests (see `tests/daemon-server.test.ts`, `tests/client-ipc.test.ts`).
+  - Client commands: mock `sendRequest`/`streamRequest`, spy on `process.exit`, verify request payload shapes (see `tests/client-commands.test.ts`).
+- **Mocking gotchas**:
+  - `vi.mock()` must appear BEFORE importing the module under test.
+  - For `node:net` mocking, use `vi.hoisted()` to create the mock function so it's available in the hoisted `vi.mock()` factory.
+  - `vi.useFakeTimers()` + async: always use `vi.advanceTimersByTimeAsync()` / `vi.runAllTimersAsync()`, not the sync variants.
+  - `LoopController` tests: must pass 4th arg `taskResolver` (`() => null` if unused) and include `taskId`, `description`, `projectId`, `offset` in `LoopOptions`.
+- **Coverage gaps (as of gh-20)**: `src/loop-config.ts`, `src/shared/clipboard.ts`, `src/ipc/handlers/logs-stream.ts`, `src/core/command-runner.ts` still below 90%. Clipboard and logs-stream are platform/runtime-dependent and candidates for coverage exclusion. Loop-config and command-runner need more tests in a follow-up.
 
 ## Build & Deployment
 
