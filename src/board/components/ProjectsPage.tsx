@@ -4,8 +4,6 @@ import type { LoopMeta, Project } from "../../types.js";
 import { t } from "../../i18n/index.js";
 import { useHoverState } from "../hooks/useHoverState.js";
 import { HOVER_BG, ENTITY_COLORS } from "../../config/constants.js";
-import { CreateProjectModal } from "./CreateProjectModal.js";
-import { EditProjectModal } from "./EditProjectModal.js";
 import { DeleteProjectConfirm } from "./DeleteProjectConfirm.js";
 import { SearchBox } from "./SearchBox.js";
 import {
@@ -147,8 +145,10 @@ export function ProjectsPage(props: {
   onRefresh: () => Promise<void>;
   onOpenCreate?: (trigger: () => void) => void;
   onEnterHeader?: (direction: "left" | "right") => void;
+  onNavigateCreate?: () => void;
+  onNavigateEdit?: (project: Project) => void;
 }): React.ReactNode {
-  const { projects, loops, headerFocused, onClose, onRefresh, onOpenCreate, onEnterHeader } = props;
+  const { projects, loops, headerFocused, onClose, onRefresh, onOpenCreate, onEnterHeader, onNavigateCreate, onNavigateEdit } = props;
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [subModal, setSubModal] = useState<SubModal>("none");
   const [projectFilters, setProjectFilters] = useState<ProjectFilters>(defaultProjectFilters);
@@ -194,7 +194,10 @@ export function ProjectsPage(props: {
 
   function runAction(actionIndex: number): void {
     if (!selectedProject || selectedProject.isSystem) return;
-    if (actionIndex === 0) setSubModal("edit");
+    if (actionIndex === 0) {
+      if (onNavigateEdit) onNavigateEdit(selectedProject);
+      else setSubModal("edit");
+    }
     else if (actionIndex === 1) setSubModal("delete");
   }
 
@@ -267,12 +270,14 @@ export function ProjectsPage(props: {
     }
 
     if (key.name === "n") {
-      setSubModal("create");
+      if (onNavigateCreate) onNavigateCreate();
+      else setSubModal("create");
       key.preventDefault();
       return;
     }
     if (key.name === "e" && selectedProject && !selectedProject.isSystem) {
-      setSubModal("edit");
+      if (onNavigateEdit) onNavigateEdit(selectedProject);
+      else setSubModal("edit");
       key.preventDefault();
       return;
     }
@@ -400,29 +405,6 @@ export function ProjectsPage(props: {
           )}
         </box>
       </box>
-
-      {subModal === "create" ? (
-        <CreateProjectModal
-          onDone={async (project) => {
-            setSubModal("none");
-            await onRefresh();
-            const newIndex = filteredProjects.findIndex((p) => p.id === project.id);
-            if (newIndex >= 0) setSelectedIndex(newIndex);
-          }}
-          onCancel={() => setSubModal("none")}
-        />
-      ) : null}
-
-      {subModal === "edit" && selectedProject ? (
-        <EditProjectModal
-          project={selectedProject}
-          onDone={async () => {
-            setSubModal("none");
-            await onRefresh();
-          }}
-          onCancel={() => setSubModal("none")}
-        />
-      ) : null}
 
       {subModal === "delete" && selectedProject ? (
         <DeleteProjectConfirm

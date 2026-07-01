@@ -53,6 +53,8 @@ export const WIZARD_LOOP_REQUIRED_STEPS = 3;
 export const WIZARD_LOOP_TOTAL_STEPS = 7;
 export const WIZARD_TASK_REQUIRED_STEPS = 2;
 export const WIZARD_TASK_TOTAL_STEPS = 4;
+export const WIZARD_PROJECT_REQUIRED_STEPS = 1;
+export const WIZARD_PROJECT_TOTAL_STEPS = 2;
 
 // ── Command tiers ───────────────────────────────────────────────────
 export const COMMAND_TIER_ACTION = "action";

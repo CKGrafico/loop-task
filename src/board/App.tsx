@@ -33,6 +33,7 @@ import { TaskFilterBar } from "./components/TaskFilterBar.js";
 import { LogModal } from "./components/LogModal.js";
 import { ProjectsModal } from "./components/ProjectsModal.js";
 import { ProjectsPage } from "./components/ProjectsPage.js";
+import { ProjectFormView } from "./components/ProjectForm.js";
 import { fetchRunLog, deleteLoop, pauseLoop, resumeLoop, stopLoop, playLoop, triggerLoop, listTasks, deleteTask, listProjects } from "./daemon.js";
 import { useBreakpoint } from "./hooks/useBreakpoint.js";
 import { useRouter } from "./router.js";
@@ -46,6 +47,8 @@ const VIEW_TO_MODE: Partial<Record<View, Mode>> = {
   "task-edit": "task",
   "task-list": "task",
   projects: "projects",
+  "project-create": "create",
+  "project-edit": "create",
 };
 
 function resolveMode(confirm: ConfirmState | null, searchActive: boolean, helpOpen: boolean, view: View): Mode {
@@ -75,6 +78,7 @@ export function App(props: { onQuit: () => void }): React.ReactNode {
   const [editTarget, setEditTarget] = useState<LoopMeta | null>(null);
   const [cloneMode, setCloneMode] = useState(false);
   const [editTask, setEditTask] = useState<TaskDefinition | null>(null);
+  const [editProject, setEditProject] = useState<Project | null>(null);
   const [pendingTaskSelection, setPendingTaskSelection] = useState<{ id: string; name: string } | null>(null);
   const [selectedRunIndex, setSelectedRunIndex] = useState(0);
   const [selectedAction, setSelectedAction] = useState(0);
@@ -315,6 +319,7 @@ export function App(props: { onQuit: () => void }): React.ReactNode {
   const cancelCreate = () => { setEditTarget(null); setCloneMode(false); setPendingTaskSelection(null); pop(); };
   const cancelTask = () => { setEditTask(null); pop(); };
   const cancelTaskList = () => pop();
+  const cancelProject = () => { setEditProject(null); pop(); };
 
   function handleChooseTask(): void {
     void refreshTasks();
@@ -342,7 +347,14 @@ export function App(props: { onQuit: () => void }): React.ReactNode {
     pushToast("success", updated ? t("board.toastTaskUpdated", { id }) : t("board.toastTaskCreated", { id }));
   };
 
-  const FORM_VIEWS: View[] = ["create", "task-create", "task-edit"];
+  const onProjectDone = (updated: boolean, name: string) => {
+    setEditProject(null);
+    void refreshProjects();
+    pop();
+    pushToast("success", updated ? t("project.toastUpdated", { name }) : t("project.toastCreated", { name }));
+  };
+
+  const FORM_VIEWS: View[] = ["create", "task-create", "task-edit", "project-create", "project-edit"];
   const isFormView = FORM_VIEWS.includes(view);
 
   const actionKeys = selected ? getActionKeys(selected.status) : [];
@@ -476,7 +488,7 @@ export function App(props: { onQuit: () => void }): React.ReactNode {
         onViewProjects={() => push("projects")}
         onAddLoop={() => { setEditTarget(null); push("create"); }}
         onAddTask={() => { setEditTask(null); push("task-create"); }}
-        onAddProject={() => { if (view === "projects") { createProjectTriggerRef.current?.(); } else { push("projects"); } }}
+        onAddProject={() => { if (view === "projects") { setEditProject(null); push("project-create"); } else { push("projects"); } }}
       />
 
       {view === "board" ? (
@@ -529,6 +541,13 @@ export function App(props: { onQuit: () => void }): React.ReactNode {
             onDone={onTaskDone}
             onCopy={() => pushToast("success", t("board.toastCopied"))}
           />
+        ) : view === "project-create" || view === "project-edit" ? (
+          <ProjectFormView
+            mode={view === "project-edit" ? "edit" : "create"}
+            editProject={view === "project-edit" ? editProject : null}
+            onCancel={cancelProject}
+            onDone={onProjectDone}
+          />
         ) : view === "task-list" ? (
           <box style={{ flexDirection: breakpoint === "narrow" ? "column" : "row", flexGrow: 1, backgroundColor: "#0b0b0b" }}>
             <TaskNavigator
@@ -561,6 +580,8 @@ export function App(props: { onQuit: () => void }): React.ReactNode {
             onRefresh={refreshProjects}
             onOpenCreate={(trigger) => { createProjectTriggerRef.current = trigger; }}
             onEnterHeader={() => {}}
+            onNavigateCreate={() => { setEditProject(null); push("project-create"); }}
+            onNavigateEdit={(project) => { setEditProject(project); push("project-edit"); }}
           />
         ) : (
           <box style={{ flexDirection: breakpoint === "narrow" ? "column" : "row", flexGrow: 1, backgroundColor: "#0b0b0b" }}>
