@@ -4,7 +4,6 @@ import { darkTheme as theme } from "../theme.js";
 import { FocusableInput } from "./FocusableInput.js";
 import { t } from "../../i18n/index.js";
 import { copyToClipboard } from "../../shared/clipboard.js";
-import { validateField } from "../utils/validation.js";
 
 export interface PatchEditFormProps {
   title: string;
@@ -43,7 +42,6 @@ export function PatchEditForm(props: PatchEditFormProps): React.ReactNode {
     focusedRowIndex,
     onFocusedRowChange,
     validationErrors,
-    onValidationError,
     onSave,
     onCancel,
     onCopy,

@@ -8,7 +8,7 @@ import { PatchEditForm } from "./PatchEditForm.js";
 import { parseDuration } from "../../duration.js";
 import { parseCommandLine } from "../../loop-config.js";
 import { validateField } from "../utils/validation.js";
-import { copyToClipboard } from "../../shared/clipboard.js";
+
 
 // ── Props ───────────────────────────────────────────────────────────
 
