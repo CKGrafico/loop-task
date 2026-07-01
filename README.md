@@ -293,7 +293,7 @@ A four-task chain that finds an issue, marks it in-progress, rewrites it with AI
 **Task 1** (primary): Find an issue to refine
 
 ```bash
-gh issue list --label "to refine" --limit 1 --json number,title,body --jq '{number: .[0].number, title: .[0].title, body: .[0].body}'
+gh issue list --label "to refine" --json number,title,body --jq '{number: .[0].number, title: .[0].title, body: .[0].body}'
 ```
 
 stdout: `{"number":123,"title":"Fix login","body":"It doesn't work"}`
@@ -347,7 +347,7 @@ A four-task chain that finds an issue to implement, marks it in-progress, runs a
 **Task 1** (primary): Find an issue to implement (or exit if one is already in progress)
 
 ```bash
-gh issue list --label "implementing" --limit 1 --json number --jq 'length == 0' | grep -q true && gh issue list --label "to implement" --limit 1 --json number,title,body --jq '{number: .[0].number, title: .[0].title, body: .[0].body}'
+gh issue list --label "implementing" --json number --jq 'length == 0' | grep -q true && gh issue list --label "to implement" --json number,title,body --jq '{number: .[0].number, title: .[0].title, body: .[0].body}'
 ```
 
 stdout: `{"number":456,"title":"Add dark mode toggle","body":"Users want a dark theme"}`
