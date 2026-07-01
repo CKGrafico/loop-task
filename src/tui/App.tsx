@@ -520,6 +520,7 @@ export function App(props: { onQuit: () => void }): React.ReactNode {
             onCancel={cancelCreate}
             onDone={onCreateDone}
             onChooseTask={handleChooseTask}
+            onCopy={() => pushToast("success", t("board.toastCopied"))}
           />
         ) : TASK_FORM_VIEWS.has(view) ? (
           <TaskForm
@@ -614,7 +615,7 @@ function createInitialValues(editTarget: LoopMeta | null, currentProjectId: stri
       interval: "30m",
       taskMode: "inline",
       command: "",
-      cwd: "",
+      cwd: process.cwd(),
       taskId: "",
       description: "",
       runNow: "y",

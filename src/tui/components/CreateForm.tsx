@@ -5,6 +5,10 @@ import { createLoop, updateLoop } from "../daemon.js";
 import { t } from "../../i18n/index.js";
 import { WizardForm, type WizardStepConfig } from "./WizardForm.js";
 import { PatchEditForm } from "./PatchEditForm.js";
+import { parseDuration } from "../../duration.js";
+import { parseCommandLine } from "../../loop-config.js";
+import { validateField } from "../utils/validation.js";
+
 
 // ── Props ───────────────────────────────────────────────────────────
 
@@ -19,31 +23,7 @@ interface CreateViewProps {
   onCancel: () => void;
   onDone: (updated: boolean, id: string, desc: string) => void;
   onChooseTask: () => void;
-}
-
-// ── Utility functions (kept from original) ──────────────────────────
-
-function parseArgs(cmd: string): string[] {
-  const tokens: string[] = [];
-  const regex = /"([^"]*)"|'([^']*)'|(\S+)/g;
-  let match: RegExpExecArray | null;
-  while ((match = regex.exec(cmd)) !== null) {
-    tokens.push(match[1] ?? match[2] ?? match[3] ?? "");
-  }
-  return tokens;
-}
-
-function parseInterval(input: string): { interval: number; intervalHuman: string } | null {
-  const match = input.trim().match(/^(\d+)\s*(s|m|h|d|w)$/i);
-  if (!match) return null;
-  const num = parseInt(match[1], 10);
-  const unit = match[2].toLowerCase();
-  const multipliers: Record<string, number> = { s: 1000, m: 60000, h: 3600000, d: 86400000, w: 604800000 };
-  return { interval: num * multipliers[unit], intervalHuman: input.trim() };
-}
-
-function commandLine(command: string, args: string[]): string {
-  return [command, ...args].join(" ").trim();
+  onCopy: (value: string) => void;
 }
 
 // ── Component ───────────────────────────────────────────────────────
@@ -58,6 +38,7 @@ export function CreateView(props: CreateViewProps): React.ReactNode {
     currentProjectId,
     onCancel,
     onDone,
+    onCopy,
   } = props;
 
   // Track task mode so steps can be conditional
@@ -159,8 +140,15 @@ export function CreateView(props: CreateViewProps): React.ReactNode {
     (values: Record<string, string>) => {
       const intervalInput = values.interval ?? "";
       if (!intervalInput.trim()) return;
-      const parsed = parseInterval(intervalInput);
-      if (!parsed) return;
+
+      let interval: number;
+      try {
+        interval = parseDuration(intervalInput.trim());
+      } catch {
+        return;
+      }
+
+      const intervalHuman = intervalInput.trim();
 
       const isExistingTask = taskMode === "Existing task";
 
@@ -168,14 +156,22 @@ export function CreateView(props: CreateViewProps): React.ReactNode {
       if (!isExistingTask && !(values.command ?? "").trim()) return;
 
       const cmd = isExistingTask ? "" : (values.command ?? "");
-      const tokens = cmd.trim() ? parseArgs(cmd.trim()) : [];
-      const cmdOnly = tokens[0] ?? "";
-      const args = tokens.slice(1);
+      let cmdOnly = "";
+      let args: string[] = [];
+      if (cmd.trim()) {
+        try {
+          const tokens = parseCommandLine(cmd.trim());
+          cmdOnly = tokens[0] ?? "";
+          args = tokens.slice(1);
+        } catch {
+          return;
+        }
+      }
 
       const runNowValue = values.runNow === t("wizard.runNowNow");
 
       const options: LoopOptions = {
-        interval: parsed.interval,
+        interval,
         taskId: isExistingTask
           ? (selectedTaskId ?? values.taskId?.trim() ?? null)
           : null,
@@ -192,14 +188,14 @@ export function CreateView(props: CreateViewProps): React.ReactNode {
         offset: null,
       };
 
-      const desc = (values.description ?? "").trim() || commandLine(cmdOnly, args);
+      const desc = (values.description ?? "").trim() || [cmdOnly, ...args].join(" ").trim();
 
       if (mode === "edit" && editId) {
-        updateLoop(editId, options, parsed.intervalHuman)
+        updateLoop(editId, options, intervalHuman)
           .then((id) => onDone(true, id, desc))
           .catch(() => { /* error handled silently */ });
       } else {
-        createLoop(options, parsed.intervalHuman)
+        createLoop(options, intervalHuman)
           .then((id) => onDone(false, id, desc))
           .catch(() => { /* error handled silently */ });
       }
@@ -212,6 +208,8 @@ export function CreateView(props: CreateViewProps): React.ReactNode {
   const [activeField, setActiveField] = useState<string | null>(null);
   const [activeFieldValue, setActiveFieldValue] = useState("");
   const [pendingChanges, setPendingChanges] = useState<Record<string, string>>({});
+  const [focusedRowIndex, setFocusedRowIndex] = useState(0);
+  const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
 
   const editFields = useMemo(
     () => [
@@ -232,6 +230,16 @@ export function CreateView(props: CreateViewProps): React.ReactNode {
 
   const handleActiveFieldCommit = useCallback(() => {
     if (activeField !== null) {
+      const error = validateField(activeField, activeFieldValue);
+      if (error) {
+        setValidationErrors((prev) => ({ ...prev, [activeField]: error }));
+      } else {
+        setValidationErrors((prev) => {
+          const next = { ...prev };
+          delete next[activeField];
+          return next;
+        });
+      }
       setPendingChanges((prev) => ({ ...prev, [activeField]: activeFieldValue }));
       setActiveField(null);
       setActiveFieldValue("");
@@ -243,21 +251,62 @@ export function CreateView(props: CreateViewProps): React.ReactNode {
     setActiveFieldValue("");
   }, []);
 
+  const handleActiveFieldActivate = useCallback((key: string, value: string) => {
+    setActiveField(key);
+    setActiveFieldValue(value);
+  }, []);
+
+  const handleValidationError = useCallback((key: string, error: string | null) => {
+    setValidationErrors((prev) => {
+      if (error === null) {
+        const next = { ...prev };
+        delete next[key];
+        return next;
+      }
+      return { ...prev, [key]: error };
+    });
+  }, []);
+
   const handleEditSave = useCallback(() => {
     if (!editId) return;
 
     const merged = { ...initial, ...pendingChanges };
+    const errors: Record<string, string> = {};
+    for (const field of editFields) {
+      const shown = field.key in merged ? merged[field.key] : field.value;
+      const err = validateField(field.key, shown);
+      if (err) errors[field.key] = err;
+    }
+    if (Object.keys(errors).length > 0) {
+      setValidationErrors(errors);
+      return;
+    }
     const intervalInput = merged.interval ?? "";
-    const parsed = parseInterval(intervalInput);
-    if (!parsed) return;
+
+    let interval: number;
+    try {
+      interval = parseDuration(intervalInput.trim());
+    } catch {
+      return;
+    }
+
+    const intervalHuman = intervalInput.trim();
 
     const cmd = merged.command ?? "";
-    const tokens = cmd.trim() ? parseArgs(cmd.trim()) : [];
-    const cmdOnly = tokens[0] ?? "";
-    const args = tokens.slice(1);
+    let cmdOnly = "";
+    let args: string[] = [];
+    if (cmd.trim()) {
+      try {
+        const tokens = parseCommandLine(cmd.trim());
+        cmdOnly = tokens[0] ?? "";
+        args = tokens.slice(1);
+      } catch {
+        return;
+      }
+    }
 
     const options: LoopOptions = {
-      interval: parsed.interval,
+      interval,
       taskId: merged.taskId?.trim() || null,
       command: cmdOnly,
       commandArgs: args,
@@ -270,9 +319,9 @@ export function CreateView(props: CreateViewProps): React.ReactNode {
       offset: null,
     };
 
-    const desc = (merged.description ?? "").trim() || commandLine(cmdOnly, args);
+    const desc = (merged.description ?? "").trim() || [cmdOnly, ...args].join(" ").trim();
 
-    updateLoop(editId, options, parsed.intervalHuman)
+    updateLoop(editId, options, intervalHuman)
       .then((id) => onDone(true, id, desc))
       .catch(() => { /* error handled silently */ });
   }, [editId, initial, pendingChanges, currentProjectId, onDone]);
@@ -287,9 +336,15 @@ export function CreateView(props: CreateViewProps): React.ReactNode {
         onActiveFieldChange={handleActiveFieldChange}
         onActiveFieldCommit={handleActiveFieldCommit}
         onActiveFieldCancel={handleActiveFieldCancel}
+        onActiveFieldActivate={handleActiveFieldActivate}
         pendingChanges={pendingChanges}
+        focusedRowIndex={focusedRowIndex}
+        onFocusedRowChange={setFocusedRowIndex}
+        validationErrors={validationErrors}
+        onValidationError={handleValidationError}
         onSave={handleEditSave}
         onCancel={onCancel}
+        onCopy={onCopy}
       />
     );
   }
