@@ -89,11 +89,12 @@ program
   .option("--cwd <dir>", t("cli.optCwd"))
   .option("--project <name>", t("cli.optProject"))
   .option("--offset <duration>", "Phase offset (e.g. 5m, 15m)")
+  .option("--description <desc>", "Description of the loop")
   .action(
     async (
       intervalStr: string,
       cmdArgs: string[],
-      opts: { now: boolean; maxRuns?: number; verbose: boolean; cwd?: string; project?: string; offset?: string }
+      opts: { now: boolean; maxRuns?: number; verbose: boolean; cwd?: string; project?: string; offset?: string; description?: string }
     ) => {
       try {
         const projectId = opts.project
@@ -107,6 +108,7 @@ program
           cwd: opts.cwd ?? process.cwd(),
           projectId,
           offset: offsetMs,
+          description: opts.description ?? cmdArgs.join(" "),
         });
         await startLoop(built.options, built.intervalHuman);
       } catch (error: unknown) {
@@ -126,11 +128,12 @@ program
   .option("--max-runs <n>", t("cli.optMaxRuns"))
   .option("--verbose", t("cli.optVerbose"))
   .option("--cwd <dir>", t("cli.optCwd"))
+  .option("--description <desc>", "Description of the loop")
   .action(
     async (
       intervalStr: string | undefined,
       cmdArgs: string[] | undefined,
-      opts: { now?: boolean; maxRuns?: string; verbose?: boolean; cwd?: string }
+      opts: { now?: boolean; maxRuns?: string; verbose?: boolean; cwd?: string; description?: string }
     ) => {
       if (!intervalStr || !cmdArgs || cmdArgs.length === 0) {
         program.help();
@@ -143,6 +146,7 @@ program
         command: cmdArgs[0],
         commandArgs: cmdArgs.slice(1),
         cwd: opts.cwd ?? process.cwd(),
+        description: opts.description ?? cmdArgs.join(" "),
       });
 
       const controller = new AbortController();

@@ -10,14 +10,22 @@ function makeTempDir(): string {
 
 describe("ProjectManager", () => {
   let tmpDir: string;
+  let origHome: string | undefined;
   let manager: ProjectManager;
 
   beforeEach(() => {
     tmpDir = makeTempDir();
-    manager = new ProjectManager(tmpDir);
+    origHome = process.env.LOOP_CLI_HOME;
+    process.env.LOOP_CLI_HOME = tmpDir;
+    manager = new ProjectManager();
   });
 
   afterEach(() => {
+    if (origHome === undefined) {
+      delete process.env.LOOP_CLI_HOME;
+    } else {
+      process.env.LOOP_CLI_HOME = origHome;
+    }
     rmSync(tmpDir, { recursive: true, force: true });
   });
 
@@ -52,7 +60,7 @@ describe("ProjectManager", () => {
     expect(project.isSystem).toBe(false);
     expect(project.createdAt).toBeTruthy();
 
-    const freshManager = new ProjectManager(tmpDir);
+    const freshManager = new ProjectManager();
     freshManager.init();
     const all = freshManager.getAll();
     const found = all.find((p) => p.id === project.id);
@@ -66,7 +74,7 @@ describe("ProjectManager", () => {
     const project = manager.create("OldName", "#ff5722");
     manager.update(project.id, "NewName");
 
-    const freshManager = new ProjectManager(tmpDir);
+    const freshManager = new ProjectManager();
     freshManager.init();
     const found = freshManager.get(project.id);
     expect(found).toBeDefined();
@@ -83,7 +91,7 @@ describe("ProjectManager", () => {
     const project = manager.create("Temp", "#4caf50");
     manager.delete(project.id);
 
-    const freshManager = new ProjectManager(tmpDir);
+    const freshManager = new ProjectManager();
     freshManager.init();
     const found = freshManager.get(project.id);
     expect(found).toBeUndefined();
@@ -116,15 +124,13 @@ describe("ProjectManager migration", () => {
 
   it("B5: LoopManager.init migrates loops missing projectId to default", async () => {
     const loopsDir = join(tmpDir, ".loop-cli", "loops");
-    const tasksDir = join(tmpDir, ".loop-cli", "tasks");
     const logsDir = join(tmpDir, ".loop-cli", "logs");
     mkdirSync(loopsDir, { recursive: true });
-    mkdirSync(tasksDir, { recursive: true });
     mkdirSync(logsDir, { recursive: true });
 
     const loopWithoutProject = {
       id: "test1234",
-      taskId: "task1234",
+      taskId: null,
       command: "echo",
       commandArgs: ["hello"],
       interval: 60000,
@@ -147,27 +153,22 @@ describe("ProjectManager migration", () => {
       maxRunsReached: false,
       runHistory: [],
       skippedCount: 0,
+      offset: null,
     };
 
-    const taskDef = {
-      id: "task1234",
-      name: "echo hello",
-      command: "echo",
-      commandArgs: ["hello"],
-      cwd: "",
-      onSuccessTaskId: null,
-      onFailureTaskId: null,
-      createdAt: new Date().toISOString(),
-    };
-
+    // Write as individual .json file in the old loops/ directory format
     writeFileSync(join(loopsDir, "test1234.json"), JSON.stringify(loopWithoutProject, null, 2));
-    writeFileSync(join(tasksDir, "task1234.json"), JSON.stringify(taskDef, null, 2));
 
     const { LoopManager } = await import("../src/daemon/manager.js");
     const { TaskManager } = await import("../src/daemon/task-manager.js");
     const { ProjectManager } = await import("../src/daemon/projects.js");
+    const { migrateLoopsToJson, migrateTasksToJson } = await import("../src/daemon/state.js");
 
-    const projectManager = new ProjectManager(join(tmpDir, ".loop-cli"));
+    // Migrate old per-file format to loops.json
+    migrateLoopsToJson();
+    migrateTasksToJson();
+
+    const projectManager = new ProjectManager();
     const taskManager = new TaskManager();
     const loopManager = new LoopManager(taskManager, projectManager);
     loopManager.init();
