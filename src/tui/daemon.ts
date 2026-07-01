@@ -3,6 +3,9 @@ import type { LoopMeta, LoopOptions, TaskDefinition, Project } from "../types.js
 import { sendRequest, streamRequest } from "../client/ipc.js";
 import { t } from "../i18n/index.js";
 import { LOG_TAIL_DEFAULT } from "../config/constants.js";
+import fs from "node:fs/promises";
+import path from "node:path";
+import { getDataDir } from "../config/paths.js";
 
 function expectOk(message: string, type: string): asserts type is "ok" {
   if (type !== "ok") {
@@ -157,6 +160,29 @@ export async function createProject(name: string, color: string): Promise<Projec
 export async function updateProject(id: string, name: string, color?: string): Promise<void> {
   const response = await sendRequest({ type: "project-update", payload: { id, name, color } });
   expectOk((response as { message?: string }).message ?? t("project.error.updateFailed"), response.type);
+}
+
+export async function exportConfig(): Promise<{ json: string; filePath: string }> {
+  const [loops, tasks, projects] = await Promise.all([
+    listLoops().catch(() => [] as LoopMeta[]),
+    listTasks().catch(() => [] as TaskDefinition[]),
+    listProjects().catch(() => [] as Project[]),
+  ]);
+  const exportData = {
+    version: 2,
+    exportedAt: new Date().toISOString(),
+    loops,
+    tasks,
+    projects,
+  };
+  const json = JSON.stringify(exportData, null, 2);
+  const dataDir = getDataDir();
+  const exportsDir = path.join(dataDir, "exports");
+  await fs.mkdir(exportsDir, { recursive: true });
+  const ts = new Date().toISOString().replace(/[:.]/g, "-");
+  const filePath = path.join(exportsDir, `loop-export-${ts}.json`);
+  await fs.writeFile(filePath, json, "utf-8");
+  return { json, filePath };
 }
 
 export async function deleteProject(id: string): Promise<void> {

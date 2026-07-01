@@ -17,7 +17,8 @@ import { LogModal } from "./components/LogModal.js";
 import { CommandsBrowserModal } from "./components/CommandsBrowserModal.js";
 import { DebugPanel, MAX_ENTRIES, type DebugEntry } from "./components/DebugPanel.js";
 import { ContextHelpModal } from "./components/ContextHelpModal.js";
-import { fetchRunLog, deleteLoop, pauseLoop, resumeLoop, stopLoop, triggerLoop, listTasks, deleteTask, listProjects } from "./daemon.js";
+import { ExportModal } from "./components/ExportModal.js";
+import { fetchRunLog, deleteLoop, pauseLoop, resumeLoop, stopLoop, triggerLoop, listTasks, deleteTask, listProjects, exportConfig } from "./daemon.js";
 import { applyLoopFilters, applyProjectFilters, cycleSortMode, cycleStatusFilter, cycleProjectSortMode, cycleProjectHasLoopsFilter, cycleProjectIsSystemFilter, defaultFilters, defaultProjectFilters, type Filters, type SortMode, type ProjectFilters } from "./state.js";
 import { t } from "../i18n/index.js";
 import { POLL_MS } from "../config/constants.js";
@@ -68,6 +69,7 @@ export function App(props: { onQuit: () => void }): React.ReactNode {
   // ── Overlay state ──
   const [commandsBrowserOpen, setCommandsBrowserOpen] = useState(false);
   const [contextHelpOpen, setContextHelpOpen] = useState(false);
+  const [exportModal, setExportModal] = useState<{ json: string; filePath: string | null; error: string | null } | null>(null);
   // ── Confirm state (8.3) ──
   const [confirmState, setConfirmState] = useState<ConfirmState | null>(null);
   // ── Search state (command-driven search) ──
@@ -266,7 +268,11 @@ export function App(props: { onQuit: () => void }): React.ReactNode {
     },
     api: () => { pushToast("info", `Command "api" coming soon`); },
     status: () => { pushToast("info", `Command "status" coming soon`); },
-    export: () => { pushToast("info", `Command "export" coming soon`); },
+    export: () => {
+      exportConfig()
+        .then(({ json, filePath }) => setExportModal({ json, filePath, error: null }))
+        .catch((e) => setExportModal({ json: "", filePath: null, error: e instanceof Error ? e.message : String(e) }));
+    },
     import: () => { pushToast("info", `Command "import" coming soon`); },
   };
 
@@ -359,7 +365,7 @@ export function App(props: { onQuit: () => void }): React.ReactNode {
   useInput((input, key) => {
     // Ctrl+C always quits if no modal open
     if (key.ctrl && input === "c") {
-      if (!logModalRun && !confirmState && !commandsBrowserOpen) {
+      if (!logModalRun && !confirmState && !commandsBrowserOpen && !exportModal) {
         onQuit();
         exit();
         return;
@@ -415,7 +421,7 @@ export function App(props: { onQuit: () => void }): React.ReactNode {
     }
 
     // Ctrl shortcuts: dispatch to command handler (bottom input ignores all ctrl)
-    const canShortcut = key.ctrl && isBoardView(view) && !logModalRun && !commandsBrowserOpen && !confirmState && !searchState?.active;
+    const canShortcut = key.ctrl && isBoardView(view) && !logModalRun && !commandsBrowserOpen && !confirmState && !searchState?.active && !exportModal;
     if (canShortcut) {
       const globalShortcuts: Record<string, () => void> = {
         p: () => setCommandsBrowserOpen(true),
@@ -530,7 +536,7 @@ export function App(props: { onQuit: () => void }): React.ReactNode {
   });
 
   // Modals disable panel input behind them; CommandInput stays active for confirm/search
-  const anyModalOpen = !!(logModalRun || commandsBrowserOpen);
+  const anyModalOpen = !!(logModalRun || commandsBrowserOpen || exportModal);
   const commandInputDisabled = anyModalOpen;
 
   const counts = {
@@ -652,6 +658,16 @@ export function App(props: { onQuit: () => void }): React.ReactNode {
         />
       ) : null}
       {contextHelpOpen ? <ContextHelpModal onClose={() => setContextHelpOpen(false)} /> : null}
+
+      {exportModal ? (
+        <ExportModal
+          json={exportModal.json}
+          filePath={exportModal.filePath}
+          error={exportModal.error}
+          onClose={() => setExportModal(null)}
+          onCopy={() => pushToast("success", t("board.toastCopied"))}
+        />
+      ) : null}
 
       {logModalRun ? (
         <LogModal

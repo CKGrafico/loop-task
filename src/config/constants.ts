@@ -95,5 +95,7 @@ export const COMMAND_INPUT_HEIGHT = 6;
 export const COMMAND_INPUT_DROPDOWN_MAX_VISIBLE = 6;
 
 // ── Ctrl shortcut hints (for display) ───────────────────────────────
+export const EXPORT_MAX_PREVIEW_LINES = 200;
+
 export const CTRL_SHORTCUT_EDIT = "Ctrl+E";
 export const CTRL_SHORTCUT_DELETE = "Ctrl+D";
