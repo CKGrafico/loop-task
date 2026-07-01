@@ -614,7 +614,7 @@ function createInitialValues(editTarget: LoopMeta | null, currentProjectId: stri
       interval: "30m",
       taskMode: "inline",
       command: "",
-      cwd: "",
+      cwd: process.cwd(),
       taskId: "",
       description: "",
       runNow: "y",
