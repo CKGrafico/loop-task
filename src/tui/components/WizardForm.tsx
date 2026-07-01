@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from "react";
+import React, { useState, useCallback, useMemo } from "react";
 import { Box, Text, useInput } from "ink";
 import { darkTheme as theme } from "../theme.js";
 import { t } from "../../i18n/index.js";
@@ -110,6 +110,14 @@ export function WizardForm(props: WizardFormProps): React.ReactNode {
     [values],
   );
 
+  // Resolved values: raw values with defaults filled in.
+  // skip() functions must receive these so they work before the user touches a field.
+  const resolvedValues = useMemo(() => {
+    const result: Record<string, string> = {};
+    for (const s of steps) result[s.key] = values[s.key] ?? s.defaultValue ?? "";
+    return result;
+  }, [steps, values]);
+
   const setValue = useCallback((key: string, next: string) => {
     setValues((prev) => ({ ...prev, [key]: next }));
   }, []);
@@ -128,7 +136,7 @@ export function WizardForm(props: WizardFormProps): React.ReactNode {
   }, []);
 
   const getTaskMode = useCallback((): string => {
-    const modeVal = values["taskMode"] ?? "";
+    const modeVal = resolvedValues["taskMode"] ?? "";
     return modeVal.includes("Existing") ? "existing" : "inline";
   }, [values]);
 
@@ -136,7 +144,7 @@ export function WizardForm(props: WizardFormProps): React.ReactNode {
     const errors: Record<string, string> = {};
 
     for (const s of steps) {
-      if (s.skip && s.skip(values)) continue;
+      if (s.skip && s.skip(resolvedValues)) continue;
       const err = validateField(s.key, valueFor(s), {
         taskMode: getTaskMode(),
         allValues: values,
@@ -160,7 +168,7 @@ export function WizardForm(props: WizardFormProps): React.ReactNode {
     }
     const result: Record<string, string> = {};
     for (const s of steps) {
-      if (s.skip && s.skip(values)) continue;
+      if (s.skip && s.skip(resolvedValues)) continue;
       result[s.key] = valueFor(s);
     }
     onComplete(result);
@@ -172,7 +180,7 @@ export function WizardForm(props: WizardFormProps): React.ReactNode {
       const len = steps.length;
       while (next >= 0 && next < len) {
         const candidate = steps[next];
-        if (!candidate.skip || !candidate.skip(values)) return next;
+        if (!candidate.skip || !candidate.skip(resolvedValues)) return next;
         next += delta;
       }
       return from;
@@ -200,7 +208,7 @@ export function WizardForm(props: WizardFormProps): React.ReactNode {
     [step, valueFor, getTaskMode, values, activeField, findNextField, setError, clearError],
   );
 
-  const visibleSteps = steps.filter((s) => !s.skip || !s.skip(values));
+  const visibleSteps = steps.filter((s) => !s.skip || !s.skip(resolvedValues));
 
   useInput((input, key) => {
     if (key.escape) {
@@ -218,10 +226,14 @@ export function WizardForm(props: WizardFormProps): React.ReactNode {
     if (!step) return;
 
     if (step.renderCustom) {
-      if (key.return) {
-        if (step.onActivate) step.onActivate();
-        else moveField(1);
+      // If onActivate is set, this is a "launch modal" field:
+      // Enter opens the modal, everything else is blocked.
+      if (step.onActivate) {
+        if (key.return) step.onActivate();
       }
+      // If no onActivate, the renderCustom component owns its own useInput
+      // for text editing (Enter, arrows, backspace). WizardForm only handles
+      // Esc / Ctrl+S / Tab which are already caught above.
       return;
     }
 
@@ -303,7 +315,7 @@ export function WizardForm(props: WizardFormProps): React.ReactNode {
   function renderField(s: WizardStepConfig, fieldIdx: number): React.ReactNode {
     const isActive = fieldIdx === activeField;
     const val = valueFor(s);
-    if (s.skip && s.skip(values)) return null;
+    if (s.skip && s.skip(resolvedValues)) return null;
     return (
       <Box key={s.key} flexDirection="column" marginBottom={1}>
         <Box>

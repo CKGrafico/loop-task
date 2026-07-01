@@ -63,17 +63,6 @@ export class TaskManager {
     });
   }
 
-  updateInline(id: string, command: string, commandArgs: string[]): TaskDefinition | null {
-    const name = [command, ...commandArgs].join(" ").slice(0, 40);
-    return this.update(id, {
-      name,
-      command,
-      commandArgs,
-      onSuccessTaskId: null,
-      onFailureTaskId: null,
-    });
-  }
-
   reload(newTasks: TaskDefinition[]): void {
     this.tasks.clear();
     for (const task of newTasks) {

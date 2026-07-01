@@ -37,25 +37,16 @@ export class LoopManager {
 
     const saved = loadAllLoops();
     let restarted = 0;
-    let migrated = 0;
     const shouldAutoStart = (s: string) => s !== "stopped" && s !== "idle";
     for (const meta of saved) {
       if (!(meta as LoopMeta & { projectId?: string }).projectId) {
         (meta as LoopMeta & { projectId?: string }).projectId = "default";
         saveLoop(meta as LoopMeta);
       }
-      let taskId = meta.taskId;
-      if (!taskId && meta.command) {
-        const task = this.taskManager.createInline(meta.command, meta.commandArgs);
-        taskId = task.id;
-        meta.taskId = taskId;
-        saveLoop(meta);
-        migrated += 1;
-      }
 
       const options: LoopOptions = {
         interval: meta.interval,
-        taskId: taskId ?? null,
+        taskId: meta.taskId,
         command: meta.command,
         commandArgs: meta.commandArgs,
         commandRaw: meta.commandRaw,
@@ -91,9 +82,6 @@ export class LoopManager {
         restarted += 1;
       }
     }
-    if (migrated > 0) {
-      daemonLog(`migrated ${migrated} loop(s) to task model`);
-    }
     if (restarted > 0) {
       daemonLog(`restarted ${restarted} loop(s) from persisted state`);
     }
@@ -118,23 +106,11 @@ export class LoopManager {
     const entry = this.loops.get(id);
     if (!entry) return false;
 
-    // For inline commands (taskId: null), keep the command routed through a
-    // task so the controller and persistence stay consistent across restarts.
-    if (!options.taskId && options.command) {
-      const existingTaskId = entry.options.taskId;
-      const existingTask = existingTaskId ? this.taskManager.get(existingTaskId) : null;
-      if (existingTask) {
-        this.taskManager.updateInline(existingTask.id, options.command, options.commandArgs);
-        options = { ...options, taskId: existingTask.id };
-      } else {
-        const task = this.taskManager.createInline(options.command, options.commandArgs);
-        options = { ...options, taskId: task.id };
-      }
-    }
-
     const executionChanged =
       entry.options.interval !== options.interval ||
       entry.options.taskId !== options.taskId ||
+      entry.options.command !== options.command ||
+      entry.options.commandArgs.join(" ") !== options.commandArgs.join(" ") ||
       entry.options.immediate !== options.immediate ||
       entry.options.maxRuns !== options.maxRuns ||
       entry.options.verbose !== options.verbose;

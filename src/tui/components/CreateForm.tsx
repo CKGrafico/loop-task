@@ -1,4 +1,4 @@
-import React, { useMemo, useCallback, useState, useRef } from "react";
+import React, { useMemo, useCallback, useState } from "react";
 import { Box, Text } from "ink";
 
 import type { Project, LoopOptions, TaskDefinition } from "../../types.js";
@@ -6,7 +6,7 @@ import { createLoop, updateLoop } from "../daemon.js";
 import { t } from "../../i18n/index.js";
 import { WizardForm, type WizardStepConfig } from "./WizardForm.js";
 import { TaskPickerModal } from "./TaskPickerModal.js";
-import { CommandEditorModal } from "./CommandEditorModal.js";
+import { InlineCommandEditor } from "./InlineCommandEditor.js";
 import { parseDuration } from "../../duration.js";
 import { parseCommandLine } from "../../loop-config.js";
 import { darkTheme as theme } from "../theme.js";
@@ -45,9 +45,7 @@ export function CreateView(props: CreateViewProps): React.ReactNode {
   } = props;
 
   const [taskPickerOpen, setTaskPickerOpen] = useState(false);
-  const [cmdEditorOpen, setCmdEditorOpen] = useState(false);
   const [commandValue, setCommandValue] = useState(initial.command ?? "");
-  const cmdOnChangeRef = useRef<((v: string) => void) | null>(null);
 
   const taskModeInitial = initial.taskMode === "existing" ? "Existing task" : "Inline command";
 
@@ -98,17 +96,18 @@ export function CreateView(props: CreateViewProps): React.ReactNode {
         inputType: "text",
         defaultValue: commandValue || undefined,
         skip: (values) => !!values.taskMode?.includes("Existing"),
-        onActivate: () => setCmdEditorOpen(true),
-        renderCustom: ({ isActive, onChange }) => {
-          cmdOnChangeRef.current = onChange;
-          return (
-            <CommandPreviewField
-              value={commandValue}
-              hint={t("wizard.commandHint")}
-              isActive={isActive}
-            />
-          );
-        },
+        // No onActivate — inline editor, owned directly by renderCustom
+        renderCustom: ({ isActive, onChange }) => (
+          <InlineCommandEditor
+            value={commandValue}
+            hint={t("wizard.commandHint")}
+            isActive={isActive}
+            onChange={(v) => {
+              setCommandValue(v);
+              onChange(v);
+            }}
+          />
+        ),
       },
       {
         key: "runNow",
@@ -147,7 +146,7 @@ export function CreateView(props: CreateViewProps): React.ReactNode {
       },
     ];
     return list;
-  }, [taskModeInitial, selectedTaskId, selectedTaskName, initial]);
+  }, [taskModeInitial, selectedTaskId, selectedTaskName, initial, commandValue]);
 
   const handleComplete = useCallback(
     (values: Record<string, string>) => {
@@ -226,7 +225,7 @@ export function CreateView(props: CreateViewProps): React.ReactNode {
         steps={steps}
         onComplete={handleComplete}
         onCancel={onCancel}
-        disabled={taskPickerOpen || cmdEditorOpen}
+        disabled={taskPickerOpen}
       />
       {taskPickerOpen ? (
         <TaskPickerModal
@@ -236,17 +235,6 @@ export function CreateView(props: CreateViewProps): React.ReactNode {
             setTaskPickerOpen(false);
           }}
           onClose={() => setTaskPickerOpen(false)}
-        />
-      ) : null}
-      {cmdEditorOpen ? (
-        <CommandEditorModal
-          initial={commandValue}
-          onSelect={(value) => {
-            setCommandValue(value);
-            cmdOnChangeRef.current?.(value);
-            setCmdEditorOpen(false);
-          }}
-          onClose={() => setCmdEditorOpen(false)}
         />
       ) : null}
     </>
@@ -285,50 +273,6 @@ function TaskPickerField({
           <Text color={theme.accent.brand}>{"\u203a "}</Text>
           <Text color={theme.text.muted}>
             {t("wizard.taskPickerHint", { action: "enter" })}
-          </Text>
-        </Box>
-      ) : null}
-    </Box>
-  );
-}
-
-// ── Command preview field ───────────────────────────────────────────
-
-function CommandPreviewField({
-  value,
-  hint,
-  isActive,
-}: {
-  value: string;
-  hint: string;
-  isActive: boolean;
-}): React.ReactNode {
-  const firstLine = value.split("\n")[0] ?? "";
-  const hasMore = value.includes("\n");
-  const display = firstLine || hint;
-  const showHint = !firstLine;
-  return (
-    <Box flexDirection="column" width="100%">
-      <Box
-        borderStyle="single"
-        borderColor={isActive ? theme.accent.brand : theme.border.dim}
-        backgroundColor={isActive ? theme.bg.input : undefined}
-        paddingLeft={1}
-        overflow="hidden"
-        width="100%"
-      >
-        <Text color={showHint ? theme.text.muted : theme.text.primary}>
-          {display}
-        </Text>
-        {hasMore ? (
-          <Text color={theme.text.muted}> {"\u2026"}</Text>
-        ) : null}
-      </Box>
-      {isActive ? (
-        <Box marginTop={0}>
-          <Text color={theme.accent.brand}>{"\u203a "}</Text>
-          <Text color={theme.text.muted}>
-            {t("wizard.cmdEditorHint", { action: "enter" })}
           </Text>
         </Box>
       ) : null}

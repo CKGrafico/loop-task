@@ -178,6 +178,12 @@ export function App(props: { onQuit: () => void }): React.ReactNode {
       if (activeTab === "loops" && selected) {
         setCloneMode(false);
         setEditTarget(selected);
+        if (selected.taskId) {
+          const task = tasks.find((t) => t.id === selected.taskId);
+          setPendingTaskSelection(task ? { id: task.id, name: task.name } : null);
+        } else {
+          setPendingTaskSelection(null);
+        }
         push("create");
       } else if (activeTab === "tasks" && selectedTask) {
         setEditTask(selectedTask);
@@ -188,7 +194,7 @@ export function App(props: { onQuit: () => void }): React.ReactNode {
       }
     },
     clone: () => {
-      if (selected) {
+      if (activeTab === "loops" && selected) {
         setCloneMode(true);
         setEditTarget(selected);
         push("create");
@@ -223,17 +229,17 @@ export function App(props: { onQuit: () => void }): React.ReactNode {
       }
     },
     pause: () => {
-      if (selected) {
+      if (activeTab === "loops" && selected) {
         void runAction(t("board.toastPaused", { desc: selected.description }), () => pauseLoop(selected.id))();
       }
     },
     play: () => {
-      if (selected) {
+      if (activeTab === "loops" && selected) {
         void runAction(t("board.toastResumed", { desc: selected.description }), () => resumeLoop(selected.id))();
       }
     },
     stop: () => {
-      if (selected) {
+      if (activeTab === "loops" && selected) {
         setConfirmState({
           prompt: t("confirm.stopLoop", { name: selected.description || selected.id }),
           onConfirm: () => { void stopLoop(selected.id).then(() => { void refresh(); }); },
@@ -241,7 +247,7 @@ export function App(props: { onQuit: () => void }): React.ReactNode {
       }
     },
     trigger: () => {
-      if (selected) {
+      if (activeTab === "loops" && selected) {
         void runAction(t("board.toastTriggered", { desc: selected.description }), () => triggerLoop(selected.id))();
       }
     },
@@ -259,7 +265,7 @@ export function App(props: { onQuit: () => void }): React.ReactNode {
     "filter-project": () => { setActiveTab("projects"); },
     debug: () => { setDebugMode((prev) => !prev); },
     logs: () => {
-      if (selected) {
+      if (activeTab === "loops" && selected) {
         const runs = selected.runHistory;
         if (runs && runs.length > 0) {
           handleOpenRunLog(runs[runs.length - 1]!);
@@ -374,8 +380,10 @@ export function App(props: { onQuit: () => void }): React.ReactNode {
     // Ctrl+C always quits if no modal open
     if (key.ctrl && input === "c") {
       if (!logModalRun && !confirmState && !commandsBrowserOpen && !exportModal) {
-        onQuit();
-        exit();
+        setConfirmState({
+          prompt: t("confirm.quit"),
+          onConfirm: () => { onQuit(); exit(); },
+        });
         return;
       }
     }
@@ -418,11 +426,23 @@ export function App(props: { onQuit: () => void }): React.ReactNode {
         } else {
           setCloneMode(false);
           setEditTarget(selected);
+          if (selected.taskId) {
+            const task = tasks.find((t) => t.id === selected.taskId);
+            setPendingTaskSelection(task ? { id: task.id, name: task.name } : null);
+          } else {
+            setPendingTaskSelection(null);
+          }
           push("create");
         }
       } else if (focusedPanel === "left" && selected) {
         setCloneMode(false);
         setEditTarget(selected);
+        if (selected.taskId) {
+          const task = tasks.find((t) => t.id === selected.taskId);
+          setPendingTaskSelection(task ? { id: task.id, name: task.name } : null);
+        } else {
+          setPendingTaskSelection(null);
+        }
         push("create");
       }
       return;
@@ -448,13 +468,15 @@ export function App(props: { onQuit: () => void }): React.ReactNode {
       const actionShortcuts: Record<string, () => void> = {
         n: () => handleCommand(activeTab === "loops" ? "new-loop" : activeTab === "tasks" ? "new-task" : "new-project"),
         e: () => handleCommand("edit"),
-        p: () => handleCommand("pause"),
-        r: () => handleCommand("play"),
-        s: () => handleCommand("stop"),
-        t: () => handleCommand("trigger"),
-        c: () => handleCommand("clone"),
         d: () => handleCommand("delete"),
-        o: () => handleCommand("logs"),
+        ...(activeTab === "loops" ? {
+          p: () => handleCommand("pause"),
+          r: () => handleCommand("play"),
+          s: () => handleCommand("stop"),
+          t: () => handleCommand("trigger"),
+          c: () => handleCommand("clone"),
+          o: () => handleCommand("logs"),
+        } : {}),
       };
 
       if (chordState === "ctrl+f" && filterShortcuts[input]) {
@@ -536,10 +558,16 @@ export function App(props: { onQuit: () => void }): React.ReactNode {
       if (input === "3") { setActiveTab("projects"); return; }
     }
 
-    // Escape: pop router or quit
+    // Escape: pop router or ask to quit
     if (key.escape) {
+      if (exportModal) { setExportModal(null); return; }
       if (view !== "board") pop();
-      else { onQuit(); exit(); }
+      else {
+        setConfirmState({
+          prompt: t("confirm.quit"),
+          onConfirm: () => { onQuit(); exit(); },
+        });
+      }
       return;
     }
   });
