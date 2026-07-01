@@ -17,7 +17,7 @@ import { CommandsBrowserModal } from "./components/CommandsBrowserModal.js";
 import { DebugPanel, MAX_ENTRIES, type DebugEntry } from "./components/DebugPanel.js";
 import { ContextHelpModal } from "./components/ContextHelpModal.js";
 import { fetchRunLog, deleteLoop, pauseLoop, resumeLoop, stopLoop, triggerLoop, listTasks, deleteTask, listProjects } from "./daemon.js";
-import { applyLoopFilters, cycleSortMode, cycleStatusFilter, defaultFilters, type Filters, type SortMode } from "./state.js";
+import { applyLoopFilters, applyProjectFilters, cycleSortMode, cycleStatusFilter, cycleProjectSortMode, cycleProjectHasLoopsFilter, cycleProjectIsSystemFilter, defaultFilters, defaultProjectFilters, type Filters, type SortMode, type ProjectFilters } from "./state.js";
 import { t } from "../i18n/index.js";
 import { POLL_MS } from "../config/constants.js";
 import { darkTheme as theme } from "./theme.js";
@@ -61,6 +61,8 @@ export function App(props: { onQuit: () => void }): React.ReactNode {
   const [taskQuery, setTaskQuery] = useState("");
   const [projects, setProjects] = useState<Project[]>([]);
   const [currentProjectId] = useState<string>("all");
+  const [projectSelectedIndex, setProjectSelectedIndex] = useState(0);
+  const [projectFilters, setProjectFilters] = useState<ProjectFilters>(defaultProjectFilters);
   // ── Overlay state ──
   const [commandsBrowserOpen, setCommandsBrowserOpen] = useState(false);
   const [contextHelpOpen, setContextHelpOpen] = useState(false);
@@ -102,6 +104,16 @@ export function App(props: { onQuit: () => void }): React.ReactNode {
 
   const taskClampedIndex = Math.min(taskSelectedIndex, Math.max(0, filteredTasks.length - 1));
   const selectedTask = filteredTasks[taskClampedIndex] ?? null;
+
+  const filteredProjects = useMemo(
+    () => applyProjectFilters(projects, loops, projectFilters),
+    [projects, loops, projectFilters]
+  );
+  const projectClampedIndex = Math.min(projectSelectedIndex, Math.max(0, filteredProjects.length - 1));
+  const selectedProjectEntity = filteredProjects[projectClampedIndex] ?? null;
+  const projectLoopCount = selectedProjectEntity
+    ? loops.filter((l) => (l.projectId ?? "default") === selectedProjectEntity.id).length
+    : 0;
 
   async function refreshTasks(): Promise<void> {
     try { setTasks(await listTasks()); } catch { /* ignore */ }
@@ -180,6 +192,21 @@ export function App(props: { onQuit: () => void }): React.ReactNode {
           prompt: t("confirm.deleteTask", { id: selectedTask.id }),
           onConfirm: () => { void deleteTask(selectedTask.id).then(() => { void refreshTasks(); }); },
         });
+      } else if (activeTab === "projects" && selectedProjectEntity) {
+        setConfirmState({
+          prompt: t("confirm.deleteProject", { name: selectedProjectEntity.name }),
+          onConfirm: async () => {
+            try {
+              const { deleteProject: dp } = await import("./daemon.js");
+              await dp(selectedProjectEntity.id);
+              pushToast("success", t("project.toastDeleted", { name: selectedProjectEntity.name }));
+              setProjectSelectedIndex(0);
+              void refreshProjects();
+            } catch (e) {
+              pushToast("error", (e as Error).message);
+            }
+          },
+        });
       }
     },
     pause: () => {
@@ -208,6 +235,9 @@ export function App(props: { onQuit: () => void }): React.ReactNode {
     "new-loop": () => { setEditTarget(null); push("create"); },
     "new-task": () => { setEditTask(null); push("task-create"); },
     "new-project": () => { setActiveTab("projects"); },
+    "project-filter-loops": () => { setProjectFilters((prev) => ({ ...prev, hasLoops: cycleProjectHasLoopsFilter(prev.hasLoops) })); },
+    "project-filter-type": () => { setProjectFilters((prev) => ({ ...prev, isSystem: cycleProjectIsSystemFilter(prev.isSystem) })); },
+    "project-sort": () => { setProjectFilters((prev) => ({ ...prev, sort: cycleProjectSortMode(prev.sort) })); },
     "all-commands": () => { setCommandsBrowserOpen(true); },
     help: () => { setCommandsBrowserOpen(true); },
     search: () => { setSearchValue(""); setSearchState({ active: true }); },
@@ -308,7 +338,7 @@ export function App(props: { onQuit: () => void }): React.ReactNode {
 
   // ── Command context (8.3) ──
   const commandContext: CommandContext = useMemo(
-    () => ({ activeTab, selectedLoop: selected, selectedTask, selectedProject: null }),
+    () => ({ activeTab, selectedLoop: selected, selectedTask, selectedProject: selectedProjectEntity }),
     [activeTab, selected, selectedTask]
   );
 
@@ -553,6 +583,11 @@ export function App(props: { onQuit: () => void }): React.ReactNode {
               onSortCycle={() => setSort(cycleSortMode(sort))}
               onSelectProject={() => setActiveTab("projects")}
               currentProjectName={currentProjectId === "all" ? t("project.showAll") : (projects.find(p => p.id === currentProjectId)?.name ?? "Default")}
+              projectFilters={projectFilters}
+              projectSelectedIndex={projectClampedIndex}
+              onProjectSelect={(index) => setProjectSelectedIndex(index)}
+              onProjectActivate={(index) => { setProjectSelectedIndex(index); }}
+              projectLoops={loops}
             />
             <RightPanel
               isFocused={focusedPanel === "right" && !anyModalOpen}
@@ -561,6 +596,10 @@ export function App(props: { onQuit: () => void }): React.ReactNode {
               selectedRunIndex={selectedRunIndex}
               onSelectRun={(index) => setSelectedRunIndex(index)}
               onOpenRun={handleOpenRunLog}
+              selectedProject={selectedProjectEntity}
+              projectLoopCount={projectLoopCount}
+              onProjectEdit={() => { if (selectedProjectEntity && !selectedProjectEntity.isSystem) { commandHandlers["edit"]?.(); } }}
+              onProjectDelete={() => { if (selectedProjectEntity && !selectedProjectEntity.isSystem) { commandHandlers["delete"]?.(); } }}
             />
             {debugMode ? <DebugPanel entries={debugEntries} /> : null}
           </Box>

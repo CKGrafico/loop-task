@@ -47,6 +47,7 @@ export function Footer(props: { mode: Mode }): React.ReactNode {
       ["n", t("project.keyNewHint")],
       ["e", t("project.keyEditHint")],
       ["d", t("project.keyDeleteHint")],
+      [t("board.hintKeySlash"), t("project.hintSearch")],
       [t("board.hintKeyEsc"), t("board.hintBack")],
     ],
   };
