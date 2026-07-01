@@ -58,6 +58,7 @@ export class LoopManager {
         taskId: taskId ?? null,
         command: meta.command,
         commandArgs: meta.commandArgs,
+        commandRaw: meta.commandRaw,
         cwd: meta.cwd ?? "",
         immediate: false,
         maxRuns: meta.maxRuns,
@@ -116,6 +117,20 @@ export class LoopManager {
   ): Promise<boolean> {
     const entry = this.loops.get(id);
     if (!entry) return false;
+
+    // For inline commands (taskId: null), keep the command routed through a
+    // task so the controller and persistence stay consistent across restarts.
+    if (!options.taskId && options.command) {
+      const existingTaskId = entry.options.taskId;
+      const existingTask = existingTaskId ? this.taskManager.get(existingTaskId) : null;
+      if (existingTask) {
+        this.taskManager.updateInline(existingTask.id, options.command, options.commandArgs);
+        options = { ...options, taskId: existingTask.id };
+      } else {
+        const task = this.taskManager.createInline(options.command, options.commandArgs);
+        options = { ...options, taskId: task.id };
+      }
+    }
 
     const executionChanged =
       entry.options.interval !== options.interval ||
@@ -403,6 +418,7 @@ export class LoopManager {
       ...runtime,
       command: task?.command ?? options.command,
       commandArgs: task?.commandArgs ?? options.commandArgs,
+      commandRaw: options.commandRaw,
       cwd: options.cwd || "",
       interval: options.interval,
       intervalHuman,

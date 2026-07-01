@@ -22,6 +22,7 @@ export interface LoopOptions {
   taskId: string | null;
   command: string;
   commandArgs: string[];
+  commandRaw?: string;
   cwd: string;
   immediate: boolean;
   maxRuns: number | null;
@@ -66,6 +67,7 @@ export interface LoopMeta {
   taskId: string | null;
   command: string;
   commandArgs: string[];
+  commandRaw?: string;
   interval: number;
   intervalHuman: string;
   immediate: boolean;

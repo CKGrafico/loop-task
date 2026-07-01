@@ -13,11 +13,13 @@ export interface WizardStepConfig {
   inputType: "text" | "select";
   defaultValue?: string;
   skip?: (values: Record<string, string>) => boolean;
+  onActivate?: () => void;
   renderCustom?: (props: {
     value: string;
     isActive: boolean;
     onChange: (value: string) => void;
     onAdvance: () => void;
+    onActivate?: () => void;
   }) => React.ReactNode;
 }
 
@@ -26,6 +28,7 @@ export interface WizardFormProps {
   steps: WizardStepConfig[];
   onComplete: (values: Record<string, string>) => void;
   onCancel: () => void;
+  disabled?: boolean;
 }
 
 function TextField({
@@ -48,6 +51,7 @@ function TextField({
       backgroundColor={backgroundColor}
       paddingLeft={1}
       overflow="hidden"
+      width="100%"
     >
       <Text color={showHint ? theme.text.muted : theme.text.primary}>
         {showHint ? hint : value}
@@ -93,7 +97,7 @@ function SelectField({
 }
 
 export function WizardForm(props: WizardFormProps): React.ReactNode {
-  const { title, steps, onComplete, onCancel } = props;
+  const { title, steps, onComplete, onCancel, disabled = false } = props;
 
   const [values, setValues] = useState<Record<string, string>>({});
   const [activeField, setActiveField] = useState(0);
@@ -213,7 +217,13 @@ export function WizardForm(props: WizardFormProps): React.ReactNode {
     }
     if (!step) return;
 
-    if (step.renderCustom) return;
+    if (step.renderCustom) {
+      if (key.return) {
+        if (step.onActivate) step.onActivate();
+        else moveField(1);
+      }
+      return;
+    }
 
     if (step.inputType === "select" && step.suggestions) {
       const options = step.suggestions;
@@ -280,7 +290,7 @@ export function WizardForm(props: WizardFormProps): React.ReactNode {
     if (input.length === 1 && input >= " " && input <= "~") {
       setValue(step.key, valueFor(step) + input);
     }
-  });
+  }, { isActive: !disabled });
 
   const mid = Math.ceil(steps.length / 2);
   const columns: [WizardStepConfig[], number][] = [
@@ -308,7 +318,7 @@ export function WizardForm(props: WizardFormProps): React.ReactNode {
           </Text>
           {s.required ? <Text color={theme.semantic.danger}>*</Text> : null}
         </Box>
-        <Box paddingLeft={2}>
+        <Box paddingLeft={2} width="100%">
           {s.renderCustom ? (
             s.renderCustom({
               value: val,

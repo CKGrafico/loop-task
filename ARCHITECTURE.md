@@ -381,6 +381,7 @@ No external network APIs, no HTTP clients, no remote services. The daemon listen
 | execa | 9.6.0 | Child process spawning for loop commands |
 | ms | 2.1.3 | Parse/format human-readable durations (`30m`, `1h`) |
 | Vitest | 3.1.0 | Test framework with v8 coverage |
+| ink-testing-library | 4.0.0 | Ink component testing (`render`, `lastFrame`, `stdin.write`) |
 | ESLint | 9.25.0 | Linting with typescript-eslint recommended |
 | tsx | 4.19.0 | Dev runner (replaces Bun) |
 
@@ -503,11 +504,12 @@ All shell commands must be prefixed with `rtk` in agent contexts (see AGENTS.md)
 | Aspect | Details |
 |---|---|
 | Framework | Vitest 3 with `globals: true` |
-| Location | `tests/` directory, `*.test.ts` naming |
+| Location | `tests/` directory, `*.test.ts` for logic, `*.test.tsx` for Ink components |
 | Coverage | v8 provider, 90% thresholds (lines/functions/branches/statements) |
 | Coverage excludes | `src/cli.ts`, `src/types.ts`, `src/daemon/index.ts`, `src/tui/**`, `src/board/**` |
 | Known issues | `tests/cli.test.ts` has pre-existing failures (version assertion, `--description` flag requirement). `tests/loop-controller.test.ts` has timer mock issues. `tests/projects.test.ts` has test-dir cleanup issues. |
-| TUI testing | TUI components (`src/tui/`) are excluded from coverage; tested manually via `pnpm run dev` |
+| TUI testing | TUI components tested with `ink-testing-library` (`render()`, `lastFrame()`, `stdin.write()`). Component tests in `tests/*.test.tsx`. Coverage excludes `src/tui/**` but new/changed components should ship with a `.test.tsx`. |
+| TUI testing rules | Wrap absolute/100% layouts in a sized `<Box>`; type chars one-at-a-time with `await delay()` between them; `await` after `stdin.write()` for async key handling (esc, ctrl combos). |
 | Test isolation | Use `LOOP_CLI_HOME` to isolate daemon state |
 
 ---
@@ -536,7 +538,7 @@ All shell commands must be prefixed with `rtk` in agent contexts (see AGENTS.md)
 | No schema versioning | Future `LoopMeta` shape changes risk breaking persisted JSON | Corrupted files silently skipped; no migration path |
 | Pre-existing test failures | 11 tests fail on `main` before any changes; coverage gate may be unreliable | Confirm failures are pre-existing before touching assertions |
 | `ink-combobox` is young | v0.2.0, 0 stars, single contributor | Headless hooks isolate us from breaking changes; MIT, small package, can fork if needed |
-| Coverage excludes `src/tui/**` | TUI has no automated tests | Manual testing via dev command; DebugPanel for key debugging |
+| Coverage excludes `src/tui/**` | TUI has no automated tests | Component tests with `ink-testing-library` in `tests/*.test.tsx`; DebugPanel for key debugging |
 | `POLL_MS = 1000ms` | 1-second latency between daemon state change and TUI update | Push events mitigate for subscribed clients |
 | Windows IPC differences | Named pipes vs Unix sockets; Ctrl+Enter encoding differs | `input.includes("\n")` detection; `file-watcher.ts` mtime polling fallback |
 
@@ -553,7 +555,7 @@ All shell commands must be prefixed with `rtk` in agent contexts (see AGENTS.md)
 **Recommendations (not yet documented):**
 - Delete `src/board/` directory entirely to eliminate confusion
 - Add schema versioning to JSON files for safe migrations
-- Add integration tests for TUI components using `ink-testing-library`
+- Add integration tests for TUI components using `ink-testing-library` (done - `tests/tui-components.test.tsx`)
 - Replace polling with push-event-only updates (reduce `POLL_MS` or eliminate)
 - Consider `error` event handling for push events when subscriber sockets die
 

@@ -41,6 +41,7 @@ export function LogModal(props: {
 
   useEffect(() => {
     if (!props.loopId) return;
+    if (props.run.status !== "running") return;
     setStreaming(true);
     const socket = streamRunLog(
       props.loopId,
@@ -52,7 +53,7 @@ export function LogModal(props: {
     return () => {
       socket.destroy();
     };
-  }, [props.loopId, props.run.runNumber]);
+  }, [props.loopId, props.run.runNumber, props.run.status]);
 
   const filtered = searchQuery
     ? lines.filter((l) => l.toLowerCase().includes(searchQuery.toLowerCase()))
@@ -133,8 +134,8 @@ export function LogModal(props: {
         <Text color={statusColor}>
           {statusIcon}{" "}
           {props.run.status === "running"
-            ? "Running"
-            : `exit ${props.run.exitCode}`}
+            ? t("board.logModalRunning")
+            : t("board.logModalExit", { code: props.run.exitCode })}
         </Text>
         {props.run.duration > 0 ? (
           <Text color={theme.text.muted}> {props.run.duration}ms</Text>
@@ -161,7 +162,7 @@ export function LogModal(props: {
             {isLoading
               ? t("board.logModalLoading")
               : searchQuery
-                ? "No matches"
+                ? t("board.logModalNoMatches")
                 : t("board.logModalEmpty")}
           </Text>
         ) : (
@@ -183,8 +184,8 @@ export function LogModal(props: {
       <Box marginTop={1} justifyContent="space-between">
         <Text color={theme.text.muted}>
           {searchMode
-            ? "type to filter, enter to apply, esc to close"
-            : "/:search  c:copy  up/down:scroll  esc:close"}
+            ? t("board.logModalSearchHint")
+            : t("board.logModalFooterHints")}
         </Text>
       </Box>
     </Modal>

@@ -1,13 +1,15 @@
-import React, { useState, useMemo, useCallback } from "react";
+import React, { useMemo, useCallback, useState, useRef } from "react";
+import { Box, Text } from "ink";
 
-import type { Project, LoopOptions } from "../../types.js";
+import type { Project, LoopOptions, TaskDefinition } from "../../types.js";
 import { createLoop, updateLoop } from "../daemon.js";
 import { t } from "../../i18n/index.js";
 import { WizardForm, type WizardStepConfig } from "./WizardForm.js";
-import { PatchEditForm } from "./PatchEditForm.js";
+import { TaskPickerModal } from "./TaskPickerModal.js";
+import { CommandEditorModal } from "./CommandEditorModal.js";
 import { parseDuration } from "../../duration.js";
 import { parseCommandLine } from "../../loop-config.js";
-import { validateField } from "../utils/validation.js";
+import { darkTheme as theme } from "../theme.js";
 
 
 // ── Props ───────────────────────────────────────────────────────────
@@ -18,12 +20,12 @@ interface CreateViewProps {
   initial: Record<string, string>;
   selectedTaskId: string | null;
   selectedTaskName: string | null;
+  tasks: TaskDefinition[];
   projects: Project[];
   currentProjectId: string;
   onCancel: () => void;
   onDone: (updated: boolean, id: string, desc: string) => void;
-  onChooseTask: () => void;
-  onCopy: (value: string) => void;
+  onChooseTask: (task: { id: string; name: string }) => void;
 }
 
 // ── Component ───────────────────────────────────────────────────────
@@ -35,16 +37,19 @@ export function CreateView(props: CreateViewProps): React.ReactNode {
     initial,
     selectedTaskId,
     selectedTaskName,
+    tasks,
     currentProjectId,
     onCancel,
     onDone,
-    onCopy,
+    onChooseTask,
   } = props;
 
-  // Track task mode so steps can be conditional
-  const taskMode = initial.taskMode === "existing" ? "Existing task" : "Inline command";
+  const [taskPickerOpen, setTaskPickerOpen] = useState(false);
+  const [cmdEditorOpen, setCmdEditorOpen] = useState(false);
+  const [commandValue, setCommandValue] = useState(initial.command ?? "");
+  const cmdOnChangeRef = useRef<((v: string) => void) | null>(null);
 
-  // ── Build wizard steps ──────────────────────────────────────────
+  const taskModeInitial = initial.taskMode === "existing" ? "Existing task" : "Inline command";
 
   const steps = useMemo<WizardStepConfig[]>(() => {
     const list: WizardStepConfig[] = [
@@ -64,13 +69,9 @@ export function CreateView(props: CreateViewProps): React.ReactNode {
         required: true,
         suggestions: [t("wizard.taskModeInline"), t("wizard.taskModeExisting")],
         inputType: "select",
-        defaultValue: taskMode,
+        defaultValue: taskModeInitial,
       },
-    ];
-
-    // Conditional step based on task mode
-    if (taskMode === "Existing task") {
-      list.push({
+      {
         key: "taskId",
         prompt: selectedTaskName
           ? t("board.selectedTask", { name: selectedTaskName })
@@ -79,62 +80,74 @@ export function CreateView(props: CreateViewProps): React.ReactNode {
         required: true,
         inputType: "text",
         defaultValue: selectedTaskName ?? selectedTaskId ?? initial.taskId ?? undefined,
-      });
-    } else {
-      list.push({
+        skip: (values) => !values.taskMode?.includes("Existing"),
+        onActivate: () => setTaskPickerOpen(true),
+        renderCustom: ({ isActive }) => (
+          <TaskPickerField
+            taskName={selectedTaskName}
+            hint={t("board.hintTask")}
+            isActive={isActive}
+          />
+        ),
+      },
+      {
         key: "command",
         prompt: t("wizard.commandPrompt"),
         hint: t("wizard.commandHint"),
         required: true,
         inputType: "text",
-        defaultValue: initial.command ?? undefined,
-      });
-    }
-
-    list.push({
-      key: "runNow",
-      prompt: t("wizard.runNowPrompt"),
-      hint: t("board.hintRunNow"),
-      required: true,
-      suggestions: [t("wizard.runNowWait"), t("wizard.runNowNow")],
-      inputType: "select",
-      defaultValue: initial.runNow === "true" || initial.runNow === "yes"
-        ? t("wizard.runNowNow")
-        : t("wizard.runNowWait"),
-    });
-
-    // Optional steps
-    list.push({
-      key: "cwd",
-      prompt: t("wizard.cwdPrompt"),
-      hint: t("wizard.cwdHint"),
-      required: false,
-      inputType: "text",
-      defaultValue: initial.cwd ?? undefined,
-    });
-
-    list.push({
-      key: "description",
-      prompt: t("wizard.descriptionPrompt"),
-      hint: t("wizard.descriptionHint"),
-      required: false,
-      inputType: "text",
-      defaultValue: initial.description ?? undefined,
-    });
-
-    list.push({
-      key: "maxRuns",
-      prompt: t("wizard.maxRunsPrompt"),
-      hint: t("wizard.maxRunsHint"),
-      required: false,
-      inputType: "text",
-      defaultValue: initial.maxRuns ?? undefined,
-    });
-
+        defaultValue: commandValue || undefined,
+        skip: (values) => !!values.taskMode?.includes("Existing"),
+        onActivate: () => setCmdEditorOpen(true),
+        renderCustom: ({ isActive, onChange }) => {
+          cmdOnChangeRef.current = onChange;
+          return (
+            <CommandPreviewField
+              value={commandValue}
+              hint={t("wizard.commandHint")}
+              isActive={isActive}
+            />
+          );
+        },
+      },
+      {
+        key: "runNow",
+        prompt: t("wizard.runNowPrompt"),
+        hint: t("board.hintRunNow"),
+        required: true,
+        suggestions: [t("wizard.runNowWait"), t("wizard.runNowNow")],
+        inputType: "select",
+        defaultValue: initial.runNow === "true" || initial.runNow === "yes"
+          ? t("wizard.runNowNow")
+          : t("wizard.runNowWait"),
+      },
+      {
+        key: "cwd",
+        prompt: t("wizard.cwdPrompt"),
+        hint: t("wizard.cwdHint"),
+        required: false,
+        inputType: "text",
+        defaultValue: initial.cwd ?? undefined,
+      },
+      {
+        key: "description",
+        prompt: t("wizard.descriptionPrompt"),
+        hint: t("wizard.descriptionHint"),
+        required: false,
+        inputType: "text",
+        defaultValue: initial.description ?? undefined,
+      },
+      {
+        key: "maxRuns",
+        prompt: t("wizard.maxRunsPrompt"),
+        hint: t("wizard.maxRunsHint"),
+        required: false,
+        inputType: "text",
+        defaultValue: initial.maxRuns ?? undefined,
+      },
+    ];
     return list;
-  }, [taskMode, selectedTaskId, selectedTaskName, initial]);
-
-  // ── Handle wizard completion ────────────────────────────────────
+  }, [taskModeInitial, selectedTaskId, selectedTaskName, initial]);
 
   const handleComplete = useCallback(
     (values: Record<string, string>) => {
@@ -149,13 +162,15 @@ export function CreateView(props: CreateViewProps): React.ReactNode {
       }
 
       const intervalHuman = intervalInput.trim();
-
-      const isExistingTask = taskMode === "Existing task";
+      const isExistingTask = !!values.taskMode?.includes("Existing");
 
       if (isExistingTask && !selectedTaskId && !values.taskId?.trim()) return;
-      if (!isExistingTask && !(values.command ?? "").trim()) return;
+      const cmdValue = values.command ?? commandValue;
+      if (!isExistingTask && !cmdValue.trim()) return;
 
-      const cmd = isExistingTask ? "" : (values.command ?? "");
+      const cmd = isExistingTask
+        ? ""
+        : cmdValue.split("\n").map((l) => l.trim()).filter(Boolean).join(" ");
       let cmdOnly = "";
       let args: string[] = [];
       if (cmd.trim()) {
@@ -177,6 +192,7 @@ export function CreateView(props: CreateViewProps): React.ReactNode {
           : null,
         command: cmdOnly,
         commandArgs: args,
+        commandRaw: isExistingTask ? undefined : cmdValue,
         cwd: (values.cwd ?? "").trim() || process.cwd(),
         immediate: runNowValue,
         maxRuns: (values.maxRuns ?? "").trim()
@@ -200,163 +216,122 @@ export function CreateView(props: CreateViewProps): React.ReactNode {
           .catch(() => { /* error handled silently */ });
       }
     },
-    [taskMode, selectedTaskId, mode, editId, currentProjectId, onDone],
+    [selectedTaskId, mode, editId, currentProjectId, onDone, commandValue],
   );
-
-  // ── Edit mode: PatchEditForm ────────────────────────────────────
-
-  const [activeField, setActiveField] = useState<string | null>(null);
-  const [activeFieldValue, setActiveFieldValue] = useState("");
-  const [pendingChanges, setPendingChanges] = useState<Record<string, string>>({});
-  const [focusedRowIndex, setFocusedRowIndex] = useState(0);
-  const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
-
-  const editFields = useMemo(
-    () => [
-      { key: "interval", label: t("board.labelInterval"), value: initial.interval ?? "" },
-      { key: "command", label: t("board.labelCommand"), value: initial.command ?? "" },
-      { key: "cwd", label: t("board.labelCwd"), value: initial.cwd ?? "" },
-      { key: "description", label: t("board.labelDescription"), value: initial.description ?? "" },
-      { key: "runNow", label: t("board.labelRunNow"), value: initial.runNow ?? "" },
-      { key: "maxRuns", label: t("board.labelMaxRuns"), value: initial.maxRuns ?? "" },
-      { key: "project", label: t("board.labelTaskMode"), value: initial.project ?? "" },
-    ],
-    [initial],
-  );
-
-  const handleActiveFieldChange = useCallback((value: string) => {
-    setActiveFieldValue(value);
-  }, []);
-
-  const handleActiveFieldCommit = useCallback(() => {
-    if (activeField !== null) {
-      const error = validateField(activeField, activeFieldValue);
-      if (error) {
-        setValidationErrors((prev) => ({ ...prev, [activeField]: error }));
-      } else {
-        setValidationErrors((prev) => {
-          const next = { ...prev };
-          delete next[activeField];
-          return next;
-        });
-      }
-      setPendingChanges((prev) => ({ ...prev, [activeField]: activeFieldValue }));
-      setActiveField(null);
-      setActiveFieldValue("");
-    }
-  }, [activeField, activeFieldValue]);
-
-  const handleActiveFieldCancel = useCallback(() => {
-    setActiveField(null);
-    setActiveFieldValue("");
-  }, []);
-
-  const handleActiveFieldActivate = useCallback((key: string, value: string) => {
-    setActiveField(key);
-    setActiveFieldValue(value);
-  }, []);
-
-  const handleValidationError = useCallback((key: string, error: string | null) => {
-    setValidationErrors((prev) => {
-      if (error === null) {
-        const next = { ...prev };
-        delete next[key];
-        return next;
-      }
-      return { ...prev, [key]: error };
-    });
-  }, []);
-
-  const handleEditSave = useCallback(() => {
-    if (!editId) return;
-
-    const merged = { ...initial, ...pendingChanges };
-    const errors: Record<string, string> = {};
-    for (const field of editFields) {
-      const shown = field.key in merged ? merged[field.key] : field.value;
-      const err = validateField(field.key, shown);
-      if (err) errors[field.key] = err;
-    }
-    if (Object.keys(errors).length > 0) {
-      setValidationErrors(errors);
-      return;
-    }
-    const intervalInput = merged.interval ?? "";
-
-    let interval: number;
-    try {
-      interval = parseDuration(intervalInput.trim());
-    } catch {
-      return;
-    }
-
-    const intervalHuman = intervalInput.trim();
-
-    const cmd = merged.command ?? "";
-    let cmdOnly = "";
-    let args: string[] = [];
-    if (cmd.trim()) {
-      try {
-        const tokens = parseCommandLine(cmd.trim());
-        cmdOnly = tokens[0] ?? "";
-        args = tokens.slice(1);
-      } catch {
-        return;
-      }
-    }
-
-    const options: LoopOptions = {
-      interval,
-      taskId: merged.taskId?.trim() || null,
-      command: cmdOnly,
-      commandArgs: args,
-      cwd: (merged.cwd ?? "").trim() || process.cwd(),
-      immediate: merged.runNow === "true" || merged.runNow === "yes",
-      maxRuns: (merged.maxRuns ?? "").trim() ? parseInt(merged.maxRuns, 10) : null,
-      verbose: false,
-      description: (merged.description ?? "").trim(),
-      projectId: merged.project ?? currentProjectId,
-      offset: null,
-    };
-
-    const desc = (merged.description ?? "").trim() || [cmdOnly, ...args].join(" ").trim();
-
-    updateLoop(editId, options, intervalHuman)
-      .then((id) => onDone(true, id, desc))
-      .catch(() => { /* error handled silently */ });
-  }, [editId, initial, pendingChanges, currentProjectId, onDone]);
-
-  if (mode === "edit") {
-    return (
-      <PatchEditForm
-        title={t("board.editTitle")}
-        fields={editFields}
-        activeField={activeField}
-        activeFieldValue={activeFieldValue}
-        onActiveFieldChange={handleActiveFieldChange}
-        onActiveFieldCommit={handleActiveFieldCommit}
-        onActiveFieldCancel={handleActiveFieldCancel}
-        onActiveFieldActivate={handleActiveFieldActivate}
-        pendingChanges={pendingChanges}
-        focusedRowIndex={focusedRowIndex}
-        onFocusedRowChange={setFocusedRowIndex}
-        validationErrors={validationErrors}
-        onValidationError={handleValidationError}
-        onSave={handleEditSave}
-        onCancel={onCancel}
-        onCopy={onCopy}
-      />
-    );
-  }
-
-  // ── Create mode: wizard ─────────────────────────────────────────
 
   return (
-    <WizardForm
-      title={t("wizard.newLoop")}
-      steps={steps}
-      onComplete={handleComplete}
-      onCancel={onCancel}
-    />
+    <>
+      <WizardForm
+        title={mode === "edit" ? t("wizard.editLoop") : t("wizard.newLoop")}
+        steps={steps}
+        onComplete={handleComplete}
+        onCancel={onCancel}
+        disabled={taskPickerOpen || cmdEditorOpen}
+      />
+      {taskPickerOpen ? (
+        <TaskPickerModal
+          tasks={tasks}
+          onSelect={(task) => {
+            onChooseTask({ id: task.id, name: task.name });
+            setTaskPickerOpen(false);
+          }}
+          onClose={() => setTaskPickerOpen(false)}
+        />
+      ) : null}
+      {cmdEditorOpen ? (
+        <CommandEditorModal
+          initial={commandValue}
+          onSelect={(value) => {
+            setCommandValue(value);
+            cmdOnChangeRef.current?.(value);
+            setCmdEditorOpen(false);
+          }}
+          onClose={() => setCmdEditorOpen(false)}
+        />
+      ) : null}
+    </>
+  );
+}
+
+// ── Task picker field ───────────────────────────────────────────────
+
+function TaskPickerField({
+  taskName,
+  hint,
+  isActive,
+}: {
+  taskName: string | null;
+  hint: string;
+  isActive: boolean;
+}): React.ReactNode {
+  return (
+    <Box flexDirection="column" width="100%">
+      <Box
+        borderStyle="single"
+        borderColor={isActive ? theme.accent.brand : theme.border.dim}
+        backgroundColor={isActive ? theme.bg.input : undefined}
+        paddingLeft={1}
+        overflow="hidden"
+        width="100%"
+      >
+        {taskName ? (
+          <Text color={theme.text.primary}>{taskName}</Text>
+        ) : (
+          <Text color={theme.text.muted}>{hint}</Text>
+        )}
+      </Box>
+      {isActive ? (
+        <Box marginTop={0}>
+          <Text color={theme.accent.brand}>{"\u203a "}</Text>
+          <Text color={theme.text.muted}>
+            {t("wizard.taskPickerHint", { action: "enter" })}
+          </Text>
+        </Box>
+      ) : null}
+    </Box>
+  );
+}
+
+// ── Command preview field ───────────────────────────────────────────
+
+function CommandPreviewField({
+  value,
+  hint,
+  isActive,
+}: {
+  value: string;
+  hint: string;
+  isActive: boolean;
+}): React.ReactNode {
+  const firstLine = value.split("\n")[0] ?? "";
+  const hasMore = value.includes("\n");
+  const display = firstLine || hint;
+  const showHint = !firstLine;
+  return (
+    <Box flexDirection="column" width="100%">
+      <Box
+        borderStyle="single"
+        borderColor={isActive ? theme.accent.brand : theme.border.dim}
+        backgroundColor={isActive ? theme.bg.input : undefined}
+        paddingLeft={1}
+        overflow="hidden"
+        width="100%"
+      >
+        <Text color={showHint ? theme.text.muted : theme.text.primary}>
+          {display}
+        </Text>
+        {hasMore ? (
+          <Text color={theme.text.muted}> {"\u2026"}</Text>
+        ) : null}
+      </Box>
+      {isActive ? (
+        <Box marginTop={0}>
+          <Text color={theme.accent.brand}>{"\u203a "}</Text>
+          <Text color={theme.text.muted}>
+            {t("wizard.cmdEditorHint", { action: "enter" })}
+          </Text>
+        </Box>
+      ) : null}
+    </Box>
   );
 }

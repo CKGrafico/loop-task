@@ -57,6 +57,7 @@ export function App(props: { onQuit: () => void }): React.ReactNode {
   const [pendingTaskSelection, setPendingTaskSelection] = useState<{ id: string; name: string } | null>(null);
   const [selectedRunIndex, setSelectedRunIndex] = useState(0);
   const [logModalRun, setLogModalRun] = useState<RunRecord | null>(null);
+  const [logModalLoopId, setLogModalLoopId] = useState<string | null>(null);
   const [logModalLines, setLogModalLines] = useState<string[]>([]);
   const [logModalLoading, setLogModalLoading] = useState(false);
   const [tasks, setTasks] = useState<TaskDefinition[]>([]);
@@ -148,6 +149,7 @@ export function App(props: { onQuit: () => void }): React.ReactNode {
   function handleOpenRunLog(run: RunRecord): void {
     if (!selectedId) return;
     setLogModalRun(run);
+    setLogModalLoopId(selectedId);
     if (run.status === "running") {
       setLogModalLoading(false);
       setLogModalLines([]);
@@ -157,12 +159,16 @@ export function App(props: { onQuit: () => void }): React.ReactNode {
     setLogModalLines([]);
     fetchRunLog(selectedId, run.runNumber)
       .then((log) => {
-        setLogModalLines(log ? log.split("\n") : []);
+        const lines = log
+          ? log.split("\n").map((l) => l.replace(/\r$/, ""))
+          : [];
+        setLogModalLines(lines);
         setLogModalLoading(false);
       })
-      .catch(() => {
+      .catch((err: Error) => {
         setLogModalLines([]);
         setLogModalLoading(false);
+        pushToast("error", err.message ?? "Failed to load log");
       });
   }
 
@@ -256,7 +262,7 @@ export function App(props: { onQuit: () => void }): React.ReactNode {
       if (selected) {
         const runs = selected.runHistory;
         if (runs && runs.length > 0) {
-          handleOpenRunLog(runs[0]!);
+          handleOpenRunLog(runs[runs.length - 1]!);
         }
       }
     },
@@ -301,7 +307,9 @@ export function App(props: { onQuit: () => void }): React.ReactNode {
   const cancelTask = () => { setEditTask(null); pop(); };
   const cancelProject = () => { setEditProject(null); pop(); };
 
-  const handleChooseTask = () => { void refreshTasks(); setActiveTab("tasks"); };
+  const handleChooseTask = (task: { id: string; name: string }) => {
+    setPendingTaskSelection(task);
+  };
 
   const onCreateDone = (updated: boolean, _id: string, desc: string) => {
     setEditTarget(null);
@@ -478,6 +486,7 @@ export function App(props: { onQuit: () => void }): React.ReactNode {
     if (logModalRun) {
       if (key.escape || input === "q") {
         setLogModalRun(null);
+        setLogModalLoopId(null);
       }
       return;
     }
@@ -564,12 +573,12 @@ export function App(props: { onQuit: () => void }): React.ReactNode {
             initial={createInitialValues(editTarget, currentProjectId)}
             selectedTaskId={pendingTaskSelection?.id ?? null}
             selectedTaskName={pendingTaskSelection?.name ?? null}
+            tasks={tasks}
             projects={projects}
             currentProjectId={currentProjectId}
             onCancel={cancelCreate}
             onDone={onCreateDone}
             onChooseTask={handleChooseTask}
-            onCopy={() => pushToast("success", t("board.toastCopied"))}
           />
         ) : TASK_FORM_VIEWS.has(view) ? (
           <TaskForm
@@ -671,11 +680,11 @@ export function App(props: { onQuit: () => void }): React.ReactNode {
 
       {logModalRun ? (
         <LogModal
-          loopId={selectedId}
+          loopId={logModalLoopId}
           run={logModalRun}
           logLines={logModalLines}
           loading={logModalLoading}
-          onClose={() => setLogModalRun(null)}
+          onClose={() => { setLogModalRun(null); setLogModalLoopId(null); }}
           onCopy={() => pushToast("success", t("board.toastCopied"))}
         />
       ) : null}
@@ -702,7 +711,7 @@ function createInitialValues(editTarget: LoopMeta | null, currentProjectId: stri
   return {
     interval: editTarget.intervalHuman ?? "30m",
     taskMode: editTarget.taskId ? "existing" : "inline",
-    command: [editTarget.command, ...editTarget.commandArgs].join(" "),
+    command: editTarget.commandRaw ?? [editTarget.command, ...editTarget.commandArgs].join(" "),
     cwd: editTarget.cwd ?? "",
     taskId: editTarget.taskId ?? "",
     description: editTarget.description,
