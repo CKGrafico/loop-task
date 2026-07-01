@@ -76,6 +76,20 @@ export const CONFIRM_CANCEL = "cancel";
 export const PANEL_LEFT = "left";
 export const PANEL_RIGHT = "right";
 
+// ── Command builder templates ──────────────────────────────────────
+export const COMMAND_TEMPLATES: { label: string; command: string; args: string }[] = [
+  { label: "npm run", command: "npm", args: "run" },
+  { label: "npm test", command: "npm", args: "test" },
+  { label: "pnpm build", command: "pnpm", args: "build" },
+  { label: "pnpm test", command: "pnpm", args: "test" },
+  { label: "yarn build", command: "yarn", args: "build" },
+  { label: "dotnet build", command: "dotnet", args: "build" },
+  { label: "dotnet test", command: "dotnet", args: "test" },
+  { label: "docker compose up", command: "docker", args: "compose up" },
+  { label: "make", command: "make", args: "" },
+  { label: "shell script", command: "bash", args: "./script.sh" },
+];
+
 // ── Command input constants ─────────────────────────────────────────
 export const COMMAND_INPUT_HEIGHT = 6;
 export const COMMAND_INPUT_DROPDOWN_MAX_VISIBLE = 6;

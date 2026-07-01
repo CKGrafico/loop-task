@@ -12,6 +12,13 @@ export interface WizardStepConfig {
   suggestions?: string[];
   inputType: "text" | "select";
   defaultValue?: string;
+  skip?: (values: Record<string, string>) => boolean;
+  renderCustom?: (props: {
+    value: string;
+    isActive: boolean;
+    onChange: (value: string) => void;
+    onAdvance: () => void;
+  }) => React.ReactNode;
 }
 
 export interface WizardFormProps {
@@ -125,6 +132,7 @@ export function WizardForm(props: WizardFormProps): React.ReactNode {
     const errors: Record<string, string> = {};
 
     for (const s of steps) {
+      if (s.skip && s.skip(values)) continue;
       const err = validateField(s.key, valueFor(s), {
         taskMode: getTaskMode(),
         allValues: values,
@@ -140,16 +148,33 @@ export function WizardForm(props: WizardFormProps): React.ReactNode {
     }
 
     const missing = steps.find(
-      (s) => s.required && !valueFor(s).trim(),
+      (s) => !s.skip?.(values) && s.required && !valueFor(s).trim(),
     );
     if (missing) {
       setActiveField(steps.indexOf(missing));
       return;
     }
     const result: Record<string, string> = {};
-    for (const s of steps) result[s.key] = valueFor(s);
+    for (const s of steps) {
+      if (s.skip && s.skip(values)) continue;
+      result[s.key] = valueFor(s);
+    }
     onComplete(result);
   }, [steps, valueFor, onComplete, values, getTaskMode]);
+
+  const findNextField = useCallback(
+    (from: number, delta: number): number => {
+      let next = from + delta;
+      const len = steps.length;
+      while (next >= 0 && next < len) {
+        const candidate = steps[next];
+        if (!candidate.skip || !candidate.skip(values)) return next;
+        next += delta;
+      }
+      return from;
+    },
+    [steps, values],
+  );
 
   const moveField = useCallback(
     (delta: number) => {
@@ -165,15 +190,13 @@ export function WizardForm(props: WizardFormProps): React.ReactNode {
         clearError(step.key);
       }
 
-      setActiveField((prev) => {
-        const next = prev + delta;
-        if (next < 0) return steps.length - 1;
-        if (next >= steps.length) return 0;
-        return next;
-      });
+      const next = findNextField(activeField, delta);
+      if (next !== activeField) setActiveField(next);
     },
-    [step, valueFor, getTaskMode, values, steps.length, setError, clearError],
+    [step, valueFor, getTaskMode, values, activeField, findNextField, setError, clearError],
   );
+
+  const visibleSteps = steps.filter((s) => !s.skip || !s.skip(values));
 
   useInput((input, key) => {
     if (key.escape) {
@@ -189,6 +212,8 @@ export function WizardForm(props: WizardFormProps): React.ReactNode {
       return;
     }
     if (!step) return;
+
+    if (step.renderCustom) return;
 
     if (step.inputType === "select" && step.suggestions) {
       const options = step.suggestions;
@@ -263,11 +288,12 @@ export function WizardForm(props: WizardFormProps): React.ReactNode {
     [steps.slice(mid), mid],
   ];
 
-  const filledCount = steps.filter((s) => valueFor(s).trim().length > 0).length;
+  const filledCount = visibleSteps.filter((s) => valueFor(s).trim().length > 0).length;
 
   function renderField(s: WizardStepConfig, fieldIdx: number): React.ReactNode {
     const isActive = fieldIdx === activeField;
     const val = valueFor(s);
+    if (s.skip && s.skip(values)) return null;
     return (
       <Box key={s.key} flexDirection="column" marginBottom={1}>
         <Box>
@@ -283,7 +309,14 @@ export function WizardForm(props: WizardFormProps): React.ReactNode {
           {s.required ? <Text color={theme.semantic.danger}>*</Text> : null}
         </Box>
         <Box paddingLeft={2}>
-          {s.inputType === "select" && s.suggestions ? (
+          {s.renderCustom ? (
+            s.renderCustom({
+              value: val,
+              isActive,
+              onChange: (next: string) => setValue(s.key, next),
+              onAdvance: () => moveField(1),
+            })
+          ) : s.inputType === "select" && s.suggestions ? (
             <SelectField
               suggestions={s.suggestions}
               selectedIndex={Math.max(0, s.suggestions.indexOf(val))}
@@ -315,7 +348,7 @@ export function WizardForm(props: WizardFormProps): React.ReactNode {
           {title}
         </Text>
         <Text color={theme.text.muted}>
-          {t("wizard.filled", { filled: filledCount, total: steps.length })}
+          {t("wizard.filled", { filled: filledCount, total: visibleSteps.length })}
           {" . "}
           {t("wizard.footerHints")}
         </Text>

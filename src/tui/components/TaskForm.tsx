@@ -3,6 +3,7 @@ import React, { useState, useEffect, useMemo, useCallback } from "react";
 import type { TaskDefinition } from "../../types.js";
 import { WizardForm, type WizardStepConfig } from "./WizardForm.js";
 import { PatchEditForm } from "./PatchEditForm.js";
+import { CommandBuilderField } from "./CommandBuilderField.js";
 import { createTask, updateTask, listTasks } from "../daemon.js";
 import crypto from "node:crypto";
 import { t } from "../../i18n/index.js";
@@ -43,6 +44,11 @@ export function TaskForm(props: TaskFormProps): React.ReactNode {
 
   // ── Wizard step definitions ──────────────────────────────────────
 
+  const chainOptions = useMemo(
+    () => [t("wizard.chainNone"), ...tasks.map((task) => task.name)],
+    [tasks],
+  );
+
   const steps = useMemo<WizardStepConfig[]>(
     () => [
       {
@@ -51,6 +57,14 @@ export function TaskForm(props: TaskFormProps): React.ReactNode {
         hint: t("wizard.commandHint"),
         required: true,
         inputType: "text",
+        renderCustom: (props) => (
+          <CommandBuilderField
+            value={props.value}
+            isActive={props.isActive}
+            onChange={props.onChange}
+            onAdvance={props.onAdvance}
+          />
+        ),
       },
       {
         key: "name",
@@ -64,17 +78,19 @@ export function TaskForm(props: TaskFormProps): React.ReactNode {
         prompt: t("wizard.onSuccessPrompt"),
         hint: "Leave blank for none",
         required: false,
-        inputType: "text",
+        inputType: "select",
+        suggestions: chainOptions,
       },
       {
         key: "onFailure",
         prompt: t("wizard.onFailurePrompt"),
         hint: "Leave blank for none",
         required: false,
-        inputType: "text",
+        inputType: "select",
+        suggestions: chainOptions,
       },
     ],
-    [],
+    [chainOptions],
   );
 
   // ── Resolve a chain value (name or id) to a task id ─────────────
@@ -101,12 +117,18 @@ export function TaskForm(props: TaskFormProps): React.ReactNode {
 
       if (!name || !command) return;
 
+      const noneLabel = t("wizard.chainNone");
+      const resolveChain = (val: string): string | null => {
+        if (!val || val === noneLabel) return null;
+        return resolveChainId(val);
+      };
+
       const payload = {
         name,
         command,
         commandArgs: parseArgs(command),
-        onSuccessTaskId: resolveChainId(onSuccessVal),
-        onFailureTaskId: resolveChainId(onFailureVal),
+        onSuccessTaskId: resolveChain(onSuccessVal),
+        onFailureTaskId: resolveChain(onFailureVal),
       };
 
       const id = crypto.randomUUID().slice(0, 8);
@@ -175,18 +197,24 @@ export function TaskForm(props: TaskFormProps): React.ReactNode {
   if (mode === "edit" && props.editTask) {
     const et = props.editTask;
 
+    const resolveChainName = (id: string | null): string => {
+      if (!id) return t("wizard.chainNone");
+      const found = tasks.find((task) => task.id === id);
+      return found?.name ?? id;
+    };
+
     const editFields = [
       { key: "name", label: t("board.taskLabelName"), value: et.name },
       { key: "command", label: t("board.taskLabelCommand"), value: et.command },
       {
         key: "onSuccessTaskId",
         label: t("board.taskLabelOnSuccess"),
-        value: et.onSuccessTaskId ?? "",
+        value: resolveChainName(et.onSuccessTaskId),
       },
       {
         key: "onFailureTaskId",
         label: t("board.taskLabelOnFailure"),
-        value: et.onFailureTaskId ?? "",
+        value: resolveChainName(et.onFailureTaskId),
       },
     ];
 
@@ -194,8 +222,8 @@ export function TaskForm(props: TaskFormProps): React.ReactNode {
       const merged: Record<string, string> = {
         name: et.name,
         command: et.command,
-        onSuccessTaskId: et.onSuccessTaskId ?? "",
-        onFailureTaskId: et.onFailureTaskId ?? "",
+        onSuccessTaskId: resolveChainName(et.onSuccessTaskId),
+        onFailureTaskId: resolveChainName(et.onFailureTaskId),
         ...pendingChanges,
       };
 
@@ -210,12 +238,18 @@ export function TaskForm(props: TaskFormProps): React.ReactNode {
         return;
       }
 
+      const noneLabel = t("wizard.chainNone");
+      const resolveChain = (val: string): string | null => {
+        if (!val || val === noneLabel) return null;
+        return resolveChainId(val);
+      };
+
       const payload = {
         name: merged.name,
         command: merged.command,
         commandArgs: parseArgs(merged.command),
-        onSuccessTaskId: merged.onSuccessTaskId || null,
-        onFailureTaskId: merged.onFailureTaskId || null,
+        onSuccessTaskId: resolveChain(merged.onSuccessTaskId),
+        onFailureTaskId: resolveChain(merged.onFailureTaskId),
       };
 
       updateTask(et.id, payload)

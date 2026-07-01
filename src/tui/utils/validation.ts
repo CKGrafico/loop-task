@@ -6,6 +6,11 @@ import { t } from "../../i18n/index.js";
 type ValidateFn = (value: string, options?: { taskMode?: string; allValues?: Record<string, string> }) => string | null;
 
 const validators: Record<string, ValidateFn> = {
+  name(value) {
+    if (!value.trim()) return t("errors.commandEmpty");
+    return null;
+  },
+
   interval(value) {
     if (!value.trim()) return null;
     try {
