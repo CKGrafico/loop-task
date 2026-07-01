@@ -2,13 +2,11 @@ import React, { useState } from "react";
 import { Box, Text, useInput, useFocus } from "ink";
 import type { Project, LoopMeta } from "../../types.js";
 import { darkTheme as theme } from "../theme.js";
-import { FocusableInput } from "./FocusableInput.js";
 import { FocusableList } from "./FocusableList.js";
 import { FocusableButton } from "./FocusableButton.js";
 import { Modal } from "./Modal.js";
 import { t } from "../../i18n/index.js";
-import { createProject, updateProject, deleteProject } from "../daemon.js";
-import { PROJECT_COLORS, PROJECT_COLOR_KEYS } from "../../config/constants.js";
+import { deleteProject } from "../daemon.js";
 
 interface ProjectsPageProps {
   projects: Project[];
@@ -17,189 +15,14 @@ interface ProjectsPageProps {
   onRefresh: () => Promise<void>;
   onOpenCreate: (trigger: (() => void) | null) => void;
   onToast: (msg: string) => void;
+  onNavigateCreate?: () => void;
+  onNavigateEdit?: (project: Project) => void;
 }
 
-type SubModal = "none" | "create" | "edit" | "delete";
+type SubModal = "none" | "delete";
 
 function loopCountFor(loops: LoopMeta[], projectId: string): number {
   return loops.filter((l) => l.projectId === projectId).length;
-}
-
-function ColorCyclerButton(props: {
-  direction: "left" | "right";
-  selected: string;
-  onSelect: (color: string) => void;
-}): React.ReactNode {
-  const { isFocused } = useFocus();
-
-  useInput(
-    (input, key) => {
-      if (key.return || input === " ") {
-        const idx = Math.max(0, PROJECT_COLOR_KEYS.indexOf(props.selected as typeof PROJECT_COLOR_KEYS[number]));
-        const len = PROJECT_COLOR_KEYS.length;
-        const nextIdx = props.direction === "left"
-          ? (idx - 1 + len) % len
-          : (idx + 1) % len;
-        const nextKey = PROJECT_COLOR_KEYS[nextIdx];
-        props.onSelect(PROJECT_COLORS[nextKey]);
-      }
-    },
-    { isActive: isFocused },
-  );
-
-  const label = props.direction === "left" ? "\u2039" : "\u203a";
-  const borderColor = isFocused ? theme.accent.brand : theme.border.dim;
-  const backgroundColor = isFocused ? theme.bg.active : theme.bg.surface;
-
-  return (
-    <Box
-      borderStyle="single"
-      borderColor={borderColor}
-      backgroundColor={backgroundColor}
-      paddingX={1}
-      marginRight={1}
-    >
-      <Text color={isFocused ? theme.text.inverse : theme.text.primary} bold>
-        {label}
-      </Text>
-    </Box>
-  );
-}
-
-function ColorPickerRow(props: {
-  selected: string;
-  onSelect: (color: string) => void;
-}): React.ReactNode {
-  const selectedKey = (() => {
-    const idx = PROJECT_COLOR_KEYS.findIndex(
-      (k) => PROJECT_COLORS[k] === props.selected,
-    );
-    return idx >= 0 ? PROJECT_COLOR_KEYS[idx] : "white";
-  })();
-
-  const color = PROJECT_COLORS[selectedKey as typeof PROJECT_COLOR_KEYS[number]];
-
-  return (
-    <Box flexDirection="row" alignItems="center">
-      <ColorCyclerButton
-        direction="left"
-        selected={props.selected}
-        onSelect={props.onSelect}
-      />
-      <Box marginRight={1}>
-        <Box
-          borderStyle="single"
-          borderColor={theme.accent.brand}
-          backgroundColor={color}
-          paddingX={1}
-        >
-          <Text color={theme.text.inverse} bold>{selectedKey}</Text>
-        </Box>
-      </Box>
-      <ColorCyclerButton
-        direction="right"
-        selected={props.selected}
-        onSelect={props.onSelect}
-      />
-    </Box>
-  );
-}
-
-function LabeledField(props: {
-  label: string;
-  children: React.ReactNode;
-}): React.ReactNode {
-  return (
-    <Box marginBottom={1} flexDirection="column">
-      <Text color={theme.text.secondary}>{props.label}</Text>
-      <Box marginTop={1}>{props.children}</Box>
-    </Box>
-  );
-}
-
-function CreateProjectModal(props: {
-  name: string;
-  color: string;
-  onNameChange: (val: string) => void;
-  onColorChange: (val: string) => void;
-  onSave: () => void;
-  onCancel: () => void;
-  saving: boolean;
-}): React.ReactNode {
-  return (
-    <Modal title={t("project.createTitle")} onClose={props.onCancel} width={50}>
-      <Box flexDirection="column" marginBottom={1}>
-        <Text color={theme.text.secondary}>{t("project.labelName")}</Text>
-        <Box marginTop={1}>
-          <FocusableInput
-            value={props.name}
-            onChange={props.onNameChange}
-            placeholder={t("project.hintName")}
-          />
-        </Box>
-      </Box>
-
-      <LabeledField label={t("project.labelColor")}>
-        <ColorPickerRow selected={props.color} onSelect={props.onColorChange} />
-      </LabeledField>
-
-      <Box marginTop={1}>
-        <FocusableButton
-          label={props.saving ? t("board.saving") : t("board.create")}
-          color={theme.accent.project}
-          onPress={props.onSave}
-        />
-        <FocusableButton
-          label={t("board.cancel")}
-          color={theme.text.secondary}
-          onPress={props.onCancel}
-        />
-      </Box>
-    </Modal>
-  );
-}
-
-function EditProjectModal(props: {
-  project: Project;
-  name: string;
-  color: string;
-  onNameChange: (val: string) => void;
-  onColorChange: (val: string) => void;
-  onSave: () => void;
-  onCancel: () => void;
-  saving: boolean;
-}): React.ReactNode {
-  return (
-    <Modal title={t("project.editTitle")} onClose={props.onCancel} width={50}>
-      <Box flexDirection="column" marginBottom={1}>
-        <Text color={theme.text.secondary}>{t("project.labelName")}</Text>
-        <Box marginTop={1}>
-          <FocusableInput
-            value={props.name}
-            onChange={props.onNameChange}
-            placeholder={t("project.hintName")}
-          />
-        </Box>
-      </Box>
-
-      <LabeledField label={t("project.labelColor")}>
-        <ColorPickerRow selected={props.color} onSelect={props.onColorChange} />
-      </LabeledField>
-
-      <Box marginTop={1}>
-        <FocusableButton
-          label={props.saving ? t("board.saving") : t("board.save")}
-          color={theme.accent.project}
-          onPress={props.onSave}
-        />
-        <FocusableButton
-          label={t("board.cancel")}
-          color={theme.text.secondary}
-          onPress={props.onCancel}
-        />
-      </Box>
-    </Modal>
-  );
 }
 
 function DeleteConfirm(props: {
@@ -289,9 +112,6 @@ function ListFocusWrapper(props: {
 export function ProjectsPage(props: ProjectsPageProps): React.ReactNode {
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [subModal, setSubModal] = useState<SubModal>("none");
-  const [projectName, setProjectName] = useState("");
-  const [selectedColor, setSelectedColor] = useState(PROJECT_COLORS.white);
-  const [saving, setSaving] = useState(false);
 
   const selected = props.projects[selectedIndex];
   const loopCount = selected ? loopCountFor(props.loops, selected.id) : 0;
@@ -305,16 +125,16 @@ export function ProjectsPage(props: ProjectsPageProps): React.ReactNode {
     }
 
     if (input === "n") {
-      setSubModal("create");
-      setProjectName("");
-      setSelectedColor(PROJECT_COLORS.white);
+      if (props.onNavigateCreate) {
+        props.onNavigateCreate();
+      }
       return;
     }
 
     if (input === "e" && selected) {
-      setSubModal("edit");
-      setProjectName(selected.name);
-      setSelectedColor(selected.color);
+      if (props.onNavigateEdit) {
+        props.onNavigateEdit(selected);
+      }
       return;
     }
 
@@ -323,45 +143,6 @@ export function ProjectsPage(props: ProjectsPageProps): React.ReactNode {
       return;
     }
   });
-
-  async function handleCreate(): Promise<void> {
-    if (!projectName.trim()) {
-      props.onToast(t("project.error.nameEmpty"));
-      return;
-    }
-    setSaving(true);
-    try {
-      await createProject(projectName.trim(), selectedColor);
-      props.onToast(t("project.toastCreated", { name: projectName.trim() }));
-      await props.onRefresh();
-      setSubModal("none");
-      setProjectName("");
-      setSelectedColor(PROJECT_COLORS.white);
-    } catch (e) {
-      props.onToast((e as Error).message);
-    } finally {
-      setSaving(false);
-    }
-  }
-
-  async function handleEdit(): Promise<void> {
-    if (!selected) return;
-    if (!projectName.trim()) {
-      props.onToast(t("project.error.nameEmpty"));
-      return;
-    }
-    setSaving(true);
-    try {
-      await updateProject(selected.id, projectName.trim(), selectedColor);
-      props.onToast(t("project.toastUpdated", { name: projectName.trim() }));
-      await props.onRefresh();
-      setSubModal("none");
-    } catch (e) {
-      props.onToast((e as Error).message);
-    } finally {
-      setSaving(false);
-    }
-  }
 
   async function handleDelete(): Promise<void> {
     if (!selected) return;
@@ -374,35 +155,6 @@ export function ProjectsPage(props: ProjectsPageProps): React.ReactNode {
     } catch (e) {
       props.onToast((e as Error).message);
     }
-  }
-
-  if (subModal === "create") {
-    return (
-      <CreateProjectModal
-        name={projectName}
-        color={selectedColor}
-        onNameChange={setProjectName}
-        onColorChange={setSelectedColor}
-        onSave={handleCreate}
-        onCancel={() => setSubModal("none")}
-        saving={saving}
-      />
-    );
-  }
-
-  if (subModal === "edit" && selected) {
-    return (
-      <EditProjectModal
-        project={selected}
-        name={projectName}
-        color={selectedColor}
-        onNameChange={setProjectName}
-        onColorChange={setSelectedColor}
-        onSave={handleEdit}
-        onCancel={() => setSubModal("none")}
-        saving={saving}
-      />
-    );
   }
 
   if (subModal === "delete" && selected) {
@@ -438,11 +190,9 @@ export function ProjectsPage(props: ProjectsPageProps): React.ReactNode {
               onSelect={setSelectedIndex}
               onActivate={(idx) => {
                 setSelectedIndex(idx);
-                setSubModal("edit");
-                const p = props.projects[idx];
-                if (p) {
-                  setProjectName(p.name);
-                  setSelectedColor(p.color);
+                if (props.onNavigateEdit) {
+                  const p = props.projects[idx];
+                  if (p) props.onNavigateEdit(p);
                 }
               }}
             >
@@ -494,9 +244,9 @@ export function ProjectsPage(props: ProjectsPageProps): React.ReactNode {
                     label={`${t("project.editProjectLabel")} (${t("project.keyEditHint")})`}
                     color={theme.accent.brand}
                     onPress={() => {
-                      setSubModal("edit");
-                      setProjectName(selected.name);
-                      setSelectedColor(selected.color);
+                      if (props.onNavigateEdit && selected) {
+                        props.onNavigateEdit(selected);
+                      }
                     }}
                   />
                   <FocusableButton

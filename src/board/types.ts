@@ -1,4 +1,4 @@
-export type View = "board" | "create" | "task-create" | "task-edit" | "task-list" | "projects";
+export type View = "board" | "create" | "task-create" | "task-edit" | "task-list" | "projects" | "project-create" | "project-edit";
 
 export type DaemonStatus = "starting" | "connected" | "error";
 

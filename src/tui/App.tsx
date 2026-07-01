@@ -12,6 +12,7 @@ import { RightPanel } from "./components/RightPanel.js";
 import { CommandInput } from "./components/CommandInput.js";
 import { TaskForm } from "./components/TaskForm.js";
 import { CreateView } from "./components/CreateForm.js";
+import { ProjectFormView } from "./components/ProjectForm.js";
 import { LogModal } from "./components/LogModal.js";
 import { CommandsBrowserModal } from "./components/CommandsBrowserModal.js";
 import { DebugPanel, MAX_ENTRIES, type DebugEntry } from "./components/DebugPanel.js";
@@ -24,7 +25,7 @@ import { darkTheme as theme } from "./theme.js";
 import { useRouter } from "./router.js";
 
 const TASK_FORM_VIEWS = new Set<View>(["task-create", "task-edit"]);
-const FORM_VIEWS: View[] = ["create", "task-create", "task-edit"];
+const FORM_VIEWS: View[] = ["create", "task-create", "task-edit", "project-create", "project-edit"];
 
 function viewKey(view: View, editTarget: LoopMeta | null, editTask: TaskDefinition | null): string {
   if (view === "create") return `${view}:${editTarget?.id ?? "new"}`;
@@ -51,6 +52,7 @@ export function App(props: { onQuit: () => void }): React.ReactNode {
   const [editTarget, setEditTarget] = useState<LoopMeta | null>(null);
   const [cloneMode, setCloneMode] = useState(false);
   const [editTask, setEditTask] = useState<TaskDefinition | null>(null);
+  const [editProject, setEditProject] = useState<Project | null>(null);
   const [pendingTaskSelection, setPendingTaskSelection] = useState<{ id: string; name: string } | null>(null);
   const [selectedRunIndex, setSelectedRunIndex] = useState(0);
   const [logModalRun, setLogModalRun] = useState<RunRecord | null>(null);
@@ -172,6 +174,9 @@ export function App(props: { onQuit: () => void }): React.ReactNode {
       } else if (activeTab === "tasks" && selectedTask) {
         setEditTask(selectedTask);
         push("task-edit");
+      } else if (activeTab === "projects" && selectedProjectEntity && !selectedProjectEntity.isSystem) {
+        setEditProject(selectedProjectEntity);
+        push("project-edit");
       }
     },
     clone: () => {
@@ -234,7 +239,7 @@ export function App(props: { onQuit: () => void }): React.ReactNode {
     },
     "new-loop": () => { setEditTarget(null); push("create"); },
     "new-task": () => { setEditTask(null); push("task-create"); },
-    "new-project": () => { setActiveTab("projects"); },
+    "new-project": () => { setEditProject(null); setActiveTab("projects"); push("project-create"); },
     "project-filter-loops": () => { setProjectFilters((prev) => ({ ...prev, hasLoops: cycleProjectHasLoopsFilter(prev.hasLoops) })); },
     "project-filter-type": () => { setProjectFilters((prev) => ({ ...prev, isSystem: cycleProjectIsSystemFilter(prev.isSystem) })); },
     "project-sort": () => { setProjectFilters((prev) => ({ ...prev, sort: cycleProjectSortMode(prev.sort) })); },
@@ -288,6 +293,7 @@ export function App(props: { onQuit: () => void }): React.ReactNode {
 
   const cancelCreate = () => { setEditTarget(null); setCloneMode(false); setPendingTaskSelection(null); pop(); };
   const cancelTask = () => { setEditTask(null); pop(); };
+  const cancelProject = () => { setEditProject(null); pop(); };
 
   const handleChooseTask = () => { void refreshTasks(); setActiveTab("tasks"); };
 
@@ -305,6 +311,13 @@ export function App(props: { onQuit: () => void }): React.ReactNode {
     void refreshTasks();
     pop();
     pushToast("success", updated ? t("board.toastTaskUpdated", { id }) : t("board.toastTaskCreated", { id }));
+  };
+
+  const onProjectDone = (updated: boolean, name: string) => {
+    setEditProject(null);
+    void refreshProjects();
+    pop();
+    pushToast("success", updated ? t("project.toastUpdated", { name }) : t("project.toastCreated", { name }));
   };
 
   // ── Resolve query for LeftPanel based on activeTab + search state ──
@@ -558,6 +571,14 @@ export function App(props: { onQuit: () => void }): React.ReactNode {
             editTask={editTask}
             onCancel={cancelTask}
             onDone={onTaskDone}
+            onCopy={() => pushToast("success", t("board.toastCopied"))}
+          />
+        ) : view === "project-create" || view === "project-edit" ? (
+          <ProjectFormView
+            mode={view === "project-edit" ? "edit" : "create"}
+            editProject={view === "project-edit" ? editProject : null}
+            onCancel={cancelProject}
+            onDone={onProjectDone}
             onCopy={() => pushToast("success", t("board.toastCopied"))}
           />
         ) : (
