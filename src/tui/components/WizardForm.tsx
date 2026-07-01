@@ -2,6 +2,7 @@ import React, { useState, useCallback } from "react";
 import { Box, Text, useInput } from "ink";
 import { darkTheme as theme } from "../theme.js";
 import { t } from "../../i18n/index.js";
+import { validateField } from "../utils/validation.js";
 
 export interface WizardStepConfig {
   key: string;
@@ -89,6 +90,7 @@ export function WizardForm(props: WizardFormProps): React.ReactNode {
 
   const [values, setValues] = useState<Record<string, string>>({});
   const [activeField, setActiveField] = useState(0);
+  const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
 
   const step = steps[activeField];
 
@@ -101,7 +103,42 @@ export function WizardForm(props: WizardFormProps): React.ReactNode {
     setValues((prev) => ({ ...prev, [key]: next }));
   }, []);
 
+  const clearError = useCallback((key: string) => {
+    setValidationErrors((prev) => {
+      if (!(key in prev)) return prev;
+      const next = { ...prev };
+      delete next[key];
+      return next;
+    });
+  }, []);
+
+  const setError = useCallback((key: string, msg: string) => {
+    setValidationErrors((prev) => ({ ...prev, [key]: msg }));
+  }, []);
+
+  const getTaskMode = useCallback((): string => {
+    const modeVal = values["taskMode"] ?? "";
+    return modeVal.includes("Existing") ? "existing" : "inline";
+  }, [values]);
+
   const submit = useCallback(() => {
+    const errors: Record<string, string> = {};
+
+    for (const s of steps) {
+      const err = validateField(s.key, valueFor(s), {
+        taskMode: getTaskMode(),
+        allValues: values,
+      });
+      if (err) errors[s.key] = err;
+    }
+
+    if (Object.keys(errors).length > 0) {
+      setValidationErrors(errors);
+      const firstErrorIdx = steps.findIndex((s) => s.key in errors);
+      if (firstErrorIdx >= 0) setActiveField(firstErrorIdx);
+      return;
+    }
+
     const missing = steps.find(
       (s) => s.required && !valueFor(s).trim(),
     );
@@ -112,10 +149,22 @@ export function WizardForm(props: WizardFormProps): React.ReactNode {
     const result: Record<string, string> = {};
     for (const s of steps) result[s.key] = valueFor(s);
     onComplete(result);
-  }, [steps, valueFor, onComplete]);
+  }, [steps, valueFor, onComplete, values, getTaskMode]);
 
   const moveField = useCallback(
     (delta: number) => {
+      if (step) {
+        const err = validateField(step.key, valueFor(step), {
+          taskMode: getTaskMode(),
+          allValues: values,
+        });
+        if (err) {
+          setError(step.key, err);
+          return;
+        }
+        clearError(step.key);
+      }
+
       setActiveField((prev) => {
         const next = prev + delta;
         if (next < 0) return steps.length - 1;
@@ -123,7 +172,7 @@ export function WizardForm(props: WizardFormProps): React.ReactNode {
         return next;
       });
     },
-    [steps.length],
+    [step, valueFor, getTaskMode, values, steps.length, setError, clearError],
   );
 
   useInput((input, key) => {
@@ -146,15 +195,49 @@ export function WizardForm(props: WizardFormProps): React.ReactNode {
       const current = options.indexOf(valueFor(step));
       const idx = current >= 0 ? current : 0;
       if (key.upArrow) {
-        setValue(step.key, options[idx > 0 ? idx - 1 : options.length - 1]!);
+        const newVal = options[idx > 0 ? idx - 1 : options.length - 1]!;
+        setValue(step.key, newVal);
+
+        if (step.key === "taskMode") {
+          if (newVal.includes("Existing")) {
+            setValue("command", "");
+            clearError("command");
+          } else {
+            setValue("taskId", "");
+            clearError("taskId");
+          }
+        }
         return;
       }
       if (key.downArrow) {
-        setValue(step.key, options[idx < options.length - 1 ? idx + 1 : 0]!);
+        const newVal = options[idx < options.length - 1 ? idx + 1 : 0]!;
+        setValue(step.key, newVal);
+
+        if (step.key === "taskMode") {
+          if (newVal.includes("Existing")) {
+            setValue("command", "");
+            clearError("command");
+          } else {
+            setValue("taskId", "");
+            clearError("taskId");
+          }
+        }
         return;
       }
       if (key.return) {
         if (current < 0) setValue(step.key, options[0]!);
+
+        if (step.key === "taskMode") {
+          const selectedVal = current < 0 ? options[0]! : options[current]!;
+          if (selectedVal.includes("Existing")) {
+            setValue("command", "");
+            clearError("command");
+          } else {
+            setValue("taskId", "");
+            clearError("taskId");
+          }
+        }
+
         moveField(1);
       }
       return;
@@ -210,6 +293,11 @@ export function WizardForm(props: WizardFormProps): React.ReactNode {
             <TextField value={val} hint={s.hint} isActive={isActive} />
           )}
         </Box>
+        {validationErrors[s.key] ? (
+          <Box paddingLeft={2}>
+            <Text color={theme.semantic.danger}>{validationErrors[s.key]}</Text>
+          </Box>
+        ) : null}
       </Box>
     );
   }
