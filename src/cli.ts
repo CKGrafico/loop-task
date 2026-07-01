@@ -259,24 +259,43 @@ program
 
 program
   .command("import")
-  .description("Import configs from a JSON file (triggers hot-reload)")
+  .description("Restore a previously exported state file (inverse of loop-task export)")
   .argument("<file>", "Input file")
   .action(async (file) => {
     const { readFile } = await import("node:fs/promises");
-    const content = await readFile(file, "utf-8");
-    const data = JSON.parse(content);
-    if (!data.loops || !data.tasks || !data.projects) {
-      console.error("Invalid export file: missing loops, tasks, or projects");
+    let content: string;
+    try {
+      content = await readFile(file, "utf-8");
+    } catch (err: unknown) {
+      const e = err as Error;
+      console.error(`Failed to read file: ${e.message}`);
       process.exit(1);
     }
-    const { getDataDir } = await import("./config/paths.js");
-    const { writeFile } = await import("node:fs/promises");
-    const path = await import("node:path");
-    const dataDir = getDataDir();
-    await writeFile(path.join(dataDir, "loops.json"), JSON.stringify(data.loops, null, 2));
-    await writeFile(path.join(dataDir, "tasks.json"), JSON.stringify(data.tasks, null, 2));
-    await writeFile(path.join(dataDir, "projects.json"), JSON.stringify(data.projects, null, 2));
-    console.log(`Imported ${data.loops.length} loops, ${data.tasks.length} tasks, ${data.projects.length} projects`);
+    let parsed: unknown;
+    try {
+      parsed = JSON.parse(content);
+    } catch {
+      console.error("Invalid JSON in import file");
+      process.exit(1);
+    }
+    const { validateExportFile } = await import("./cli/import-validator.js");
+    const result = validateExportFile(parsed);
+    if (!result.valid) {
+      for (const error of result.errors) {
+        console.error(error.message);
+      }
+      process.exit(1);
+    }
+    const { atomicImportWrite } = await import("./cli/import-writer.js");
+    const writeResult = atomicImportWrite(result.data!.loops, result.data!.tasks, result.data!.projects);
+    if (!writeResult.success) {
+      console.error(`Failed to write store: ${writeResult.error}`);
+      if (writeResult.writtenStores.length > 0) {
+        console.error("Rolled back previously written stores.");
+      }
+      process.exit(1);
+    }
+    console.log(`Imported ${result.data!.loops.length} loops, ${result.data!.tasks.length} tasks, ${result.data!.projects.length} projects`);
     console.log("Daemon will hot-reload automatically.");
   });
 
