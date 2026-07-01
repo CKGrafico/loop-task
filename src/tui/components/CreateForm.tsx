@@ -144,6 +144,15 @@ export function CreateView(props: CreateViewProps): React.ReactNode {
         inputType: "text",
         defaultValue: initial.maxRuns ?? undefined,
       },
+      {
+        key: "project",
+        prompt: t("wizard.projectPrompt"),
+        hint: t("wizard.projectHint"),
+        required: false,
+        inputType: "select",
+        suggestions: props.projects.map((p) => p.name),
+        defaultValue: props.projects.find((p) => p.id === (initial.project ?? "default"))?.name ?? props.projects[0]?.name,
+      },
     ];
     return list;
   }, [taskModeInitial, selectedTaskId, selectedTaskName, initial, commandValue]);
@@ -184,6 +193,10 @@ export function CreateView(props: CreateViewProps): React.ReactNode {
 
       const runNowValue = values.runNow === t("wizard.runNowNow");
 
+      const projectName = values.project ?? "";
+      const project = props.projects.find((p) => p.name === projectName);
+      const projectId = project?.id ?? currentProjectId;
+
       const options: LoopOptions = {
         interval,
         taskId: isExistingTask
@@ -199,7 +212,7 @@ export function CreateView(props: CreateViewProps): React.ReactNode {
           : null,
         verbose: false,
         description: (values.description ?? "").trim(),
-        projectId: currentProjectId,
+        projectId,
         offset: null,
       };
 
@@ -215,7 +228,7 @@ export function CreateView(props: CreateViewProps): React.ReactNode {
           .catch(() => { /* error handled silently */ });
       }
     },
-    [selectedTaskId, mode, editId, currentProjectId, onDone, commandValue],
+    [selectedTaskId, mode, editId, currentProjectId, onDone, commandValue, props.projects],
   );
 
   return (

@@ -64,7 +64,7 @@ export function App(props: { onQuit: () => void }): React.ReactNode {
   const [taskSelectedIndex, setTaskSelectedIndex] = useState(0);
   const [taskQuery, setTaskQuery] = useState("");
   const [projects, setProjects] = useState<Project[]>([]);
-  const [currentProjectId] = useState<string>("all");
+  const [currentProjectId, setCurrentProjectId] = useState<string>("all");
   const [projectSelectedIndex, setProjectSelectedIndex] = useState(0);
   const [projectFilters, setProjectFilters] = useState<ProjectFilters>(defaultProjectFilters);
   // ── Overlay state ──
@@ -262,7 +262,12 @@ export function App(props: { onQuit: () => void }): React.ReactNode {
     search: () => { setSearchValue(""); setSearchState({ active: true }); },
     "filter-status": () => { setFilters((prev) => ({ ...prev, status: cycleStatusFilter(prev.status) })); },
     sort: () => { setSort((prev) => cycleSortMode(prev)); },
-    "filter-project": () => { setActiveTab("projects"); },
+    "filter-project": () => {
+      const ids = ["all", ...projects.map((p) => p.id)];
+      const idx = ids.indexOf(currentProjectId);
+      const nextId = ids[(idx + 1) % ids.length] ?? "all";
+      setCurrentProjectId(nextId);
+    },
     debug: () => { setDebugMode((prev) => !prev); },
     logs: () => {
       if (activeTab === "loops" && selected) {
@@ -419,32 +424,33 @@ export function App(props: { onQuit: () => void }): React.ReactNode {
     const isCtrlEnter = (key.ctrl && key.return) || input === "\x0e" || isMultiCharEnter;
     if (isCtrlEnter && isBoardView(view) && !logModalRun && !commandsBrowserOpen && !confirmState && !searchState?.active) {
       if (chordState) setChordState(null);
-      if (focusedPanel === "right" && selected) {
-        const runs = selected.runHistory;
-        if (runs && runs.length > 0) {
-          handleOpenRunLog(runs[runs.length - 1]!);
-        } else {
-          setCloneMode(false);
-          setEditTarget(selected);
-          if (selected.taskId) {
-            const task = tasks.find((t) => t.id === selected.taskId);
-            setPendingTaskSelection(task ? { id: task.id, name: task.name } : null);
-          } else {
-            setPendingTaskSelection(null);
-          }
-          push("create");
-        }
-      } else if (focusedPanel === "left" && selected) {
+
+      const editSelectedLoop = () => {
+        if (!selected) return;
         setCloneMode(false);
         setEditTarget(selected);
-        if (selected.taskId) {
-          const task = tasks.find((t) => t.id === selected.taskId);
-          setPendingTaskSelection(task ? { id: task.id, name: task.name } : null);
-        } else {
-          setPendingTaskSelection(null);
-        }
+        const task = selected.taskId ? tasks.find((t) => t.id === selected.taskId) : null;
+        setPendingTaskSelection(task ? { id: task.id, name: task.name } : null);
         push("create");
-      }
+      };
+
+      const ctrlEnterHandlers: Record<string, () => void> = {
+        "tasks:": () => { if (selectedTask) handleCommand("edit"); },
+        "projects:": () => { if (selectedProjectEntity) handleCommand("edit"); },
+        "loops:right": () => {
+          if (!selected) return;
+          const runs = selected.runHistory;
+          if (runs && runs.length > 0) handleOpenRunLog(runs[runs.length - 1]!);
+          else editSelectedLoop();
+        },
+        "loops:left": editSelectedLoop,
+      };
+
+      const handlerKey = activeTab !== "loops"
+        ? `${activeTab}:`
+        : `loops:${focusedPanel}`;
+      const handler = ctrlEnterHandlers[handlerKey];
+      if (handler) handler();
       return;
     }
 
@@ -614,7 +620,6 @@ export function App(props: { onQuit: () => void }): React.ReactNode {
             editTask={editTask}
             onCancel={cancelTask}
             onDone={onTaskDone}
-            onCopy={() => pushToast("success", t("board.toastCopied"))}
           />
         ) : view === "project-create" || view === "project-edit" ? (
           <ProjectFormView
@@ -622,7 +627,6 @@ export function App(props: { onQuit: () => void }): React.ReactNode {
             editProject={view === "project-edit" ? editProject : null}
             onCancel={cancelProject}
             onDone={onProjectDone}
-            onCopy={() => pushToast("success", t("board.toastCopied"))}
           />
         ) : (
           // Board view: left panel + right panel (+ optional debug panel)
@@ -660,6 +664,7 @@ export function App(props: { onQuit: () => void }): React.ReactNode {
               selectedRunIndex={selectedRunIndex}
               onSelectRun={(index) => setSelectedRunIndex(index)}
               onOpenRun={handleOpenRunLog}
+              selectedTask={selectedTask}
               selectedProject={selectedProjectEntity}
               projectLoopCount={projectLoopCount}
               onProjectEdit={() => { if (selectedProjectEntity && !selectedProjectEntity.isSystem) { commandHandlers["edit"]?.(); } }}

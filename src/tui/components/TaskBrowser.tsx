@@ -62,7 +62,7 @@ export function TaskNavigator(props: {
     const chains = chainsLabel(task);
     const fg = isSelected ? theme.text.inverse : theme.text.primary;
     return (
-      <Box>
+      <Box backgroundColor={isSelected ? theme.bg.activeTask : undefined}>
         <Text color={fg}>{name}</Text>
         <Text color={fg}>{cmdDisplay}</Text>
         <Text color={fg}>{chains}</Text>
@@ -71,11 +71,7 @@ export function TaskNavigator(props: {
   }
 
   return (
-    <Box
-      flexDirection="column"
-      borderStyle="single"
-      borderColor={isFocused ? theme.accent.task : theme.border.default}
-    >
+    <Box flexDirection="column" flexGrow={1}>
       <Box paddingLeft={1}>
         <Text color={theme.text.muted}>{title}</Text>
       </Box>

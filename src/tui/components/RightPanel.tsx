@@ -1,12 +1,15 @@
 import React from "react";
 import { Box, Text } from "ink";
-import type { LoopMeta, RunRecord, Project } from "../../types.js";
+import type { LoopMeta, RunRecord, Project, TaskDefinition } from "../../types.js";
 import { darkTheme as theme, tabAccentColor } from "../theme.js";
 import type { TabName } from "../types.js";
 import { t } from "../../i18n/index.js";
 import { Inspector } from "./Inspector.js";
 import { RunHistory } from "./RunHistory.js";
 import { FocusableButton } from "./FocusableButton.js";
+import { commandLine } from "../format.js";
+
+const DIVIDER = "\u2500".repeat(40);
 
 export function RightPanel(props: {
   isFocused: boolean;
@@ -15,6 +18,7 @@ export function RightPanel(props: {
   selectedRunIndex: number;
   onSelectRun: (index: number) => void;
   onOpenRun: (run: RunRecord) => void;
+  selectedTask?: TaskDefinition | null;
   // Project props
   selectedProject?: Project | null;
   projectLoopCount?: number;
@@ -28,6 +32,7 @@ export function RightPanel(props: {
     selectedRunIndex,
     onSelectRun,
     onOpenRun,
+    selectedTask,
     selectedProject,
     projectLoopCount,
     onProjectEdit,
@@ -49,6 +54,8 @@ export function RightPanel(props: {
           onEdit={onProjectEdit}
           onDelete={onProjectDelete}
         />
+      ) : activeTab === "tasks" ? (
+        <TaskInspector task={selectedTask ?? null} />
       ) : (
         <>
           <Inspector loop={loop} />
@@ -61,6 +68,72 @@ export function RightPanel(props: {
           />
         </>
       )}
+    </Box>
+  );
+}
+
+function TaskInspector(props: { task: TaskDefinition | null }): React.ReactNode {
+  const { task } = props;
+
+  if (!task) {
+    return (
+      <Box flexDirection="column" flexGrow={1} padding={1}>
+        <Text color={theme.accent.task} bold>{t("board.taskInspectorTitle")}</Text>
+        <Text color={theme.text.muted}>{DIVIDER}</Text>
+        <Text color={theme.text.muted}>{t("board.taskInspectorEmpty")}</Text>
+      </Box>
+    );
+  }
+
+  return (
+    <Box flexDirection="column" flexGrow={1} paddingY={0}>
+      <Box paddingLeft={1}>
+        <Text color={theme.accent.task} bold>{t("board.taskInspectorTitle")}</Text>
+      </Box>
+      <Box paddingLeft={1}>
+        <Text color={theme.text.muted}>{DIVIDER}</Text>
+      </Box>
+      <Box flexDirection="column" paddingLeft={1}>
+        <Field label={t("board.taskFieldName")}>
+          <Text color={theme.accent.task} bold>{task.name}</Text>
+        </Field>
+        <Field label={t("board.taskFieldId")}>
+          <Text color={theme.text.primary}>{task.id}</Text>
+        </Field>
+        <Field label={t("board.taskFieldCommand")}>
+          <Text color={theme.text.primary}>
+            {task.commandRaw
+              ? task.commandRaw.split("\n").filter(Boolean).join(" ")
+              : commandLine(task.command, task.commandArgs)}
+          </Text>
+        </Field>
+        <Field label={t("board.taskFieldCreated")}>
+          <Text color={theme.text.primary}>{task.createdAt.slice(0, 10)}</Text>
+        </Field>
+        <Field label={t("board.taskFieldChain")}>
+          {task.onSuccessTaskId ? (
+            <Text color={theme.semantic.success}>{"\u2192 " + task.onSuccessTaskId}</Text>
+          ) : null}
+          {task.onFailureTaskId ? (
+            <Text color={theme.semantic.danger}>{" \u2260 " + task.onFailureTaskId}</Text>
+          ) : null}
+          {!task.onSuccessTaskId && !task.onFailureTaskId ? (
+            <Text color={theme.text.muted}>{t("board.taskNone")}</Text>
+          ) : null}
+        </Field>
+      </Box>
+      <Box paddingLeft={1}>
+        <Text color={theme.text.muted}>{DIVIDER}</Text>
+      </Box>
+    </Box>
+  );
+}
+
+function Field(props: { label: string; children: React.ReactNode }): React.ReactNode {
+  return (
+    <Box>
+      <Text bold color={theme.text.muted}>{props.label}</Text>
+      {props.children}
     </Box>
   );
 }

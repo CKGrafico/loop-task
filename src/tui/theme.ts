@@ -4,7 +4,9 @@ export const darkTheme = {
     surface: "#111827",
     elevated: "#1e293b",
     hover: "#1e3a5f",
-    active: "#1e3a8a",
+    active: "#1e3a8a",      // loop selection (blue)
+    activeTask: "#3b1f6e",  // task selection (purple)
+    activeProject: "#0f3d2e", // project selection (green)
     input: "#0f172a",
   },
   text: {
