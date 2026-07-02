@@ -35,7 +35,7 @@
 `loop-task` is that heartbeat as a tiny local primitive. Some examples:
 
 <div align="center">
-<img src="https://raw.githubusercontent.com/CKGrafico/loop-cli/refs/heads/main/demo.gif" alt="opencode-task demo" width="700" />
+<img src="https://raw.githubusercontent.com/CKGrafico/loop-task/refs/heads/main/demo.gif" alt="loop-task demo" width="700" />
 </div>
 
 ```bash

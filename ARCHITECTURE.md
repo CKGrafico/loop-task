@@ -1,6 +1,6 @@
 # Architecture
 
-> Generated architecture reference for **loop-task** (repo: `loop-cli`).
+> Generated architecture reference for **loop-task** (repo: `loop-task`).
 > Rerun `/ob-create-architecture` whenever the architecture changes significantly.
 > Last updated: 2026-06-30.
 
@@ -33,7 +33,7 @@ lines over a socket), with a state-machine core per loop.
 ## 1. Project Structure
 
 ```text
-loop-cli/
+loop-task/
 ├── src/
 │   ├── cli.ts                  # Commander entry point (Node shebang); routes start/run/board
 │   ├── entry.js                # Node entry wrapper (registers ESM loader, imports cli.js)
@@ -471,7 +471,7 @@ No metrics, tracing, or error reporting beyond local logs.
 
 ```bash
 git clone <repo>
-cd loop-cli
+cd loop-task
 pnpm install
 ```
 
@@ -566,7 +566,7 @@ All shell commands must be prefixed with `rtk` in agent contexts (see AGENTS.md)
 | Field | Value |
 |---|---|
 | Name | `loop-task` |
-| Repository | `loop-cli` (https://github.com/CKGrafico/loop-cli) |
+| Repository | `loop-task` (https://github.com/CKGrafico/loop-task) |
 | Package name | `loop-task` on npm |
 | Language | TypeScript 5.8 (strict, ESM) |
 | Type | CLI tool + TUI + background daemon |
