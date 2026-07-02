@@ -12,6 +12,7 @@ const SINCE_WIDTH = 13;
 const RUNS_WIDTH = 4;
 const SKIPPED_WIDTH = 3;
 const STATUS_WIDTH = 8;
+const COL_GAP = 1;
 const LIMIT = 15;
 
 export function Navigator(props: {
@@ -74,14 +75,14 @@ export function Navigator(props: {
     return (
       <>
         <Text color={isSelected ? theme.text.inverse : projectColor(loop)}>{"\u25cf "}</Text>
-        <Text color={fg}>{desc.padEnd(DESC_WIDTH)}</Text>
-        <Text color={fg}>{since.padEnd(SINCE_WIDTH)}</Text>
-        <Text color={fg}>{String(loop.runCount).padEnd(RUNS_WIDTH)}</Text>
-        <Text color={fg}>{String(loop.skippedCount).padEnd(SKIPPED_WIDTH)}</Text>
-        <Text color={isSelected ? theme.text.inverse : sColor}>{sLabel.padEnd(STATUS_WIDTH)}</Text>
+        <Text color={fg}>{desc.padEnd(DESC_WIDTH + COL_GAP)}</Text>
+        <Text color={fg}>{since.padEnd(SINCE_WIDTH + COL_GAP)}</Text>
+        <Text color={fg}>{String(loop.runCount).padEnd(RUNS_WIDTH + COL_GAP)}</Text>
+        <Text color={fg}>{String(loop.skippedCount).padEnd(SKIPPED_WIDTH + COL_GAP)}</Text>
+        <Text color={isSelected ? theme.text.inverse : sColor}>{sLabel.padEnd(STATUS_WIDTH + COL_GAP)}</Text>
         <Text color={fg}>{timing}</Text>
         {loop.status === "running" ? (
-          <Text color={theme.semantic.success}><Spinner type="dots" /></Text>
+          <Text color={theme.semantic.success}>{" "}<Spinner type="dots" /></Text>
         ) : null}
       </>
     );
@@ -101,11 +102,11 @@ export function Navigator(props: {
           <Box paddingLeft={1}>
             <Text color={theme.text.muted}>{"  "}</Text>
             <Text color={theme.text.muted}>{"  "}</Text>
-            <Text color={theme.text.muted}>{t("board.headerDescription").padEnd(DESC_WIDTH)}</Text>
-            <Text color={theme.text.muted}>{t("board.headerSince").padEnd(SINCE_WIDTH)}</Text>
-            <Text color={theme.text.muted}>{t("board.headerRuns").padEnd(RUNS_WIDTH)}</Text>
-            <Text color={theme.text.muted}>{t("board.headerSkipped").padEnd(SKIPPED_WIDTH)}</Text>
-            <Text color={theme.text.muted}>{t("board.headerStatus").padEnd(STATUS_WIDTH)}</Text>
+            <Text color={theme.text.muted}>{t("board.headerDescription").padEnd(DESC_WIDTH + COL_GAP)}</Text>
+            <Text color={theme.text.muted}>{t("board.headerSince").padEnd(SINCE_WIDTH + COL_GAP)}</Text>
+            <Text color={theme.text.muted}>{t("board.headerRuns").padEnd(RUNS_WIDTH + COL_GAP)}</Text>
+            <Text color={theme.text.muted}>{t("board.headerSkipped").padEnd(SKIPPED_WIDTH + COL_GAP)}</Text>
+            <Text color={theme.text.muted}>{t("board.headerStatus").padEnd(STATUS_WIDTH + COL_GAP)}</Text>
             <Text color={theme.text.muted}>{t("board.headerTiming")}</Text>
           </Box>
           <Box paddingLeft={1}>

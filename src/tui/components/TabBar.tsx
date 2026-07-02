@@ -16,13 +16,17 @@ export function tabColor(tab: TabName): string {
 export function TabBar(props: {
   activeTab: TabName;
   onTabChange: (tab: TabName) => void;
+  counts?: Partial<Record<TabName, number>>;
+  alerts?: Partial<Record<TabName, boolean>>;
 }): React.ReactNode {
-  const { activeTab } = props;
+  const { activeTab, counts, alerts } = props;
 
   return (
     <Box gap={1}>
       {TAB_DEFS.map((tab) => {
         const isActive = tab.key === activeTab;
+        const count = counts?.[tab.key];
+        const label = count !== undefined ? `${tab.label} ${count}` : tab.label;
         return (
           <Box key={tab.key}>
             <Text
@@ -30,8 +34,11 @@ export function TabBar(props: {
               backgroundColor={isActive ? tab.color : undefined}
               bold={isActive}
             >
-              {` ${tab.label} `}
+              {` ${label} `}
             </Text>
+            {alerts?.[tab.key] ? (
+              <Text color={theme.semantic.danger}>{"●"}</Text>
+            ) : null}
           </Box>
         );
       })}

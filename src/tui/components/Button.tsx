@@ -13,23 +13,17 @@ export function Button(props: {
     ? variant === "danger"
       ? theme.semantic.danger
       : theme.bg.active
-    : theme.bg.surface;
-  const borderColor = focused
-    ? variant === "danger"
+    : undefined;
+  const fgColor = focused
+    ? theme.text.inverse
+    : variant === "danger"
       ? theme.semantic.danger
-      : theme.accent.brand
-    : theme.border.dim;
-  const fgColor = focused ? theme.text.inverse : theme.text.primary;
+      : theme.text.primary;
+  const indicator = focused ? "› " : "  ";
 
   return (
-    <Box
-      borderStyle="single"
-      borderColor={borderColor}
-      backgroundColor={bgColor}
-      paddingX={1}
-      marginRight={1}
-      >
-      <Text color={fgColor} bold>{label}</Text>
+    <Box backgroundColor={bgColor} paddingX={1} marginRight={1} flexShrink={0}>
+      <Text color={fgColor} bold>{indicator + label}</Text>
     </Box>
   );
 }
