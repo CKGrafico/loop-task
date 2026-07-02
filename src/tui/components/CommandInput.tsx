@@ -28,6 +28,7 @@ export interface CommandInputProps {
   onSearchCancel: () => void;
   onConfirmYes: () => void;
   onConfirmCancel: () => void;
+  onCopy?: () => void;
   disabled?: boolean;
 }
 
@@ -223,10 +224,12 @@ function KeyHint({ keyLabel, action }: { keyLabel: string; action: string }): Re
 function CommandMode({
   context,
   onCommand,
+  onCopy,
   disabled,
 }: {
   context: CommandContext;
   onCommand: (value: string) => void;
+  onCopy?: () => void;
   disabled?: boolean;
 }): React.ReactNode {
   const commands = useMemo(() => buildCommands(context), [context]);
@@ -245,6 +248,12 @@ function CommandMode({
     (input, key) => {
       if (key.ctrl) return;
       if (input.length > 1 && (input.includes("\r") || input.includes("\n"))) return;
+
+      // `c` with no modifiers + no open dropdown = contextual copy shortcut
+      if (onCopy && input === "c" && !state.isOpen) {
+        onCopy();
+        return;
+      }
 
       if (key.escape) { dispatch({ type: "CLOSE" }); return; }
       if (key.return) {
@@ -298,6 +307,7 @@ function CommandMode({
         }
         rightHint={
           <Box>
+            <KeyHint keyLabel="c" action="copy" />
             <KeyHint keyLabel="tab" action="panels" />
             <KeyHint keyLabel="ctrl+p" action="commands" />
           </Box>
@@ -450,6 +460,7 @@ export function CommandInput(props: CommandInputProps): React.ReactNode {
     onSearchCancel,
     onConfirmYes,
     onConfirmCancel,
+    onCopy,
   } = props;
 
   return (
@@ -469,7 +480,7 @@ export function CommandInput(props: CommandInputProps): React.ReactNode {
           disabled={props.disabled}
         />
       ) : confirmState === null ? (
-        <CommandMode context={context} onCommand={onCommand} disabled={props.disabled} />
+        <CommandMode context={context} onCommand={onCommand} onCopy={onCopy} disabled={props.disabled} />
       ) : (
         <ConfirmMode
           confirmState={confirmState}

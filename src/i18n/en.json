@@ -313,6 +313,7 @@
   "board.toastTaskUpdated": "Task updated {id}",
   "board.toastTaskSelected": "Selected task \"{desc}\"",
   "board.toastCopied": "Copied to clipboard",
+  "board.toastTextCopied": "Text Copied",
   "board.copyCommand": "Copy",
   "board.logWaiting": "  Waiting for live output...",
   "board.logStreamError": "Log stream error: {message}",
