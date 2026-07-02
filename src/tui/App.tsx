@@ -21,9 +21,11 @@ import { ExportModal } from "./components/ExportModal.js";
 import { fetchRunLog, deleteLoop, pauseLoop, resumeLoop, stopLoop, triggerLoop, listTasks, deleteTask, listProjects, exportConfig } from "./daemon.js";
 import { applyLoopFilters, applyProjectFilters, cycleSortMode, cycleStatusFilter, cycleProjectSortMode, cycleProjectHasLoopsFilter, cycleProjectIsSystemFilter, defaultFilters, defaultProjectFilters, type Filters, type SortMode, type ProjectFilters } from "./state.js";
 import { t } from "../i18n/index.js";
+import { copyToClipboard } from "../shared/clipboard.js";
 import { POLL_MS } from "../config/constants.js";
 import { darkTheme as theme } from "./theme.js";
 import { useRouter } from "./router.js";
+import { commandLine } from "./format.js";
 
 const TASK_FORM_VIEWS = new Set<View>(["task-create", "task-edit"]);
 const FORM_VIEWS: View[] = ["create", "task-create", "task-edit", "project-create", "project-edit"];
@@ -171,6 +173,34 @@ export function App(props: { onQuit: () => void }): React.ReactNode {
         pushToast("error", err.message ?? "Failed to load log");
       });
   }
+
+  const handleContextualCopy = useCallback(() => {
+    const copyHandlers: Record<string, () => void> = {
+      loops: () => {
+        if (!selected) return;
+        const text = selected.commandRaw
+          ? selected.commandRaw.split("\n").map((l: string) => l.trim()).filter(Boolean).join(" ")
+          : commandLine(selected.command, selected.commandArgs);
+        copyToClipboard(text);
+        pushToast("info", t("board.toastTextCopied"));
+      },
+      tasks: () => {
+        if (!selectedTask) return;
+        const text = selectedTask.commandRaw
+          ? selectedTask.commandRaw.split("\n").map((l: string) => l.trim()).filter(Boolean).join(" ")
+          : commandLine(selectedTask.command, selectedTask.commandArgs);
+        copyToClipboard(text);
+        pushToast("info", t("board.toastTextCopied"));
+      },
+      projects: () => {
+        if (!selectedProjectEntity) return;
+        copyToClipboard(selectedProjectEntity.name);
+        pushToast("info", t("board.toastTextCopied"));
+      },
+    };
+    const handler = copyHandlers[activeTab];
+    if (handler) handler();
+  }, [activeTab, selected, selectedTask, selectedProjectEntity, pushToast]);
 
   // ── Command handler — dictionary dispatch, no switch/case ──
   const commandHandlers: Record<string, () => void> = {
@@ -688,6 +718,7 @@ export function App(props: { onQuit: () => void }): React.ReactNode {
           onSearchCancel={handleSearchCancel}
           onConfirmYes={handleConfirmYes}
           onConfirmCancel={handleConfirmCancel}
+          onCopy={handleContextualCopy}
           disabled={commandInputDisabled}
         />
       ) : null}
