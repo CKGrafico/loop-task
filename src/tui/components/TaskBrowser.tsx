@@ -71,7 +71,7 @@ export function TaskNavigator(props: {
     const chains = chainsLabel(task);
     const fg = isSelected ? theme.text.inverse : theme.text.primary;
     return (
-      <Box backgroundColor={isSelected ? theme.bg.activeTask : undefined}>
+      <Box backgroundColor={isSelected ? (isFocused && navActive ? theme.bg.activeTask : isFocused ? theme.bg.hover : undefined) : undefined}>
         <Text color={fg}>{name}</Text>
         <Text color={fg}>{cmdDisplay}</Text>
         <Text color={fg}>{chains}</Text>

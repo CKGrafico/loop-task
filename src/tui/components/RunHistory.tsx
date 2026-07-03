@@ -174,7 +174,7 @@ export function RunHistory(props: {
               return (
                 <Box
                   key={i}
-                  backgroundColor={isSelected ? theme.bg.active : undefined}
+                  backgroundColor={isSelected ? (isFocused && navActive ? theme.bg.active : isFocused ? theme.bg.hover : undefined) : undefined}
                 >
                   <Text color={isSelected ? theme.text.inverse : theme.text.primary}>
                     {indicator}
