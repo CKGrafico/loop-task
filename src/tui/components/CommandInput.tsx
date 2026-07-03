@@ -3,10 +3,11 @@ import { Box, Text, useInput } from "ink";
 import {
   useAutocompleteState,
   type AutocompleteState,
+  type FuzzyMatch,
 } from "ink-combobox";
 import { darkTheme as theme } from "../theme.js";
 import { t } from "../../i18n/index.js";
-import { buildCommands } from "../commands.js";
+import { buildCommands, rankCommands } from "../commands.js";
 import {
   COMMAND_INPUT_DROPDOWN_MAX_VISIBLE,
   COMMAND_INPUT_HEIGHT,
@@ -112,12 +113,15 @@ function renderHighlightedLabel(
 
 function CommandDropdown({
   state,
+  rankedFiltered,
 }: {
   state: AutocompleteState;
+  rankedFiltered: FuzzyMatch[];
 }): React.ReactNode {
   if (!state.isOpen || state.isLoading || state.error) return null;
 
-  const visibleOptions = state.filteredOptions.slice(
+  const filtered = rankedFiltered;
+  const visibleOptions = filtered.slice(
     state.visibleFromIndex,
     state.visibleToIndex,
   );
@@ -137,7 +141,7 @@ function CommandDropdown({
 
   const aboveCount = state.visibleFromIndex;
   const belowCount =
-    state.filteredOptions.length - state.visibleToIndex;
+    filtered.length - state.visibleToIndex;
 
   return (
     <Box flexDirection="column" paddingLeft={3} position="absolute" bottom={3}>
@@ -181,8 +185,8 @@ function ConfirmDropdown({
   cancelLabel: string;
 }): React.ReactNode {
   const items = [
-    { label: yesLabel, value: CONFIRM_YES },
     { label: cancelLabel, value: CONFIRM_CANCEL },
+    { label: yesLabel, value: CONFIRM_YES },
   ];
 
   return (
@@ -257,6 +261,24 @@ function CommandMode({
     onSelect: onCommand,
   });
 
+  // Re-rank filteredOptions: exact match → prefix match → fuzzy (existing order)
+  const rankedFiltered = useMemo<FuzzyMatch[]>(() => {
+    const fo = state.filteredOptions;
+    if (fo.length === 0 || state.inputValue.length === 0) return fo;
+
+    const byValue = new Map<string, FuzzyMatch>();
+    for (const m of fo) byValue.set(m.option.value, m);
+
+    const ranked = rankCommands(
+      state.inputValue,
+      fo.map((m) => ({ label: m.option.label, value: m.option.value })),
+    );
+
+    return ranked
+      .map((opt) => byValue.get(opt.value))
+      .filter((m): m is FuzzyMatch => m !== undefined);
+  }, [state.filteredOptions, state.inputValue]);
+
   const insertText = useCallback((text: string) => {
     for (const ch of text) dispatch({ type: "INSERT_TEXT", text: ch });
   }, [dispatch]);
@@ -292,8 +314,8 @@ function CommandMode({
 
       if (key.escape) { dispatch({ type: "CLOSE" }); return; }
       if (key.return) {
-        if (state.isOpen && state.filteredOptions.length > 0 && state.focusedIndex < state.filteredOptions.length) {
-          const focused = state.filteredOptions[state.focusedIndex];
+        if (state.isOpen && rankedFiltered.length > 0 && state.focusedIndex < rankedFiltered.length) {
+          const focused = rankedFiltered[state.focusedIndex];
           dispatch({ type: "CLOSE" });
           for (let i = 0; i <= state.inputValue.length; i++) {
             dispatch({ type: "DELETE_BACKWARD" });
@@ -330,7 +352,7 @@ function CommandMode({
 
   return (
     <>
-      <CommandDropdown state={state} />
+      <CommandDropdown state={state} rankedFiltered={rankedFiltered} />
       {/* Input row with left accent bar — placeholder inline when empty */}
       <Box>
         <Text color={theme.accent.brand}>{"│ "}</Text>
@@ -380,10 +402,10 @@ function ConfirmMode({
 
   const options = useMemo(
     () => [
-      { label: yesLabel, value: CONFIRM_YES },
       { label: cancelLabel, value: CONFIRM_CANCEL },
+      { label: yesLabel, value: CONFIRM_YES },
     ],
-    [yesLabel, cancelLabel],
+    [cancelLabel, yesLabel],
   );
 
   const handleSelect = useCallback(
@@ -409,7 +431,7 @@ function ConfirmMode({
         if (state.isOpen && state.filteredOptions.length > 0 && state.focusedIndex < state.filteredOptions.length) {
           const focused = state.filteredOptions[state.focusedIndex];
           dispatch({ type: "SELECT", value: focused.option.value, label: focused.option.label });
-        } else { onConfirmYes(); }
+        } else { onConfirmCancel(); }
         return;
       }
       if (key.downArrow) { dispatch({ type: "FOCUS_NEXT" }); return; }

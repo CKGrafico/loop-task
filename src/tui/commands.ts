@@ -45,6 +45,39 @@ function projectFilterCommands(): Command[] {
   ];
 }
 
+// ── Command ranking (exact > prefix > fuzzy) ─────────────────────────
+
+/**
+ * Re-rank autocomplete options: exact match → prefix match → fuzzy (existing order).
+ * Stable within each group. Exported for testing.
+ */
+export function rankCommands(
+  input: string,
+  options: { label: string; value: string }[],
+): { label: string; value: string }[] {
+  if (input.length === 0) return options;
+
+  const q = input.toLowerCase();
+
+  const exact: { label: string; value: string }[] = [];
+  const prefix: { label: string; value: string }[] = [];
+  const fuzzy: { label: string; value: string }[] = [];
+
+  for (const opt of options) {
+    const l = opt.label.toLowerCase();
+    const v = opt.value.toLowerCase();
+    if (l === q || v === q) {
+      exact.push(opt);
+    } else if (l.startsWith(q) || v.startsWith(q)) {
+      prefix.push(opt);
+    } else {
+      fuzzy.push(opt);
+    }
+  }
+
+  return [...exact, ...prefix, ...fuzzy];
+}
+
 // ── Autocomplete dropdown (context-sensitive, shown while typing) ────
 
 export function buildCommands(context: CommandContext): Command[] {
