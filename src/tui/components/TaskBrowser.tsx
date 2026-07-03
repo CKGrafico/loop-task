@@ -18,10 +18,11 @@ export function TaskNavigator(props: {
   query: string;
   isFocused: boolean;
   navActive?: boolean;
+  allTasks: TaskDefinition[];
   onSelect: (index: number) => void;
   onActivate: (index: number) => void;
 }): React.ReactNode {
-  const { visible, total, selectedIndex, isFocused, navActive = true, onSelect, onActivate } = props;
+  const { visible, total, selectedIndex, isFocused, navActive = true, allTasks, onSelect, onActivate } = props;
 
   const title = t("board.taskBrowserTitle", {
     visible: String(visible.length),
@@ -41,13 +42,20 @@ export function TaskNavigator(props: {
     { isActive: isFocused && navActive },
   );
 
+  function resolveName(id: string | null): string | null {
+    if (id === null) return null;
+    return allTasks.find((t) => t.id === id)?.name ?? id;
+  }
+
   function chainsLabel(task: TaskDefinition): string {
     const hasSuccess = task.onSuccessTaskId !== null;
     const hasFailure = task.onFailureTaskId !== null;
     if (!hasSuccess && !hasFailure) return t("board.taskChainsNone");
+    const successName = hasSuccess ? resolveName(task.onSuccessTaskId) : null;
+    const failureName = hasFailure ? resolveName(task.onFailureTaskId) : null;
     return t("board.taskChainsFormat", {
-      success: hasSuccess ? "\u2713" : "-",
-      failure: hasFailure ? "\u2717" : "-",
+      success: hasSuccess ? `\u2713${successName}` : "-",
+      failure: hasFailure ? `\u2192${failureName}` : "-",
     });
   }
 
@@ -118,8 +126,8 @@ function InspectorField(props: { label: string; children: React.ReactNode }): Re
   );
 }
 
-export function TaskInspector(props: { task: TaskDefinition | null }): React.ReactNode {
-  const { task } = props;
+export function TaskInspector(props: { task: TaskDefinition | null; allTasks: TaskDefinition[] }): React.ReactNode {
+  const { task, allTasks } = props;
 
   if (!task) {
     return (
@@ -135,8 +143,12 @@ export function TaskInspector(props: { task: TaskDefinition | null }): React.Rea
   }
 
   const cmd = commandLine(task.command, task.commandArgs);
-  const onSuccess = task.onSuccessTaskId ?? t("board.taskNone");
-  const onFailure = task.onFailureTaskId ?? t("board.taskNone");
+  const resolveName = (id: string | null): string | null => {
+    if (id === null) return null;
+    return allTasks.find((t) => t.id === id)?.name ?? id;
+  };
+  const onSuccess = task.onSuccessTaskId ? resolveName(task.onSuccessTaskId) ?? task.onSuccessTaskId : t("board.taskNone");
+  const onFailure = task.onFailureTaskId ? resolveName(task.onFailureTaskId) ?? task.onFailureTaskId : t("board.taskNone");
 
   return (
     <Box borderStyle="single" borderColor={theme.border.default} flexDirection="column">

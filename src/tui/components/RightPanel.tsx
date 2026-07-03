@@ -20,6 +20,8 @@ export function RightPanel(props: {
   onSelectRun: (index: number) => void;
   onOpenRun: (run: RunRecord) => void;
   selectedTask?: TaskDefinition | null;
+  // Task list for chain name resolution
+  allTasks?: TaskDefinition[];
   // Project props
   selectedProject?: Project | null;
   projectLoopCount?: number;
@@ -35,6 +37,7 @@ export function RightPanel(props: {
     onSelectRun,
     onOpenRun,
     selectedTask,
+    allTasks,
     selectedProject,
     projectLoopCount,
     onProjectEdit,
@@ -57,7 +60,7 @@ export function RightPanel(props: {
           onDelete={onProjectDelete}
         />
       ) : activeTab === "tasks" ? (
-        <TaskInspector task={selectedTask ?? null} />
+        <TaskInspector task={selectedTask ?? null} allTasks={allTasks ?? []} />
       ) : (
         <>
           <Inspector loop={loop} />
@@ -75,8 +78,8 @@ export function RightPanel(props: {
   );
 }
 
-function TaskInspector(props: { task: TaskDefinition | null }): React.ReactNode {
-  const { task } = props;
+function TaskInspector(props: { task: TaskDefinition | null; allTasks: TaskDefinition[] }): React.ReactNode {
+  const { task, allTasks } = props;
 
   if (!task) {
     return (
@@ -115,10 +118,10 @@ function TaskInspector(props: { task: TaskDefinition | null }): React.ReactNode 
         </Field>
         <Field label={t("board.taskFieldChain")}>
           {task.onSuccessTaskId ? (
-            <Text color={theme.semantic.success}>{"\u2192 " + task.onSuccessTaskId}</Text>
+            <Text color={theme.semantic.success}>{"\u2713 " + (allTasks.find((t) => t.id === task.onSuccessTaskId)?.name ?? task.onSuccessTaskId)}</Text>
           ) : null}
           {task.onFailureTaskId ? (
-            <Text color={theme.semantic.danger}>{" \u2260 " + task.onFailureTaskId}</Text>
+            <Text color={theme.semantic.danger}>{" \u2192 " + (allTasks.find((t) => t.id === task.onFailureTaskId)?.name ?? task.onFailureTaskId)}</Text>
           ) : null}
           {!task.onSuccessTaskId && !task.onFailureTaskId ? (
             <Text color={theme.text.muted}>{t("board.taskNone")}</Text>

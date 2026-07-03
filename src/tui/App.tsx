@@ -727,6 +727,7 @@ export function App(props: { onQuit: () => void }): React.ReactNode {
               onSelectRun={(index) => setSelectedRunIndex(index)}
               onOpenRun={handleOpenRunLog}
               selectedTask={selectedTask}
+              allTasks={tasks}
               selectedProject={selectedProjectEntity}
               projectLoopCount={projectLoopCount}
               onProjectEdit={() => { if (selectedProjectEntity && !selectedProjectEntity.isSystem) { commandHandlers["edit"]?.(); } }}

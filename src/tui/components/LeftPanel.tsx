@@ -151,6 +151,7 @@ export function LeftPanel(props: {
           onActivate={onTaskActivate}
           isFocused={isFocused}
           navActive={navActive}
+          allTasks={tasks}
         />
       ) : (
         <ProjectNavigator
