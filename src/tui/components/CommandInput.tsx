@@ -319,7 +319,7 @@ function CommandMode({
 
       // When the command bar is empty and no dropdown is open, panels own
       // navigation keys — return early so j/k/arrows reach the panel layer.
-      if (state.inputValue.length === 0 && !state.isOpen) {
+      if (navOwner === "panel" && state.inputValue.length === 0 && !state.isOpen) {
         if (input === "j" || input === "k" || key.upArrow || key.downArrow) {
           return; // panels own these keys
         }
