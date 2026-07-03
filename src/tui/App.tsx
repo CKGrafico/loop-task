@@ -672,7 +672,7 @@ export function App(props: { onQuit: () => void }): React.ReactNode {
               breakpoint={breakpoint}
               projects={projects}
               onSelect={(index) => setSelectedIndex(index)}
-              onActivate={(index) => { setSelectedIndex(index); const loop = visible[index]; if (loop) { setEditTarget(loop); push("create"); } }}
+              onActivate={(index) => { setSelectedIndex(index); }}
               tasks={filteredTasks}
               taskSelectedIndex={taskClampedIndex}
               onTaskSelect={(index) => setTaskSelectedIndex(index)}

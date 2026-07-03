@@ -15,7 +15,7 @@
 
 ## 4. Board edit navigation
 
-- [ ] 4.1 Bypass DetailView for direct edit navigation — board edit action goes straight to CreateForm in edit mode <!-- agent: frontend-engineer.build, depends_on: , touches: src/board/App.tsx,src/board/focus-context.tsx -->
+- [x] 4.1 Bypass DetailView for direct edit navigation — board edit action goes straight to CreateForm in edit mode <!-- agent: frontend-engineer.build, depends_on: , touches: src/board/App.tsx,src/board/focus-context.tsx -->
 
 ## 5. Verify
 

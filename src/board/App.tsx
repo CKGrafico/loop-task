@@ -595,7 +595,7 @@ export function App(props: { onQuit: () => void }): React.ReactNode {
               focused={derivedFocusedPanel === "loops" || derivedFocusedPanel === "navigator"}
               projects={projects}
               onSelect={(index) => setSelectedIndex(index)}
-              onActivate={(index) => { setSelectedIndex(index); const loop = visible[index]; if (loop) { setEditTarget(loop); push("create"); } }}
+              onActivate={(index) => { setSelectedIndex(index); }}
             />
             <box style={{ flexDirection: "column", flexGrow: 1, backgroundColor: "#0b0b0b", overflow: "hidden" }}>
               <Inspector loop={selected} />
