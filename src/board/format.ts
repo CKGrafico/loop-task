@@ -89,11 +89,15 @@ export function formatRunTime(iso: string): string {
   return d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: false });
 }
 
-export function sinceLabel(loop: LoopMeta): string {
-  const ts = loop.sessionStartedAt ?? loop.createdAt;
-  if (!ts) return t("format.dash");
-  const d = new Date(ts);
+export function formatDate(iso: string): string {
+  const d = new Date(iso);
   const date = d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
   const time = d.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", hour12: false });
   return `${date} ${time}`;
+}
+
+export function sinceLabel(loop: LoopMeta): string {
+  const ts = loop.sessionStartedAt ?? loop.createdAt;
+  if (!ts) return t("format.dash");
+  return formatDate(ts);
 }

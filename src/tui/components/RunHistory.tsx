@@ -148,7 +148,7 @@ export function RunHistory(props: {
             <Box paddingLeft={1} marginBottom={0}>
               <Text color={theme.text.muted}>Durations: </Text>
               <Text color={theme.accent.loop}>{trends.sparkline}</Text>
-              <Text color={theme.text.muted}> avg:{trends.avgDuration}ms </Text>
+              <Text color={theme.text.muted}> avg:{formatRunDuration(trends.avgDuration)} </Text>
               {trends.successStreak > 0 ? (
                 <Text color={theme.semantic.success}>streak:{trends.successStreak} ok</Text>
               ) : null}
