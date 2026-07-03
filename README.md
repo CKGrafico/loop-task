@@ -436,14 +436,20 @@ npm run build
 
 The board is an interactive TUI, so it needs a real terminal — you can't drive it from a piped/captured shell (and neither can an AI agent). [`ttyd`](https://github.com/tsl0922/ttyd) shares a terminal over HTTP, which makes the board reachable from a browser and scriptable by browser-automation agents.
 
-Install ttyd (see the [ttyd README](https://github.com/tsl0922/ttyd#installation) — e.g. `winget install tsl0922.ttyd`, `brew install ttyd`, or `apt install ttyd`), then serve the board:
+Install ttyd (see the [ttyd README](https://github.com/tsl0922/ttyd#installation) — e.g. `winget install tsl0922.ttyd`, `brew install ttyd`, or `apt install ttyd`), then serve the board from an interactive terminal:
 
 ```bash
-ttyd -W -p 7681 npx tsx src/cli.ts      # dev
-ttyd -W -p 7681 node dist/entry.js      # built (after npm run build)
+# Preferred — the built entry (node is a native executable, works everywhere):
+npm run build && ttyd -W -p 7681 node dist/entry.js
+
+# Dev/source (tsx):
+ttyd -W -p 7681 npx tsx src/cli.ts                    # macOS / Linux
+ttyd -W -p 7681 pwsh -Command "npx tsx src/cli.ts"    # Windows (see note)
 ```
 
-Open `http://localhost:7681` in a browser and use the board as normal — `-W` makes it writable so keystrokes reach the TUI. This is handy for demos, for testing on a machine without a good local terminal, and for letting an AI agent drive the board (navigate to the URL, send keys, screenshot). ttyd renders via xterm.js on a `<canvas>`, so agents should read the board from screenshots rather than page text.
+Open `http://localhost:7681` in a browser and use the board as normal — `-W` makes it writable so keystrokes reach the TUI. Handy for demos, for testing on a machine without a good local terminal, and for letting an AI agent drive the board (navigate, send keys, screenshot; ttyd renders via xterm.js on a `<canvas>`, so read state from screenshots, not page text).
+
+> **Windows note:** ttyd spawns the command with `CreateProcessW`, which can't launch `.cmd` shims like `npx` directly (it fails with `error 267`). Use the built `node dist/entry.js` form, or wrap the dev command in `pwsh -Command "…"`. Start ttyd from a real interactive terminal — a detached/console-less launch can crash its ConPTY.
 
 ## License
 

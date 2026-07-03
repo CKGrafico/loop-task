@@ -133,11 +133,18 @@ When user says "I've added comments to the PR" or shares a PR URL:
 
 The board is an interactive TUI that needs a real TTY, so it cannot be driven from a plain captured shell. If [`ttyd`](https://github.com/tsl0922/ttyd) is installed (`ttyd --version`), use it to serve the board over HTTP and drive it with the browser tools — this is the way to exercise real keyboard navigation, forms, and rendering end-to-end (unit tests with `ink-testing-library` only cover components in isolation).
 
-**Serve the board** (run in the background; `-W` is required or keystrokes are ignored):
+**Serve the board** (run from an interactive terminal; `-W` is required or keystrokes are ignored):
 
 ```bash
-ttyd -W -p 7681 npx tsx src/cli.ts      # dev (source)
-ttyd -W -p 7681 node dist/entry.js      # built (after `npm run build`)
+# Preferred: the built entry. `node` is a native executable, so it spawns on
+# every platform including Windows.
+npm run build && ttyd -W -p 7681 node dist/entry.js
+
+# Dev/source (tsx). macOS/Linux can run npx directly:
+ttyd -W -p 7681 npx tsx src/cli.ts
+# Windows: wrap in a shell — ttyd spawns via CreateProcessW, which cannot launch
+# `npx` directly (it is a .cmd shim, not a .exe) and fails with error 267.
+ttyd -W -p 7681 pwsh -Command "npx tsx src/cli.ts"
 ```
 
 Then open `http://localhost:7681` with the browser tools and interact:
@@ -147,6 +154,10 @@ Then open `http://localhost:7681` with the browser tools and interact:
 3. **Read the board with screenshots, not DOM snapshots** — xterm.js renders to a `<canvas>`, so accessibility/text snapshots are empty. Screenshot after each action to observe state.
 
 Useful flags: `-t fontSize=16` (larger, more legible screenshots), `-o` (accept one client then exit — good for a single test session), `-q` (exit when the client disconnects). Kill the `ttyd` process when done. If `ttyd` is not installed, fall back to `ink-testing-library` component rendering.
+
+**Troubleshooting:**
+- `CreateProcessW failed with error 267` (Windows): the command is a `.cmd`/`.ps1` shim (e.g. `npx`, `pnpm`). Use the native-exe form (`node dist/entry.js`) or the `pwsh -Command "…"` wrapper above.
+- Terminal shows **"Press ⏎ to Reconnect"** immediately: the child spawned but exited/crashed. Verify the command runs standalone, and start `ttyd` from a **real interactive terminal** — launching it from a context without an attached console (a detached/piped process, some CI or agent shells) can crash ttyd's ConPTY on Windows.
 
 ---
 
