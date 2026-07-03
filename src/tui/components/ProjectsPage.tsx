@@ -21,8 +21,18 @@ interface ProjectsPageProps {
 
 type SubModal = "none" | "delete";
 
-function loopCountFor(loops: LoopMeta[], projectId: string): number {
-  return loops.filter((l) => l.projectId === projectId).length;
+function loopCountFor(
+  loops: LoopMeta[],
+  projectId: string,
+  defaultProjectId: string | null,
+  knownProjectIds: Set<string>,
+): number {
+  const direct = loops.filter((l) => l.projectId === projectId).length;
+  if (projectId === defaultProjectId) {
+    const orphans = loops.filter((l) => !knownProjectIds.has(l.projectId)).length;
+    return direct + orphans;
+  }
+  return direct;
 }
 
 function DeleteConfirm(props: {
@@ -65,6 +75,8 @@ function DeleteConfirm(props: {
 function ListFocusWrapper(props: {
   projects: Project[];
   loops: LoopMeta[];
+  defaultProjectId: string | null;
+  knownProjectIds: Set<string>;
   selectedIndex: number;
   onSelect: (index: number) => void;
   onActivate: (index: number) => void;
@@ -80,8 +92,25 @@ function ListFocusWrapper(props: {
     );
   }
 
+  const nameWidth = 20;
+  const loopsWidth = 12;
+  const headerSeparator = " \u00B7 ";
+
   return (
     <React.Fragment>
+      <Box paddingX={1} marginBottom={0}>
+        <Text color={theme.text.muted}>
+          {" ".concat(t("project.headerName").padEnd(nameWidth))}
+        </Text>
+        <Text color={theme.text.muted}>
+          {headerSeparator}
+          {String(t("project.headerLoops")).padEnd(loopsWidth)}
+        </Text>
+        <Text color={theme.text.muted}>
+          {headerSeparator}
+          {t("project.headerCreated")}
+        </Text>
+      </Box>
       <FocusableList
         items={props.projects}
         selectedIndex={props.selectedIndex}
@@ -90,15 +119,25 @@ function ListFocusWrapper(props: {
         onSelect={props.onSelect}
         onActivate={props.onActivate}
         renderItem={(project, isSelected) => {
-          const count = loopCountFor(props.loops, project.id);
+          const count = loopCountFor(
+            props.loops,
+            project.id,
+            props.defaultProjectId,
+            props.knownProjectIds,
+          );
           const fg = isSelected ? theme.text.inverse : theme.text.primary;
           const countFg = isSelected ? theme.text.inverse : theme.text.muted;
           return (
             <React.Fragment>
               <Text color={project.color}>{"\u25CF"}</Text>
-              <Text color={fg}> {project.name.padEnd(20)}</Text>
+              <Text color={fg}> {project.name.padEnd(nameWidth - 1)}</Text>
               <Text color={countFg}>
-                {t("project.loopCount", { count })}
+                {headerSeparator}
+                {String(count).padEnd(loopsWidth)}
+              </Text>
+              <Text color={countFg}>
+                {headerSeparator}
+                {project.createdAt}
               </Text>
             </React.Fragment>
           );
@@ -113,8 +152,14 @@ export function ProjectsPage(props: ProjectsPageProps): React.ReactNode {
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [subModal, setSubModal] = useState<SubModal>("none");
 
+  const defaultProject = props.projects.find((p) => p.isDefault) ?? null;
+  const defaultProjectId = defaultProject?.id ?? null;
+  const knownProjectIds = new Set(props.projects.map((p) => p.id));
+
   const selected = props.projects[selectedIndex];
-  const loopCount = selected ? loopCountFor(props.loops, selected.id) : 0;
+  const loopCount = selected
+    ? loopCountFor(props.loops, selected.id, defaultProjectId, knownProjectIds)
+    : 0;
 
   useInput((input, key) => {
     if (subModal !== "none") return;
@@ -186,6 +231,8 @@ export function ProjectsPage(props: ProjectsPageProps): React.ReactNode {
             <ListFocusWrapper
               projects={props.projects}
               loops={props.loops}
+              defaultProjectId={defaultProjectId}
+              knownProjectIds={knownProjectIds}
               selectedIndex={selectedIndex}
               onSelect={setSelectedIndex}
               onActivate={(idx) => {
