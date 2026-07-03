@@ -434,7 +434,9 @@ npm run build
 
 ### Testing the board in a browser (ttyd)
 
-The board is an interactive TUI, so it needs a real terminal — you can't drive it from a piped/captured shell (and neither can an AI agent). [`ttyd`](https://github.com/tsl0922/ttyd) shares a terminal over HTTP, which makes the board reachable from a browser and scriptable by browser-automation agents.
+> **Agents: Do NOT use ttyd unless the user explicitly asks you to check the CLI in a browser.** It is never the default. Do not start a ttyd server on your own for "manual pass" tasks or visual QA — those are for the human. Reach for ttyd only when the user says "check the board in the browser", "use ttyd", or similar.
+
+The board is an interactive TUI, so it needs a real terminal — you can't drive it from a piped/captured shell (and neither can an AI agent). [`ttyd`](https://github.com/tsl0922/ttyd) shares a terminal over HTTP, which makes the board reachable from a browser and scriptable by browser-automation agents — but only when explicitly requested.
 
 Install ttyd (see the [ttyd README](https://github.com/tsl0922/ttyd#installation) — e.g. `winget install tsl0922.ttyd`, `brew install ttyd`, or `apt install ttyd`), then serve the board from an interactive terminal:
 
