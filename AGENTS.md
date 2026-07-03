@@ -131,7 +131,9 @@ When user says "I've added comments to the PR" or shares a PR URL:
 
 ## Testing the board in a browser (ttyd)
 
-The board is an interactive TUI that needs a real TTY, so it cannot be driven from a plain captured shell. If [`ttyd`](https://github.com/tsl0922/ttyd) is installed (`ttyd --version`), use it to serve the board over HTTP and drive it with the browser tools — this is the way to exercise real keyboard navigation, forms, and rendering end-to-end (unit tests with `ink-testing-library` only cover components in isolation).
+> **Agents: Do NOT use ttyd unless the user explicitly asks you to check the CLI in a browser.** It is never the default. Do not start a ttyd server to run "manual pass" tasks or visual QA on your own — those tasks are for the human. Only reach for ttyd when the user says "check the board in the browser", "use ttyd", or similar.
+
+The board is an interactive TUI that needs a real TTY, so it cannot be driven from a plain captured shell. If [`ttyd`](https://github.com/tsl0922/ttyd) is installed (`ttyd --version`), you *can* use it to serve the board over HTTP and drive it with the browser tools — this is the way to exercise real keyboard navigation, forms, and rendering end-to-end (unit tests with `ink-testing-library` only cover components in isolation). But this is **opt-in only** at the user's explicit request.
 
 **Serve the board** — run from an interactive terminal. Two flags are non-negotiable on Windows:
 - `-W` — writable, or keystrokes are ignored (the board is read-only without it).
