@@ -101,6 +101,10 @@ export const COMMAND_TEMPLATES: { label: string; command: string; args: string }
 export const COMMAND_INPUT_HEIGHT = 6;
 export const COMMAND_INPUT_DROPDOWN_MAX_VISIBLE = 6;
 
+// ── HTTP API server ─────────────────────────────────────────────────
+export const HTTP_API_PORT = 8845;
+export const HTTP_API_HOST = "127.0.0.1";
+
 // ── Ctrl shortcut hints (for display) ───────────────────────────────
 export const EXPORT_MAX_PREVIEW_LINES = 200;
 

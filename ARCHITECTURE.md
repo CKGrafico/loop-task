@@ -56,6 +56,7 @@ loop-task/
 │   ├── daemon/                 # Background server process
 │   │   ├── index.ts            # Daemon entry: bind socket -> init manager -> handle signals
 │   │   ├── server.ts           # IpcServer: net server, JSON-lines protocol, request routing
+│   │   ├── http-server.ts      # HttpApiServer: REST + SSE HTTP server (localhost:8845)
 │   │   ├── manager.ts          # LoopManager: owns LoopControllers, persistence, lifecycle
 │   │   ├── spawner.ts          # ensureDaemon: spawn/restart daemon, code-signature check
 │   │   ├── state.ts            # Loop + daemon state persistence, PID/signature, code signature
@@ -358,9 +359,10 @@ All persistence is filesystem-based under `~/.loop-cli/` (overridable via `LOOP_
 |---|---|---|---|---|
 | Child processes (loops) | `execa` spawn with `shell: true` | `cwd` per loop | Inherits daemon's process env | Exit code captured, logged, chain may branch to onFailure |
 | Clipboard | `execFileSync` (clip/pbcopy/xclip) | None | None | Silently catches errors |
+| HTTP API | `node:http` server on `127.0.0.1:8845` | `LOOP_CLI_HTTP_PORT` env var | None (localhost-only) | If port in use, HTTP API skipped — IPC still works |
 | Locale/i18n | `src/i18n/en.json` (single file) | Hard-coded `en` | N/A | `t(key)` returns key if missing |
 
-No external network APIs, no HTTP clients, no remote services. The daemon listens on a local socket only.
+The daemon listens on a local socket (IPC) and optionally on an HTTP port (`127.0.0.1:8845`) for REST/SSE API access. The HTTP server shares the same manager instances as IPC — it is a transport adapter, not a separate system. Swagger UI is available at `/api/docs`, OpenAPI spec at `/api/openapi.json`.
 
 ---
 

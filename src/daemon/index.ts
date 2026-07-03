@@ -1,6 +1,8 @@
 import { LoopManager } from "./manager.js";
 import { TaskManager } from "./task-manager.js";
+import { ProjectManager } from "./projects.js";
 import { IpcServer } from "./server.js";
+import { HttpApiServer } from "./http-server.js";
 import { FileWatcher } from "./file-watcher.js";
 import {
   writeDaemonPid,
@@ -21,12 +23,21 @@ async function main(): Promise<void> {
   taskManager.init();
   const manager = new LoopManager(taskManager);
   const server = new IpcServer(manager, taskManager);
+  const projectManager = (manager as unknown as { projectManager: ProjectManager }).projectManager;
+  const httpServer = new HttpApiServer(manager, taskManager, projectManager);
 
   try {
     await server.listen();
   } catch (err) {
     daemonLog(`listen failed (another daemon already holds the socket): ${String(err)}`);
     process.exit(0);
+  }
+
+  try {
+    const httpPort = parseInt(process.env.LOOP_CLI_HTTP_PORT ?? "", 10);
+    await httpServer.listen(Number.isNaN(httpPort) ? undefined : httpPort);
+  } catch (err) {
+    daemonLog(`HTTP API server failed to start: ${String(err)}`);
   }
 
   manager.init();
@@ -52,6 +63,7 @@ async function main(): Promise<void> {
       removeDaemonSignature();
       await manager.shutdown();
       await server.close();
+      await httpServer.close();
     } catch (err) {
       daemonLog(`error during shutdown: ${String(err)}`);
     } finally {
