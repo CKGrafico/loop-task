@@ -19,7 +19,7 @@ import { DebugPanel, MAX_ENTRIES, type DebugEntry } from "./components/DebugPane
 import { ContextHelpModal } from "./components/ContextHelpModal.js";
 import { ExportModal } from "./components/ExportModal.js";
 import { fetchRunLog, deleteLoop, pauseLoop, resumeLoop, stopLoop, triggerLoop, listTasks, deleteTask, listProjects, exportConfig } from "./daemon.js";
-import { applyLoopFilters, applyProjectFilters, cycleSortMode, cycleStatusFilter, cycleProjectSortMode, cycleProjectHasLoopsFilter, cycleProjectIsSystemFilter, defaultFilters, defaultProjectFilters, type Filters, type SortMode, type ProjectFilters } from "./state.js";
+import { applyLoopFilters, applyProjectFilters, cycleSortMode, cycleStatusFilter, cycleProjectSortMode, cycleProjectHasLoopsFilter, cycleProjectIsSystemFilter, defaultFilters, defaultProjectFilters, resolveInputOwner, type Filters, type SortMode, type ProjectFilters, type InputOwner } from "./state.js";
 import { t } from "../i18n/index.js";
 import { copyToClipboard } from "../shared/clipboard.js";
 import { POLL_MS } from "../config/constants.js";
@@ -81,6 +81,9 @@ export function App(props: { onQuit: () => void }): React.ReactNode {
   const [debugMode, setDebugMode] = useState(false);
   const [debugEntries, setDebugEntries] = useState<DebugEntry[]>([]);
   const [chordState, setChordState] = useState<"ctrl+f" | "ctrl+a" | null>(null);
+  // ── Command bar input state (for InputOwner resolution) ──
+  const [commandBarHasText, setCommandBarHasText] = useState(false);
+  const [commandBarDropdownOpen, setCommandBarDropdownOpen] = useState(false);
   const { toasts, push: pushToast } = useToasts();
   const breakpoint = useBreakpoint();
   const visible = useMemo(
@@ -561,14 +564,17 @@ export function App(props: { onQuit: () => void }): React.ReactNode {
       if (globalHandler) { globalHandler(); return; }
     }
 
-    // Confirm mode is handled by CommandInput component, not here
-    if (confirmState) return;
+    // Confirm mode is handled by CommandInput component, not here (non-Escape only)
+    if (confirmState && !key.escape) return;
 
-    // Search mode is handled by CommandInput component, not here
-    if (searchState?.active) return;
+    // Search mode is handled by CommandInput component, not here (non-Escape only)
+    if (searchState?.active && !key.escape) return;
+
+    // ── Escape: pop the topmost overlay layer (2.2) ──
+    if (key.escape) { popLayer(); return; }
 
     if (logModalRun) {
-      if (key.escape || input === "q") {
+      if (input === "q") {
         setLogModalRun(null);
         setLogModalLoopId(null);
       }
@@ -576,11 +582,11 @@ export function App(props: { onQuit: () => void }): React.ReactNode {
     }
 
     if (commandsBrowserOpen) {
-      if (key.escape) { setCommandsBrowserOpen(false); }
       return;
     }
 
     if (contextHelpOpen) {
+      // Escape handled by popLayer above; dismiss on any other key
       setContextHelpOpen(false);
       return;
     }
@@ -588,11 +594,8 @@ export function App(props: { onQuit: () => void }): React.ReactNode {
     // Any other modal open: block all input from reaching panels
     if (logModalRun) return;
 
-    // Full-screen form views: only escape
-    if (FORM_VIEWS.includes(view)) {
-      if (key.escape) pop();
-      return;
-    }
+    // Full-screen form views: escape handled by popLayer above
+    if (FORM_VIEWS.includes(view)) return;
 
     // Board view: Tab cycles panels (8.2), 1/2/3 switch tabs (8.1)
     if (isBoardView(view)) {
@@ -619,24 +622,21 @@ export function App(props: { onQuit: () => void }): React.ReactNode {
       if (input === "2") { setActiveTab("tasks"); return; }
       if (input === "3") { setActiveTab("projects"); return; }
     }
-
-    // Escape: pop router or ask to quit
-    if (key.escape) {
-      if (exportModal) { setExportModal(null); return; }
-      if (view !== "board") pop();
-      else {
-        setConfirmState({
-          prompt: t("confirm.quit"),
-          onConfirm: () => { onQuit(); exit(); },
-        });
-      }
-      return;
-    }
   });
 
   // Modals disable panel input behind them; CommandInput stays active for confirm/search
   const anyModalOpen = !!(logModalRun || commandsBrowserOpen || exportModal);
   const commandInputDisabled = anyModalOpen;
+
+  // ── Resolved input owner (1.2) ──
+  const inputOwner: InputOwner = useMemo(
+    () => resolveInputOwner({
+      modalOpen: !!(logModalRun || commandsBrowserOpen || exportModal || contextHelpOpen || confirmState || searchState?.active),
+      commandBarHasText,
+      commandBarDropdownOpen,
+    }),
+    [logModalRun, commandsBrowserOpen, exportModal, contextHelpOpen, confirmState, searchState?.active, commandBarHasText, commandBarDropdownOpen],
+  );
 
   const counts = {
     total: loops.length,
@@ -751,6 +751,11 @@ export function App(props: { onQuit: () => void }): React.ReactNode {
           onCopy={handleContextualCopy}
           onPanelAction={triggerContextualAction}
           disabled={commandInputDisabled}
+          navOwner={inputOwner}
+          onInputStateChange={(hasText, dropdownOpen) => {
+            setCommandBarHasText(hasText);
+            setCommandBarDropdownOpen(dropdownOpen);
+          }}
         />
       ) : null}
 

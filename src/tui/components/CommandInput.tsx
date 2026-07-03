@@ -1,4 +1,4 @@
-import React, { useMemo, useCallback } from "react";
+import React, { useEffect, useMemo, useCallback } from "react";
 import { Box, Text, useInput } from "ink";
 import {
   useAutocompleteState,
@@ -43,6 +43,8 @@ export interface CommandInputProps {
   onCopy?: () => void;
   onPanelAction?: () => void;
   disabled?: boolean;
+  navOwner?: "modal" | "commandBar" | "panel";
+  onInputStateChange?: (hasText: boolean, dropdownOpen: boolean) => void;
 }
 
 // ── Rendered input with cursor ───────────────────────────────────────
@@ -242,12 +244,16 @@ function CommandMode({
   onCopy,
   onPanelAction,
   disabled,
+  navOwner,
+  onInputStateChange,
 }: {
   context: CommandContext;
   onCommand: (value: string) => void;
   onCopy?: () => void;
   onPanelAction?: () => void;
   disabled?: boolean;
+  navOwner?: "modal" | "commandBar" | "panel";
+  onInputStateChange?: (hasText: boolean, dropdownOpen: boolean) => void;
 }): React.ReactNode {
   const commands = useMemo(() => buildCommands(context), [context]);
   const options = useMemo(
@@ -278,6 +284,11 @@ function CommandMode({
       .map((opt) => byValue.get(opt.value))
       .filter((m): m is FuzzyMatch => m !== undefined);
   }, [state.filteredOptions, state.inputValue]);
+
+  // Report input state changes to parent for InputOwner resolution (1.2)
+  useEffect(() => {
+    onInputStateChange?.(state.inputValue.length > 0, state.isOpen);
+  }, [state.inputValue, state.isOpen, onInputStateChange]);
 
   const insertText = useCallback((text: string) => {
     for (const ch of text) dispatch({ type: "INSERT_TEXT", text: ch });
@@ -529,6 +540,8 @@ export function CommandInput(props: CommandInputProps): React.ReactNode {
     onConfirmCancel,
     onCopy,
     onPanelAction,
+    navOwner,
+    onInputStateChange,
   } = props;
 
   return (
@@ -548,7 +561,7 @@ export function CommandInput(props: CommandInputProps): React.ReactNode {
           disabled={props.disabled}
         />
       ) : confirmState === null ? (
-        <CommandMode context={context} onCommand={onCommand} onCopy={onCopy} onPanelAction={onPanelAction} disabled={props.disabled} />
+        <CommandMode context={context} onCommand={onCommand} onCopy={onCopy} onPanelAction={onPanelAction} disabled={props.disabled} navOwner={navOwner} onInputStateChange={onInputStateChange} />
       ) : (
         <ConfirmMode
           confirmState={confirmState}
