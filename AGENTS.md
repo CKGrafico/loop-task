@@ -129,6 +129,27 @@ When user says "I've added comments to the PR" or shares a PR URL:
 
 ---
 
+## Testing the board in a browser (ttyd)
+
+The board is an interactive TUI that needs a real TTY, so it cannot be driven from a plain captured shell. If [`ttyd`](https://github.com/tsl0922/ttyd) is installed (`ttyd --version`), use it to serve the board over HTTP and drive it with the browser tools — this is the way to exercise real keyboard navigation, forms, and rendering end-to-end (unit tests with `ink-testing-library` only cover components in isolation).
+
+**Serve the board** (run in the background; `-W` is required or keystrokes are ignored):
+
+```bash
+ttyd -W -p 7681 npx tsx src/cli.ts      # dev (source)
+ttyd -W -p 7681 node dist/entry.js      # built (after `npm run build`)
+```
+
+Then open `http://localhost:7681` with the browser tools and interact:
+
+1. **Navigate** to the URL, then **click the terminal** once to focus it.
+2. **Send keystrokes** to exercise the board: arrows / `j` `k` to move, `Enter` to edit/open logs, `n` to create, `/` to search, `esc` to quit. Modifier combos (Ctrl+Enter, Ctrl+U) go through as the real terminal delivers them — this is also how you reproduce terminal-specific key issues.
+3. **Read the board with screenshots, not DOM snapshots** — xterm.js renders to a `<canvas>`, so accessibility/text snapshots are empty. Screenshot after each action to observe state.
+
+Useful flags: `-t fontSize=16` (larger, more legible screenshots), `-o` (accept one client then exit — good for a single test session), `-q` (exit when the client disconnects). Kill the `ttyd` process when done. If `ttyd` is not installed, fall back to `ink-testing-library` component rendering.
+
+---
+
 ## Agents
 
 Agent files live in `.opencode/agents/`. The set is dynamic — users add specialists over time via `/ob-create-engineer`.

@@ -432,6 +432,19 @@ bun run test
 npm run build
 ```
 
+### Testing the board in a browser (ttyd)
+
+The board is an interactive TUI, so it needs a real terminal — you can't drive it from a piped/captured shell (and neither can an AI agent). [`ttyd`](https://github.com/tsl0922/ttyd) shares a terminal over HTTP, which makes the board reachable from a browser and scriptable by browser-automation agents.
+
+Install ttyd (see the [ttyd README](https://github.com/tsl0922/ttyd#installation) — e.g. `winget install tsl0922.ttyd`, `brew install ttyd`, or `apt install ttyd`), then serve the board:
+
+```bash
+ttyd -W -p 7681 npx tsx src/cli.ts      # dev
+ttyd -W -p 7681 node dist/entry.js      # built (after npm run build)
+```
+
+Open `http://localhost:7681` in a browser and use the board as normal — `-W` makes it writable so keystrokes reach the TUI. This is handy for demos, for testing on a machine without a good local terminal, and for letting an AI agent drive the board (navigate to the URL, send keys, screenshot). ttyd renders via xterm.js on a `<canvas>`, so agents should read the board from screenshots rather than page text.
+
 ## License
 
 MIT
