@@ -275,7 +275,7 @@
   "cmdEditor.title": "Command Editor",
   "cmdEditor.hint": "enter: new line . ctrl+s: save . esc: cancel",
   "cmdEditor.lines": "lines",
-  "cmdEditor.inlineHint": "enter: new line . tab: next field . ctrl+s: save",
+  "cmdEditor.inlineHint": "enter: new line . ctrl+v: paste . ctrl+y: copy . tab: next field . ctrl+s: save",
   "board.exampleInterval": "30m",
   "board.exampleCommand": "opencode run \"search missing translations and translate them, 3 maximum\" --model \"opencode/big-pickle\"",
   "board.exampleDescription": "translate missing strings",
