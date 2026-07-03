@@ -66,16 +66,27 @@ export function Navigator(props: {
     return proj?.color ?? theme.text.muted;
   }
 
+  function isFailed(loop: LoopMeta): boolean {
+    return loop.lastExitCode !== null && loop.lastExitCode !== 0;
+  }
+
   function renderLoop(loop: LoopMeta, isSelected: boolean): React.ReactNode {
     const desc = truncate(describeLoop(loop), DESC_WIDTH);
     const since = sinceLabel(loop);
     const timing = timingLabel(loop);
-    const sColor = statusColor(loop.status);
+    const failed = isFailed(loop);
+    const sColor = failed ? theme.semantic.danger : statusColor(loop.status);
     const sLabel = statusLabel(loop.status);
     const fg = isSelected ? theme.text.inverse : theme.text.primary;
+    const dotChar = failed ? "\u2717 " : "\u25cf ";
+    const dotColor = failed
+      ? theme.semantic.danger
+      : isSelected
+        ? theme.text.inverse
+        : projectColor(loop);
     return (
       <>
-        <Text color={isSelected ? theme.text.inverse : projectColor(loop)}>{"\u25cf "}</Text>
+        <Text color={dotColor}>{dotChar}</Text>
         <Text color={fg}>{desc.padEnd(DESC_WIDTH + COL_GAP)}</Text>
         <Text color={fg}>{since.padEnd(SINCE_WIDTH + COL_GAP)}</Text>
         <Text color={fg}>{String(loop.runCount).padEnd(RUNS_WIDTH + COL_GAP)}</Text>
