@@ -175,9 +175,9 @@ function CommandDropdown({
   );
 }
 
-// ── Confirm dropdown ─────────────────────────────────────────────────
+// ── Confirm inline options ────────────────────────────────────────────
 
-function ConfirmDropdown({
+function ConfirmInlineOptions({
   focusedIndex,
   yesLabel,
   cancelLabel,
@@ -186,26 +186,24 @@ function ConfirmDropdown({
   yesLabel: string;
   cancelLabel: string;
 }): React.ReactNode {
-  const items = [
-    { label: cancelLabel, value: CONFIRM_CANCEL },
-    { label: yesLabel, value: CONFIRM_YES },
-  ];
+  // Options order: [cancel(0), yes(1)] in the autocomplete state,
+  // displayed inline as "❯ yes   cancel" (yes first, cancel second).
+  const yesFocused = focusedIndex === 1;
+  const cancelFocused = focusedIndex === 0;
 
   return (
-    <Box flexDirection="column" paddingLeft={3}>
-      {items.map((item, i) => {
-        const isFocused = i === focusedIndex;
-        return (
-          <Box key={item.value} backgroundColor={isFocused ? theme.bg.active : undefined}>
-            <Text color={isFocused ? theme.text.inverse : theme.text.muted}>
-              {isFocused ? "\u276f " : "  "}
-            </Text>
-            <Text color={isFocused ? theme.text.inverse : theme.text.primary}>
-              {item.label}
-            </Text>
-          </Box>
-        );
-      })}
+    <Box paddingLeft={3}>
+      {yesFocused ? (
+        <Text color={theme.text.inverse} backgroundColor={theme.bg.active}>{`\u276f ${yesLabel}`}</Text>
+      ) : (
+        <Text color={theme.text.muted}>{`  ${yesLabel}`}</Text>
+      )}
+      <Text color={theme.text.muted}>{"   "}</Text>
+      {cancelFocused ? (
+        <Text color={theme.text.inverse} backgroundColor={theme.bg.active}>{`\u276f ${cancelLabel}`}</Text>
+      ) : (
+        <Text color={theme.text.muted}>{`  ${cancelLabel}`}</Text>
+      )}
     </Box>
   );
 }
@@ -467,11 +465,13 @@ function ConfirmMode({
 
   return (
     <>
-      <ConfirmDropdown focusedIndex={state.focusedIndex} yesLabel={yesLabel} cancelLabel={cancelLabel} />
+      {/* Prompt first with danger accent bar */}
       <Box>
         <Text color={theme.semantic.danger}>{"│ "}</Text>
         <Text color={theme.text.primary}>{confirmState.prompt}</Text>
       </Box>
+      {/* Inline options below the prompt */}
+      <ConfirmInlineOptions focusedIndex={state.focusedIndex} yesLabel={yesLabel} cancelLabel={cancelLabel} />
       <HintBar
         leftHint={
           <Box>
