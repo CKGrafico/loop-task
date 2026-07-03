@@ -133,20 +133,19 @@ When user says "I've added comments to the PR" or shares a PR URL:
 
 The board is an interactive TUI that needs a real TTY, so it cannot be driven from a plain captured shell. If [`ttyd`](https://github.com/tsl0922/ttyd) is installed (`ttyd --version`), use it to serve the board over HTTP and drive it with the browser tools — this is the way to exercise real keyboard navigation, forms, and rendering end-to-end (unit tests with `ink-testing-library` only cover components in isolation).
 
-**Serve the board** (run from an interactive terminal; `-W` is required or keystrokes are ignored):
+**Serve the board** — run from an interactive terminal. Two flags are non-negotiable on Windows:
+- `-W` — writable, or keystrokes are ignored (the board is read-only without it).
+- `-w <absolute repo path>` — sets the child's working directory. **Without it, ttyd on Windows spawns the child with no valid cwd and every command fails with `CreateProcessW failed with error 267` (`ERROR_DIRECTORY`)** — this is independent of the command (`pnpm`, `npx`, and `node` all fail identically).
 
 ```bash
-# Preferred: the built entry. `node` is a native executable, so it spawns on
-# every platform including Windows.
-npm run build && ttyd -W -p 7681 node dist/entry.js
+# Recommended — dev/source path (pnpm run dev == tsx src/cli.ts):
+ttyd -W -w "C:\Projects\Personal\loop-cli" -p 7681 pnpm run dev
 
-# Dev/source (the `pnpm run dev` board == `tsx src/cli.ts`).
-# macOS/Linux can run it directly:
-ttyd -W -p 7681 pnpm run dev
-# Windows: wrap in a shell — ttyd spawns via CreateProcessW, which cannot launch
-# `pnpm`/`npx` directly (they are .cmd shims, not .exe) and fails with error 267.
-ttyd -W -p 7681 pwsh -Command "pnpm run dev"
+# Built entry also works (after `npm run build`); use the same -w:
+ttyd -W -w "C:\Projects\Personal\loop-cli" -p 7681 node dist/entry.js
 ```
+
+On macOS/Linux the `-w` is optional (the child inherits ttyd's cwd), so `ttyd -W -p 7681 pnpm run dev` is enough there — but always passing `-w <repo>` is harmless and portable.
 
 Then open `http://localhost:7681` with the browser tools and interact:
 
@@ -157,8 +156,9 @@ Then open `http://localhost:7681` with the browser tools and interact:
 Useful flags: `-t fontSize=16` (larger, more legible screenshots), `-o` (accept one client then exit — good for a single test session), `-q` (exit when the client disconnects). Kill the `ttyd` process when done. If `ttyd` is not installed, fall back to `ink-testing-library` component rendering.
 
 **Troubleshooting:**
-- `CreateProcessW failed with error 267` (Windows): the command is a `.cmd`/`.ps1` shim (e.g. `npx`, `pnpm`). Use the native-exe form (`node dist/entry.js`) or the `pwsh -Command "…"` wrapper above.
-- Terminal shows **"Press ⏎ to Reconnect"** immediately: the child spawned but exited/crashed. Verify the command runs standalone, and start `ttyd` from a **real interactive terminal** — launching it from a context without an attached console (a detached/piped process, some CI or agent shells) can crash ttyd's ConPTY on Windows.
+- `CreateProcessW failed with error 267` (Windows): the child working directory is missing — add `-w "<absolute repo path>"`. (It is *not* about `.cmd` shims; native `node` fails the same way without `-w`.)
+- Terminal shows **"Press ⏎ to Reconnect"** immediately: the child spawned but exited/crashed. The error text is printed just above the reconnect box — screenshot and read it. Verify the command runs standalone (`pnpm run dev` in a normal terminal).
+- Launching `ttyd` from a context without an attached console (a detached/piped process, some CI or agent shells) can crash its ConPTY on Windows before any client connects — start it from a real interactive terminal.
 
 ---
 
