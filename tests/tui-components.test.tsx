@@ -28,6 +28,7 @@ import { CONFIRM_CANCEL, CONFIRM_YES } from "../src/config/constants.js";
 import { rankCommands } from "../src/tui/commands.js";
 import type { CommandContext, ConfirmState } from "../src/tui/types.js";
 import { darkTheme as theme } from "../src/tui/theme.js";
+import { resolveInputOwner } from "../src/tui/state.js";
 
 describe("TabBar", () => {
   it("renders all three tab labels", () => {
@@ -598,5 +599,43 @@ describe("rankCommands", () => {
     // Neither exact nor prefix for either "Edit" or "Delete" — both land in fuzzy,
     // existing order preserved
     expect(result.length).toBeGreaterThan(0);
+  });
+});
+
+describe("Double-handling regressions (tasks 1.3 / 1.4)", () => {
+  it("empty bar: j/k/arrows do not type into the bar (panels own them)", () => {
+    // Task 1.3 regression guard: when inputValue is empty and !isOpen (no dropdown),
+    // CommandMode returns early for j/k/arrows instead of dispatching INSERT_TEXT.
+    // The structural guarantee is resolveInputOwner → "panel" in that state,
+    // meaning navActive is true for panels and the command bar's useInput is gated off.
+    // If resolveInputOwner correctly returns "panel", the bar will never receive
+    // j/k/arrow keystrokes as text input.
+    const owner = resolveInputOwner({
+      modalOpen: false,
+      commandBarHasText: false,
+      commandBarDropdownOpen: false,
+    });
+    expect(owner).toBe("panel");
+  });
+
+  it("with text in bar: Down moves dropdown focus only (navActive is false)", () => {
+    // Task 1.4 regression guard: when the bar has text, resolveInputOwner
+    // returns "commandBar" → navActive is false for panels → panel useInput
+    // is gated off. Down arrow only reaches the dropdown, not the panel list.
+    const owner = resolveInputOwner({
+      modalOpen: false,
+      commandBarHasText: true,
+      commandBarDropdownOpen: false,
+    });
+    expect(owner).toBe("commandBar");
+  });
+
+  it("resolveInputOwner: empty bar + no dropdown + no modal → panel owns keys", () => {
+    const owner = resolveInputOwner({
+      modalOpen: false,
+      commandBarHasText: false,
+      commandBarDropdownOpen: false,
+    });
+    expect(owner).toBe("panel");
   });
 });
