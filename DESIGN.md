@@ -56,8 +56,8 @@ tokens:
         value: "#4ade80"
         description: "Maps to semantic.success"
       waiting:
-        value: "#38bdf8"
-        description: "Maps to accent.loop"
+        value: "#6b7280"
+        description: "Maps to text.muted"
       paused:
         value: "#facc15"
         description: "Maps to semantic.warning"
@@ -293,7 +293,7 @@ Key hints use bold for the key label and muted for the action description.
 
 Loop status is communicated via color:
 - Running loops show a green `ink-spinner` (dots animation) inline in the list row
-- Status text in the list uses semantic colors (running=green, waiting=blue, paused=yellow, idle=orange, stopped=red)
+- Status text in the list uses semantic colors (running=green, waiting=muted, paused=yellow, idle=orange, stopped=red)
 - Run history sparkline uses blue bars with success/danger streak indicators
 - Run exit codes use checkmark (`✓` green) or cross (`✗` red) icons
 

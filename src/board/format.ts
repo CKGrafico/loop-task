@@ -50,7 +50,7 @@ export function timeUntil(iso: string | null): string {
 
 const STATUS_COLORS: Record<LoopMeta["status"], string> = {
   running: "#4ade80",
-  waiting: "#38bdf8",
+  waiting: "#6b7280",
   paused: "#facc15",
   idle: "#fb923c",
   stopped: "#f87171",
