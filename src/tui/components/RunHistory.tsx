@@ -81,8 +81,9 @@ export function RunHistory(props: {
   onSelectRun: (index: number) => void;
   onOpenRun: (run: RunRecord) => void;
   isFocused: boolean;
+  navActive?: boolean;
 }): React.ReactNode {
-  const { loop, selectedRunIndex, onSelectRun, onOpenRun, isFocused } = props;
+  const { loop, selectedRunIndex, onSelectRun, onOpenRun, isFocused, navActive = true } = props;
 
   const runs = loop?.runHistory ?? [];
   const reversed = [...runs].reverse();
@@ -107,7 +108,7 @@ export function RunHistory(props: {
         return;
       }
     },
-    { isActive: isFocused },
+    { isActive: isFocused && navActive },
   );
 
   const title = isFocused ? t("board.runHistoryTitleHint") : t("board.runHistoryTitle");

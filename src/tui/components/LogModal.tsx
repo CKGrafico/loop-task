@@ -84,7 +84,7 @@ export function LogModal(props: {
     }
 
     if (key.escape) {
-      props.onClose();
+      // Escape handled by App's global popLayer(); no-op here to avoid double-fire
       return;
     }
     if (input === "/") {

@@ -13,6 +13,7 @@ const DIVIDER = "\u2500".repeat(40);
 
 export function RightPanel(props: {
   isFocused: boolean;
+  navActive?: boolean;
   activeTab: TabName;
   loop: LoopMeta | null;
   selectedRunIndex: number;
@@ -27,6 +28,7 @@ export function RightPanel(props: {
 }): React.ReactNode {
   const {
     isFocused,
+    navActive = true,
     activeTab,
     loop,
     selectedRunIndex,
@@ -65,6 +67,7 @@ export function RightPanel(props: {
             onSelectRun={onSelectRun}
             onOpenRun={onOpenRun}
             isFocused={isFocused}
+            navActive={navActive}
           />
         </>
       )}

@@ -26,8 +26,9 @@ export function Navigator(props: {
   onSelect: (index: number) => void;
   onActivate: (index: number) => void;
   isFocused: boolean;
+  navActive?: boolean;
 }): React.ReactNode {
-  const { visible, total, selectedIndex, filters, sort, projects, onSelect, onActivate, isFocused } = props;
+  const { visible, total, selectedIndex, filters, sort, projects, onSelect, onActivate, isFocused, navActive = true } = props;
 
   const n = visible.length;
 
@@ -49,7 +50,7 @@ export function Navigator(props: {
         return;
       }
     },
-    { isActive: isFocused },
+    { isActive: isFocused && navActive },
   );
 
   const statusFilter = filters?.status ?? "all";

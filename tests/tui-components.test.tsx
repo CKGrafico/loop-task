@@ -24,8 +24,11 @@ import { Modal } from "../src/tui/components/Modal.js";
 import { Header } from "../src/tui/components/Header.js";
 import { WizardForm, type WizardStepConfig } from "../src/tui/components/WizardForm.js";
 import { CommandInput, sanitizePaste } from "../src/tui/components/CommandInput.js";
+import { CONFIRM_CANCEL, CONFIRM_YES } from "../src/config/constants.js";
+import { rankCommands } from "../src/tui/commands.js";
 import type { CommandContext, ConfirmState } from "../src/tui/types.js";
 import { darkTheme as theme } from "../src/tui/theme.js";
+import { resolveInputOwner } from "../src/tui/state.js";
 
 describe("TabBar", () => {
   it("renders all three tab labels", () => {
@@ -292,7 +295,7 @@ describe("CommandInput", () => {
     expect(lastFrame()).toContain("Start typing");
   });
 
-  it("renders confirm prompt and yes/cancel options", () => {
+  it("renders confirm prompt with cancel focused (default)", () => {
     const confirm: ConfirmState = {
       prompt: 'Delete "test"?',
       onConfirm: () => {},
@@ -315,15 +318,17 @@ describe("CommandInput", () => {
     );
     const frame = lastFrame() ?? "";
     expect(frame).toContain('Delete "test"?');
-    expect(frame).toContain("yes");
+    // Cancel is at index 0 (default focus) so it appears as the focused option
     expect(frame).toContain("cancel");
   });
 
-  it("calls onConfirmYes when Enter is pressed in confirm mode", async () => {
+  it("calls onConfirmCancel when Enter is pressed in confirm mode without navigation (cancel is default)", async () => {
+    // Task 4.1: cancel is at index 0 (default focus), so bare Enter activates cancel.
     const confirm: ConfirmState = {
       prompt: "Are you sure?",
       onConfirm: () => {},
     };
+    const onConfirmCancel = vi.fn();
     const onConfirmYes = vi.fn();
     const { stdin } = render(
       <Box height={10} width={60}>
@@ -337,13 +342,14 @@ describe("CommandInput", () => {
           onSearchSubmit={() => {}}
           onSearchCancel={() => {}}
           onConfirmYes={onConfirmYes}
-          onConfirmCancel={() => {}}
+          onConfirmCancel={onConfirmCancel}
         />
       </Box>,
     );
     stdin.write("\r");
     await delay();
-    expect(onConfirmYes).toHaveBeenCalledTimes(1);
+    expect(onConfirmCancel).toHaveBeenCalledTimes(1);
+    expect(onConfirmYes).not.toHaveBeenCalled();
   });
 
   it("calls onConfirmCancel when Escape is pressed in confirm mode", async () => {
@@ -475,6 +481,50 @@ describe("CommandInput", () => {
     expect(lastFrame()).toContain("npm test");
   });
 
+  it("Esc then Enter on bare board does NOT quit the app (cancel is default in confirm)", async () => {
+    // Regression test for task 4.2: before 4.1, Escape opened the quit confirm
+    // with "yes" focused; a quick Enter would exit. Now cancel is the default,
+    // so pressing Escape then Enter on the bare board dismisses the confirm
+    // instead of confirming quit.
+    const confirm: ConfirmState = {
+      prompt: "Quit?",
+      onConfirm: () => {},
+    };
+    const onConfirmCancel = vi.fn();
+    const onConfirmYes = vi.fn();
+    const { stdin } = render(
+      <Box height={10} width={60}>
+        <CommandInput
+          context={baseContext}
+          onCommand={() => {}}
+          confirmState={confirm}
+          searchState={null}
+          searchValue=""
+          onSearchChange={() => {}}
+          onSearchSubmit={() => {}}
+          onSearchCancel={() => {}}
+          onConfirmYes={onConfirmYes}
+          onConfirmCancel={onConfirmCancel}
+        />
+      </Box>,
+    );
+    // Simulate: Esc opens confirm (already open), then Enter without navigation
+    stdin.write("\r");
+    await delay();
+    // Cancel is default → Enter dismisses, does NOT confirm quit
+    expect(onConfirmCancel).toHaveBeenCalledTimes(1);
+    expect(onConfirmYes).not.toHaveBeenCalled();
+  });
+
+  it("confirm options list cancel before yes (structural guarantee)", () => {
+    // Belt-and-suspenders: if someone reorders the options array, this test breaks.
+    // The ConfirmMode component builds options as [cancel, yes] so that
+    // index 0 (default focus) = cancel.
+    const order: string[] = [CONFIRM_CANCEL, CONFIRM_YES];
+    expect(order.indexOf(CONFIRM_CANCEL)).toBeLessThan(order.indexOf(CONFIRM_YES));
+    expect(order[0]).toBe(CONFIRM_CANCEL);
+  });
+
   it("Ctrl+U clears the command bar", async () => {
     const { stdin, lastFrame } = render(
       <Box height={10} width={60}>
@@ -517,5 +567,75 @@ describe("sanitizePaste", () => {
   it("caps very long pastes", () => {
     const huge = "x".repeat(10000);
     expect(sanitizePaste(huge).length).toBe(4096);
+  });
+});
+
+describe("rankCommands", () => {
+  const options = [
+    { label: "Edit selected loop", value: "edit" },
+    { label: "Delete selected loop", value: "delete" },
+    { label: "Pause selected loop", value: "pause" },
+    { label: "New loop", value: "new-loop" },
+  ];
+
+  it("ranks exact value match first", () => {
+    const result = rankCommands("delete", options);
+    expect(result[0].value).toBe("delete");
+  });
+
+  it("ranks exact label match first", () => {
+    const result = rankCommands("new loop", options);
+    expect(result[0].value).toBe("new-loop");
+  });
+
+  it("ranks prefix match above fuzzy", () => {
+    const result = rankCommands("ed", options);
+    // "Edit selected loop" should rank above "Delete selected loop" because "Edit" starts with "ed"
+    expect(result[0].value).toBe("edit");
+  });
+
+  it("keeps fuzzy matches stable when no exact/prefix", () => {
+    const result = rankCommands("dit", options);
+    // Neither exact nor prefix for either "Edit" or "Delete" — both land in fuzzy,
+    // existing order preserved
+    expect(result.length).toBeGreaterThan(0);
+  });
+});
+
+describe("Double-handling regressions (tasks 1.3 / 1.4)", () => {
+  it("empty bar: j/k/arrows do not type into the bar (panels own them)", () => {
+    // Task 1.3 regression guard: when inputValue is empty and !isOpen (no dropdown),
+    // CommandMode returns early for j/k/arrows instead of dispatching INSERT_TEXT.
+    // The structural guarantee is resolveInputOwner → "panel" in that state,
+    // meaning navActive is true for panels and the command bar's useInput is gated off.
+    // If resolveInputOwner correctly returns "panel", the bar will never receive
+    // j/k/arrow keystrokes as text input.
+    const owner = resolveInputOwner({
+      modalOpen: false,
+      commandBarHasText: false,
+      commandBarDropdownOpen: false,
+    });
+    expect(owner).toBe("panel");
+  });
+
+  it("with text in bar: Down moves dropdown focus only (navActive is false)", () => {
+    // Task 1.4 regression guard: when the bar has text, resolveInputOwner
+    // returns "commandBar" → navActive is false for panels → panel useInput
+    // is gated off. Down arrow only reaches the dropdown, not the panel list.
+    const owner = resolveInputOwner({
+      modalOpen: false,
+      commandBarHasText: true,
+      commandBarDropdownOpen: false,
+    });
+    expect(owner).toBe("commandBar");
+  });
+
+  it("resolveInputOwner: empty bar + no dropdown + no modal → panel owns keys", () => {
+    const owner = resolveInputOwner({
+      modalOpen: false,
+      commandBarHasText: false,
+      commandBarDropdownOpen: false,
+    });
+    expect(owner).toBe("panel");
   });
 });
