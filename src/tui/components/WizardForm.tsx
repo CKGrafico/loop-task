@@ -2,7 +2,7 @@ import React, { useState, useCallback, useMemo } from "react";
 import { Box, Text, useInput } from "ink";
 import { darkTheme as theme } from "../theme.js";
 import { t } from "../../i18n/index.js";
-import { validateField } from "../utils/validation.js";
+import { useLoopFormValidation, type CreateField } from "../../hooks/useLoopFormValidation.js";
 import { copyToClipboard } from "../../shared/clipboard.js";
 
 export interface WizardStepConfig {
@@ -104,6 +104,8 @@ export function WizardForm(props: WizardFormProps): React.ReactNode {
   const [activeField, setActiveField] = useState(0);
   const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
 
+  const { validateField } = useLoopFormValidation();
+
   const step = steps[activeField];
 
   const valueFor = useCallback(
@@ -136,20 +138,12 @@ export function WizardForm(props: WizardFormProps): React.ReactNode {
     setValidationErrors((prev) => ({ ...prev, [key]: msg }));
   }, []);
 
-  const getTaskMode = useCallback((): string => {
-    const modeVal = resolvedValues["taskMode"] ?? "";
-    return modeVal.includes("Existing") ? "existing" : "inline";
-  }, [values]);
-
   const submit = useCallback(() => {
     const errors: Record<string, string> = {};
 
     for (const s of steps) {
       if (s.skip && s.skip(resolvedValues)) continue;
-      const err = validateField(s.key, valueFor(s), {
-        taskMode: getTaskMode(),
-        allValues: values,
-      });
+      const err = validateField(s.key as CreateField, resolvedValues as Record<CreateField, string>);
       if (err) errors[s.key] = err;
     }
 
@@ -173,7 +167,7 @@ export function WizardForm(props: WizardFormProps): React.ReactNode {
       result[s.key] = valueFor(s);
     }
     onComplete(result);
-  }, [steps, valueFor, onComplete, values, getTaskMode]);
+  }, [steps, valueFor, onComplete, resolvedValues]);
 
   const findNextField = useCallback(
     (from: number, delta: number): number => {
@@ -192,10 +186,7 @@ export function WizardForm(props: WizardFormProps): React.ReactNode {
   const moveField = useCallback(
     (delta: number) => {
       if (step) {
-        const err = validateField(step.key, valueFor(step), {
-          taskMode: getTaskMode(),
-          allValues: values,
-        });
+        const err = validateField(step.key as CreateField, resolvedValues as Record<CreateField, string>);
         if (err) {
           setError(step.key, err);
           return;
@@ -206,7 +197,7 @@ export function WizardForm(props: WizardFormProps): React.ReactNode {
       const next = findNextField(activeField, delta);
       if (next !== activeField) setActiveField(next);
     },
-    [step, valueFor, getTaskMode, values, activeField, findNextField, setError, clearError],
+    [step, valueFor, resolvedValues, activeField, findNextField, setError, clearError],
   );
 
   const visibleSteps = steps.filter((s) => !s.skip || !s.skip(resolvedValues));

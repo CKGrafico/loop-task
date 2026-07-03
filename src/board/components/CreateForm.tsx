@@ -1,10 +1,8 @@
 import { useRef, useState } from "react";
 import { useKeyboard, useTerminalDimensions } from "@opentui/react";
-import fs from "node:fs";
 import type { LoopMeta, Project } from "../../types.js";
 import type { InputRenderable } from "@opentui/core";
 import { buildLoopOptions, parseCommandLine } from "../../loop-config.js";
-import { parseDuration, parseMaxRuns } from "../../duration.js";
 import { t } from "../../i18n/index.js";
 import { commandLine } from "../format.js";
 import { createLoop, updateLoop, listTasks } from "../daemon.js";
@@ -13,6 +11,7 @@ import { useInputShortcuts } from "../hooks/useInputShortcuts.js";
 import { useTabNav } from "../hooks/useTabNav.js";
 import { SearchSelect } from "./SearchSelect.js";
 import { HOVER_BG } from "../../config/constants.js";
+import { useLoopFormValidation } from "../../hooks/useLoopFormValidation.js";
 import { copyToClipboard } from "../../shared/clipboard.js";
 
 export const TASK_MODE_INLINE = "inline";
@@ -65,9 +64,11 @@ export function CreateView(props: {
   });
   const valuesRef = useRef(values);
   const [error, setError] = useState("");
-  const [fieldErrors, setFieldErrors] = useState<Partial<Record<CreateField, string>>>({});
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [selectedTaskName, setSelectedTaskName] = useState<string | null>(props.selectedTaskName ?? null);
+  const [copiedField, setCopiedField] = useState<string | null>(null);
+  const { validateField, validateAll } = useLoopFormValidation();
   const inputRef = useRef<InputRenderable | null>(null);
 
   const { width: termWidth } = useTerminalDimensions();
@@ -106,48 +107,33 @@ export function CreateView(props: {
     }
   });
 
-  function validateField(key: CreateField, current: Record<CreateField, string>): string | null {
-    const val = current[key].trim();
-    if (key === "interval") {
-      if (!val) return null;
-      try {
-        parseDuration(val);
-        return null;
-      } catch {
-        return t("errors.durationInvalid", { input: current[key] });
-      }
-    }
-    if (key === "command") {
-      if (current.taskMode === TASK_MODE_INLINE && !val) return t("errors.commandEmpty");
-      return null;
-    }
-    if (key === "description") {
-      if (!val) return t("errors.descriptionEmpty");
-      return null;
-    }
-    if (key === "cwd") {
-      if (val && !fs.existsSync(val)) return t("board.cwdMissing", { cwd: val });
-      return null;
-    }
-    if (key === "maxRuns") {
-      if (!val) return null;
-      try {
-        parseMaxRuns(val);
-        return null;
-      } catch {
-        return t("errors.maxRunsInvalid");
-      }
-    }
-    return null;
-  }
-
-  function clearFieldError(key: CreateField): void {
+  function clearFieldError(key: string): void {
     setFieldErrors((prev) => {
       if (!(key in prev)) return prev;
       const next = { ...prev };
       delete next[key];
       return next;
     });
+  }
+
+  function handleFieldChange(field: CreateField, value: string): void {
+    const next = { ...valuesRef.current, [field]: value };
+    valuesRef.current = next;
+    setValues(next);
+    const error = validateField(field, next);
+    setFieldErrors((prev) => {
+      if (error) return { ...prev, [field]: error };
+      if (!(field in prev)) return prev;
+      const copy = { ...prev };
+      delete copy[field];
+      return copy;
+    });
+  }
+
+  function handleCopy(field: string, value: string): void {
+    copyToClipboard(value);
+    setCopiedField(field);
+    setTimeout(() => setCopiedField(null), 2000);
   }
 
   function updateValues(next: Record<CreateField, string>): void {
@@ -167,7 +153,10 @@ export function CreateView(props: {
     const fi = focusedItemRef.current;
     if (fi === "taskMode") {
       const next = valuesRef.current.taskMode === TASK_MODE_INLINE ? TASK_MODE_EXISTING : TASK_MODE_INLINE;
-      updateValues({ ...valuesRef.current, taskMode: next });
+      const updates: Record<string, string> = { taskMode: next };
+      if (next === TASK_MODE_EXISTING) updates.command = "";
+      if (next === TASK_MODE_INLINE) updates.taskId = "";
+      updateValues({ ...valuesRef.current, ...updates });
       key.preventDefault();
       return;
     }
@@ -192,10 +181,14 @@ export function CreateView(props: {
   });
 
   function validateAll(current: Record<CreateField, string>): boolean {
-    const errs: Partial<Record<CreateField, string>> = {};
-    for (const f of filteredFields) {
+    const errs: Record<string, string> = {};
+    for (const f of createFields) {
+      if (f === "taskMode" || f === "runNow" || f === "project") continue;
       const msg = validateField(f, current);
       if (msg) errs[f] = msg;
+    }
+    if (current.taskMode === TASK_MODE_EXISTING && !current.taskId.trim()) {
+      errs.taskId = t("board.chooseTask");
     }
     setFieldErrors(errs);
     return Object.keys(errs).length === 0;
@@ -342,6 +335,10 @@ export function CreateView(props: {
                 inputRef={inputRef}
                 fieldErrors={fieldErrors}
                 clearFieldError={clearFieldError}
+                mode={props.mode}
+                handleFieldChange={handleFieldChange}
+                handleCopy={handleCopy}
+                copiedField={copiedField}
                 style={{ width: "50%", paddingRight: 1 }}
               />
               {rightField ? (
@@ -365,6 +362,10 @@ export function CreateView(props: {
                   inputRef={inputRef}
                   fieldErrors={fieldErrors}
                   clearFieldError={clearFieldError}
+                  mode={props.mode}
+                  handleFieldChange={handleFieldChange}
+                  handleCopy={handleCopy}
+                  copiedField={copiedField}
                   style={{ width: "50%" }}
                 />
               ) : (
@@ -436,17 +437,23 @@ function FormRow(props: {
   selectedTaskName: string | null;
   onChooseTask: () => void;
   inputRef: React.MutableRefObject<InputRenderable | null>;
-  fieldErrors: Partial<Record<CreateField, string>>;
-  clearFieldError: (key: CreateField) => void;
+  fieldErrors: Record<string, string>;
+  clearFieldError: (key: string) => void;
+  mode: "create" | "edit";
+  handleFieldChange: (field: CreateField, value: string) => void;
+  handleCopy: (field: string, value: string) => void;
+  copiedField: string | null;
   style?: { width?: number | `${number}%` | "auto"; flexGrow?: number; marginRight?: number; paddingRight?: number };
 }): React.ReactNode {
-  const { field, index, isFocused, values, valuesRef, updateValues, setFocusIndex, submit, labels, hints, examples, taskModeOptions, runNowOptions, projectOptions, selectedTaskName, onChooseTask, inputRef, style, fieldErrors, clearFieldError } = props;
+  const { field, index, isFocused, values, valuesRef, updateValues, setFocusIndex, submit, labels, hints, examples, taskModeOptions, runNowOptions, projectOptions, selectedTaskName, onChooseTask, inputRef, style, fieldErrors, clearFieldError, mode, handleFieldChange, handleCopy, copiedField } = props;
   const { isHovered, hoverProps } = useHoverState();
+  const copyBtnHover = useHoverState();
 
   const isToggleField = field === "taskMode" || field === "runNow";
   const isTaskButton = field === "taskId";
   const isProjectField = field === "project";
   const error = fieldErrors[field];
+  const isCopyableField = mode === "edit" && (field === "command" || field === "cwd");
 
   const toggleOptions = field === "taskMode" ? taskModeOptions : runNowOptions;
   const toggleValue = field === "taskMode" ? values.taskMode : values.runNow;
@@ -466,7 +473,16 @@ function FormRow(props: {
             return (
               <box
                 key={opt.value}
-                onMouseDown={() => updateValues({ ...valuesRef.current, [field]: opt.value })}
+                onMouseDown={() => {
+                  if (field === "taskMode") {
+                    const updates: Record<string, string> = { [field]: opt.value };
+                    if (opt.value === TASK_MODE_EXISTING) updates.command = "";
+                    if (opt.value === TASK_MODE_INLINE) updates.taskId = "";
+                    updateValues({ ...valuesRef.current, ...updates });
+                  } else {
+                    updateValues({ ...valuesRef.current, [field]: opt.value });
+                  }
+                }}
                 style={{ backgroundColor: isActive ? "#1e3a8a" : undefined, paddingLeft: 1, paddingRight: 1, marginRight: 1 }}
                 {...hoverProps}
               >
@@ -509,18 +525,20 @@ function FormRow(props: {
               placeholder={examples[field] ? t("board.placeholderExample", { example: examples[field] }) : t("board.placeholderBlank")}
               onInput={(value: string) => {
                 clearFieldError(field);
-                updateValues({ ...valuesRef.current, [field]: value });
+                handleFieldChange(field, value);
               }}
               onSubmit={() => { void submit(valuesRef.current); }}
             />
           </box>
-          {(field === "command" || field === "cwd") && values[field] ? (
+          {isCopyableField ? (
             <box
-              onMouseDown={() => { copyToClipboard(values[field]); }}
+              onMouseDown={() => { handleCopy(field, values[field]); }}
               style={{ paddingLeft: 1, paddingRight: 1 }}
-              {...hoverProps}
+              {...copyBtnHover.hoverProps}
             >
-              <text fg={isHovered ? "#38bdf8" : "#6b7280"}>[copy]</text>
+              <text fg={copyBtnHover.isHovered ? "#38bdf8" : copiedField === field ? "#4ade80" : "#6b7280"}>
+                {copiedField === field ? t("board.toastCopied") : t("board.copyCommand")}
+              </text>
             </box>
           ) : null}
         </box>
