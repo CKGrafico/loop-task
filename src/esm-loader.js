@@ -14,7 +14,10 @@ export function resolve(specifier, context, nextResolve) {
     }
   }
 
-  if (specifier.includes("react-reconciler/constants") || specifier.includes("react-reconciler/reflection")) {
+  if (
+    (specifier.includes("react-reconciler/constants") || specifier.includes("react-reconciler/reflection")) &&
+    !specifier.endsWith(".js")
+  ) {
     return nextResolve(specifier + ".js", context);
   }
 
