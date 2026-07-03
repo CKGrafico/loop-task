@@ -140,11 +140,12 @@ The board is an interactive TUI that needs a real TTY, so it cannot be driven fr
 # every platform including Windows.
 npm run build && ttyd -W -p 7681 node dist/entry.js
 
-# Dev/source (tsx). macOS/Linux can run npx directly:
-ttyd -W -p 7681 npx tsx src/cli.ts
+# Dev/source (the `pnpm run dev` board == `tsx src/cli.ts`).
+# macOS/Linux can run it directly:
+ttyd -W -p 7681 pnpm run dev
 # Windows: wrap in a shell — ttyd spawns via CreateProcessW, which cannot launch
-# `npx` directly (it is a .cmd shim, not a .exe) and fails with error 267.
-ttyd -W -p 7681 pwsh -Command "npx tsx src/cli.ts"
+# `pnpm`/`npx` directly (they are .cmd shims, not .exe) and fails with error 267.
+ttyd -W -p 7681 pwsh -Command "pnpm run dev"
 ```
 
 Then open `http://localhost:7681` with the browser tools and interact:
