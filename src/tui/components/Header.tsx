@@ -44,31 +44,27 @@ export function Header(props: HeaderProps): React.ReactNode {
   const width = stdout?.columns ?? 80;
   const compact = width < HEADER_COMPACT_WIDTH;
 
+  const entries: Array<{ label: string; value: number; color: string }> = [
+    { label: t("board.runningLabel"), value: props.counts.running, color: theme.semantic.success },
+    { label: t("board.waitingLabel"), value: props.counts.waiting, color: theme.accent.loop },
+    { label: t("board.pausedLabel"), value: props.counts.paused, color: theme.semantic.warning },
+    { label: t("board.idleLabel"), value: props.counts.idle, color: theme.semantic.idle },
+  ];
+
   return (
     <Box flexDirection="column">
-      <Box>
-        <Text color={theme.accent.brand} bold>{t("board.appName")}</Text>
-        <Text> </Text>
-        <Text color={theme.text.muted}>{t("board.appTagline")}</Text>
-      </Box>
-
       <Box justifyContent="space-between">
         <Box gap={1}>
+          <Text color={theme.accent.brand} bold>{t("board.appName")}</Text>
           <Text color={daemonColor(props.daemonStatus)}>{daemonSymbol(props.daemonStatus)}</Text>
           <Text color={theme.text.secondary}>{daemonText(props.daemonStatus)}</Text>
-          {!compact && (
-            <>
-              <Text color={theme.text.muted}>{t("board.loopsLabel")}</Text>
-              <Text color={theme.text.primary}>{props.counts.total}</Text>
-              <Text color={theme.text.muted}>{t("board.runningLabel")}</Text>
-              <Text color={theme.semantic.success}>{props.counts.running}</Text>
-              <Text color={theme.text.muted}>{t("board.waitingLabel")}</Text>
-              <Text color={theme.accent.loop}>{props.counts.waiting}</Text>
-              <Text color={theme.text.muted}>{t("board.pausedLabel")}</Text>
-              <Text color={theme.semantic.warning}>{props.counts.paused}</Text>
-              <Text color={theme.text.muted}>{t("board.idleLabel")}</Text>
-              <Text color={theme.semantic.idle}>{props.counts.idle}</Text>
-            </>
+          {!compact && entries.map((e) =>
+            e.value > 0 ? (
+              <React.Fragment key={e.label}>
+                <Text color={theme.text.muted}>{e.label}</Text>
+                <Text color={e.color}>{e.value}</Text>
+              </React.Fragment>
+            ) : null,
           )}
         </Box>
 
