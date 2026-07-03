@@ -28,7 +28,15 @@ import { CONFIRM_CANCEL, CONFIRM_YES } from "../src/config/constants.js";
 import { rankCommands } from "../src/tui/commands.js";
 import type { CommandContext, ConfirmState } from "../src/tui/types.js";
 import { darkTheme as theme } from "../src/tui/theme.js";
-import { resolveInputOwner } from "../src/tui/state.js";
+import {
+  resolveInputOwner,
+  cycleProjectSortMode,
+  cycleProjectHasLoopsFilter,
+  cycleProjectIsSystemFilter,
+} from "../src/tui/state.js";
+import { statusColor as themeStatusColor } from "../src/tui/theme.js";
+import { statusColor as formatStatusColor, formatRunDuration, timeAgo } from "../src/tui/format.js";
+import { t } from "../src/i18n/index.js";
 
 describe("TabBar", () => {
   it("renders all three tab labels", () => {
@@ -637,5 +645,138 @@ describe("Double-handling regressions (tasks 1.3 / 1.4)", () => {
       commandBarDropdownOpen: false,
     });
     expect(owner).toBe("panel");
+  });
+});
+
+// ── Task 7.1 tests ──────────────────────────────────────────────────────
+
+describe("Failing-row indicator (task 7.1)", () => {
+  it("statusColor returns red for stopped status (non-zero exit code loops end as stopped)", () => {
+    // Loops that exit with a non-zero code transition to "stopped" status.
+    // The row color is driven by statusColor, which must return red for "stopped".
+    expect(formatStatusColor("stopped")).toBe("#f87171");
+    expect(themeStatusColor("stopped")).toBe("#f87171");
+  });
+
+  it("statusColor returned red matches the theme semantic danger color", () => {
+    expect(formatStatusColor("stopped")).toBe(theme.semantic.danger);
+    expect(themeStatusColor("stopped")).toBe(theme.semantic.danger);
+  });
+
+  it("non-stopped statuses are not red", () => {
+    // Sanity check: only "stopped" maps to danger/red
+    expect(formatStatusColor("running")).not.toBe(theme.semantic.danger);
+    expect(formatStatusColor("waiting")).not.toBe(theme.semantic.danger);
+    expect(formatStatusColor("paused")).not.toBe(theme.semantic.danger);
+    expect(formatStatusColor("idle")).not.toBe(theme.semantic.danger);
+  });
+});
+
+describe("Muted waiting (task 7.1)", () => {
+  it("statusColor('waiting') returns the muted gray, not blue", () => {
+    // Waiting rows use the muted gray (#6b7280), not the blue accent (#38bdf8).
+    expect(formatStatusColor("waiting")).toBe("#6b7280");
+    expect(themeStatusColor("waiting")).toBe("#6b7280");
+  });
+
+  it("waiting color matches theme.text.muted", () => {
+    expect(formatStatusColor("waiting")).toBe(theme.text.muted);
+    expect(themeStatusColor("waiting")).toBe(theme.text.muted);
+  });
+
+  it("waiting color is distinct from running (green) and loop accent (blue)", () => {
+    expect(formatStatusColor("waiting")).not.toBe(formatStatusColor("running"));
+    expect(formatStatusColor("waiting")).not.toBe(theme.accent.loop);
+  });
+});
+
+describe("Dim unfocused selection (task 7.1)", () => {
+  it("resolveInputOwner returns 'panel' when no modal/bar text/dropdown → navActive is true for panels", () => {
+    // When no modal is open and the command bar is empty with no dropdown,
+    // panels own the input → navActive=true → selection highlight is visible
+    // but unfocused (dimmed) items are distinguishable.
+    const owner = resolveInputOwner({
+      modalOpen: false,
+      commandBarHasText: false,
+      commandBarDropdownOpen: false,
+    });
+    expect(owner).toBe("panel");
+  });
+
+  it("resolveInputOwner returns 'modal' when modal is open (panels are fully dim)", () => {
+    const owner = resolveInputOwner({
+      modalOpen: true,
+      commandBarHasText: false,
+      commandBarDropdownOpen: false,
+    });
+    expect(owner).toBe("modal");
+  });
+
+  it("resolveInputOwner returns 'commandBar' when bar has text (panels are dim)", () => {
+    const owner = resolveInputOwner({
+      modalOpen: false,
+      commandBarHasText: true,
+      commandBarDropdownOpen: false,
+    });
+    expect(owner).toBe("commandBar");
+  });
+
+  it("resolveInputOwner returns 'commandBar' when dropdown is open (panels are dim)", () => {
+    const owner = resolveInputOwner({
+      modalOpen: false,
+      commandBarHasText: false,
+      commandBarDropdownOpen: true,
+    });
+    expect(owner).toBe("commandBar");
+  });
+});
+
+describe("Humanized avg / formatRunDuration (task 7.1)", () => {
+  it("formats sub-second durations as milliseconds", () => {
+    expect(formatRunDuration(42)).toBe("42ms");
+  });
+
+  it("formats sub-minute durations as seconds with one decimal", () => {
+    expect(formatRunDuration(1500)).toBe("1.5s");
+    expect(formatRunDuration(30500)).toBe("30.5s");
+  });
+
+  it("formats minute+ durations as NmNs", () => {
+    // 526194ms = 8m 46.194s → 8m46s
+    expect(formatRunDuration(526194)).toBe("8m46s");
+  });
+
+  it("formats exact minute boundaries", () => {
+    expect(formatRunDuration(60000)).toBe("1m0s");
+    expect(formatRunDuration(120000)).toBe("2m0s");
+  });
+
+  it("formats zero duration", () => {
+    expect(formatRunDuration(0)).toBe("0ms");
+  });
+
+  it("formats near-boundary values correctly", () => {
+    // 999ms → still ms range
+    expect(formatRunDuration(999)).toBe("999ms");
+    // 1000ms → 1.0s
+    expect(formatRunDuration(1000)).toBe("1.0s");
+    // 59999ms → 60.0s (still seconds range)
+    expect(formatRunDuration(59999)).toBe("60.0s");
+  });
+});
+
+describe("Project headers (task 7.1)", () => {
+  it("i18n keys exist for all project column headers", () => {
+    expect(t("project.headerName")).toBe("NAME");
+    expect(t("project.headerLoops")).toBe("LOOPS");
+    expect(t("project.headerCreated")).toBe("CREATED");
+  });
+
+  it("i18n headers are non-empty strings", () => {
+    for (const key of ["project.headerName", "project.headerLoops", "project.headerCreated"] as const) {
+      const value = t(key);
+      expect(value).toBeTruthy();
+      expect(value.length).toBeGreaterThan(0);
+    }
   });
 });
