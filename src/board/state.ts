@@ -236,3 +236,17 @@ const PROJECT_IS_SYSTEM_CYCLE: Record<ProjectIsSystemFilter, ProjectIsSystemFilt
 export function cycleProjectIsSystemFilter(filter: ProjectIsSystemFilter): ProjectIsSystemFilter {
   return PROJECT_IS_SYSTEM_CYCLE[filter];
 }
+
+export type InputOwner = "modal" | "commandBar" | "panel";
+
+export interface InputOwnerState {
+  modalOpen: boolean;
+  commandBarHasText: boolean;
+  commandBarDropdownOpen: boolean;
+}
+
+export function resolveInputOwner(state: InputOwnerState): InputOwner {
+  if (state.modalOpen) return "modal";
+  if (state.commandBarHasText || state.commandBarDropdownOpen) return "commandBar";
+  return "panel";
+}

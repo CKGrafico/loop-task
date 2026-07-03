@@ -5,6 +5,8 @@ import {
   cycleSortMode,
   cycleStatusFilter,
   defaultFilters,
+  resolveInputOwner,
+  type InputOwnerState,
 } from "../src/board/state.js";
 
 function loop(id: string, values: Partial<LoopMeta> = {}): LoopMeta {
@@ -98,5 +100,32 @@ describe("board state", () => {
     expect(cycleStatusFilter("paused")).toBe("idle");
     expect(cycleStatusFilter("idle")).toBe("stopped");
     expect(cycleStatusFilter("stopped")).toBe("all");
+  });
+});
+
+describe("resolveInputOwner", () => {
+  it("returns modal when modal is open", () => {
+    const state: InputOwnerState = { modalOpen: true, commandBarHasText: false, commandBarDropdownOpen: false };
+    expect(resolveInputOwner(state)).toBe("modal");
+  });
+
+  it("returns commandBar when bar has text and no modal", () => {
+    const state: InputOwnerState = { modalOpen: false, commandBarHasText: true, commandBarDropdownOpen: false };
+    expect(resolveInputOwner(state)).toBe("commandBar");
+  });
+
+  it("returns commandBar when dropdown is open with no text and no modal", () => {
+    const state: InputOwnerState = { modalOpen: false, commandBarHasText: false, commandBarDropdownOpen: true };
+    expect(resolveInputOwner(state)).toBe("commandBar");
+  });
+
+  it("returns panel when bar is empty, no dropdown, no modal", () => {
+    const state: InputOwnerState = { modalOpen: false, commandBarHasText: false, commandBarDropdownOpen: false };
+    expect(resolveInputOwner(state)).toBe("panel");
+  });
+
+  it("modal wins over bar text and dropdown", () => {
+    const state: InputOwnerState = { modalOpen: true, commandBarHasText: true, commandBarDropdownOpen: true };
+    expect(resolveInputOwner(state)).toBe("modal");
   });
 });
