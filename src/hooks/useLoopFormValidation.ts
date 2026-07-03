@@ -149,7 +149,7 @@ function validateAll(
  *
  * // On-submit full check:
  * const errors = validateAll(values);
- * if (Object.keys(errors).length === 0) { /* submit */ }
+ * if (Object.keys(errors).length === 0) { submit(); }
  * ```
  */
 export function useLoopFormValidation(): {
