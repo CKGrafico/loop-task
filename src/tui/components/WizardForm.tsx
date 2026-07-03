@@ -3,6 +3,7 @@ import { Box, Text, useInput } from "ink";
 import { darkTheme as theme } from "../theme.js";
 import { t } from "../../i18n/index.js";
 import { validateField } from "../utils/validation.js";
+import { copyToClipboard } from "../../shared/clipboard.js";
 
 export interface WizardStepConfig {
   key: string;
@@ -217,6 +218,12 @@ export function WizardForm(props: WizardFormProps): React.ReactNode {
     }
     if (key.ctrl && input === "s") {
       submit();
+      return;
+    }
+    if (key.ctrl && input === "y") {
+      if (step) {
+        copyToClipboard(valueFor(step));
+      }
       return;
     }
     if (key.tab) {

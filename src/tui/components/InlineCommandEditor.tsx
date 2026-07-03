@@ -2,6 +2,7 @@ import React, { useState, useCallback } from "react";
 import { Box, Text, useInput } from "ink";
 import { darkTheme as theme } from "../theme.js";
 import { t } from "../../i18n/index.js";
+import { copyToClipboard } from "../../shared/clipboard.js";
 
 const MAX_VISIBLE = 8;
 
@@ -31,6 +32,11 @@ export function InlineCommandEditor({
 
   useInput(
     (input, key) => {
+      // Ctrl+Y: copy full command text
+      if (key.ctrl && input === "y") {
+        copyToClipboard(value);
+        return;
+      }
       // Let WizardForm handle these
       if (key.ctrl || key.escape || key.tab) return;
 

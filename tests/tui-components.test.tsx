@@ -23,7 +23,7 @@ import { ToastStack, type Toast } from "../src/tui/components/Toast.js";
 import { Modal } from "../src/tui/components/Modal.js";
 import { Header } from "../src/tui/components/Header.js";
 import { WizardForm, type WizardStepConfig } from "../src/tui/components/WizardForm.js";
-import { CommandInput } from "../src/tui/components/CommandInput.js";
+import { CommandInput, sanitizePaste } from "../src/tui/components/CommandInput.js";
 import type { CommandContext, ConfirmState } from "../src/tui/types.js";
 import { darkTheme as theme } from "../src/tui/theme.js";
 
@@ -402,5 +402,120 @@ describe("CommandInput", () => {
     stdin.write("\u001B");
     await delay();
     expect(onConfirmCancel).not.toHaveBeenCalled();
+  });
+
+  it("Enter on an empty command bar triggers onPanelAction", async () => {
+    const onPanelAction = vi.fn();
+    const { stdin } = render(
+      <Box height={10} width={60}>
+        <CommandInput
+          context={baseContext}
+          onCommand={() => {}}
+          confirmState={null}
+          searchState={null}
+          searchValue=""
+          onSearchChange={() => {}}
+          onSearchSubmit={() => {}}
+          onSearchCancel={() => {}}
+          onConfirmYes={() => {}}
+          onConfirmCancel={() => {}}
+          onPanelAction={onPanelAction}
+        />
+      </Box>,
+    );
+    stdin.write("\r");
+    await delay();
+    expect(onPanelAction).toHaveBeenCalledTimes(1);
+  });
+
+  it("Enter does NOT trigger onPanelAction once text has been typed", async () => {
+    const onPanelAction = vi.fn();
+    const { stdin } = render(
+      <Box height={10} width={60}>
+        <CommandInput
+          context={baseContext}
+          onCommand={() => {}}
+          confirmState={null}
+          searchState={null}
+          searchValue=""
+          onSearchChange={() => {}}
+          onSearchSubmit={() => {}}
+          onSearchCancel={() => {}}
+          onConfirmYes={() => {}}
+          onConfirmCancel={() => {}}
+          onPanelAction={onPanelAction}
+        />
+      </Box>,
+    );
+    await typeChars(stdin, "zzzz"); // no command matches; dropdown not actionable
+    stdin.write("\r");
+    await delay();
+    expect(onPanelAction).not.toHaveBeenCalled();
+  });
+
+  it("inserts a multi-character paste into the command bar", async () => {
+    const { stdin, lastFrame } = render(
+      <Box height={10} width={60}>
+        <CommandInput
+          context={baseContext}
+          onCommand={() => {}}
+          confirmState={null}
+          searchState={null}
+          searchValue=""
+          onSearchChange={() => {}}
+          onSearchSubmit={() => {}}
+          onSearchCancel={() => {}}
+          onConfirmYes={() => {}}
+          onConfirmCancel={() => {}}
+        />
+      </Box>,
+    );
+    stdin.write("npm test"); // arrives as one multi-char chunk (a paste)
+    await delay();
+    expect(lastFrame()).toContain("npm test");
+  });
+
+  it("Ctrl+U clears the command bar", async () => {
+    const { stdin, lastFrame } = render(
+      <Box height={10} width={60}>
+        <CommandInput
+          context={baseContext}
+          onCommand={() => {}}
+          confirmState={null}
+          searchState={null}
+          searchValue=""
+          onSearchChange={() => {}}
+          onSearchSubmit={() => {}}
+          onSearchCancel={() => {}}
+          onConfirmYes={() => {}}
+          onConfirmCancel={() => {}}
+        />
+      </Box>,
+    );
+    stdin.write("hello world");
+    await delay();
+    expect(lastFrame()).toContain("hello world");
+    stdin.write("\x15"); // Ctrl+U (NAK)
+    await delay();
+    expect(lastFrame()).not.toContain("hello world");
+  });
+});
+
+describe("sanitizePaste", () => {
+  it("strips bracketed-paste markers", () => {
+    expect(sanitizePaste("\x1b[200~npm test\x1b[201~")).toBe("npm test");
+  });
+
+  it("collapses newlines to single spaces", () => {
+    expect(sanitizePaste("line1\r\nline2\nline3")).toBe("line1 line2 line3");
+  });
+
+  it("drops control characters", () => {
+    expect(sanitizePaste("a\x00b\x07c")).toBe("abc");
+  });
+
+  it("caps very long pastes", () => {
+    const huge = "x".repeat(10000);
+    expect(sanitizePaste(huge).length).toBe(4096);
   });
 });

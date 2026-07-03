@@ -35,7 +35,7 @@
 `loop-task` is that heartbeat as a tiny local primitive. Some examples:
 
 <div align="center">
-<img src="https://raw.githubusercontent.com/CKGrafico/loop-cli/refs/heads/main/demo.gif" alt="opencode-task demo" width="700" />
+<img src="https://raw.githubusercontent.com/CKGrafico/loop-task/refs/heads/main/demo.gif" alt="loop-task demo" width="700" />
 </div>
 
 ```bash
@@ -225,6 +225,15 @@ esc         quit
 ```
 
 Destructive actions (pause, force run, delete) prompt a confirmation before executing.
+
+### Copy & paste in the command bar
+
+The bottom command bar is a normal terminal input, so use your terminal's own clipboard gestures — they work in every terminal (including the VS Code integrated terminal, where Ctrl+C/V are captured by the editor):
+
+- **Paste** with **Ctrl+Shift+V** (Windows/Linux), **Cmd+V** (macOS), or **right-click**. Multi-line pastes collapse to a single line.
+- **Ctrl+U** clears the command bar (select-all + delete).
+- **`c`** copies the selected loop/task's command to the clipboard.
+- To copy arbitrary text, drag-select in the terminal and use its native copy (Ctrl+Shift+C / right-click).
 
 ### Pause vs Stop
 
@@ -422,6 +431,24 @@ bun run lint
 bun run test
 npm run build
 ```
+
+### Testing the board in a browser (ttyd)
+
+The board is an interactive TUI, so it needs a real terminal — you can't drive it from a piped/captured shell (and neither can an AI agent). [`ttyd`](https://github.com/tsl0922/ttyd) shares a terminal over HTTP, which makes the board reachable from a browser and scriptable by browser-automation agents.
+
+Install ttyd (see the [ttyd README](https://github.com/tsl0922/ttyd#installation) — e.g. `winget install tsl0922.ttyd`, `brew install ttyd`, or `apt install ttyd`), then serve the board from an interactive terminal:
+
+```bash
+# Point -w at the repo (absolute path) and run the dev board:
+ttyd -W -w "C:\Projects\Personal\loop-cli" -p 7681 pnpm run dev
+
+# The built entry works too (after `npm run build`), with the same -w:
+ttyd -W -w "C:\Projects\Personal\loop-cli" -p 7681 node dist/entry.js
+```
+
+Open `http://localhost:7681` in a browser and use the board as normal. `-W` makes it writable so keystrokes reach the TUI. Handy for demos, for testing on a machine without a good local terminal, and for letting an AI agent drive the board (navigate, send keys, screenshot; ttyd renders via xterm.js on a `<canvas>`, so read state from screenshots, not page text).
+
+> **Windows note:** always pass `-w "<absolute repo path>"`. Without it, ttyd gives the spawned command no valid working directory and it fails with `CreateProcessW failed with error 267` — for *every* command (`pnpm`, `npx`, `node` all fail the same way; it is not a `.cmd`-shim issue). On macOS/Linux `-w` is optional but harmless. Start ttyd from a real interactive terminal; a detached/console-less launch can crash its ConPTY on Windows.
 
 ## License
 

@@ -4,6 +4,7 @@ import fs from "node:fs";
 import type { LoopMeta, Project } from "../../types.js";
 import type { InputRenderable } from "@opentui/core";
 import { buildLoopOptions, parseCommandLine } from "../../loop-config.js";
+import { parseDuration, parseMaxRuns } from "../../duration.js";
 import { t } from "../../i18n/index.js";
 import { commandLine } from "../format.js";
 import { createLoop, updateLoop, listTasks } from "../daemon.js";
@@ -12,10 +13,10 @@ import { useInputShortcuts } from "../hooks/useInputShortcuts.js";
 import { useTabNav } from "../hooks/useTabNav.js";
 import { SearchSelect } from "./SearchSelect.js";
 import { HOVER_BG } from "../../config/constants.js";
+import { copyToClipboard } from "../../shared/clipboard.js";
 
 export const TASK_MODE_INLINE = "inline";
 export const TASK_MODE_EXISTING = "existing";
-type TaskMode = typeof TASK_MODE_INLINE | typeof TASK_MODE_EXISTING;
 
 export const createFields = ["interval", "taskMode", "command", "cwd", "taskId", "description", "runNow", "maxRuns", "project"] as const;
 export type CreateField = (typeof createFields)[number];
@@ -64,6 +65,7 @@ export function CreateView(props: {
   });
   const valuesRef = useRef(values);
   const [error, setError] = useState("");
+  const [fieldErrors, setFieldErrors] = useState<Partial<Record<CreateField, string>>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [selectedTaskName, setSelectedTaskName] = useState<string | null>(props.selectedTaskName ?? null);
   const inputRef = useRef<InputRenderable | null>(null);
@@ -103,6 +105,50 @@ export function CreateView(props: {
       }).catch(() => {});
     }
   });
+
+  function validateField(key: CreateField, current: Record<CreateField, string>): string | null {
+    const val = current[key].trim();
+    if (key === "interval") {
+      if (!val) return null;
+      try {
+        parseDuration(val);
+        return null;
+      } catch {
+        return t("errors.durationInvalid", { input: current[key] });
+      }
+    }
+    if (key === "command") {
+      if (current.taskMode === TASK_MODE_INLINE && !val) return t("errors.commandEmpty");
+      return null;
+    }
+    if (key === "description") {
+      if (!val) return t("errors.descriptionEmpty");
+      return null;
+    }
+    if (key === "cwd") {
+      if (val && !fs.existsSync(val)) return t("board.cwdMissing", { cwd: val });
+      return null;
+    }
+    if (key === "maxRuns") {
+      if (!val) return null;
+      try {
+        parseMaxRuns(val);
+        return null;
+      } catch {
+        return t("errors.maxRunsInvalid");
+      }
+    }
+    return null;
+  }
+
+  function clearFieldError(key: CreateField): void {
+    setFieldErrors((prev) => {
+      if (!(key in prev)) return prev;
+      const next = { ...prev };
+      delete next[key];
+      return next;
+    });
+  }
 
   function updateValues(next: Record<CreateField, string>): void {
     valuesRef.current = next;
@@ -145,8 +191,19 @@ export function CreateView(props: {
     }
   });
 
+  function validateAll(current: Record<CreateField, string>): boolean {
+    const errs: Partial<Record<CreateField, string>> = {};
+    for (const f of filteredFields) {
+      const msg = validateField(f, current);
+      if (msg) errs[f] = msg;
+    }
+    setFieldErrors(errs);
+    return Object.keys(errs).length === 0;
+  }
+
   async function submit(current: Record<CreateField, string>): Promise<void> {
     if (isSubmitting) return;
+    if (!validateAll(current)) return;
 
     try {
       setIsSubmitting(true);
@@ -154,20 +211,8 @@ export function CreateView(props: {
 
       if (current.taskMode === TASK_MODE_INLINE) {
         const cwd = current.cwd.trim();
-        if (cwd && !fs.existsSync(cwd)) {
-          setError(t("board.cwdMissing", { cwd }));
-          return;
-        }
         const tokens = parseCommandLine(current.command.trim());
         const [command, ...commandArgs] = tokens;
-        if (!command) {
-          setError(t("errors.commandEmpty"));
-          return;
-        }
-        if (!current.description.trim()) {
-          setError(t("errors.descriptionEmpty"));
-          return;
-        }
         const built = buildLoopOptions(current.interval.trim(), {
           now: props.mode === "create" && current.runNow === "y",
           maxRuns: current.maxRuns.trim() || null,
@@ -187,19 +232,7 @@ export function CreateView(props: {
         const id = await request;
         props.onDone(props.mode === "edit", id, current.description.trim());
       } else {
-        if (!current.taskId) {
-          setError(t("errors.commandEmpty"));
-          return;
-        }
-        if (!current.description.trim()) {
-          setError(t("errors.descriptionEmpty"));
-          return;
-        }
         const cwd = current.cwd.trim();
-        if (cwd && !fs.existsSync(cwd)) {
-          setError(t("board.cwdMissing", { cwd }));
-          return;
-        }
         const built = buildLoopOptions(current.interval.trim(), {
           now: props.mode === "create" && current.runNow === "y",
           maxRuns: current.maxRuns.trim() || null,
@@ -307,6 +340,8 @@ export function CreateView(props: {
                 selectedTaskName={selectedTaskName}
                 onChooseTask={props.onChooseTask}
                 inputRef={inputRef}
+                fieldErrors={fieldErrors}
+                clearFieldError={clearFieldError}
                 style={{ width: "50%", paddingRight: 1 }}
               />
               {rightField ? (
@@ -328,6 +363,8 @@ export function CreateView(props: {
                   selectedTaskName={selectedTaskName}
                   onChooseTask={props.onChooseTask}
                   inputRef={inputRef}
+                  fieldErrors={fieldErrors}
+                  clearFieldError={clearFieldError}
                   style={{ width: "50%" }}
                 />
               ) : (
@@ -399,14 +436,17 @@ function FormRow(props: {
   selectedTaskName: string | null;
   onChooseTask: () => void;
   inputRef: React.MutableRefObject<InputRenderable | null>;
+  fieldErrors: Partial<Record<CreateField, string>>;
+  clearFieldError: (key: CreateField) => void;
   style?: { width?: number | `${number}%` | "auto"; flexGrow?: number; marginRight?: number; paddingRight?: number };
 }): React.ReactNode {
-  const { field, index, isFocused, values, valuesRef, updateValues, setFocusIndex, submit, labels, hints, examples, taskModeOptions, runNowOptions, projectOptions, selectedTaskName, onChooseTask, inputRef, style } = props;
+  const { field, index, isFocused, values, valuesRef, updateValues, setFocusIndex, submit, labels, hints, examples, taskModeOptions, runNowOptions, projectOptions, selectedTaskName, onChooseTask, inputRef, style, fieldErrors, clearFieldError } = props;
   const { isHovered, hoverProps } = useHoverState();
 
   const isToggleField = field === "taskMode" || field === "runNow";
   const isTaskButton = field === "taskId";
   const isProjectField = field === "project";
+  const error = fieldErrors[field];
 
   const toggleOptions = field === "taskMode" ? taskModeOptions : runNowOptions;
   const toggleValue = field === "taskMode" ? values.taskMode : values.runNow;
@@ -456,23 +496,36 @@ function FormRow(props: {
           focused={isFocused}
         />
       ) : (
-        <box
-          border
-          borderColor={isFocused ? "#38bdf8" : undefined}
-          style={{ height: 3, backgroundColor: "#0b0b0b" }}
-        >
-          <input
-            ref={inputRef}
-            focused={isFocused}
-            value={values[field]}
-            placeholder={examples[field] ? t("board.placeholderExample", { example: examples[field] }) : t("board.placeholderBlank")}
-            onInput={(value: string) =>
-              updateValues({ ...valuesRef.current, [field]: value })
-            }
-            onSubmit={() => { void submit(valuesRef.current); }}
-          />
+        <box style={{ flexDirection: "row", alignItems: "center" }}>
+          <box
+            border
+            borderColor={error ? "#f87171" : isFocused ? "#38bdf8" : undefined}
+            style={{ height: 3, flexGrow: 1, backgroundColor: "#0b0b0b" }}
+          >
+            <input
+              ref={inputRef}
+              focused={isFocused}
+              value={values[field]}
+              placeholder={examples[field] ? t("board.placeholderExample", { example: examples[field] }) : t("board.placeholderBlank")}
+              onInput={(value: string) => {
+                clearFieldError(field);
+                updateValues({ ...valuesRef.current, [field]: value });
+              }}
+              onSubmit={() => { void submit(valuesRef.current); }}
+            />
+          </box>
+          {(field === "command" || field === "cwd") && values[field] ? (
+            <box
+              onMouseDown={() => { copyToClipboard(values[field]); }}
+              style={{ paddingLeft: 1, paddingRight: 1 }}
+              {...hoverProps}
+            >
+              <text fg={isHovered ? "#38bdf8" : "#6b7280"}>[copy]</text>
+            </box>
+          ) : null}
         </box>
       )}
+      {error ? <text fg="#f87171">{error}</text> : null}
     </box>
   );
 }

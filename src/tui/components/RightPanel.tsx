@@ -129,10 +129,12 @@ function TaskInspector(props: { task: TaskDefinition | null }): React.ReactNode 
   );
 }
 
+const LABEL_WIDTH = 9;
+
 function Field(props: { label: string; children: React.ReactNode }): React.ReactNode {
   return (
     <Box>
-      <Text bold color={theme.text.muted}>{props.label}</Text>
+      <Text bold color={theme.text.muted}>{props.label.padEnd(LABEL_WIDTH)}</Text>
       {props.children}
     </Box>
   );

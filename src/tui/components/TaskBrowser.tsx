@@ -106,10 +106,12 @@ export function TaskNavigator(props: {
   );
 }
 
+const FIELD_LABEL_WIDTH = 13;
+
 function InspectorField(props: { label: string; children: React.ReactNode }): React.ReactNode {
   return (
     <Box>
-      <Text bold color={theme.text.secondary}>{props.label}</Text>
+      <Text bold color={theme.text.secondary}>{props.label.padEnd(FIELD_LABEL_WIDTH)}</Text>
       <Text color={theme.text.primary}>{props.children}</Text>
     </Box>
   );

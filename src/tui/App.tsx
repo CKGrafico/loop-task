@@ -410,6 +410,38 @@ export function App(props: { onQuit: () => void }): React.ReactNode {
     [activeTab, selected, selectedTask]
   );
 
+  // Contextual action for the focused panel: shared by Ctrl+Enter and, for
+  // terminals that collapse Ctrl+Enter to plain Enter, by Enter on an empty
+  // command bar. Loops-left/tasks/projects -> edit; loops-right -> latest log.
+  const triggerContextualAction = (): void => {
+    if (!isBoardView(view) || logModalRun || commandsBrowserOpen || confirmState || searchState?.active) return;
+    if (chordState) setChordState(null);
+
+    const editSelectedLoop = () => {
+      if (!selected) return;
+      setCloneMode(false);
+      setEditTarget(selected);
+      const task = selected.taskId ? tasks.find((t) => t.id === selected.taskId) : null;
+      setPendingTaskSelection(task ? { id: task.id, name: task.name } : null);
+      push("create");
+    };
+
+    const handlers: Record<string, () => void> = {
+      "tasks:": () => { if (selectedTask) handleCommand("edit"); },
+      "projects:": () => { if (selectedProjectEntity) handleCommand("edit"); },
+      "loops:right": () => {
+        if (!selected) return;
+        const runs = selected.runHistory;
+        if (runs && runs.length > 0) handleOpenRunLog(runs[runs.length - 1]!);
+        else editSelectedLoop();
+      },
+      "loops:left": editSelectedLoop,
+    };
+
+    const handlerKey = activeTab !== "loops" ? `${activeTab}:` : `loops:${focusedPanel}`;
+    handlers[handlerKey]?.();
+  };
+
   // ── Global useInput (8.2) ──
   useInput((input, key) => {
     // Ctrl+C always quits if no modal open
@@ -453,34 +485,7 @@ export function App(props: { onQuit: () => void }): React.ReactNode {
     const isMultiCharEnter = input.length > 1 && (input.includes("\r") || input.includes("\n"));
     const isCtrlEnter = (key.ctrl && key.return) || input === "\x0e" || isMultiCharEnter;
     if (isCtrlEnter && isBoardView(view) && !logModalRun && !commandsBrowserOpen && !confirmState && !searchState?.active) {
-      if (chordState) setChordState(null);
-
-      const editSelectedLoop = () => {
-        if (!selected) return;
-        setCloneMode(false);
-        setEditTarget(selected);
-        const task = selected.taskId ? tasks.find((t) => t.id === selected.taskId) : null;
-        setPendingTaskSelection(task ? { id: task.id, name: task.name } : null);
-        push("create");
-      };
-
-      const ctrlEnterHandlers: Record<string, () => void> = {
-        "tasks:": () => { if (selectedTask) handleCommand("edit"); },
-        "projects:": () => { if (selectedProjectEntity) handleCommand("edit"); },
-        "loops:right": () => {
-          if (!selected) return;
-          const runs = selected.runHistory;
-          if (runs && runs.length > 0) handleOpenRunLog(runs[runs.length - 1]!);
-          else editSelectedLoop();
-        },
-        "loops:left": editSelectedLoop,
-      };
-
-      const handlerKey = activeTab !== "loops"
-        ? `${activeTab}:`
-        : `loops:${focusedPanel}`;
-      const handler = ctrlEnterHandlers[handlerKey];
-      if (handler) handler();
+      triggerContextualAction();
       return;
     }
 
@@ -619,6 +624,8 @@ export function App(props: { onQuit: () => void }): React.ReactNode {
     paused: loops.filter((l) => l.status === "paused").length,
     idle: loops.filter((l) => l.status === "idle").length,
   };
+  const tabCounts = { loops: loops.length, tasks: tasks.length, projects: projects.length };
+  const tabAlerts = { loops: loops.some((l) => l.lastExitCode != null && l.lastExitCode !== 0) };
 
   return (
     <Box flexDirection="column" width="100%" height={process.stdout.rows || 24} backgroundColor={theme.bg.base}>
@@ -627,6 +634,8 @@ export function App(props: { onQuit: () => void }): React.ReactNode {
         counts={counts}
         activeTab={activeTab}
         onTabChange={setActiveTab}
+        tabCounts={tabCounts}
+        tabAlerts={tabAlerts}
       />
 
       <Box key={viewKey(view, editTarget, editTask)} flexGrow={1}>
@@ -719,6 +728,7 @@ export function App(props: { onQuit: () => void }): React.ReactNode {
           onConfirmYes={handleConfirmYes}
           onConfirmCancel={handleConfirmCancel}
           onCopy={handleContextualCopy}
+          onPanelAction={triggerContextualAction}
           disabled={commandInputDisabled}
         />
       ) : null}

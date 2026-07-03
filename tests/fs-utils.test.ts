@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, afterEach } from "vitest";
+import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import fs from "node:fs";
 import path from "node:path";
 import os from "node:os";
@@ -72,5 +72,44 @@ describe("writeFileAtomic", () => {
     writeFileAtomic(filePath, content);
 
     expect(fs.readFileSync(filePath, "utf-8")).toBe(content);
+  });
+
+  it("falls back to a direct write when rename keeps failing with EPERM", () => {
+    const filePath = path.join(tmpDir, "locked.txt");
+    const eperm = Object.assign(new Error("EPERM"), { code: "EPERM" });
+    const spy = vi.spyOn(fs, "renameSync").mockImplementation(() => {
+      throw eperm;
+    });
+
+    try {
+      writeFileAtomic(filePath, "persisted anyway");
+    } finally {
+      spy.mockRestore();
+    }
+
+    // Content is persisted via the fallback path...
+    expect(fs.readFileSync(filePath, "utf-8")).toBe("persisted anyway");
+    // ...and the temp file is cleaned up.
+    expect(fs.existsSync(`${filePath}.${process.pid}.tmp`)).toBe(false);
+  });
+
+  it("retries the rename and succeeds when the lock clears", () => {
+    const filePath = path.join(tmpDir, "transient.txt");
+    const real = fs.renameSync.bind(fs);
+    let calls = 0;
+    const spy = vi.spyOn(fs, "renameSync").mockImplementation((from, to) => {
+      calls++;
+      if (calls < 3) throw Object.assign(new Error("EBUSY"), { code: "EBUSY" });
+      return real(from, to);
+    });
+
+    try {
+      writeFileAtomic(filePath, "eventually written");
+    } finally {
+      spy.mockRestore();
+    }
+
+    expect(calls).toBe(3);
+    expect(fs.readFileSync(filePath, "utf-8")).toBe("eventually written");
   });
 });

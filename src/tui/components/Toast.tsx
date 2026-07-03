@@ -48,8 +48,8 @@ export function ToastStack(props: { toasts: Toast[] }): React.ReactNode {
   return (
     <Box position="absolute" bottom={0} right={0} flexDirection="column" alignItems="flex-end">
       {props.toasts.map((toast) => (
-        <Box key={toast.id} borderStyle="round" borderColor={toastColor(toast.kind)} backgroundColor={theme.bg.elevated} paddingLeft={1} paddingRight={1} marginBottom={0}>
-          <Text color={toastColor(toast.kind)}>{toastIcon(toast.kind)} </Text>
+        <Box key={toast.id} backgroundColor={theme.bg.elevated} paddingLeft={1} paddingRight={1}>
+          <Text color={toastColor(toast.kind)} bold>{toastIcon(toast.kind)} </Text>
           <Text color={theme.text.primary}>{toast.message}</Text>
         </Box>
       ))}
