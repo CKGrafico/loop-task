@@ -483,7 +483,7 @@
   "cmd.setDefault": "Set as default project",
   "cmd.show": "Show a hidden panel",
   "cmd.hide": "Hide a panel",
-  "cmd.api": "API endpoints info (Soon...)",
+  "cmd.api": "API endpoints info",
   "cmd.status": "Daemon status info (Soon...)",
   "cmd.filterStatus": "Filter by status",
   "cmd.sort": "Order sort by field",

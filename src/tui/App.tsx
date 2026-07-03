@@ -316,7 +316,11 @@ export function App(props: { onQuit: () => void }): React.ReactNode {
         pop();
       }
     },
-    api: () => { pushToast("info", `Command "api" coming soon`); },
+    api: () => {
+      const port = process.env.LOOP_CLI_HTTP_PORT ?? "8845";
+      const baseUrl = `http://127.0.0.1:${port}`;
+      pushToast("info", `API: ${baseUrl} | Swagger: ${baseUrl}/api/docs | OpenAPI: ${baseUrl}/api/openapi.json`);
+    },
     status: () => { pushToast("info", `Command "status" coming soon`); },
     export: () => {
       exportConfig()

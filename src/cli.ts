@@ -16,6 +16,7 @@ import {
   resolveProjectId,
 } from "./client/commands.js";
 import { t } from "./i18n/index.js";
+import { HTTP_API_PORT, HTTP_API_HOST } from "./config/constants.js";
 
 const require = createRequire(import.meta.url);
 const packageJson = require("../package.json") as { version: string };
@@ -297,6 +298,19 @@ program
     }
     console.log(`Imported ${result.data!.loops.length} loops, ${result.data!.tasks.length} tasks, ${result.data!.projects.length} projects`);
     console.log("Daemon will hot-reload automatically.");
+  });
+
+program
+  .command("api")
+  .description("Show HTTP API server info (base URL, Swagger UI, OpenAPI spec)")
+  .action(() => {
+    const port = process.env.LOOP_CLI_HTTP_PORT ?? String(HTTP_API_PORT);
+    const baseUrl = `http://${HTTP_API_HOST}:${port}`;
+    console.log(`HTTP API Server`);
+    console.log(`  Base URL:   ${baseUrl}`);
+    console.log(`  Swagger UI: ${baseUrl}/api/docs`);
+    console.log(`  OpenAPI:    ${baseUrl}/api/openapi.json`);
+    console.log(`  Events:     ${baseUrl}/api/events (SSE)`);
   });
 
 await program.parseAsync(process.argv);
