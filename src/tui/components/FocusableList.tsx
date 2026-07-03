@@ -9,6 +9,7 @@ export function FocusableList<T>(props: {
   onActivate: (index: number) => void;
   selectedIndex: number;
   isFocused: boolean;
+  navActive?: boolean;
   limit: number;
 }): React.ReactNode {
   const {
@@ -18,6 +19,7 @@ export function FocusableList<T>(props: {
     onActivate,
     selectedIndex,
     isFocused,
+    navActive = true,
     limit,
   } = props;
 
@@ -41,7 +43,7 @@ export function FocusableList<T>(props: {
         return;
       }
     },
-    { isActive: isFocused },
+    { isActive: isFocused && navActive },
   );
 
   const { visible, localSelected } = useMemo(() => {

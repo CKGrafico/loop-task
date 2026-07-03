@@ -693,6 +693,7 @@ export function App(props: { onQuit: () => void }): React.ReactNode {
           <Box flexDirection={breakpoint === "narrow" ? "column" : "row"} flexGrow={1}>
             <LeftPanel
               isFocused={focusedPanel === "left" && !anyModalOpen}
+              navActive={inputOwner === "panel"}
               activeTab={activeTab}
               query={leftPanelQuery}
               loops={visible}
@@ -719,6 +720,7 @@ export function App(props: { onQuit: () => void }): React.ReactNode {
             />
             <RightPanel
               isFocused={focusedPanel === "right" && !anyModalOpen}
+              navActive={inputOwner === "panel"}
               activeTab={activeTab}
               loop={selected}
               selectedRunIndex={selectedRunIndex}

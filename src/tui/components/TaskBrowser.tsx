@@ -17,10 +17,11 @@ export function TaskNavigator(props: {
   selectedIndex: number;
   query: string;
   isFocused: boolean;
+  navActive?: boolean;
   onSelect: (index: number) => void;
   onActivate: (index: number) => void;
 }): React.ReactNode {
-  const { visible, total, selectedIndex, isFocused, onSelect, onActivate } = props;
+  const { visible, total, selectedIndex, isFocused, navActive = true, onSelect, onActivate } = props;
 
   const title = t("board.taskBrowserTitle", {
     visible: String(visible.length),
@@ -37,7 +38,7 @@ export function TaskNavigator(props: {
         onActivate(selectedIndex);
       }
     },
-    { isActive: isFocused },
+    { isActive: isFocused && navActive },
   );
 
   function chainsLabel(task: TaskDefinition): string {

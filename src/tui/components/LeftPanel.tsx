@@ -11,6 +11,7 @@ import { FocusableList } from "./FocusableList.js";
 
 export function LeftPanel(props: {
   isFocused: boolean;
+  navActive?: boolean;
   activeTab: TabName;
   query: string;
   // Loop list props
@@ -41,6 +42,7 @@ export function LeftPanel(props: {
 }): React.ReactNode {
   const {
     isFocused,
+    navActive = true,
     activeTab,
     query,
     loops,
@@ -137,6 +139,7 @@ export function LeftPanel(props: {
           onSelect={onSelect}
           onActivate={onActivate}
           isFocused={isFocused}
+          navActive={navActive}
         />
       ) : activeTab === "tasks" ? (
         <TaskNavigator
@@ -147,6 +150,7 @@ export function LeftPanel(props: {
           onSelect={onTaskSelect}
           onActivate={onTaskActivate}
           isFocused={isFocused}
+          navActive={navActive}
         />
       ) : (
         <ProjectNavigator
@@ -156,6 +160,7 @@ export function LeftPanel(props: {
           onSelect={onProjectSelect ?? (() => {})}
           onActivate={onProjectActivate ?? (() => {})}
           isFocused={isFocused}
+          navActive={navActive}
           loopCountFor={loopCountFor}
         />
       )}
@@ -170,9 +175,10 @@ function ProjectNavigator(props: {
   onSelect: (index: number) => void;
   onActivate: (index: number) => void;
   isFocused: boolean;
+  navActive?: boolean;
   loopCountFor: (id: string) => number;
 }): React.ReactNode {
-  const { projects, selectedIndex, onSelect, onActivate, isFocused, loopCountFor } = props;
+  const { projects, selectedIndex, onSelect, onActivate, isFocused, navActive = true, loopCountFor } = props;
 
   if (projects.length === 0) {
     return (
@@ -187,6 +193,7 @@ function ProjectNavigator(props: {
       items={projects}
       selectedIndex={selectedIndex}
       isFocused={isFocused}
+      navActive={navActive}
       limit={15}
       onSelect={onSelect}
       onActivate={onActivate}
