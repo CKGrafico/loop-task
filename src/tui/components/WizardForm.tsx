@@ -72,28 +72,30 @@ function SelectField({
   selectedIndex: number;
   isActive: boolean;
 }): React.ReactNode {
+  const currentValue = suggestions[selectedIndex] ?? suggestions[0] ?? "";
+  const chevronValue = `\u2039 ${currentValue} \u203A`;
+
   if (!isActive) {
     return (
-      <Text color={theme.text.secondary}>
-        {suggestions[selectedIndex] ?? suggestions[0] ?? ""}
-      </Text>
+      <Text color={theme.text.secondary}>{chevronValue}</Text>
     );
   }
   return (
     <Box flexDirection="column">
-      {suggestions.map((s, i) => {
-        const isSel = i === selectedIndex;
-        return (
-          <Box key={s}>
-            <Text color={isSel ? theme.accent.brand : theme.text.muted}>
-              {isSel ? "\u276F " : "  "}
-            </Text>
-            <Text color={isSel ? theme.accent.brand : theme.text.secondary}>
-              {s}
-            </Text>
-          </Box>
-        );
-      })}
+      <Box
+        borderStyle="single"
+        borderColor={theme.accent.brand}
+        backgroundColor={theme.bg.input}
+        paddingLeft={1}
+        overflow="hidden"
+        width="100%"
+      >
+        <Text color={theme.text.primary}>{chevronValue}</Text>
+      </Box>
+      <Box marginTop={0}>
+        <Text color={theme.accent.brand}>{"\u203a "}</Text>
+        <Text color={theme.text.muted}>{t("wizard.selectFieldHint")}</Text>
+      </Box>
     </Box>
   );
 }
