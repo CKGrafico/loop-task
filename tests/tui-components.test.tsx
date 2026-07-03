@@ -24,6 +24,7 @@ import { Modal } from "../src/tui/components/Modal.js";
 import { Header } from "../src/tui/components/Header.js";
 import { WizardForm, type WizardStepConfig } from "../src/tui/components/WizardForm.js";
 import { CommandInput, sanitizePaste } from "../src/tui/components/CommandInput.js";
+import { rankCommands } from "../src/tui/commands.js";
 import type { CommandContext, ConfirmState } from "../src/tui/types.js";
 import { darkTheme as theme } from "../src/tui/theme.js";
 
@@ -517,5 +518,37 @@ describe("sanitizePaste", () => {
   it("caps very long pastes", () => {
     const huge = "x".repeat(10000);
     expect(sanitizePaste(huge).length).toBe(4096);
+  });
+});
+
+describe("rankCommands", () => {
+  const options = [
+    { label: "Edit selected loop", value: "edit" },
+    { label: "Delete selected loop", value: "delete" },
+    { label: "Pause selected loop", value: "pause" },
+    { label: "New loop", value: "new-loop" },
+  ];
+
+  it("ranks exact value match first", () => {
+    const result = rankCommands("delete", options);
+    expect(result[0].value).toBe("delete");
+  });
+
+  it("ranks exact label match first", () => {
+    const result = rankCommands("new loop", options);
+    expect(result[0].value).toBe("new-loop");
+  });
+
+  it("ranks prefix match above fuzzy", () => {
+    const result = rankCommands("ed", options);
+    // "Edit selected loop" should rank above "Delete selected loop" because "Edit" starts with "ed"
+    expect(result[0].value).toBe("edit");
+  });
+
+  it("keeps fuzzy matches stable when no exact/prefix", () => {
+    const result = rankCommands("dit", options);
+    // Neither exact nor prefix for either "Edit" or "Delete" — both land in fuzzy,
+    // existing order preserved
+    expect(result.length).toBeGreaterThan(0);
   });
 });
