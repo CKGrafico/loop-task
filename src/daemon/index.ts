@@ -39,14 +39,24 @@ async function main(): Promise<void> {
   fileWatcher.start();
   daemonLog(`file watcher started for hot-reloading JSON configs`);
 
+  let shuttingDown = false;
   const cleanup = async () => {
+    // Re-entry guard: a persist failure during shutdown must not re-trigger
+    // cleanup via uncaughtException, or the daemon crash-loops forever.
+    if (shuttingDown) return;
+    shuttingDown = true;
     daemonLog(`shutting down pid=${process.pid}`);
-    fileWatcher.stop();
-    removeDaemonPid();
-    removeDaemonSignature();
-    await manager.shutdown();
-    await server.close();
-    process.exit(0);
+    try {
+      fileWatcher.stop();
+      removeDaemonPid();
+      removeDaemonSignature();
+      await manager.shutdown();
+      await server.close();
+    } catch (err) {
+      daemonLog(`error during shutdown: ${String(err)}`);
+    } finally {
+      process.exit(0);
+    }
   };
 
   process.on("SIGINT", cleanup);
@@ -54,7 +64,7 @@ async function main(): Promise<void> {
   process.on("uncaughtException", (err) => {
     daemonLog(`uncaught exception: ${String(err)}`);
     console.error(t("errors.daemonUncaught"), err);
-    cleanup();
+    void cleanup();
   });
 }
 
