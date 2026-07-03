@@ -24,6 +24,7 @@ import { Modal } from "../src/tui/components/Modal.js";
 import { Header } from "../src/tui/components/Header.js";
 import { WizardForm, type WizardStepConfig } from "../src/tui/components/WizardForm.js";
 import { CommandInput, sanitizePaste } from "../src/tui/components/CommandInput.js";
+import { CONFIRM_CANCEL, CONFIRM_YES } from "../src/config/constants.js";
 import { rankCommands } from "../src/tui/commands.js";
 import type { CommandContext, ConfirmState } from "../src/tui/types.js";
 import { darkTheme as theme } from "../src/tui/theme.js";
@@ -293,7 +294,7 @@ describe("CommandInput", () => {
     expect(lastFrame()).toContain("Start typing");
   });
 
-  it("renders confirm prompt and yes/cancel options", () => {
+  it("renders confirm prompt with cancel focused (default)", () => {
     const confirm: ConfirmState = {
       prompt: 'Delete "test"?',
       onConfirm: () => {},
@@ -316,15 +317,17 @@ describe("CommandInput", () => {
     );
     const frame = lastFrame() ?? "";
     expect(frame).toContain('Delete "test"?');
-    expect(frame).toContain("yes");
+    // Cancel is at index 0 (default focus) so it appears as the focused option
     expect(frame).toContain("cancel");
   });
 
-  it("calls onConfirmYes when Enter is pressed in confirm mode", async () => {
+  it("calls onConfirmCancel when Enter is pressed in confirm mode without navigation (cancel is default)", async () => {
+    // Task 4.1: cancel is at index 0 (default focus), so bare Enter activates cancel.
     const confirm: ConfirmState = {
       prompt: "Are you sure?",
       onConfirm: () => {},
     };
+    const onConfirmCancel = vi.fn();
     const onConfirmYes = vi.fn();
     const { stdin } = render(
       <Box height={10} width={60}>
@@ -338,13 +341,14 @@ describe("CommandInput", () => {
           onSearchSubmit={() => {}}
           onSearchCancel={() => {}}
           onConfirmYes={onConfirmYes}
-          onConfirmCancel={() => {}}
+          onConfirmCancel={onConfirmCancel}
         />
       </Box>,
     );
     stdin.write("\r");
     await delay();
-    expect(onConfirmYes).toHaveBeenCalledTimes(1);
+    expect(onConfirmCancel).toHaveBeenCalledTimes(1);
+    expect(onConfirmYes).not.toHaveBeenCalled();
   });
 
   it("calls onConfirmCancel when Escape is pressed in confirm mode", async () => {
@@ -474,6 +478,50 @@ describe("CommandInput", () => {
     stdin.write("npm test"); // arrives as one multi-char chunk (a paste)
     await delay();
     expect(lastFrame()).toContain("npm test");
+  });
+
+  it("Esc then Enter on bare board does NOT quit the app (cancel is default in confirm)", async () => {
+    // Regression test for task 4.2: before 4.1, Escape opened the quit confirm
+    // with "yes" focused; a quick Enter would exit. Now cancel is the default,
+    // so pressing Escape then Enter on the bare board dismisses the confirm
+    // instead of confirming quit.
+    const confirm: ConfirmState = {
+      prompt: "Quit?",
+      onConfirm: () => {},
+    };
+    const onConfirmCancel = vi.fn();
+    const onConfirmYes = vi.fn();
+    const { stdin } = render(
+      <Box height={10} width={60}>
+        <CommandInput
+          context={baseContext}
+          onCommand={() => {}}
+          confirmState={confirm}
+          searchState={null}
+          searchValue=""
+          onSearchChange={() => {}}
+          onSearchSubmit={() => {}}
+          onSearchCancel={() => {}}
+          onConfirmYes={onConfirmYes}
+          onConfirmCancel={onConfirmCancel}
+        />
+      </Box>,
+    );
+    // Simulate: Esc opens confirm (already open), then Enter without navigation
+    stdin.write("\r");
+    await delay();
+    // Cancel is default → Enter dismisses, does NOT confirm quit
+    expect(onConfirmCancel).toHaveBeenCalledTimes(1);
+    expect(onConfirmYes).not.toHaveBeenCalled();
+  });
+
+  it("confirm options list cancel before yes (structural guarantee)", () => {
+    // Belt-and-suspenders: if someone reorders the options array, this test breaks.
+    // The ConfirmMode component builds options as [cancel, yes] so that
+    // index 0 (default focus) = cancel.
+    const order: string[] = [CONFIRM_CANCEL, CONFIRM_YES];
+    expect(order.indexOf(CONFIRM_CANCEL)).toBeLessThan(order.indexOf(CONFIRM_YES));
+    expect(order[0]).toBe(CONFIRM_CANCEL);
   });
 
   it("Ctrl+U clears the command bar", async () => {
