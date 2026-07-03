@@ -503,7 +503,7 @@
   "cmd.changeName": "Change name",
   "cmd.changeOnSuccess": "Change on-success chain",
   "cmd.changeOnFailure": "Change on-failure chain",
-  "cmdInput.placeholder": "Start typing an action or say help...",
+  "cmdInput.placeholder": "Type a command, or help",
   "cmdInput.welcomeHint": "type 'help' for commands, 'all' to browse",
   "cmdInput.noMatches": "No commands match",
   "commandBuilder.executableLabel": "Executable",

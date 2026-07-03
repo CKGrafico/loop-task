@@ -131,7 +131,7 @@ function CommandDropdown({
   if (visibleOptions.length === 0) {
     if (state.inputValue.length > 0) {
       return (
-        <Box paddingLeft={3} position="absolute" bottom={3}>
+        <Box paddingLeft={3} position="absolute" bottom={3} borderStyle="single" borderColor={theme.border.dim}>
           <Text color={theme.text.muted}>
             {t("cmdInput.noMatches")}
           </Text>
@@ -399,6 +399,7 @@ function CommandMode({
             <KeyHint keyLabel="ctrl+u" action="clear" />
             <KeyHint keyLabel="c" action="copy" />
             <KeyHint keyLabel="tab" action="panels" />
+            <KeyHint keyLabel="ctrl+←→" action="tabs" />
             <KeyHint keyLabel="ctrl+p" action="commands" />
           </Box>
         }
