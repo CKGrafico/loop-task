@@ -1,7 +1,8 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import http from "node:http";
 import { HttpApiServer } from "../src/daemon/http-server.js";
-import type { LoopMeta, Project } from "../src/types.js";
+import type { LoopMeta } from "../src/types.js";
+import type { TaskDefinition } from "../src/types.js";
 
 // ── Mock managers ──────────────────────────────────────────────────
 
@@ -39,7 +40,7 @@ function makeMockMeta(id: string): LoopMeta {
 function createMocks() {
   const mockManager = {
     list: vi.fn(() => []),
-    status: vi.fn((id: string) => null),
+    status: vi.fn((_id: string) => null),
     start: vi.fn((_options: unknown, _intervalHuman: string) => "test-id"),
     update: vi.fn(async (_id: string) => true),
     delete: vi.fn(async (_id: string) => true),
@@ -55,8 +56,8 @@ function createMocks() {
   const mockTaskManager = {
     list: vi.fn(() => []),
     get: vi.fn((_id: string) => null),
-    create: vi.fn((input: any) => ({ ...input, createdAt: new Date().toISOString() })),
-    update: vi.fn((_id: string, input: any) => ({ id: _id, ...input, createdAt: new Date().toISOString() })),
+    create: vi.fn((input: Omit<TaskDefinition, "createdAt">) => ({ ...input, createdAt: new Date().toISOString() }) ),
+    update: vi.fn((_id: string, input: Omit<TaskDefinition, "id" | "createdAt">) => ({ id: _id, ...input, createdAt: new Date().toISOString() }) ),
     delete: vi.fn((_id: string) => true),
   };
   const mockProjectManager = {
@@ -79,7 +80,7 @@ function createMocks() {
 
 interface HttpResponse {
   status: number;
-  json: any;
+  json: unknown;
   headers: http.IncomingHttpHeaders;
   raw: string;
 }
@@ -109,7 +110,7 @@ async function request(
           data += chunk.toString();
         });
         res.on("end", () => {
-          let json: any = undefined;
+          let json: unknown = undefined;
           try {
             json = data ? JSON.parse(data) : undefined;
           } catch {
@@ -157,7 +158,7 @@ async function requestRaw(
           data += chunk.toString();
         });
         res.on("end", () => {
-          let json: any = undefined;
+          let json: unknown = undefined;
           try {
             json = data ? JSON.parse(data) : undefined;
           } catch {
@@ -250,14 +251,14 @@ describe("HttpApiServer integration", () => {
     vi.clearAllMocks();
     mocks = createMocks();
     server = new HttpApiServer(
-      mocks.mockManager as any,
-      mocks.mockTaskManager as any,
-      mocks.mockProjectManager as any
+      mocks.mockManager as unknown as import("../src/daemon/manager.js").LoopManager,
+      mocks.mockTaskManager as unknown as import("../src/daemon/task-manager.js").TaskManager,
+      mocks.mockProjectManager as unknown as import("../src/daemon/projects.js").ProjectManager
     );
     await server.listen(0, "127.0.0.1");
     // Retrieve the actual assigned port
-    const addr = (server as any).server.address();
-    port = (addr as any).port;
+    const addr = (server as unknown as { server: { address: () => { port: number } } }).server.address();
+    port = addr.port;
   });
 
   afterEach(async () => {

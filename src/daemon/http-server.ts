@@ -7,7 +7,7 @@ import { HTTP_API_PORT, HTTP_API_HOST, LOG_TAIL_DEFAULT } from "../config/consta
 import { daemonLog } from "./daemon-log.js";
 import { tail } from "../shared/tail.js";
 import { buildLoopOptions } from "../loop-config.js";
-import type { LoopOptions, TaskDefinition } from "../types.js";
+import type { TaskDefinition } from "../types.js";
 
 interface RouteMatch {
   params: Record<string, string>;
@@ -41,10 +41,6 @@ function sendError(res: http.ServerResponse, status: number, message: string): v
 
 function sendNotFound(res: http.ServerResponse, id: string): void {
   sendError(res, 404, `Not found: ${id}`);
-}
-
-function sendMethodNotAllowed(res: http.ServerResponse): void {
-  sendError(res, 405, "Method not allowed");
 }
 
 function matchRoute(routes: RouteEntry[], method: string, pathSegments: string[]): RouteMatch | null {

@@ -31,4 +31,4 @@
 
 ## 7. Verification
 
-- [ ] 7.1 Run `rtk npx tsc --noEmit`, `rtk pnpm lint`, and `rtk pnpm test` — all must pass <!-- agent: basic-engineer.build, depends_on: 4.1,6.2, touches: none -->
+- [x] 7.1 Run `rtk npx tsc --noEmit`, `rtk pnpm lint`, and `rtk pnpm test` — all must pass <!-- agent: basic-engineer.build, depends_on: 4.1,6.2, touches: none -->
