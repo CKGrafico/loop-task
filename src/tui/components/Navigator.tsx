@@ -84,8 +84,8 @@ export function Navigator(props: {
         <Text color={dotColor}>{dotChar}</Text>
         <Text color={fg}>{desc.padEnd(DESC_WIDTH + COL_GAP)}</Text>
         <Text color={fg}>{since.padEnd(SINCE_WIDTH + COL_GAP)}</Text>
-        <Text color={fg}>{String(loop.runCount).padEnd(RUNS_WIDTH + COL_GAP)}</Text>
-        <Text color={fg}>{String(loop.skippedCount).padEnd(SKIPPED_WIDTH + COL_GAP)}</Text>
+        <Text color={fg}>{String(loop.runCount).padStart(RUNS_WIDTH + COL_GAP)}</Text>
+        <Text color={fg}>{String(loop.skippedCount).padStart(SKIPPED_WIDTH + COL_GAP)}</Text>
         <Text color={isSelected ? theme.text.inverse : sColor}>{sLabel.padEnd(STATUS_WIDTH + COL_GAP)}</Text>
         <Text color={fg}>{timing}</Text>
         {loop.status === "running" ? (
@@ -111,8 +111,8 @@ export function Navigator(props: {
             <Text color={theme.text.muted}>{"  "}</Text>
             <Text color={theme.text.muted}>{t("board.headerDescription").padEnd(DESC_WIDTH + COL_GAP)}</Text>
             <Text color={theme.text.muted}>{t("board.headerSince").padEnd(SINCE_WIDTH + COL_GAP)}</Text>
-            <Text color={theme.text.muted}>{t("board.headerRuns").padEnd(RUNS_WIDTH + COL_GAP)}</Text>
-            <Text color={theme.text.muted}>{t("board.headerSkipped").padEnd(SKIPPED_WIDTH + COL_GAP)}</Text>
+            <Text color={theme.text.muted}>{t("board.headerRuns").padStart(RUNS_WIDTH + COL_GAP)}</Text>
+            <Text color={theme.text.muted}>{t("board.headerSkipped").padStart(SKIPPED_WIDTH + COL_GAP)}</Text>
             <Text color={theme.text.muted}>{t("board.headerStatus").padEnd(STATUS_WIDTH + COL_GAP)}</Text>
             <Text color={theme.text.muted}>{t("board.headerTiming")}</Text>
           </Box>
