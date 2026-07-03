@@ -442,6 +442,27 @@ export function App(props: { onQuit: () => void }): React.ReactNode {
     handlers[handlerKey]?.();
   };
 
+  // ── Pop topmost overlay layer (Escape handler helper) ──
+  const popLayer = (): boolean => {
+    if (confirmState) { setConfirmState(null); return true; }
+    if (searchState?.active) {
+      setSearchState(null);
+      setSearchValue("");
+      return true;
+    }
+    if (logModalRun) { setLogModalRun(null); setLogModalLoopId(null); return true; }
+    if (commandsBrowserOpen) { setCommandsBrowserOpen(false); return true; }
+    if (exportModal) { setExportModal(null); return true; }
+    if (contextHelpOpen) { setContextHelpOpen(false); return true; }
+    if (view !== "board") { pop(); return true; }
+    // Bare board: open quit confirm
+    setConfirmState({
+      prompt: t("confirm.quit"),
+      onConfirm: () => { onQuit(); exit(); },
+    });
+    return true;
+  };
+
   // ── Global useInput (8.2) ──
   useInput((input, key) => {
     // Ctrl+C always quits if no modal open
