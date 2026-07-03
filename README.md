@@ -14,15 +14,17 @@
 
 ## What's new in v2.0.0
 
-- **Ink 5 TUI**: Rebuilt the entire terminal UI on [Ink](https://github.com/vadimdemedes/ink) (React for CLI). No more Bun dependency - runs on any Node >= 20.
+- **Ink 7 + React 19 TUI**: Rebuilt the entire terminal UI on [Ink 7](https://github.com/vadimdemedes/ink) (React 19 for CLI). No more Bun dependency — runs on any Node >= 20.
+- **HTTP API + Swagger**: The daemon now exposes a REST + SSE API on `localhost:8845`. Browse it at `http://127.0.0.1:8845/api/docs` (Swagger UI) or fetch the OpenAPI spec at `/api/openapi.json`. Manage loops, tasks, projects, and logs from any HTTP client.
 - **Hot-reloading configs**: Edit `~/.loop-cli/loops.json`, `tasks.json`, or `projects.json` in any editor and the daemon auto-reloads in real-time.
 - **Export/Import**: `loop-task export > backup.json` and `loop-task import backup.json` for backup and sharing.
-- **CLI API**: `loop-task status --json` for scripting and automation.
+- **CLI API**: `loop-task status --json` for scripting and automation. `loop-task api` prints HTTP API endpoints.
+- **Polished loop forms**: Task mode toggle (inline command vs. existing task), per-field validation, smart CWD defaults, clipboard copy, and direct edit navigation — across both board and TUI.
 - **Rich log viewer**: Search/filter log output, fold chain sections, scroll lock, copy to clipboard.
 - **Run history trends**: Sparklines of durations, success/failure streaks, average duration.
 - **Chain visual editor**: Tree view of task chains with success/failure branches.
 - **First-run onboarding**: Welcome screen with example loops when no loops exist.
-- **Daemon push notifications**: Subscribe to real-time events (no more 2s polling).
+- **Daemon push notifications**: Subscribe to real-time events via IPC or SSE (`GET /api/events`).
 - **Docker support**: `docker run -v ~/.loop-cli:/root/.loop-cli loop-task`.
 - **GitHub Actions CI**: Runs typecheck, lint, test, build on ubuntu/macos/windows.
 
@@ -60,12 +62,13 @@ No cron files to maintain and no daemon to babysit: loops persist across reboots
 
 ```bash
 npm install -g loop-task
-loop-task                          # open the board (requires Bun)
+loop-task                          # open the board
 loop-task start                    # start the daemon, restore persisted loops
 loop-task new 30m -- npm test      # create a background loop
 loop-task run --now 10s -- echo hi # run a loop in the foreground
 loop-task stop <id>                # stop a frozen loop and kill its child process
 loop-task restart                  # kill daemon + all loops, restart fresh
+loop-task api                      # show HTTP API endpoints (Swagger, OpenAPI)
 ```
 
 Or run it directly:
@@ -77,16 +80,13 @@ npx loop-task new 30m -- npm test
 
 ## Requirements
 
-- **Node.js >= 20** - required for all commands
-- **Bun >= 1.2** - required for the interactive board only
-
-Install Bun:
+- **Node.js >= 20** - required for all commands including the board
 
 ```bash
-npm install -g bun
+npm install -g loop-task
 ```
 
-`start`, `new`, and `run` work with Node alone. The board auto-delegates to Bun when needed.
+All commands (`start`, `new`, `run`, `board`) work with Node alone.
 
 ## Concepts
 
@@ -158,6 +158,7 @@ Colors can be a name (`white`, `cyan`, `green`, `yellow`, `orange`, `pink`) or a
 | `loop-task status [--json]` | Show status of all loops (JSON optional for scripting) |
 | `loop-task export [file]` | Export all configs to JSON file (or stdout) |
 | `loop-task import <file>` | Import configs from file (triggers hot-reload) |
+| `loop-task api` | Show HTTP API endpoints (base URL, Swagger UI, OpenAPI spec) |
 | `loop-task project list` | List all projects |
 | `loop-task project new <name> [--color <color>]` | Create a project |
 | `loop-task project rename <id\|name> <new-name>` | Rename a project |
@@ -243,9 +244,9 @@ The bottom command bar is a normal terminal input, so use your terminal's own cl
 ## How it works
 
 ```
-loop-task (board) ──IPC──► daemon ──► loop 1 ──► task (command)
-                           ├──► loop 2 ──► task ──► on-success task
-                           └──► loop 3 ──► task ──► on-failure task
+loop-task (board)  ──IPC──►  daemon ──► loop 1 ──► task (command)
+HTTP client (curl) ──HTTP──►       ├──► loop 2 ──► task ──► on-success task
+browser (Swagger)  ──HTTP──►       └──► loop 3 ──► task ──► on-failure task
 ```
 
 - The **daemon** is a background process that manages all loops and tasks. It starts automatically when you run `loop-task start` or any command that needs it.
@@ -406,6 +407,66 @@ docker run -v ~/.loop-cli:/root/.loop-cli loop-task status --json
 docker run -v ~/.loop-cli:/root/.loop-cli loop-task new 30m -- npm test
 ```
 
+## HTTP API
+
+The daemon exposes a REST + SSE API on `localhost:8845` (configurable via `LOOP_CLI_HTTP_PORT`). It starts automatically with the daemon — no extra flags needed.
+
+### Quick reference
+
+```bash
+# List all loops
+curl http://127.0.0.1:8845/api/loops
+
+# Create a loop
+curl -X POST http://127.0.0.1:8845/api/loops \
+  -H "Content-Type: application/json" \
+  -d '{"command":"echo hi","intervalHuman":"5m","description":"test"}'
+
+# Get a single loop
+curl http://127.0.0.1:8845/api/loops/abc123
+
+# Pause / resume / trigger / stop / delete
+curl -X POST http://127.0.0.1:8845/api/loops/abc123/pause
+curl -X POST http://127.0.0.1:8845/api/loops/abc123/resume
+curl -X POST http://127.0.0.1:8845/api/loops/abc123/trigger
+curl -X POST http://127.0.0.1:8845/api/loops/abc123/stop
+curl -X DELETE http://127.0.0.1:8845/api/loops/abc123
+
+# Fetch logs (last 50 lines)
+curl http://127.0.0.1:8845/api/loops/abc123/logs?tail=50
+
+# Stream logs in real-time (SSE)
+curl -N http://127.0.0.1:8845/api/loops/abc123/logs/stream
+
+# Subscribe to daemon events (SSE)
+curl -N http://127.0.0.1:8845/api/events
+
+# Tasks and projects
+curl http://127.0.0.1:8845/api/tasks
+curl http://127.0.0.1:8845/api/projects
+```
+
+### Interactive docs
+
+- **Swagger UI**: `http://127.0.0.1:8845/api/docs`
+- **OpenAPI 3.0 spec**: `http://127.0.0.1:8845/api/openapi.json`
+
+### From the CLI/TUI
+
+- `loop-task api` — prints all API endpoints to stdout
+- Board: press **Ctrl+G** or type `api` — shows a toast with API info
+
+### Response format
+
+All responses use a consistent JSON envelope:
+
+```json
+{"ok": true, "data": ...}      // success (200/201)
+{"ok": false, "error": {"message": "..."}}  // error (400/404/405/500)
+```
+
+The API binds to `127.0.0.1` only — it is not reachable from the network. If the port is already in use, the daemon skips the HTTP server and continues with IPC only.
+
 ## Development
 
 Requires [Node.js](https://nodejs.org) >= 20. Uses [pnpm](https://pnpm.io) for package management.
@@ -426,10 +487,10 @@ node dist/entry.js run --now --max-runs 1 10s -- echo hello  # foreground
 Quality gates:
 
 ```bash
-bun run typecheck
-bun run lint
-bun run test
-npm run build
+pnpm run typecheck   # tsc --noEmit
+pnpm run lint        # eslint src/ tests/
+pnpm run test        # vitest run
+pnpm run build       # tsc -p tsconfig.build.json
 ```
 
 ### Testing the board in a browser (ttyd)
