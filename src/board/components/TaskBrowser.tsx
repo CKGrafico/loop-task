@@ -32,10 +32,11 @@ export function TaskNavigator(props: {
   selectedIndex: number;
   focused: boolean;
   query: string;
+  allTasks: TaskDefinition[];
   onSelect: (index: number) => void;
   onActivate: (index: number) => void;
 }): React.ReactNode {
-  const { visible, total, selectedIndex, focused, query, onSelect, onActivate } = props;
+  const { visible, total, selectedIndex, focused, query, allTasks, onSelect, onActivate } = props;
   const { width, height } = useTerminalDimensions();
   const scrollRef = useRef<ScrollBoxRenderable | null>(null);
 
@@ -86,6 +87,7 @@ export function TaskNavigator(props: {
               nameW={nameW}
               cmdW={cmdW}
               chainsW={chainsW}
+              allTasks={allTasks}
               onSelect={onSelect}
               onActivate={onActivate}
             />
@@ -105,10 +107,11 @@ function TaskNavRow(props: {
   nameW: number;
   cmdW: number;
   chainsW: number;
+  allTasks: TaskDefinition[];
   onSelect: (index: number) => void;
   onActivate: (index: number) => void;
 }): React.ReactNode {
-  const { id, task, index, isSelected, focused, nameW, cmdW, chainsW, onSelect, onActivate } = props;
+  const { id, task, index, isSelected, focused, nameW, cmdW, chainsW, allTasks, onSelect, onActivate } = props;
   const { isHovered, hoverProps } = useHoverState();
   const bg = isSelected ? (focused ? "#1e3a8a" : "#1e2a4a") : isHovered ? HOVER_BG : undefined;
   const fg = isSelected ? "#ffffff" : "#e5e7eb";
@@ -125,8 +128,14 @@ function TaskNavRow(props: {
   }
 
   const cmd = commandLine(task.command, task.commandArgs);
+  const resolveName = (id: string | null): string | null => {
+    if (id === null) return null;
+    return allTasks.find((t) => t.id === id)?.name ?? id;
+  };
+  const successName = task.onSuccessTaskId ? resolveName(task.onSuccessTaskId) : null;
+  const failureName = task.onFailureTaskId ? resolveName(task.onFailureTaskId) : null;
   const chains = task.onSuccessTaskId || task.onFailureTaskId
-    ? t("board.taskChainsFormat", { success: task.onSuccessTaskId ?? "-", failure: task.onFailureTaskId ?? "-" })
+    ? t("board.taskChainsFormat", { success: successName ? `\u2713${successName}` : "-", failure: failureName ? `\u2192${failureName}` : "-" })
     : t("board.taskChainsNone");
 
   const name = task.name.length > nameW ? task.name.slice(0, nameW - 3) + "..." : task.name;
@@ -141,8 +150,8 @@ function TaskNavRow(props: {
   );
 }
 
-export function TaskInspector(props: { task: TaskDefinition | null }): React.ReactNode {
-  const { task } = props;
+export function TaskInspector(props: { task: TaskDefinition | null; allTasks: TaskDefinition[] }): React.ReactNode {
+  const { task, allTasks } = props;
   if (!task) {
     return (
       <box title={t("board.inspectorTitle")} border style={{ backgroundColor: "#0b0b0b" }}>
@@ -153,13 +162,20 @@ export function TaskInspector(props: { task: TaskDefinition | null }): React.Rea
 
   const cmd = commandLine(task.command, task.commandArgs);
 
+  const resolveName = (id: string | null): string | null => {
+    if (id === null) return null;
+    return allTasks.find((t) => t.id === id)?.name ?? id;
+  };
+  const onSuccess = task.onSuccessTaskId ? resolveName(task.onSuccessTaskId) ?? task.onSuccessTaskId : t("board.taskNone");
+  const onFailure = task.onFailureTaskId ? resolveName(task.onFailureTaskId) ?? task.onFailureTaskId : t("board.taskNone");
+
   return (
     <box title={t("board.inspectorTitle")} border style={{ flexDirection: "column", backgroundColor: "#0b0b0b" }}>
       <text><strong>{t("board.fieldId")}</strong> {task.id}</text>
       <text><strong>{t("board.taskLabelName")}</strong> {task.name}</text>
       <text><strong>{t("board.fieldCommand")}</strong> {cmd}</text>
-      <text><strong>{t("board.taskLabelOnSuccess")}</strong> {task.onSuccessTaskId ?? t("board.taskNone")}</text>
-      <text><strong>{t("board.taskLabelOnFailure")}</strong> {task.onFailureTaskId ?? t("board.taskNone")}</text>
+      <text><strong>{t("board.taskLabelOnSuccess")}</strong> {onSuccess}</text>
+      <text><strong>{t("board.taskLabelOnFailure")}</strong> {onFailure}</text>
     </box>
   );
 }

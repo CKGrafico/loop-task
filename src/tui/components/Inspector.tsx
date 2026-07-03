@@ -18,6 +18,16 @@ function Field(props: { label: string; children: React.ReactNode }): React.React
 
 const DIVIDER = "\u2500".repeat(40);
 
+/** Muted-label field for identity block (de-emphasized). */
+function MutedField(props: { label: string; children: React.ReactNode }): React.ReactNode {
+  return (
+    <Box>
+      <Text bold color={theme.text.muted}>{props.label.padEnd(LABEL_WIDTH)}</Text>
+      <Text color={theme.text.muted}>{props.children}</Text>
+    </Box>
+  );
+}
+
 export function Inspector(props: { loop: LoopMeta | null }): React.ReactNode {
   const { loop } = props;
 
@@ -44,6 +54,11 @@ export function Inspector(props: { loop: LoopMeta | null }): React.ReactNode {
   const nextRun = loop.nextRunAt ? t("format.timingNext", { timeAgo: timeUntil(loop.nextRunAt) }) : t("format.dash");
   const pid = loop.pid ? String(loop.pid) : t("format.dash");
 
+  // Dedupe: when description matches the full command line, skip Command field
+  const fullCmd = commandLine(loop.command, loop.commandArgs);
+  const desc = describeLoop(loop);
+  const showCommand = desc !== fullCmd;
+
   return (
     <Box flexDirection="column" paddingY={0}>
       <Box paddingLeft={1}>
@@ -53,21 +68,24 @@ export function Inspector(props: { loop: LoopMeta | null }): React.ReactNode {
         <Text color={theme.text.muted}>{DIVIDER}</Text>
       </Box>
       <Box flexDirection="column" paddingLeft={1}>
-        <Field label={t("board.fieldId")}><Text color={theme.text.primary}>{loop.id}</Text></Field>
-        <Field label={t("board.fieldDesc")}><Text color={theme.text.primary}>{describeLoop(loop)}</Text></Field>
-        <Field label={t("board.fieldCommand")}><Text color={theme.text.primary}>{commandLine(loop.command, loop.commandArgs)}</Text></Field>
-        <Field label={t("board.fieldTask")}><Text color={theme.text.primary}>{loop.taskId ?? t("format.dash")}</Text></Field>
-        <Field label={t("board.fieldDir")}><Text color={theme.text.primary}>{loop.cwd}</Text></Field>
-        <Field label={t("board.fieldInterval")}><Text color={theme.text.primary}>{loop.intervalHuman}</Text></Field>
+        {/* State block */}
         <Box>
           <Text bold color={theme.text.muted}>{t("board.fieldStatus").padEnd(LABEL_WIDTH)}</Text>
           <Text color={sColor}>{loop.status}</Text>
         </Box>
-        <Field label={t("board.fieldRuns")}><Text color={theme.text.primary}>{loop.runCount} / {maxRunsLabel}</Text></Field>
-        <Field label={t("board.fieldLastRun")}><Text color={theme.text.primary}>{lastRun}</Text></Field>
         <Field label={t("board.fieldLastExit")}><Text color={theme.text.primary}>{lastExit}</Text></Field>
+        <Field label={t("board.fieldLastRun")}><Text color={theme.text.primary}>{lastRun}</Text></Field>
         <Field label={t("board.fieldNextRun")}><Text color={theme.text.primary}>{nextRun}</Text></Field>
-        <Field label={t("board.fieldPid")}><Text color={theme.text.primary}>{pid}</Text></Field>
+        <Field label={t("board.fieldRuns")}><Text color={theme.text.primary}>{loop.runCount} / {maxRunsLabel}</Text></Field>
+        {/* Schedule block */}
+        <Field label={t("board.fieldInterval")}><Text color={theme.text.primary}>{loop.intervalHuman}</Text></Field>
+        <Field label={t("board.fieldDir")}><Text color={theme.text.primary}>{loop.cwd}</Text></Field>
+        {/* Identity block (muted) */}
+        <MutedField label={t("board.fieldId")}>{loop.id}</MutedField>
+        <MutedField label={t("board.fieldDesc")}>{desc}</MutedField>
+        {showCommand && <MutedField label={t("board.fieldCommand")}>{fullCmd}</MutedField>}
+        <MutedField label={t("board.fieldTask")}>{loop.taskId ?? t("format.dash")}</MutedField>
+        <MutedField label={t("board.fieldPid")}>{pid}</MutedField>
       </Box>
       <Box paddingLeft={1}>
         <Text color={theme.text.muted}>{DIVIDER}</Text>

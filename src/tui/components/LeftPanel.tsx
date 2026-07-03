@@ -9,6 +9,15 @@ import { Navigator } from "./Navigator.js";
 import { TaskNavigator } from "./TaskBrowser.js";
 import { FocusableList } from "./FocusableList.js";
 
+function Chip(props: { label: string; value: string; highlighted: boolean }): React.ReactNode {
+  const { label, value, highlighted } = props;
+  return (
+    <Text color={highlighted ? theme.text.primary : theme.text.muted}>
+      {label} {value}
+    </Text>
+  );
+}
+
 export function LeftPanel(props: {
   isFocused: boolean;
   navActive?: boolean;
@@ -80,48 +89,34 @@ export function LeftPanel(props: {
       borderStyle="single"
       borderColor={borderColor}
     >
-      {/* Filter status labels - shows active filter state */}
+      {/* Filter chip line - project · status · sort, non-defaults highlighted */}
       <Box paddingLeft={1} gap={1}>
         {hasFilter ? (
           <Text color={accentColor}>
-            filter: {query}
+            {t("board.chipFilter", { query })}
           </Text>
         ) : null}
         {activeTab === "loops" ? (
           <>
-            {currentProjectName != null ? (
-              <Text color={theme.text.muted}>
-                [project: {currentProjectName}]
-              </Text>
-            ) : null}
-            <Text color={theme.text.muted}>
-              [status: {filters.status}]
-            </Text>
-            <Text color={theme.text.muted}>
-              [sort: {sort}]
-            </Text>
+            <Chip label={t("board.chipProject")} value={currentProjectName ?? t("board.chipAll")} highlighted={currentProjectName != null} />
+            <Text color={theme.text.muted}>·</Text>
+            <Chip label={t("board.chipStatus")} value={filters.status} highlighted={filters.status !== "all"} />
+            <Text color={theme.text.muted}>·</Text>
+            <Chip label={t("board.chipSort")} value={sort} highlighted={sort !== "description"} />
           </>
         ) : null}
         {activeTab === "projects" && projectFilters ? (
           <>
             {projectFilters.query.length > 0 ? (
               <Text color={accentColor}>
-                [search: {projectFilters.query}]
+                {t("board.chipSearch", { query: projectFilters.query })}
               </Text>
             ) : null}
-            {projectFilters.hasLoops !== "all" ? (
-              <Text color={theme.text.muted}>
-                [loops: {projectFilters.hasLoops}]
-              </Text>
-            ) : null}
-            {projectFilters.isSystem !== "all" ? (
-              <Text color={theme.text.muted}>
-                [type: {projectFilters.isSystem}]
-              </Text>
-            ) : null}
-            <Text color={theme.text.muted}>
-              [sort: {projectFilters.sort}]
-            </Text>
+            <Chip label={t("board.chipLoops")} value={projectFilters.hasLoops} highlighted={projectFilters.hasLoops !== "all"} />
+            <Text color={theme.text.muted}>·</Text>
+            <Chip label={t("board.chipType")} value={projectFilters.isSystem} highlighted={projectFilters.isSystem !== "all"} />
+            <Text color={theme.text.muted}>·</Text>
+            <Chip label={t("board.chipSort")} value={projectFilters.sort} highlighted={projectFilters.sort !== "name"} />
           </>
         ) : null}
       </Box>
@@ -132,8 +127,6 @@ export function LeftPanel(props: {
           visible={loops}
           total={loops.length}
           selectedIndex={selectedIndex}
-          filters={{ status: filters.status }}
-          sort={sort}
           breakpoint={breakpoint}
           projects={projects}
           onSelect={onSelect}
@@ -151,6 +144,7 @@ export function LeftPanel(props: {
           onActivate={onTaskActivate}
           isFocused={isFocused}
           navActive={navActive}
+          allTasks={tasks}
         />
       ) : (
         <ProjectNavigator

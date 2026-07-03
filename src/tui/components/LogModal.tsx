@@ -5,6 +5,7 @@ import { darkTheme as theme } from "../theme.js";
 import { Modal } from "./Modal.js";
 import { t } from "../../i18n/index.js";
 import { streamRunLog } from "../daemon.js";
+import { formatDate } from "../format.js";
 import { copyToClipboard } from "../../shared/clipboard.js";
 
 const MAX_VISIBLE_LINES = 20;
@@ -125,7 +126,7 @@ export function LogModal(props: {
 
   return (
     <Modal
-      title={`Run #${props.run.runNumber} - ${props.run.startedAt}`}
+      title={`Run #${props.run.runNumber} - ${formatDate(props.run.startedAt)}`}
       onClose={props.onClose}
       width="95%"
       height="70%"
@@ -138,13 +139,13 @@ export function LogModal(props: {
             : t("board.logModalExit", { code: props.run.exitCode })}
         </Text>
         {props.run.duration > 0 ? (
-          <Text color={theme.text.muted}> {props.run.duration}ms</Text>
+          <Text color={theme.text.muted}> {t("board.logModalDuration")} {props.run.duration}ms</Text>
         ) : null}
         <Text color={theme.text.muted}>
           {searchMode
             ? `/${searchQuery}`
             : follow
-              ? "[Follow]"
+              ? "f follow"
               : `[${startIdx}-${endIdx}/${totalLines}]`}
         </Text>
       </Box>

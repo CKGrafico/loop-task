@@ -1,12 +1,19 @@
 import type { LoopMeta } from "../types.js";
 import { t } from "../i18n/index.js";
 
+export function unescapeCommand(str: string): string {
+  return str
+    .replace(/\\\\/g, "\x00")
+    .replace(/\\"/g, '"')
+    .replace(/\x00/g, "\\");
+}
+
 export function quoteArg(arg: string): string {
   return /[\s"]/.test(arg) ? `"${arg.replace(/"/g, '\\"')}"` : arg;
 }
 
 export function commandLine(command: string, args: string[]): string {
-  return [command, ...args.map(quoteArg)].join(" ").trim();
+  return [unescapeCommand(command), ...args.map((a) => quoteArg(unescapeCommand(a)))].join(" ").trim();
 }
 
 export function formatCmd(command: string, args: string[], max = 24): string {
@@ -50,7 +57,7 @@ export function timeUntil(iso: string | null): string {
 
 const STATUS_COLORS: Record<LoopMeta["status"], string> = {
   running: "#4ade80",
-  waiting: "#38bdf8",
+  waiting: "#6b7280",
   paused: "#facc15",
   idle: "#fb923c",
   stopped: "#f87171",
@@ -89,11 +96,15 @@ export function formatRunTime(iso: string): string {
   return d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: false });
 }
 
-export function sinceLabel(loop: LoopMeta): string {
-  const ts = loop.sessionStartedAt ?? loop.createdAt;
-  if (!ts) return t("format.dash");
-  const d = new Date(ts);
+export function formatDate(iso: string): string {
+  const d = new Date(iso);
   const date = d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
   const time = d.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", hour12: false });
   return `${date} ${time}`;
+}
+
+export function sinceLabel(loop: LoopMeta): string {
+  const ts = loop.sessionStartedAt ?? loop.createdAt;
+  if (!ts) return t("format.dash");
+  return formatDate(ts);
 }

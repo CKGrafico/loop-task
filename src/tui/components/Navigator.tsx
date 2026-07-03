@@ -19,8 +19,6 @@ export function Navigator(props: {
   visible: LoopMeta[];
   total: number;
   selectedIndex: number;
-  filters: { status?: string };
-  sort: string;
   breakpoint?: string;
   projects: Project[];
   onSelect: (index: number) => void;
@@ -28,7 +26,7 @@ export function Navigator(props: {
   isFocused: boolean;
   navActive?: boolean;
 }): React.ReactNode {
-  const { visible, total, selectedIndex, filters, sort, projects, onSelect, onActivate, isFocused, navActive = true } = props;
+  const { visible, total, selectedIndex, projects, onSelect, onActivate, isFocused, navActive = true } = props;
 
   const n = visible.length;
 
@@ -53,12 +51,9 @@ export function Navigator(props: {
     { isActive: isFocused && navActive },
   );
 
-  const statusFilter = filters?.status ?? "all";
-  const title = t("board.navigatorTitle", {
+  const title = t("board.navigatorCount", {
     visible: String(visible.length),
     total: String(total),
-    sort,
-    status: statusFilter,
   });
 
   function projectColor(loop: LoopMeta): string {
@@ -66,20 +61,31 @@ export function Navigator(props: {
     return proj?.color ?? theme.text.muted;
   }
 
+  function isFailed(loop: LoopMeta): boolean {
+    return loop.lastExitCode !== null && loop.lastExitCode !== 0;
+  }
+
   function renderLoop(loop: LoopMeta, isSelected: boolean): React.ReactNode {
     const desc = truncate(describeLoop(loop), DESC_WIDTH);
     const since = sinceLabel(loop);
     const timing = timingLabel(loop);
-    const sColor = statusColor(loop.status);
+    const failed = isFailed(loop);
+    const sColor = failed ? theme.semantic.danger : statusColor(loop.status);
     const sLabel = statusLabel(loop.status);
     const fg = isSelected ? theme.text.inverse : theme.text.primary;
+    const dotChar = failed ? "\u2717 " : "\u25cf ";
+    const dotColor = failed
+      ? theme.semantic.danger
+      : isSelected
+        ? theme.text.inverse
+        : projectColor(loop);
     return (
       <>
-        <Text color={isSelected ? theme.text.inverse : projectColor(loop)}>{"\u25cf "}</Text>
+        <Text color={dotColor}>{dotChar}</Text>
         <Text color={fg}>{desc.padEnd(DESC_WIDTH + COL_GAP)}</Text>
         <Text color={fg}>{since.padEnd(SINCE_WIDTH + COL_GAP)}</Text>
-        <Text color={fg}>{String(loop.runCount).padEnd(RUNS_WIDTH + COL_GAP)}</Text>
-        <Text color={fg}>{String(loop.skippedCount).padEnd(SKIPPED_WIDTH + COL_GAP)}</Text>
+        <Text color={fg}>{String(loop.runCount).padStart(RUNS_WIDTH + COL_GAP)}</Text>
+        <Text color={fg}>{String(loop.skippedCount).padStart(SKIPPED_WIDTH + COL_GAP)}</Text>
         <Text color={isSelected ? theme.text.inverse : sColor}>{sLabel.padEnd(STATUS_WIDTH + COL_GAP)}</Text>
         <Text color={fg}>{timing}</Text>
         {loop.status === "running" ? (
@@ -105,8 +111,8 @@ export function Navigator(props: {
             <Text color={theme.text.muted}>{"  "}</Text>
             <Text color={theme.text.muted}>{t("board.headerDescription").padEnd(DESC_WIDTH + COL_GAP)}</Text>
             <Text color={theme.text.muted}>{t("board.headerSince").padEnd(SINCE_WIDTH + COL_GAP)}</Text>
-            <Text color={theme.text.muted}>{t("board.headerRuns").padEnd(RUNS_WIDTH + COL_GAP)}</Text>
-            <Text color={theme.text.muted}>{t("board.headerSkipped").padEnd(SKIPPED_WIDTH + COL_GAP)}</Text>
+            <Text color={theme.text.muted}>{t("board.headerRuns").padStart(RUNS_WIDTH + COL_GAP)}</Text>
+            <Text color={theme.text.muted}>{t("board.headerSkipped").padStart(SKIPPED_WIDTH + COL_GAP)}</Text>
             <Text color={theme.text.muted}>{t("board.headerStatus").padEnd(STATUS_WIDTH + COL_GAP)}</Text>
             <Text color={theme.text.muted}>{t("board.headerTiming")}</Text>
           </Box>
@@ -118,7 +124,7 @@ export function Navigator(props: {
                 return (
                   <Box
                     key={i}
-                    backgroundColor={isSelected ? theme.bg.active : undefined}
+                    backgroundColor={isSelected ? (isFocused && navActive ? theme.bg.active : isFocused ? theme.bg.hover : undefined) : undefined}
                   >
                     <Text color={isSelected ? theme.text.inverse : theme.text.primary}>
                       {indicator}

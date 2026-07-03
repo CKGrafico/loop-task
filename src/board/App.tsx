@@ -556,11 +556,12 @@ export function App(props: { onQuit: () => void }): React.ReactNode {
               selectedIndex={taskClampedIndex}
               focused={derivedTaskPanel === "tasks"}
               query={taskQuery}
+              allTasks={tasks}
               onSelect={(index) => { setTaskSelectedIndex(index); }}
               onActivate={(index) => { setTaskSelectedIndex(index); setEditTask(filteredTasks[index] ?? null); push("task-edit"); }}
             />
             <box style={{ flexDirection: "column", flexGrow: 1, backgroundColor: "#0b0b0b", overflow: "hidden" }}>
-              <TaskInspector key={`ti-${selectedTask?.id}`} task={selectedTask} />
+              <TaskInspector key={`ti-${selectedTask?.id}`} task={selectedTask} allTasks={tasks} />
               <TaskActionButtons
                 key={`tab-${selectedTask?.id}`}
                 task={selectedTask}
