@@ -1,17 +1,27 @@
-## ADDED Requirements
+# copy-command Specification
 
-### Requirement: Copy button next to task command
+## Purpose
+Provide clipboard copy for command and working directory values in the board edit form.
 
-The system SHALL display a copy button next to the command field in both the TaskInspector (task list view) and the TaskForm (task edit/create view). Clicking the button SHALL copy the full command string to the system clipboard and show a toast notification.
+## Requirements
 
-#### Scenario: Copy command from task list
+### Requirement: Copy command to clipboard
+The edit form SHALL provide a way for the user to copy the full command string (including args) to the clipboard.
 
-- **WHEN** the user clicks the copy button next to the command in TaskInspector
-- **THEN** the full command string (command + args joined by space) is copied to the clipboard
-- **AND** a toast notification confirms the copy
+#### Scenario: Copy command in edit form (board)
+- **WHEN** the user hovers or clicks the command field in the board edit form
+- **THEN** a copy button SHALL appear and clicking it copies the full command to the clipboard
 
-#### Scenario: Copy command from task editor
+### Requirement: Copy CWD to clipboard
+The edit form SHALL provide a way for the user to copy the working directory path to the clipboard.
 
-- **WHEN** the user clicks the copy button next to the command input in TaskForm
-- **THEN** the current value of the command input is copied to the clipboard
-- **AND** a toast notification confirms the copy
+#### Scenario: Copy CWD in edit form (board)
+- **WHEN** the user hovers or clicks the cwd field in the board edit form
+- **THEN** a copy button SHALL appear and clicking it copies the cwd to the clipboard
+
+### Requirement: Copy feedback
+After copying, the UI SHALL display brief feedback ("Copied!") to confirm the action.
+
+#### Scenario: Copy confirmation shown
+- **WHEN** the user copies a value
+- **THEN** a brief "Copied!" indicator SHALL appear for 1-2 seconds
