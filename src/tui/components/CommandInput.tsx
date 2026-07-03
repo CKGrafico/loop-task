@@ -317,13 +317,27 @@ function CommandMode({
       // Ctrl+Enter escape sequence, handled by App's global useInput. Ignore here.
       if (input.length > 1 && (input.includes("\r") || input.includes("\n"))) return;
 
+      // When the command bar is empty and no dropdown is open, panels own
+      // navigation keys — return early so j/k/arrows reach the panel layer.
+      if (state.inputValue.length === 0 && !state.isOpen) {
+        if (input === "j" || input === "k" || key.upArrow || key.downArrow) {
+          return; // panels own these keys
+        }
+      }
+
       // `c` with no modifiers + no open dropdown = contextual copy shortcut
       if (onCopy && input === "c" && !state.isOpen) {
         onCopy();
         return;
       }
 
-      if (key.escape) { dispatch({ type: "CLOSE" }); return; }
+      if (key.escape) {
+        dispatch({ type: "CLOSE" });
+        if (state.inputValue.length > 0) {
+          clearInput();
+        }
+        return;
+      }
       if (key.return) {
         if (state.isOpen && rankedFiltered.length > 0 && state.focusedIndex < rankedFiltered.length) {
           const focused = rankedFiltered[state.focusedIndex];
