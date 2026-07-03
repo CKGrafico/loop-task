@@ -1,6 +1,6 @@
 import { render } from "ink";
 import React from "react";
-import { App } from "./App.js";
+import { App } from "./app.js";
 import { BRACKETED_PASTE_ENABLE, BRACKETED_PASTE_DISABLE } from "../config/constants.js";
 
 export async function launchBoard(): Promise<void> {
