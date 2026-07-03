@@ -12,22 +12,6 @@
 [![license](https://img.shields.io/npm/l/loop-task?style=flat-square&color=black)](./LICENSE)
 [![node](https://img.shields.io/node/v/loop-task?style=flat-square&color=black)](https://nodejs.org)
 
-## What's new in v2.0.0
-
-- **Ink 7 + React 19 TUI**: Rebuilt the entire terminal UI on [Ink 7](https://github.com/vadimdemedes/ink) (React 19 for CLI). No more Bun dependency — runs on any Node >= 20.
-- **HTTP API + Swagger**: The daemon now exposes a REST + SSE API on `localhost:8845`. Browse it at `http://127.0.0.1:8845/api/docs` (Swagger UI) or fetch the OpenAPI spec at `/api/openapi.json`. Manage loops, tasks, projects, and logs from any HTTP client.
-- **Hot-reloading configs**: Edit `~/.loop-cli/loops.json`, `tasks.json`, or `projects.json` in any editor and the daemon auto-reloads in real-time.
-- **Export/Import**: `loop-task export > backup.json` and `loop-task import backup.json` for backup and sharing.
-- **CLI API**: `loop-task status --json` for scripting and automation. `loop-task api` prints HTTP API endpoints.
-- **Polished loop forms**: Task mode toggle (inline command vs. existing task), per-field validation, smart CWD defaults, clipboard copy, and direct edit navigation — across both board and TUI.
-- **Rich log viewer**: Search/filter log output, fold chain sections, scroll lock, copy to clipboard.
-- **Run history trends**: Sparklines of durations, success/failure streaks, average duration.
-- **Chain visual editor**: Tree view of task chains with success/failure branches.
-- **First-run onboarding**: Welcome screen with example loops when no loops exist.
-- **Daemon push notifications**: Subscribe to real-time events via IPC or SSE (`GET /api/events`).
-- **Docker support**: `docker run -v ~/.loop-cli:/root/.loop-cli loop-task`.
-- **GitHub Actions CI**: Runs typecheck, lint, test, build on ubuntu/macos/windows.
-
 </div>
 
 ## Loop engineering
