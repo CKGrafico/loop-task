@@ -573,6 +573,18 @@ describe("sanitizePaste", () => {
     const huge = "x".repeat(10000);
     expect(sanitizePaste(huge).length).toBe(4096);
   });
+
+  it("returns a multi-word shell command unchanged (paste with &&)", () => {
+    expect(sanitizePaste("npm run build && echo done")).toBe("npm run build && echo done");
+  });
+
+  it("strips bracketed-paste markers from a shell command", () => {
+    expect(sanitizePaste("\x1b[200~npm run build\x1b[201~")).toBe("npm run build");
+  });
+
+  it("collapses a single newline to a space", () => {
+    expect(sanitizePaste("npm\necho")).toBe("npm echo");
+  });
 });
 
 describe("rankCommands", () => {
