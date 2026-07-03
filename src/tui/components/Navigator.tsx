@@ -19,8 +19,6 @@ export function Navigator(props: {
   visible: LoopMeta[];
   total: number;
   selectedIndex: number;
-  filters: { status?: string };
-  sort: string;
   breakpoint?: string;
   projects: Project[];
   onSelect: (index: number) => void;
@@ -28,7 +26,7 @@ export function Navigator(props: {
   isFocused: boolean;
   navActive?: boolean;
 }): React.ReactNode {
-  const { visible, total, selectedIndex, filters, sort, projects, onSelect, onActivate, isFocused, navActive = true } = props;
+  const { visible, total, selectedIndex, projects, onSelect, onActivate, isFocused, navActive = true } = props;
 
   const n = visible.length;
 
@@ -53,12 +51,9 @@ export function Navigator(props: {
     { isActive: isFocused && navActive },
   );
 
-  const statusFilter = filters?.status ?? "all";
-  const title = t("board.navigatorTitle", {
+  const title = t("board.navigatorCount", {
     visible: String(visible.length),
     total: String(total),
-    sort,
-    status: statusFilter,
   });
 
   function projectColor(loop: LoopMeta): string {

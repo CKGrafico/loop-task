@@ -135,8 +135,15 @@ export function RunHistory(props: {
 
   return (
     <Box flexDirection="column" flexGrow={1}>
-      <Box paddingLeft={1}>
+      <Box paddingLeft={1} paddingRight={1} justifyContent="space-between">
         <Text color={theme.text.muted}>{title}</Text>
+        {(trends.failureStreak > 0 || trends.lastFailureAgo) ? (
+          <Text color={theme.semantic.warning}>
+            {trends.failureStreak > 0 ? t("board.runHistoryFailStreak", { count: String(trends.failureStreak) }) : ""}
+            {trends.failureStreak > 0 && trends.lastFailureAgo ? " " : ""}
+            {trends.lastFailureAgo ? t("board.runHistoryLastFail", { ago: trends.lastFailureAgo }) : ""}
+          </Text>
+        ) : null}
       </Box>
       {reversed.length === 0 ? (
         <Box paddingLeft={1}>
@@ -151,12 +158,6 @@ export function RunHistory(props: {
               <Text color={theme.text.muted}> avg:{formatRunDuration(trends.avgDuration)} </Text>
               {trends.successStreak > 0 ? (
                 <Text color={theme.semantic.success}>streak:{trends.successStreak} ok</Text>
-              ) : null}
-              {trends.failureStreak > 0 ? (
-                <Text color={theme.semantic.danger}>streak:{trends.failureStreak} fail</Text>
-              ) : null}
-              {trends.lastFailureAgo ? (
-                <Text color={theme.semantic.warning}> last fail:{trends.lastFailureAgo}</Text>
               ) : null}
             </Box>
           ) : null}
