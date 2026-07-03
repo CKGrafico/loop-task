@@ -9,7 +9,7 @@ The fix is to stop relying on the intercepted keys and instead ride the terminal
 - **Paste (primary):** Enable bracketed paste mode (`ESC[?2004h` on board mount, `ESC[?2004l` on exit). A native paste gesture (Ctrl+Shift+V, Cmd+V, right-click) then arrives as a single chunk; strip any `ESC[200~`/`ESC[201~` markers, collapse newlines to spaces (single-line inputs), and insert the text. This works identically in native Windows CLI and the VS Code terminal because it does not depend on a keybinding the app must capture.
 - **Paste (multi-char fallback):** In the command bar, treat any multi-character printable input as a paste and insert it (today it is dropped). This makes right-click/Ctrl+Shift+V paste work even without bracketed paste.
 - **Clear line (select-all + delete surrogate):** `Ctrl+U` clears the command input. This is the practical "select all then retype/paste" gesture; true visual selection is a non-goal.
-- **Copy field:** the existing chord `Ctrl+A` then `C` copies the current command-input text to the clipboard via the existing cross-platform `copyToClipboard`. The bare-`c` contextual copy (selected loop/task command) is unchanged.
+- **Copy:** the bare-`c` contextual copy (selected loop/task command) is unchanged, and terminal drag-select + native copy covers arbitrary text. (A dedicated "copy the command-bar text" chord was considered but **descoped** — `Ctrl+A C` already maps to clone, and copying just-typed text is low-value. See tasks.md §4.)
 - **Docs:** README/help note that terminal drag-select + native copy (Ctrl+Shift+C / right-click) also works, since Ink does not enable mouse reporting.
 
 ### Non-goals

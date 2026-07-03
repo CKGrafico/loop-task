@@ -226,6 +226,15 @@ esc         quit
 
 Destructive actions (pause, force run, delete) prompt a confirmation before executing.
 
+### Copy & paste in the command bar
+
+The bottom command bar is a normal terminal input, so use your terminal's own clipboard gestures — they work in every terminal (including the VS Code integrated terminal, where Ctrl+C/V are captured by the editor):
+
+- **Paste** with **Ctrl+Shift+V** (Windows/Linux), **Cmd+V** (macOS), or **right-click**. Multi-line pastes collapse to a single line.
+- **Ctrl+U** clears the command bar (select-all + delete).
+- **`c`** copies the selected loop/task's command to the clipboard.
+- To copy arbitrary text, drag-select in the terminal and use its native copy (Ctrl+Shift+C / right-click).
+
 ### Pause vs Stop
 
 - **Pause** (`p`) - temporarily halts the loop. Resuming continues the original schedule (e.g., a loop that runs every 6h at :00 paused at 12:00 and resumed at 14:00 will still fire at 16:00).

@@ -28,6 +28,13 @@ export const HEADER_COMPACT_WIDTH = 60;
 
 export const SEARCH_SELECT_HEIGHT = 6;
 
+// ── Clipboard / bracketed paste ─────────────────────────────────────
+// DECSET 2004: terminal wraps pasted text in ESC[200~ ... ESC[201~ so the
+// app can insert it wholesale instead of processing each char as a keypress.
+export const BRACKETED_PASTE_ENABLE = "\x1b[?2004h";
+export const BRACKETED_PASTE_DISABLE = "\x1b[?2004l";
+export const PASTE_MAX_CHARS = 4096;
+
 export const HOVER_BG = "#1e3a5f";
 
 export const PROJECT_COLORS: Record<string, string> = {

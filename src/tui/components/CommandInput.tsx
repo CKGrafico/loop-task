@@ -12,8 +12,19 @@ import {
   COMMAND_INPUT_HEIGHT,
   CONFIRM_YES,
   CONFIRM_CANCEL,
+  PASTE_MAX_CHARS,
 } from "../../config/constants.js";
 import type { CommandContext, ConfirmState, SearchState } from "../types.js";
+
+// Turn a raw paste (possibly bracketed, multi-line, with stray control chars)
+// into a single-line insertable string. Exported for tests.
+export function sanitizePaste(raw: string): string {
+  return raw
+    .replace(/\x1b\[20[01]~/g, "") // strip bracketed-paste markers ESC[200~/ESC[201~
+    .replace(/[\r\n]+/g, " ") // command bar is single-line: newlines -> space
+    .replace(/[\x00-\x08\x0b\x0c\x0e-\x1f\x7f]/g, "") // drop remaining control chars
+    .slice(0, PASTE_MAX_CHARS);
+}
 
 // ── Props ────────────────────────────────────────────────────────────
 
@@ -29,6 +40,7 @@ export interface CommandInputProps {
   onConfirmYes: () => void;
   onConfirmCancel: () => void;
   onCopy?: () => void;
+  onPanelAction?: () => void;
   disabled?: boolean;
 }
 
@@ -37,7 +49,6 @@ export interface CommandInputProps {
 function renderInputLine(
   value: string,
   cursorOffset: number,
-  placeholder: string,
 ): string {
   if (value.length === 0) {
     return "\x1b[7m \x1b[27m";
@@ -225,11 +236,13 @@ function CommandMode({
   context,
   onCommand,
   onCopy,
+  onPanelAction,
   disabled,
 }: {
   context: CommandContext;
   onCommand: (value: string) => void;
   onCopy?: () => void;
+  onPanelAction?: () => void;
   disabled?: boolean;
 }): React.ReactNode {
   const commands = useMemo(() => buildCommands(context), [context]);
@@ -244,9 +257,31 @@ function CommandMode({
     onSelect: onCommand,
   });
 
+  const insertText = useCallback((text: string) => {
+    for (const ch of text) dispatch({ type: "INSERT_TEXT", text: ch });
+  }, [dispatch]);
+
+  const clearInput = useCallback(() => {
+    dispatch({ type: "MOVE_CURSOR_END" });
+    for (let i = 0; i < state.inputValue.length; i++) dispatch({ type: "DELETE_BACKWARD" });
+  }, [dispatch, state.inputValue.length]);
+
   useInput(
     (input, key) => {
+      // Bracketed paste: content wrapped in ESC[200~ ... ESC[201~ arrives as one
+      // chunk. Detect first — the leading ESC can otherwise trip the ctrl/escape guards.
+      if (input.includes("\x1b[200~")) {
+        insertText(sanitizePaste(input));
+        return;
+      }
+
+      // Ctrl+U clears the line (the "select all + delete" gesture). Handle before
+      // the ctrl guard below. Some terminals send it as the raw NAK control char.
+      if ((key.ctrl && input === "u") || input === "\x15") { clearInput(); return; }
+
       if (key.ctrl) return;
+      // Multi-char containing CR/LF with no bracketed markers = the VS Code
+      // Ctrl+Enter escape sequence, handled by App's global useInput. Ignore here.
       if (input.length > 1 && (input.includes("\r") || input.includes("\n"))) return;
 
       // `c` with no modifiers + no open dropdown = contextual copy shortcut
@@ -264,6 +299,10 @@ function CommandMode({
             dispatch({ type: "DELETE_BACKWARD" });
           }
           onCommand(focused.option.value);
+        } else if (state.inputValue.length === 0) {
+          // Empty command bar: Enter triggers the focused panel's contextual
+          // action (edit / logs) for terminals that collapse Ctrl+Enter to Enter.
+          onPanelAction?.();
         }
         return;
       }
@@ -273,7 +312,11 @@ function CommandMode({
       if (key.backspace || key.delete) { dispatch({ type: "DELETE_BACKWARD" }); return; }
       if (key.leftArrow) { dispatch({ type: "MOVE_CURSOR_LEFT" }); return; }
       if (key.rightArrow) { dispatch({ type: "MOVE_CURSOR_RIGHT" }); return; }
-      if (input === "a" && key.ctrl) { dispatch({ type: "MOVE_CURSOR_START" }); return; }
+      // Multi-char printable input = an unbracketed single-line paste (e.g. right-click).
+      if (input.length > 1 && !key.meta) {
+        insertText(sanitizePaste(input));
+        return;
+      }
       if (input.length === 1 && !key.ctrl && !key.meta && !key.return && !key.tab && !key.escape && input >= " " && input <= "~") {
         dispatch({ type: "INSERT_TEXT", text: input });
       }
@@ -283,7 +326,7 @@ function CommandMode({
 
   const isEmpty = state.inputValue.length === 0;
   const cursor = "\x1b[7m \x1b[27m";
-  const inputContent = isEmpty ? cursor : renderInputLine(state.inputValue, state.cursorOffset, "");
+  const inputContent = isEmpty ? cursor : renderInputLine(state.inputValue, state.cursorOffset);
 
   return (
     <>
@@ -307,6 +350,8 @@ function CommandMode({
         }
         rightHint={
           <Box>
+            <KeyHint keyLabel="enter" action="edit/logs" />
+            <KeyHint keyLabel="ctrl+u" action="clear" />
             <KeyHint keyLabel="c" action="copy" />
             <KeyHint keyLabel="tab" action="panels" />
             <KeyHint keyLabel="ctrl+p" action="commands" />
@@ -461,6 +506,7 @@ export function CommandInput(props: CommandInputProps): React.ReactNode {
     onConfirmYes,
     onConfirmCancel,
     onCopy,
+    onPanelAction,
   } = props;
 
   return (
@@ -480,7 +526,7 @@ export function CommandInput(props: CommandInputProps): React.ReactNode {
           disabled={props.disabled}
         />
       ) : confirmState === null ? (
-        <CommandMode context={context} onCommand={onCommand} onCopy={onCopy} disabled={props.disabled} />
+        <CommandMode context={context} onCommand={onCommand} onCopy={onCopy} onPanelAction={onPanelAction} disabled={props.disabled} />
       ) : (
         <ConfirmMode
           confirmState={confirmState}
