@@ -1,9 +1,10 @@
-import React, { useMemo, useCallback } from "react";
+import React, { useMemo, useCallback, useState, useRef } from "react";
 
 import type { Project } from "../../types.js";
 import { createProject, updateProject } from "../daemon.js";
 import { t } from "../../i18n/index.js";
 import { WizardForm, type WizardStepConfig } from "./WizardForm.js";
+import { SelectModal, SelectValueField, type SelectOption } from "./SelectModal.js";
 import { PROJECT_COLORS, PROJECT_COLOR_KEYS } from "../../config/constants.js";
 
 
@@ -22,6 +23,14 @@ export function ProjectFormView(props: ProjectFormViewProps): React.ReactNode {
     return found ?? "cyan";
   };
 
+  const [colorPickerOpen, setColorPickerOpen] = useState(false);
+  const colorFieldRef = useRef<{ value: string; onChange: (v: string) => void; onAdvance: () => void } | null>(null);
+
+  const colorOptions: SelectOption[] = useMemo(
+    () => PROJECT_COLOR_KEYS.map((k) => ({ value: k, label: k })),
+    [],
+  );
+
   const steps = useMemo<WizardStepConfig[]>(() => [
     {
       key: "name",
@@ -36,9 +45,18 @@ export function ProjectFormView(props: ProjectFormViewProps): React.ReactNode {
       prompt: t("project.wizard.colorPrompt"),
       hint: t("project.wizard.colorHint"),
       required: true,
-      suggestions: PROJECT_COLOR_KEYS,
-      inputType: "select",
       defaultValue: colorKeyFor(editProject?.color),
+      onActivate: () => setColorPickerOpen(true),
+      renderCustom: ({ value, isActive, onChange, onAdvance }) => {
+        colorFieldRef.current = { value, onChange, onAdvance };
+        return (
+          <SelectValueField
+            label={value || null}
+            placeholder={t("project.wizard.colorPrompt")}
+            isActive={isActive}
+          />
+        );
+      },
     },
   ], [editProject]);
 
@@ -68,11 +86,27 @@ export function ProjectFormView(props: ProjectFormViewProps): React.ReactNode {
     : t("project.createTitle");
 
   return (
-    <WizardForm
-      title={title}
-      steps={steps}
-      onComplete={handleComplete}
-      onCancel={onCancel}
-    />
+    <>
+      <WizardForm
+        title={title}
+        steps={steps}
+        onComplete={handleComplete}
+        onCancel={onCancel}
+        disabled={colorPickerOpen}
+      />
+      {colorPickerOpen ? (
+        <SelectModal
+          title={t("project.wizard.colorPrompt")}
+          options={colorOptions}
+          initialValue={colorFieldRef.current?.value}
+          onSelect={(option) => {
+            colorFieldRef.current?.onChange(option.value);
+            colorFieldRef.current?.onAdvance();
+            setColorPickerOpen(false);
+          }}
+          onClose={() => setColorPickerOpen(false)}
+        />
+      ) : null}
+    </>
   );
 }

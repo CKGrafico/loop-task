@@ -1,15 +1,14 @@
-import React, { useMemo, useCallback, useState } from "react";
-import { Box, Text } from "ink";
+import React, { useMemo, useCallback, useState, useRef } from "react";
 
 import type { Project, LoopOptions, TaskDefinition } from "../../types.js";
 import { createLoop, updateLoop } from "../daemon.js";
 import { t } from "../../i18n/index.js";
 import { WizardForm, type WizardStepConfig } from "./WizardForm.js";
 import { TaskPickerModal } from "./TaskPickerModal.js";
+import { SelectModal, SelectValueField, type SelectOption } from "./SelectModal.js";
 import { InlineCommandEditor } from "./InlineCommandEditor.js";
 import { parseDuration } from "../../duration.js";
 import { parseCommandLine } from "../../loop-config.js";
-import { darkTheme as theme } from "../theme.js";
 
 
 // ── Props ───────────────────────────────────────────────────────────
@@ -45,7 +44,13 @@ export function CreateView(props: CreateViewProps): React.ReactNode {
   } = props;
 
   const [taskPickerOpen, setTaskPickerOpen] = useState(false);
+  const [openSelect, setOpenSelect] = useState<"taskMode" | "runNow" | "project" | null>(null);
   const [commandValue, setCommandValue] = useState(initial.command ?? "");
+
+  // renderCustom is invoked on every WizardForm render for every field, so this
+  // ref always holds the latest onChange/onAdvance closures per field key —
+  // letting the modal (rendered outside WizardForm) drive a field's value.
+  const fieldCallbacksRef = useRef<Record<string, { value: string; onChange: (v: string) => void; onAdvance: () => void }>>({});
 
   const taskModeInitial = initial.taskMode === "existing" ? "Existing task" : "Inline command";
 
@@ -67,7 +72,6 @@ export function CreateView(props: CreateViewProps): React.ReactNode {
         prompt: t("wizard.intervalPrompt"),
         hint: t("wizard.intervalHint"),
         required: true,
-        suggestions: ["30s", "5m", "30m", "1h", "1d"],
         inputType: "text",
         defaultValue: initial.interval ?? undefined,
       },
@@ -76,9 +80,18 @@ export function CreateView(props: CreateViewProps): React.ReactNode {
         prompt: t("wizard.taskModePrompt"),
         hint: t("board.hintTaskMode"),
         required: true,
-        suggestions: [t("wizard.taskModeInline"), t("wizard.taskModeExisting")],
-        inputType: "select",
         defaultValue: taskModeInitial,
+        onActivate: () => setOpenSelect("taskMode"),
+        renderCustom: ({ value, isActive, onChange, onAdvance }) => {
+          fieldCallbacksRef.current.taskMode = { value, onChange, onAdvance };
+          return (
+            <SelectValueField
+              label={value || null}
+              placeholder={t("wizard.taskModePrompt")}
+              isActive={isActive}
+            />
+          );
+        },
       },
       {
         key: "taskId",
@@ -92,9 +105,9 @@ export function CreateView(props: CreateViewProps): React.ReactNode {
         skip: (values) => !values.taskMode?.includes("Existing"),
         onActivate: () => setTaskPickerOpen(true),
         renderCustom: ({ isActive }) => (
-          <TaskPickerField
-            taskName={resolvedTaskName}
-            hint={t("board.hintTask")}
+          <SelectValueField
+            label={resolvedTaskName}
+            placeholder={t("board.chooseTask")}
             isActive={isActive}
           />
         ),
@@ -125,11 +138,20 @@ export function CreateView(props: CreateViewProps): React.ReactNode {
         prompt: t("wizard.runNowPrompt"),
         hint: t("board.hintRunNow"),
         required: true,
-        suggestions: [t("wizard.runNowWait"), t("wizard.runNowNow")],
-        inputType: "select",
         defaultValue: initial.runNow === "true" || initial.runNow === "yes"
           ? t("wizard.runNowNow")
           : t("wizard.runNowWait"),
+        onActivate: () => setOpenSelect("runNow"),
+        renderCustom: ({ value, isActive, onChange, onAdvance }) => {
+          fieldCallbacksRef.current.runNow = { value, onChange, onAdvance };
+          return (
+            <SelectValueField
+              label={value || null}
+              placeholder={t("wizard.runNowPrompt")}
+              isActive={isActive}
+            />
+          );
+        },
       },
       {
         key: "cwd",
@@ -160,13 +182,22 @@ export function CreateView(props: CreateViewProps): React.ReactNode {
         prompt: t("wizard.projectPrompt"),
         hint: t("wizard.projectHint"),
         required: false,
-        inputType: "select",
-        suggestions: props.projects.map((p) => p.name),
         defaultValue: props.projects.find((p) => p.id === (initial.project ?? "default"))?.name ?? props.projects[0]?.name,
+        onActivate: () => setOpenSelect("project"),
+        renderCustom: ({ value, isActive, onChange, onAdvance }) => {
+          fieldCallbacksRef.current.project = { value, onChange, onAdvance };
+          return (
+            <SelectValueField
+              label={value || null}
+              placeholder={t("wizard.projectPrompt")}
+              isActive={isActive}
+            />
+          );
+        },
       },
     ];
     return list;
-  }, [taskModeInitial, selectedTaskId, resolvedTaskName, initial, commandValue]);
+  }, [taskModeInitial, selectedTaskId, resolvedTaskName, initial, commandValue, props.projects]);
 
   const handleComplete = useCallback(
     (values: Record<string, string>) => {
@@ -242,6 +273,24 @@ export function CreateView(props: CreateViewProps): React.ReactNode {
     [selectedTaskId, mode, editId, currentProjectId, onDone, commandValue, props.projects],
   );
 
+  const selectOptionsFor = useCallback(
+    (field: "taskMode" | "runNow" | "project"): SelectOption[] => {
+      if (field === "taskMode") {
+        return [t("wizard.taskModeInline"), t("wizard.taskModeExisting")].map((v) => ({ value: v, label: v }));
+      }
+      if (field === "runNow") {
+        return [t("wizard.runNowWait"), t("wizard.runNowNow")].map((v) => ({ value: v, label: v }));
+      }
+      return props.projects.map((p) => ({ value: p.name, label: p.name }));
+    },
+    [props.projects],
+  );
+
+  const selectTitleFor = (field: "taskMode" | "runNow" | "project"): string =>
+    field === "taskMode" ? t("wizard.taskModePrompt")
+      : field === "runNow" ? t("wizard.runNowPrompt")
+      : t("wizard.projectPrompt");
+
   return (
     <>
       <WizardForm
@@ -249,7 +298,7 @@ export function CreateView(props: CreateViewProps): React.ReactNode {
         steps={steps}
         onComplete={handleComplete}
         onCancel={onCancel}
-        disabled={taskPickerOpen}
+        disabled={taskPickerOpen || openSelect !== null}
       />
       {taskPickerOpen ? (
         <TaskPickerModal
@@ -261,45 +310,19 @@ export function CreateView(props: CreateViewProps): React.ReactNode {
           onClose={() => setTaskPickerOpen(false)}
         />
       ) : null}
+      {openSelect ? (
+        <SelectModal
+          title={selectTitleFor(openSelect)}
+          options={selectOptionsFor(openSelect)}
+          initialValue={fieldCallbacksRef.current[openSelect]?.value}
+          onSelect={(option) => {
+            fieldCallbacksRef.current[openSelect]?.onChange(option.value);
+            fieldCallbacksRef.current[openSelect]?.onAdvance();
+            setOpenSelect(null);
+          }}
+          onClose={() => setOpenSelect(null)}
+        />
+      ) : null}
     </>
   );
-}
-
-// ── Task picker field ───────────────────────────────────────────────
-
-function TaskPickerField({
-  taskName,
-  hint,
-  isActive,
-}: {
-  taskName: string | null;
-  hint: string;
-  isActive: boolean;
-}): React.ReactNode {
-  return (
-    <Box flexDirection="column" width="100%">
-      <Box
-        borderStyle="single"
-        borderColor={isActive ? theme.accent.brand : theme.border.dim}
-        backgroundColor={isActive ? theme.bg.input : undefined}
-        paddingLeft={1}
-        overflow="hidden"
-        width="100%"
-      >
-        {taskName ? (
-          <Text color={theme.text.primary}>{taskName}</Text>
-        ) : (
-          <Text color={theme.text.muted}>{hint}</Text>
-        )}
-      </Box>
-      {isActive ? (
-        <Box marginTop={0}>
-          <Text color={theme.accent.brand}>{"\u203a "}</Text>
-          <Text color={theme.text.muted}>
-            {t("wizard.taskPickerHint", { action: "enter" })}
-          </Text>
-        </Box>
-      ) : null}
-    </Box>
-  );
-}
+}

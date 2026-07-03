@@ -1,7 +1,8 @@
-import React, { useEffect, useMemo, useCallback, useState } from "react";
+import React, { useEffect, useMemo, useCallback, useState, useRef } from "react";
 
 import type { TaskDefinition } from "../../types.js";
 import { WizardForm, type WizardStepConfig } from "./WizardForm.js";
+import { SelectModal, SelectValueField, type SelectOption } from "./SelectModal.js";
 import { InlineCommandEditor } from "./InlineCommandEditor.js";
 import { createTask, updateTask, listTasks } from "../daemon.js";
 import crypto from "node:crypto";
@@ -50,6 +51,14 @@ export function TaskForm(props: TaskFormProps): React.ReactNode {
     () => [t("wizard.chainNone"), ...tasks.map((task) => task.name)],
     [tasks],
   );
+
+  const chainSelectOptions: SelectOption[] = useMemo(
+    () => chainOptions.map((v) => ({ value: v, label: v })),
+    [chainOptions],
+  );
+
+  const [openChainField, setOpenChainField] = useState<"onSuccess" | "onFailure" | null>(null);
+  const chainFieldsRef = useRef<Record<string, { value: string; onChange: (v: string) => void; onAdvance: () => void }>>({});
 
   const resolveChainId = useCallback(
     (val: string): string | null => {
@@ -103,18 +112,36 @@ export function TaskForm(props: TaskFormProps): React.ReactNode {
         prompt: t("wizard.onSuccessPrompt"),
         hint: t("board.taskHintOnSuccess"),
         required: false,
-        inputType: "select",
-        suggestions: chainOptions,
         defaultValue: editTask ? resolveChainName(editTask.onSuccessTaskId) : undefined,
+        onActivate: () => setOpenChainField("onSuccess"),
+        renderCustom: ({ value, isActive, onChange, onAdvance }) => {
+          chainFieldsRef.current.onSuccess = { value, onChange, onAdvance };
+          return (
+            <SelectValueField
+              label={value || null}
+              placeholder={t("wizard.onSuccessPrompt")}
+              isActive={isActive}
+            />
+          );
+        },
       },
       {
         key: "onFailure",
         prompt: t("wizard.onFailurePrompt"),
         hint: t("board.taskHintOnFailure"),
         required: false,
-        inputType: "select",
-        suggestions: chainOptions,
         defaultValue: editTask ? resolveChainName(editTask.onFailureTaskId) : undefined,
+        onActivate: () => setOpenChainField("onFailure"),
+        renderCustom: ({ value, isActive, onChange, onAdvance }) => {
+          chainFieldsRef.current.onFailure = { value, onChange, onAdvance };
+          return (
+            <SelectValueField
+              label={value || null}
+              placeholder={t("wizard.onFailurePrompt")}
+              isActive={isActive}
+            />
+          );
+        },
       },
     ];
     return list;
@@ -161,11 +188,27 @@ export function TaskForm(props: TaskFormProps): React.ReactNode {
     : t("board.taskCreateTitle");
 
   return (
-    <WizardForm
-      title={title}
-      steps={steps}
-      onComplete={handleComplete}
-      onCancel={onCancel}
-    />
+    <>
+      <WizardForm
+        title={title}
+        steps={steps}
+        onComplete={handleComplete}
+        onCancel={onCancel}
+        disabled={openChainField !== null}
+      />
+      {openChainField ? (
+        <SelectModal
+          title={openChainField === "onSuccess" ? t("wizard.onSuccessPrompt") : t("wizard.onFailurePrompt")}
+          options={chainSelectOptions}
+          initialValue={chainFieldsRef.current[openChainField]?.value}
+          onSelect={(option) => {
+            chainFieldsRef.current[openChainField]?.onChange(option.value);
+            chainFieldsRef.current[openChainField]?.onAdvance();
+            setOpenChainField(null);
+          }}
+          onClose={() => setOpenChainField(null)}
+        />
+      ) : null}
+    </>
   );
 }

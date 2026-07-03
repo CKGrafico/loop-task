@@ -12,7 +12,7 @@ export interface WizardStepConfig {
   hint: string;
   required: boolean;
   suggestions?: string[];
-  inputType: "text" | "select";
+  inputType?: "text";
   defaultValue?: string;
   skip?: (values: Record<string, string>) => boolean;
   onActivate?: () => void;
@@ -59,43 +59,6 @@ function TextField({
         {showHint ? hint : value}
       </Text>
       {isActive ? <Text inverse> </Text> : null}
-    </Box>
-  );
-}
-
-function SelectField({
-  suggestions,
-  selectedIndex,
-  isActive,
-}: {
-  suggestions: string[];
-  selectedIndex: number;
-  isActive: boolean;
-}): React.ReactNode {
-  const currentValue = suggestions[selectedIndex] ?? suggestions[0] ?? "";
-  const chevronValue = `\u2039 ${currentValue} \u203A`;
-
-  if (!isActive) {
-    return (
-      <Text color={theme.text.secondary}>{chevronValue}</Text>
-    );
-  }
-  return (
-    <Box flexDirection="column">
-      <Box
-        borderStyle="single"
-        borderColor={theme.accent.brand}
-        backgroundColor={theme.bg.input}
-        paddingLeft={1}
-        overflow="hidden"
-        width="100%"
-      >
-        <Text color={theme.text.primary}>{chevronValue}</Text>
-      </Box>
-      <Box marginTop={0}>
-        <Text color={theme.accent.brand}>{"\u203a "}</Text>
-        <Text color={theme.text.muted}>{t("wizard.selectFieldHint")}</Text>
-      </Box>
     </Box>
   );
 }
@@ -238,59 +201,6 @@ export function WizardForm(props: WizardFormProps): React.ReactNode {
       return;
     }
 
-    if (step.inputType === "select" && step.suggestions) {
-      const options = step.suggestions;
-      const current = options.indexOf(valueFor(step));
-      const idx = current >= 0 ? current : 0;
-      if (key.upArrow) {
-        const newVal = options[idx > 0 ? idx - 1 : options.length - 1]!;
-        setValue(step.key, newVal);
-
-        if (step.key === "taskMode") {
-          if (newVal.includes("Existing")) {
-            setValue("command", "");
-            clearError("command");
-          } else {
-            setValue("taskId", "");
-            clearError("taskId");
-          }
-        }
-        return;
-      }
-      if (key.downArrow) {
-        const newVal = options[idx < options.length - 1 ? idx + 1 : 0]!;
-        setValue(step.key, newVal);
-
-        if (step.key === "taskMode") {
-          if (newVal.includes("Existing")) {
-            setValue("command", "");
-            clearError("command");
-          } else {
-            setValue("taskId", "");
-            clearError("taskId");
-          }
-        }
-        return;
-      }
-      if (key.return) {
-        if (current < 0) setValue(step.key, options[0]!);
-
-        if (step.key === "taskMode") {
-          const selectedVal = current < 0 ? options[0]! : options[current]!;
-          if (selectedVal.includes("Existing")) {
-            setValue("command", "");
-            clearError("command");
-          } else {
-            setValue("taskId", "");
-            clearError("taskId");
-          }
-        }
-
-        moveField(1);
-      }
-      return;
-    }
-
     // Text field editing
     if (key.return) {
       moveField(1);
@@ -351,12 +261,6 @@ export function WizardForm(props: WizardFormProps): React.ReactNode {
               onChange: (next: string) => setValue(s.key, next),
               onAdvance: () => moveField(1),
             })
-          ) : s.inputType === "select" && s.suggestions ? (
-            <SelectField
-              suggestions={s.suggestions}
-              selectedIndex={Math.max(0, s.suggestions.indexOf(val))}
-              isActive={isActive}
-            />
           ) : (
             <TextField value={val} hint={s.hint} isActive={isActive} />
           )}

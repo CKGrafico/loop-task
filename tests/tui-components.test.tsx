@@ -24,6 +24,7 @@ import { Modal } from "../src/tui/components/Modal.js";
 import { Header } from "../src/tui/components/Header.js";
 import { WizardForm, type WizardStepConfig } from "../src/tui/components/WizardForm.js";
 import { CommandInput, sanitizePaste } from "../src/tui/components/CommandInput.js";
+import { SelectModal, SelectValueField } from "../src/tui/components/SelectModal.js";
 import { CONFIRM_CANCEL, CONFIRM_YES } from "../src/config/constants.js";
 import { rankCommands } from "../src/tui/commands.js";
 import type { CommandContext, ConfirmState } from "../src/tui/types.js";
@@ -968,5 +969,105 @@ describe("Project headers (task 7.1)", () => {
       expect(value).toBeTruthy();
       expect(value.length).toBeGreaterThan(0);
     }
+  });
+});
+
+describe("SelectModal", () => {
+  const options = [
+    { value: "inline", label: "Inline command" },
+    { value: "existing", label: "Existing task" },
+  ];
+
+  it("renders the title and all options", () => {
+    const { lastFrame } = render(
+      <Box height={15} width={60}>
+        <SelectModal title="Pick a mode" options={options} onSelect={() => {}} onClose={() => {}} />
+      </Box>,
+    );
+    const frame = lastFrame() ?? "";
+    expect(frame).toContain("Pick a mode");
+    expect(frame).toContain("Inline command");
+    expect(frame).toContain("Existing task");
+  });
+
+  it("filters options by typed query", async () => {
+    const { stdin, lastFrame } = render(
+      <Box height={15} width={60}>
+        <SelectModal title="Pick a mode" options={options} onSelect={() => {}} onClose={() => {}} />
+      </Box>,
+    );
+    await typeChars(stdin, "existing");
+    await delay();
+    const frame = lastFrame() ?? "";
+    expect(frame).toContain("Existing task");
+    expect(frame).not.toContain("Inline command");
+  });
+
+  it("calls onSelect with the highlighted option on Enter", async () => {
+    const onSelect = vi.fn();
+    const { stdin } = render(
+      <Box height={15} width={60}>
+        <SelectModal title="Pick a mode" options={options} onSelect={onSelect} onClose={() => {}} />
+      </Box>,
+    );
+    stdin.write("\r");
+    await delay();
+    expect(onSelect).toHaveBeenCalledWith(options[0]);
+  });
+
+  it("arrow-down then Enter selects the second option", async () => {
+    const onSelect = vi.fn();
+    const { stdin } = render(
+      <Box height={15} width={60}>
+        <SelectModal title="Pick a mode" options={options} onSelect={onSelect} onClose={() => {}} />
+      </Box>,
+    );
+    stdin.write("[B"); // down arrow
+    await delay();
+    stdin.write("\r");
+    await delay();
+    expect(onSelect).toHaveBeenCalledWith(options[1]);
+  });
+
+  it("calls onClose on Escape", async () => {
+    const onClose = vi.fn();
+    const { stdin } = render(
+      <Box height={15} width={60}>
+        <SelectModal title="Pick a mode" options={options} onSelect={() => {}} onClose={onClose} />
+      </Box>,
+    );
+    stdin.write("");
+    await delay();
+    expect(onClose).toHaveBeenCalledTimes(1);
+  });
+
+  it("shows the empty state when nothing matches the filter", async () => {
+    const { stdin, lastFrame } = render(
+      <Box height={15} width={60}>
+        <SelectModal title="Pick a mode" options={options} onSelect={() => {}} onClose={() => {}} />
+      </Box>,
+    );
+    await typeChars(stdin, "zzz");
+    await delay();
+    expect(lastFrame()).toContain(t("selectModal.empty"));
+  });
+});
+
+describe("SelectValueField", () => {
+  it("shows the placeholder when no value is selected", () => {
+    const { lastFrame } = render(<SelectValueField label={null} placeholder="Choose one" isActive={false} />);
+    expect(lastFrame()).toContain("Choose one");
+  });
+
+  it("shows the label when a value is selected", () => {
+    const { lastFrame } = render(<SelectValueField label="Existing task" placeholder="Choose one" isActive={false} />);
+    expect(lastFrame()).toContain("Existing task");
+  });
+
+  it("shows a change hint only when active", () => {
+    const inactive = render(<SelectValueField label="x" placeholder="Choose one" isActive={false} />);
+    const active = render(<SelectValueField label="x" placeholder="Choose one" isActive />);
+    expect(inactive.lastFrame()).not.toContain("enter");
+    expect(active.lastFrame()).toContain("enter");
   });
 });
