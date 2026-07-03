@@ -1,12 +1,19 @@
 import type { LoopMeta } from "../types.js";
 import { t } from "../i18n/index.js";
 
+export function unescapeCommand(str: string): string {
+  return str
+    .replace(/\\\\/g, "\x00")
+    .replace(/\\"/g, '"')
+    .replace(/\x00/g, "\\");
+}
+
 export function quoteArg(arg: string): string {
   return /[\s"]/.test(arg) ? `"${arg.replace(/"/g, '\\"')}"` : arg;
 }
 
 export function commandLine(command: string, args: string[]): string {
-  return [command, ...args.map(quoteArg)].join(" ").trim();
+  return [unescapeCommand(command), ...args.map((a) => quoteArg(unescapeCommand(a)))].join(" ").trim();
 }
 
 export function formatCmd(command: string, args: string[], max = 24): string {
