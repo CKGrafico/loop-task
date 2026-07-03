@@ -17,9 +17,8 @@ export function TabBar(props: {
   activeTab: TabName;
   onTabChange: (tab: TabName) => void;
   counts?: Partial<Record<TabName, number>>;
-  alerts?: Partial<Record<TabName, boolean>>;
 }): React.ReactNode {
-  const { activeTab, counts, alerts } = props;
+  const { activeTab, counts } = props;
 
   return (
     <Box gap={1}>
@@ -36,9 +35,6 @@ export function TabBar(props: {
             >
               {` ${label} `}
             </Text>
-            {alerts?.[tab.key] ? (
-              <Text color={theme.semantic.danger}>{"●"}</Text>
-            ) : null}
           </Box>
         );
       })}

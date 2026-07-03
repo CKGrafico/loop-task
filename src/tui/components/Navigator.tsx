@@ -10,7 +10,7 @@ import { t } from "../../i18n/index.js";
 const DESC_WIDTH = 32;
 const SINCE_WIDTH = 13;
 const RUNS_WIDTH = 4;
-const SKIPPED_WIDTH = 3;
+const SKIPPED_WIDTH = 4;
 const STATUS_WIDTH = 8;
 const COL_GAP = 1;
 const LIMIT = 15;
@@ -84,8 +84,8 @@ export function Navigator(props: {
         <Text color={dotColor}>{dotChar}</Text>
         <Text color={fg}>{desc.padEnd(DESC_WIDTH + COL_GAP)}</Text>
         <Text color={fg}>{since.padEnd(SINCE_WIDTH + COL_GAP)}</Text>
-        <Text color={fg}>{String(loop.runCount).padStart(RUNS_WIDTH + COL_GAP)}</Text>
-        <Text color={fg}>{String(loop.skippedCount).padStart(SKIPPED_WIDTH + COL_GAP)}</Text>
+        <Text color={fg}>{String(loop.runCount).padStart(RUNS_WIDTH) + " ".repeat(COL_GAP)}</Text>
+        <Text color={fg}>{String(loop.skippedCount).padStart(SKIPPED_WIDTH) + " ".repeat(COL_GAP)}</Text>
         <Text color={isSelected ? theme.text.inverse : sColor}>{sLabel.padEnd(STATUS_WIDTH + COL_GAP)}</Text>
         <Text color={fg}>{timing}</Text>
         {loop.status === "running" ? (
@@ -111,8 +111,8 @@ export function Navigator(props: {
             <Text color={theme.text.muted}>{"  "}</Text>
             <Text color={theme.text.muted}>{t("board.headerDescription").padEnd(DESC_WIDTH + COL_GAP)}</Text>
             <Text color={theme.text.muted}>{t("board.headerSince").padEnd(SINCE_WIDTH + COL_GAP)}</Text>
-            <Text color={theme.text.muted}>{t("board.headerRuns").padStart(RUNS_WIDTH + COL_GAP)}</Text>
-            <Text color={theme.text.muted}>{t("board.headerSkipped").padStart(SKIPPED_WIDTH + COL_GAP)}</Text>
+            <Text color={theme.text.muted}>{t("board.headerRuns").padStart(RUNS_WIDTH) + " ".repeat(COL_GAP)}</Text>
+            <Text color={theme.text.muted}>{t("board.headerSkipped").padStart(SKIPPED_WIDTH) + " ".repeat(COL_GAP)}</Text>
             <Text color={theme.text.muted}>{t("board.headerStatus").padEnd(STATUS_WIDTH + COL_GAP)}</Text>
             <Text color={theme.text.muted}>{t("board.headerTiming")}</Text>
           </Box>

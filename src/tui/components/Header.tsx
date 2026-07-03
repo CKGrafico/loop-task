@@ -12,7 +12,6 @@ interface HeaderProps {
   activeTab: TabName;
   onTabChange: (tab: TabName) => void;
   tabCounts?: Partial<Record<TabName, number>>;
-  tabAlerts?: Partial<Record<TabName, boolean>>;
 }
 
 function daemonSymbol(status: DaemonStatus): string {
@@ -72,7 +71,6 @@ export function Header(props: HeaderProps): React.ReactNode {
           activeTab={props.activeTab}
           onTabChange={props.onTabChange}
           counts={props.tabCounts}
-          alerts={props.tabAlerts}
         />
       </Box>
 

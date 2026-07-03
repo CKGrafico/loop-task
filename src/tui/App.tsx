@@ -646,7 +646,6 @@ export function App(props: { onQuit: () => void }): React.ReactNode {
     idle: loops.filter((l) => l.status === "idle").length,
   };
   const tabCounts = { loops: loops.length, tasks: tasks.length, projects: projects.length };
-  const tabAlerts = { loops: loops.some((l) => l.lastExitCode != null && l.lastExitCode !== 0) };
 
   return (
     <Box flexDirection="column" width="100%" height={process.stdout.rows || 24} backgroundColor={theme.bg.base}>
@@ -656,7 +655,6 @@ export function App(props: { onQuit: () => void }): React.ReactNode {
         activeTab={activeTab}
         onTabChange={setActiveTab}
         tabCounts={tabCounts}
-        tabAlerts={tabAlerts}
       />
 
       <Box key={viewKey(view, editTarget, editTask)} flexGrow={1}>
