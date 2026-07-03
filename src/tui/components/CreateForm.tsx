@@ -49,6 +49,17 @@ export function CreateView(props: CreateViewProps): React.ReactNode {
 
   const taskModeInitial = initial.taskMode === "existing" ? "Existing task" : "Inline command";
 
+  // Resolve task display name on edit mode: if the user hasn't picked a task
+  // via the picker (selectedTaskName is null), look it up from the tasks list.
+  // Always format as "<name> (<short id>)" for consistency.
+  const resolvedTaskName = useMemo(() => {
+    const tid = selectedTaskId ?? initial.taskId;
+    if (!tid) return null;
+    const displayName = selectedTaskName ?? tasks.find((t) => t.id === tid)?.name;
+    if (displayName) return `${displayName} (${tid.slice(0, 8)})`;
+    return `${tid.slice(0, 8)}`;
+  }, [selectedTaskName, selectedTaskId, initial.taskId, tasks]);
+
   const steps = useMemo<WizardStepConfig[]>(() => {
     const list: WizardStepConfig[] = [
       {
@@ -71,18 +82,18 @@ export function CreateView(props: CreateViewProps): React.ReactNode {
       },
       {
         key: "taskId",
-        prompt: selectedTaskName
-          ? t("board.selectedTask", { name: selectedTaskName })
+        prompt: resolvedTaskName
+          ? t("board.selectedTask", { name: resolvedTaskName })
           : t("board.chooseTask"),
         hint: t("board.hintTask"),
         required: true,
         inputType: "text",
-        defaultValue: selectedTaskName ?? selectedTaskId ?? initial.taskId ?? undefined,
+        defaultValue: initial.taskId ?? undefined,
         skip: (values) => !values.taskMode?.includes("Existing"),
         onActivate: () => setTaskPickerOpen(true),
         renderCustom: ({ isActive }) => (
           <TaskPickerField
-            taskName={selectedTaskName}
+            taskName={resolvedTaskName}
             hint={t("board.hintTask")}
             isActive={isActive}
           />
@@ -155,7 +166,7 @@ export function CreateView(props: CreateViewProps): React.ReactNode {
       },
     ];
     return list;
-  }, [taskModeInitial, selectedTaskId, selectedTaskName, initial, commandValue]);
+  }, [taskModeInitial, selectedTaskId, resolvedTaskName, initial, commandValue]);
 
   const handleComplete = useCallback(
     (values: Record<string, string>) => {

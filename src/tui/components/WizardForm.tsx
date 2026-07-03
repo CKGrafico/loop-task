@@ -4,6 +4,7 @@ import { darkTheme as theme } from "../theme.js";
 import { t } from "../../i18n/index.js";
 import { useLoopFormValidation, type CreateField } from "../../hooks/useLoopFormValidation.js";
 import { copyToClipboard } from "../../shared/clipboard.js";
+import { sanitizePaste } from "../utils/paste.js";
 
 export interface WizardStepConfig {
   key: string;
@@ -71,28 +72,30 @@ function SelectField({
   selectedIndex: number;
   isActive: boolean;
 }): React.ReactNode {
+  const currentValue = suggestions[selectedIndex] ?? suggestions[0] ?? "";
+  const chevronValue = `\u2039 ${currentValue} \u203A`;
+
   if (!isActive) {
     return (
-      <Text color={theme.text.secondary}>
-        {suggestions[selectedIndex] ?? suggestions[0] ?? ""}
-      </Text>
+      <Text color={theme.text.secondary}>{chevronValue}</Text>
     );
   }
   return (
     <Box flexDirection="column">
-      {suggestions.map((s, i) => {
-        const isSel = i === selectedIndex;
-        return (
-          <Box key={s}>
-            <Text color={isSel ? theme.accent.brand : theme.text.muted}>
-              {isSel ? "\u276F " : "  "}
-            </Text>
-            <Text color={isSel ? theme.accent.brand : theme.text.secondary}>
-              {s}
-            </Text>
-          </Box>
-        );
-      })}
+      <Box
+        borderStyle="single"
+        borderColor={theme.accent.brand}
+        backgroundColor={theme.bg.input}
+        paddingLeft={1}
+        overflow="hidden"
+        width="100%"
+      >
+        <Text color={theme.text.primary}>{chevronValue}</Text>
+      </Box>
+      <Box marginTop={0}>
+        <Text color={theme.accent.brand}>{"\u203a "}</Text>
+        <Text color={theme.text.muted}>{t("wizard.selectFieldHint")}</Text>
+      </Box>
     </Box>
   );
 }
@@ -295,6 +298,18 @@ export function WizardForm(props: WizardFormProps): React.ReactNode {
     }
     if (key.delete || key.backspace) {
       setValue(step.key, valueFor(step).slice(0, -1));
+      return;
+    }
+    // Bracketed paste: content wrapped in ESC[200~ ... ESC[201~
+    if (input.includes("\x1b[200~")) {
+      setValue(step.key, valueFor(step) + sanitizePaste(input));
+      return;
+    }
+    // Multi-char containing CR/LF with no bracketed markers — ignore
+    if (input.length > 1 && (input.includes("\r") || input.includes("\n"))) return;
+    // Multi-char printable input = unbracketed single-line paste (e.g. right-click)
+    if (input.length > 1 && !key.meta) {
+      setValue(step.key, valueFor(step) + sanitizePaste(input));
       return;
     }
     if (input.length === 1 && input >= " " && input <= "~") {
