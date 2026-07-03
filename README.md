@@ -7,6 +7,8 @@
 
 `loop-task` is a cross-platform CLI that runs shell commands at human-readable intervals. Create loops in the background, manage them from an interactive TUI board, or run them in the foreground. It is the **heartbeat** primitive for [loop engineering](#loop-engineering): instead of running a task by hand every time, you schedule it once and let it run.
 
+**[loop.ckgrafico.com](https://loop.ckgrafico.com)**
+
 [![npm version](https://img.shields.io/npm/v/loop-task?style=flat-square&color=black)](https://www.npmjs.com/package/loop-task)
 [![npm downloads](https://img.shields.io/npm/dm/loop-task?style=flat-square&color=black)](https://www.npmjs.com/package/loop-task)
 [![license](https://img.shields.io/npm/l/loop-task?style=flat-square&color=black)](./LICENSE)

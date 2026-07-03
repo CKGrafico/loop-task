@@ -1,0 +1,263 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>loop-task — Run anything on a cadence</title>
+  <meta name="description" content="Loop engineering toolkit. Run any command on a cadence, in the background, managed from a terminal board. Schedule tests, builds, syncs, or agent prompts." />
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23fbbf24'/%3E%3Ctext x='32' y='45' font-size='36' text-anchor='middle'%3E%F0%9F%A7%B5%3C/text%3E%3C/svg%3E" />
+  <meta property="og:title" content="loop-task — Run anything on a cadence" />
+  <meta property="og:description" content="Loop engineering toolkit: background daemon, terminal board, persistence across reboots. Schedule tests, builds, syncs, or agent prompts." />
+  <meta property="og:url" content="https://loop.ckgrafico.com" />
+  <meta name="twitter:card" content="summary" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+
+  <!-- ======================== NAV ======================== -->
+  <header class="nav">
+    <div class="container nav-inner">
+      <a class="nav-brand" href="#top">
+        <span class="brand-mark" aria-hidden="true">🧵</span>
+        <span>loop-task</span>
+      </a>
+      <nav class="nav-links">
+        <a href="#board">The board</a>
+        <a href="#features">Features</a>
+        <a href="#commands">Commands</a>
+        <a href="https://github.com/CKGrafico/loop-task" target="_blank" rel="noopener">GitHub</a>
+        <a href="https://www.npmjs.com/package/loop-task" target="_blank" rel="noopener">npm</a>
+      </nav>
+    </div>
+  </header>
+
+  <main id="top">
+    <!-- ======================== HERO ======================== -->
+    <section class="hero">
+      <div class="container hero-inner">
+        <div class="hero-mark" aria-hidden="true">every 30m → run</div>
+        <h1>Run anything <span class="accent">on a cadence</span></h1>
+        <p class="hero-sub">
+          A loop engineering toolkit for your terminal. Define a purpose, give it an interval,
+          and let it iterate — tests, builds, syncs, health checks, or coding-agent prompts.
+          Background daemon, interactive board, no cron files.
+        </p>
+
+        <div class="install-box" role="group" aria-label="Install command">
+          <span class="install-prompt">$</span>
+          <code>npm install -g loop-task</code>
+          <button class="copy-btn" data-copy="npm install -g loop-task" aria-label="Copy install command">
+            <svg class="icon-copy" width="16" height="16" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"/><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"/></svg>
+            <svg class="icon-check" width="16" height="16" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M13.78 4.22a.75.75 0 0 1 0 1.06l-7.25 7.25a.75.75 0 0 1-1.06 0L2.22 9.28a.751.751 0 0 1 1.06-1.06L6 10.94l6.72-6.72a.75.75 0 0 1 1.06 0Z"/></svg>
+          </button>
+        </div>
+
+        <div class="hero-badges">
+          <a href="https://www.npmjs.com/package/loop-task" target="_blank" rel="noopener"><img src="https://img.shields.io/npm/v/loop-task?style=flat-square&color=fbbf24&labelColor=111827" alt="npm version" /></a>
+          <a href="https://www.npmjs.com/package/loop-task" target="_blank" rel="noopener"><img src="https://img.shields.io/npm/dm/loop-task?style=flat-square&color=fbbf24&labelColor=111827" alt="npm downloads" /></a>
+          <a href="https://github.com/CKGrafico/loop-task/blob/main/LICENSE" target="_blank" rel="noopener"><img src="https://img.shields.io/npm/l/loop-task?style=flat-square&color=fbbf24&labelColor=111827" alt="license" /></a>
+        </div>
+
+        <p class="hero-platforms">macOS &middot; Linux &middot; Windows — loops survive reboots</p>
+      </div>
+    </section>
+
+    <!-- ======================== TERMINAL DEMO ======================== -->
+    <section class="terminal-section">
+      <div class="container">
+        <div class="terminal reveal" aria-label="Terminal demo of loop-task">
+          <div class="terminal-bar">
+            <span class="dot red"></span><span class="dot yellow"></span><span class="dot green"></span>
+            <span class="terminal-title">~ — loop-task</span>
+          </div>
+          <div class="terminal-body" id="terminal-body" aria-live="polite"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ======================== LOOP ENGINEERING ======================== -->
+    <section class="section" id="loop-engineering">
+      <div class="container narrow reveal">
+        <h2>What's loop engineering?</h2>
+        <p class="section-sub">
+          <strong>Loop engineering</strong> is designing systems that run work on a cadence instead of
+          triggering each run yourself. A <em>loop</em> is a recurring goal: you define a purpose, give it
+          an interval, and let it iterate. <code>loop-task</code> is the heartbeat primitive — inspired by
+          Addy Osmani's <a href="https://addyosmani.com/blog/loop-engineering/" target="_blank" rel="noopener">Loop Engineering</a>.
+        </p>
+      </div>
+    </section>
+
+    <!-- ======================== TUI BOARD ======================== -->
+    <section class="section" id="board">
+      <div class="container">
+        <h2 class="reveal">One board for every loop</h2>
+        <p class="section-sub reveal">Type <code>loop-task</code> and you get a command-first terminal board — inspired by lazygit, Claude Code, and <code>gh</code>. Keyboard-only, always-focused input, live status.</p>
+
+        <div class="board reveal" role="img" aria-label="Recreation of the loop-task terminal board">
+          <div class="board-header">
+            <span class="b-brand">loop-task</span>
+            <span class="b-dim">· run anything on a cadence</span>
+            <span class="b-right"><span class="b-ok">● daemon</span> <span class="b-dim">4 loops</span></span>
+          </div>
+          <div class="board-tabs">
+            <span class="b-tab active-loop">Loops</span>
+            <span class="b-tab task">Tasks</span>
+            <span class="b-tab project">Projects</span>
+          </div>
+          <div class="board-panels">
+            <div class="board-list">
+              <div class="b-row selected"><span class="b-spinner">⠸</span> <span class="b-name">npm test</span><span class="b-meta">30m · <span class="b-ok">running</span></span></div>
+              <div class="b-row"><span class="b-dot ok">●</span> <span class="b-name">health check</span><span class="b-meta">10s · <span class="b-ok">running</span></span></div>
+              <div class="b-row"><span class="b-dot idle">●</span> <span class="b-name">sync export</span><span class="b-meta">1h · <span class="b-idle">idle</span></span></div>
+              <div class="b-row"><span class="b-dot paused">●</span> <span class="b-name">agent backlog</span><span class="b-meta">30m · <span class="b-paused">paused</span></span></div>
+            </div>
+            <div class="board-detail">
+              <div class="b-field"><span class="b-label">command</span> npm test</div>
+              <div class="b-field"><span class="b-label">interval</span> 30m</div>
+              <div class="b-field"><span class="b-label">project</span> <span class="b-project">web</span></div>
+              <div class="b-field"><span class="b-label">history</span> <span class="b-spark">▂▄▆▄▇▆█▅</span> <span class="b-ok">✓ 12</span> <span class="b-danger">✗ 1</span></div>
+              <div class="b-field"><span class="b-label">next run</span> in 12m 30s</div>
+            </div>
+          </div>
+          <div class="board-input">
+            <span class="b-bar">│</span>
+            <span class="b-placeholder">Start typing an action or say help...<span class="b-cursor"></span></span>
+          </div>
+          <div class="board-hints">
+            <span>······· <strong>esc</strong> cancel</span>
+            <span><strong>tab</strong> panels&nbsp;&nbsp;<strong>ctrl+p</strong> commands</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ======================== FEATURES ======================== -->
+    <section class="section" id="features">
+      <div class="container">
+        <h2 class="reveal">Everything a loop needs</h2>
+        <div class="cards-grid reveal">
+          <div class="card c-loop">
+            <h3>Background daemon</h3>
+            <p>One process manages every loop. Close the terminal, loops keep running — state persists to disk and survives reboots.</p>
+          </div>
+          <div class="card c-task">
+            <h3>Task chaining</h3>
+            <p>On-success and on-failure chains with context sharing — build pipelines out of loops.</p>
+          </div>
+          <div class="card c-project">
+            <h3>Projects</h3>
+            <p>Organize loops into color-coded projects and scope commands with <code>--project</code>.</p>
+          </div>
+          <div class="card c-brand">
+            <h3>Human intervals</h3>
+            <p><code>10s</code>, <code>5m</code>, <code>1h</code>, <code>1d</code>, <code>1w</code> — no cron syntax to remember, no cron files to maintain.</p>
+          </div>
+          <div class="card c-loop">
+            <h3>HTTP API</h3>
+            <p>REST + SSE endpoints for programmatic control — wire loops into anything.</p>
+          </div>
+          <div class="card c-task">
+            <h3>Agent-ready</h3>
+            <p>Built for coding agents: let Claude Code, Codex, or OpenCode chip away at a backlog every 30 minutes.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ======================== EXAMPLES ======================== -->
+    <section class="section" id="examples">
+      <div class="container">
+        <h2 class="reveal">Loops you'll actually run</h2>
+        <div class="code-window reveal">
+          <div class="terminal-bar">
+            <span class="dot red"></span><span class="dot yellow"></span><span class="dot green"></span>
+            <span class="terminal-title">examples</span>
+          </div>
+          <pre class="code-body"><code><span class="c"># Run the test suite every 30 minutes</span>
+<span class="p">$</span> loop-task new <span class="i">30m</span> -- npm test
+
+<span class="c"># Poll a deploy every 10 seconds until you stop it</span>
+<span class="p">$</span> loop-task new <span class="i">10s</span> -- curl -sf https://example.com/health
+
+<span class="c"># Re-sync a data export once an hour, scoped to a project</span>
+<span class="p">$</span> loop-task new <span class="i">1h</span> <span class="f">--project</span> etl -- ./scripts/sync.sh
+
+<span class="c"># Have a coding agent chip away at a backlog every 30 minutes</span>
+<span class="p">$</span> loop-task new <span class="i">30m</span> -- opencode run <span class="s">"find missing translations and translate them, 3 max"</span>
+
+<span class="c"># Run immediately, then every hour</span>
+<span class="p">$</span> loop-task new <span class="f">--now</span> <span class="i">1h</span> -- npm test
+
+<span class="c"># Run up to 5 times, then stop</span>
+<span class="p">$</span> loop-task run <span class="f">--max-runs</span> 5 <span class="i">5m</span> -- npm test</code></pre>
+        </div>
+      </div>
+    </section>
+
+    <!-- ======================== COMMANDS ======================== -->
+    <section class="section" id="commands">
+      <div class="container">
+        <h2 class="reveal">Commands</h2>
+        <div class="api-table reveal">
+          <div class="api-row"><code>loop-task</code><p>Open the interactive board.</p></div>
+          <div class="api-row"><code>loop-task start</code><p>Start the daemon and restore persisted loops.</p></div>
+          <div class="api-row"><code>loop-task new &lt;interval&gt; -- &lt;command&gt;</code><p>Create a background loop.</p></div>
+          <div class="api-row"><code>loop-task run &lt;interval&gt; -- &lt;command&gt;</code><p>Run a loop in the foreground.</p></div>
+          <div class="api-row"><code>loop-task stop &lt;id&gt;</code><p>Stop and interrupt a loop.</p></div>
+          <div class="api-row"><code>loop-task status [--json]</code><p>Show status of every loop.</p></div>
+          <div class="api-row"><code>loop-task export / import</code><p>Move loop configs between machines as JSON.</p></div>
+          <div class="api-row"><code>loop-task project …</code><p>Create, rename, color, and delete projects.</p></div>
+          <div class="api-row"><code>loop-task api</code><p>Show the HTTP API endpoints (REST + SSE).</p></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ======================== DEMO GIF ======================== -->
+    <section class="section">
+      <div class="container narrow reveal">
+        <h2>See it run</h2>
+        <img class="demo-gif" src="assets/demo.gif" alt="loop-task terminal board demo" loading="lazy" />
+      </div>
+    </section>
+
+    <!-- ======================== CTA ======================== -->
+    <section class="section cta-section" id="get-started">
+      <div class="container narrow center reveal">
+        <h2>Start looping</h2>
+        <div class="install-box big" role="group" aria-label="Install command">
+          <span class="install-prompt">$</span>
+          <code>npm install -g loop-task</code>
+          <button class="copy-btn" data-copy="npm install -g loop-task" aria-label="Copy install command">
+            <svg class="icon-copy" width="16" height="16" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"/><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"/></svg>
+            <svg class="icon-check" width="16" height="16" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M13.78 4.22a.75.75 0 0 1 0 1.06l-7.25 7.25a.75.75 0 0 1-1.06 0L2.22 9.28a.751.751 0 0 1 1.06-1.06L6 10.94l6.72-6.72a.75.75 0 0 1 1.06 0Z"/></svg>
+          </button>
+        </div>
+        <p class="cta-note">Requires Node.js 20+ &middot; MIT licensed &middot; then just type <code>loop-task</code></p>
+        <div class="cta-links">
+          <a class="btn primary" href="https://github.com/CKGrafico/loop-task" target="_blank" rel="noopener">Star on GitHub</a>
+          <a class="btn" href="https://github.com/CKGrafico/loop-task#readme" target="_blank" rel="noopener">Read the full docs</a>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- ======================== FOOTER ======================== -->
+  <footer class="footer">
+    <div class="container footer-inner">
+      <div class="footer-brand">
+        <span class="brand-mark small" aria-hidden="true">🧵</span>
+        <span>loop-task</span>
+      </div>
+      <p>MIT © <a href="https://ckgrafico.com" target="_blank" rel="noopener">ckgrafico</a></p>
+      <div class="footer-links">
+        <a href="https://ckgrafico.com" target="_blank" rel="noopener">Author</a>
+        <a href="https://github.com/CKGrafico/loop-task" target="_blank" rel="noopener">GitHub</a>
+        <a href="https://www.npmjs.com/package/loop-task" target="_blank" rel="noopener">npm</a>
+      </div>
+    </div>
+  </footer>
+
+  <script src="script.js"></script>
+</body>
+</html>
