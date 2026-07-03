@@ -4,6 +4,7 @@ import { darkTheme as theme } from "../theme.js";
 import { t } from "../../i18n/index.js";
 import { useLoopFormValidation, type CreateField } from "../../hooks/useLoopFormValidation.js";
 import { copyToClipboard } from "../../shared/clipboard.js";
+import { sanitizePaste } from "../utils/paste.js";
 
 export interface WizardStepConfig {
   key: string;
@@ -295,6 +296,18 @@ export function WizardForm(props: WizardFormProps): React.ReactNode {
     }
     if (key.delete || key.backspace) {
       setValue(step.key, valueFor(step).slice(0, -1));
+      return;
+    }
+    // Bracketed paste: content wrapped in ESC[200~ ... ESC[201~
+    if (input.includes("\x1b[200~")) {
+      setValue(step.key, valueFor(step) + sanitizePaste(input));
+      return;
+    }
+    // Multi-char containing CR/LF with no bracketed markers — ignore
+    if (input.length > 1 && (input.includes("\r") || input.includes("\n"))) return;
+    // Multi-char printable input = unbracketed single-line paste (e.g. right-click)
+    if (input.length > 1 && !key.meta) {
+      setValue(step.key, valueFor(step) + sanitizePaste(input));
       return;
     }
     if (input.length === 1 && input >= " " && input <= "~") {

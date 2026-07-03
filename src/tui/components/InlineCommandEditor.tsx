@@ -3,6 +3,7 @@ import { Box, Text, useInput } from "ink";
 import { darkTheme as theme } from "../theme.js";
 import { t } from "../../i18n/index.js";
 import { copyToClipboard } from "../../shared/clipboard.js";
+import { sanitizePaste } from "../utils/paste.js";
 
 const MAX_VISIBLE = 8;
 
@@ -97,6 +98,34 @@ export function InlineCommandEditor({
           setLines(next);
           setCursorRow((r) => r - 1);
           setCursorCol(prev.length);
+          emit(next);
+        }
+        return;
+      }
+      // Bracketed paste: content wrapped in ESC[200~ ... ESC[201~
+      if (input.includes("\x1b[200~")) {
+        const pasted = sanitizePaste(input);
+        if (pasted) {
+          const next = [...lines];
+          const line = next[cursorRow] ?? "";
+          next[cursorRow] = line.slice(0, cursorCol) + pasted + line.slice(cursorCol);
+          setLines(next);
+          setCursorCol((c) => c + pasted.length);
+          emit(next);
+        }
+        return;
+      }
+      // Multi-char containing CR/LF with no bracketed markers — ignore
+      if (input.length > 1 && (input.includes("\r") || input.includes("\n"))) return;
+      // Multi-char printable input = unbracketed single-line paste (e.g. right-click)
+      if (input.length > 1 && !key.meta) {
+        const pasted = sanitizePaste(input);
+        if (pasted) {
+          const next = [...lines];
+          const line = next[cursorRow] ?? "";
+          next[cursorRow] = line.slice(0, cursorCol) + pasted + line.slice(cursorCol);
+          setLines(next);
+          setCursorCol((c) => c + pasted.length);
           emit(next);
         }
         return;
