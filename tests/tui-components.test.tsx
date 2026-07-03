@@ -30,12 +30,9 @@ import type { CommandContext, ConfirmState } from "../src/tui/types.js";
 import { darkTheme as theme } from "../src/tui/theme.js";
 import {
   resolveInputOwner,
-  cycleProjectSortMode,
-  cycleProjectHasLoopsFilter,
-  cycleProjectIsSystemFilter,
 } from "../src/tui/state.js";
 import { statusColor as themeStatusColor } from "../src/tui/theme.js";
-import { statusColor as formatStatusColor, formatRunDuration, timeAgo } from "../src/tui/format.js";
+import { statusColor as formatStatusColor, formatRunDuration } from "../src/tui/format.js";
 import { t } from "../src/i18n/index.js";
 
 describe("TabBar", () => {
@@ -300,7 +297,7 @@ describe("CommandInput", () => {
         />
       </Box>,
     );
-    expect(lastFrame()).toContain("Start typing");
+    expect(lastFrame()).toContain("Type a command");
   });
 
   it("renders confirm prompt with cancel focused (default)", () => {
