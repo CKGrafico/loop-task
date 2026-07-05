@@ -560,7 +560,7 @@
   "wizard.runNowNow": "Run now, then every interval",
   "wizard.cwdPrompt": "Working directory? (optional)",
   "wizard.cwdHint": "Directory the command runs in",
-  "wizard.descriptionPrompt": "Description? (optional)",
+  "wizard.descriptionPrompt": "Description?",
   "wizard.descriptionHint": "Short label shown in the list",
   "wizard.maxRunsPrompt": "Max runs? (optional)",
   "wizard.maxRunsHint": "Stop after N runs. Leave blank to run forever",

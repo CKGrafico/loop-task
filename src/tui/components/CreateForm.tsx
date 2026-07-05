@@ -165,7 +165,7 @@ export function CreateView(props: CreateViewProps): React.ReactNode {
         key: "description",
         prompt: t("wizard.descriptionPrompt"),
         hint: t("wizard.descriptionHint"),
-        required: false,
+        required: true,
         inputType: "text",
         defaultValue: initial.description ?? undefined,
       },
