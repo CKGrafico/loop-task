@@ -1,15 +1,17 @@
 {
   "schema": 1,
-  "generatedAt": "2026-06-29T21:23:07.683Z",
-  "onboardVersion": "1.0.0",
+  "generatedAt": "2026-07-05T10:54:12.089Z",
+  "onboardVersion": "1.2.0",
   "opencodeVersion": "1.16.2",
   "wizard": {
     "platform": "github",
+    "backlogPlatform": "github",
+    "repoPlatform": "github",
     "sourceMode": "current",
     "sourceRoots": [
       "C:\\Projects\\Personal\\loop-cli"
     ],
-    "maxConcurrentAgents": 3,
+    "maxConcurrentAgents": 4,
     "preserved": {
       "design": true,
       "architecture": true,
@@ -22,7 +24,7 @@
     "additionalSkillsProvider": "npx-skills",
     "models": {
       "plan": "opencode-go/glm-5.2",
-      "build": "opencode/glm-5.1",
+      "build": "opencode-go/glm-5.1",
       "fast": "opencode/big-pickle"
     },
     "optionalTools": {

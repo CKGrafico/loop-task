@@ -12,7 +12,7 @@
   "experimental": {
     "mcp_timeout": 300000
   },
-  "model": "opencode/glm-5.1",
+  "model": "opencode-go/glm-5.1",
   "mcp": {
     "codegraph": {
       "type": "local",

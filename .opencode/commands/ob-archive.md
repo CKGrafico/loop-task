@@ -2,13 +2,22 @@
 description: Archive the oldest merged unarchived OpenSpec change and update documentation.
 ---
 
-> **Command aliases:** Loaded skills may reference `/opsx-propose`, `/opsx-apply`, `/opsx-archive`, or `/opsx-explore`. Always substitute: `/opsx-propose` -> `/ob-propose`, `/opsx-apply` -> `/ob-apply`, `/opsx-archive` -> `/ob-archive`, `/opsx-explore` -> `/ob-explore`. Never mention the `opsx-` names in your responses to the user.
-
 Apply `## Optimizations` from AGENTS.md (RTK, codegraph, memory, etc.).
+<!-- OB-CMD-RTK-START -->
+Prefix all bash commands with `rtk` when RTK is enabled.
+<!-- OB-CMD-RTK-END -->
 
 ---
 
 Find the oldest unarchived OpenSpec change that has a completed PR, archive it, update docs, and open an archive PR. No input required.
+
+<!-- OB-CMD-CODEGRAPH-START -->
+Use codegraph MCP tools (NOT CLI commands). Do NOT run `codegraph` in bash — use the MCP tools directly: `codegraph_search`, `codegraph_impact`, `codegraph_callers`, `codegraph_callees`, `codegraph_node`.
+<!-- OB-CMD-CODEGRAPH-END -->
+
+<!-- OB-CMD-MEMORY-START -->
+Use basic-memory MCP tools (NOT CLI commands). Do NOT run `basic-memory` in bash — use the MCP tools directly: `write_note`, `edit_note`, `search`, `build_context`, `recent_activity`.
+<!-- OB-CMD-MEMORY-END -->
 
 **Steps**
 
@@ -16,12 +25,15 @@ Find the oldest unarchived OpenSpec change that has a completed PR, archive it, 
 
    ```bash
    REPO_ROOT="$(git rev-parse --show-toplevel)"
+   DEFAULT_BRANCH="$(git symbolic-ref --short refs/remotes/origin/HEAD 2>/dev/null | sed 's|^origin/||')"
+   [ -z "$DEFAULT_BRANCH" ] && DEFAULT_BRANCH="main"
    ```
 
-   If not on `main` with uncommitted changes, stash them (`git stash push -m "WIP before archive"`) and warn the user before exit. Then sync `main`:
+   1. If the tree has uncommitted changes: `git stash push -u -m "WIP before archive"` and tell the user their work is stashed (it is restored in step 6).
+   2. Sync the default branch (skip the pull if there is no `origin` remote):
 
    ```bash
-   git switch main && git pull origin main
+   git switch "$DEFAULT_BRANCH" && git pull origin "$DEFAULT_BRANCH"
    ```
 
 <!-- OB-PLATFORM-ARCHIVE-START -->
@@ -30,7 +42,7 @@ Find the oldest unarchived OpenSpec change that has a completed PR, archive it, 
    List unarchived changes (top-level only, excludes `archive/`):
 
    ```bash
-   find "$REPO_ROOT/openspec/changes" -mindepth 1 -maxdepth 1 -type d -name 'us-*' | sort
+   find "$REPO_ROOT/openspec/changes" -mindepth 1 -maxdepth 1 -type d -not -name 'archive' | sort
    ```
 
    If empty, report a blocker and stop.
@@ -54,7 +66,7 @@ Find the oldest unarchived OpenSpec change that has a completed PR, archive it, 
 
    ```text
    Oldest unarchived merged change found:
-     ID: us-{id}-{slug}
+     ID: {change-id}
      Title: {title from resolved PR}
      PR ID: {pullRequestId}
      Merged: {mergedAt}
@@ -67,7 +79,7 @@ Find the oldest unarchived OpenSpec change that has a completed PR, archive it, 
 4. **Archive the change**
 
    ```bash
-   git checkout -b archive/{id}-{slug}
+   git checkout -b archive/{change-id}
    ```
 
    Load `@openspec-archive-change` skill and follow it to archive the change.
@@ -80,15 +92,15 @@ Find the oldest unarchived OpenSpec change that has a completed PR, archive it, 
 
    ```bash
    git add -A
-   git commit -m "archive: {title} ({id})"
-   git push origin archive/{id}-{slug}
+   git commit -m "archive: {title} ({change-id})"
+   git push origin archive/{change-id}
 
    gh pr create \
       --repo {owner}/{repo} \
-      --base main \
-      --head archive/{id}-{slug} \
-      --title "archive: {title} ({id})" \
-      --body "Archive SDD artifacts for {id} after merge."
+      --base "$DEFAULT_BRANCH" \
+      --head archive/{change-id} \
+      --title "archive: {title} ({change-id})" \
+      --body "Archive SDD artifacts for {change-id} after merge."
    ```
 
    If work was stashed in step 1, restore it after the PR is created unless the user opts out.
@@ -100,7 +112,7 @@ Find the oldest unarchived OpenSpec change that has a completed PR, archive it, 
    ```text
    Archive complete
 
-     Change ID: us-{id}-{slug}
+     Change ID: {change-id}
      Title: {title}
      Original PR: {original-pr-link}
      Archive PR: {archive-pr-link}

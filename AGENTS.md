@@ -15,6 +15,8 @@ This is the agent orchestration layer for your project. It provides:
 
 Load DESIGN.md for design principles and guidelines. Load ARCHITECTURE.md for system architecture and component interactions. These files are generated during initialization and updated as the codebase evolves.
 
+**Command aliases:** OpenSpec skills may reference `/opsx-propose`, `/opsx-apply`, `/opsx-archive`, or `/opsx-explore`. Always substitute them with `/ob-propose`, `/ob-apply`, `/ob-archive`, `/ob-explore` respectively, and never mention the `opsx-` names to the user.
+
 ## I Am the Lead, Full Workflow Ownership
 
 <!-- OB-PLATFORM-WORKFLOW-START -->
@@ -26,7 +28,7 @@ Trigger patterns, I recognize ALL of these, exact wording does not matter:
 - `I've added comments to the PR` → read PR comments → fix → update PR
 - Any GitHub PR URL in a feedback/fix request (e.g. "check comments", "fix PR feedback") → run PR Feedback Loop
 
-**A GitHub URL anywhere in the user's message is always a trigger, regardless of surrounding words.**
+**A GitHub URL in the user's message is a strong trigger — follow the pipeline unless the user explicitly asks for analysis or context only.**
 <!-- OB-PLATFORM-WORKFLOW-END -->
 
 **Never delegate without a plan. Default to specialists for implementation. If a subagent wave repeatedly fails (a group errors after one retry, or a full wave makes zero progress), stop forcing it: report the failure, then continue in the main session or ask the user whether to retry later.**
@@ -44,16 +46,13 @@ Before spawning implementation workers:
 
 Parallel execution uses OpenCode's native `task` tool — no external plugin, no worktrees. The lead spawns subagents in **waves**: a set of foreground `task()` calls in a single turn that run concurrently and return their results to the lead. Subagents are navigable (`ctrl+x ↓`, `←`/`→`) and ephemeral (one batch, then they exit).
 
-**How a wave works:**
+**The full wave protocol is defined in `/ob-apply` — that command is authoritative during implementation.** Key mechanics:
 - **Push assignment.** Each subagent's task IDs + text go in its spawn prompt — there is no claim step, so a worker can never sit idle waiting for work.
-- **Eligibility.** A task runs only when every `depends_on` is done.
-- **Conflict safety (no worktrees).** Concurrent subagents must touch disjoint files (codegraph impact → `touches` globs → `git diff`). Same-file tasks are packed into one worker and run sequentially.
-- **Checkpoints.** The lead commits each group on success; on failure it reverts that group's paths and retries once.
-- **Per-agent model.** Each engineer's model is set in its own agent file (chosen by tier when the engineer is created); the lead spawns the plain agent name.
+- **Per-agent model.** Tasks name a tier-suffixed agent (e.g. `backend-engineer.build`); the `ob-subagent-tiers` plugin injects those variants at startup with models from `wizard.models`. If a variant is missing, fall back to the plain template agent (strip the `.<tier>` suffix).
 
-**Hard limits:**
-- **Max 2 concurrent subagents per wave** (set during onboarding, 1–5). The lead enforces the cap by emitting at most that many `task()` calls per turn; overflow queues to the next wave.
-- **Non-overlapping file domains.** Two concurrent subagents must NEVER touch the same file.
+**Hard limits (always apply):**
+- **Max 4 concurrent subagents per wave.** The authoritative value is `wizard.maxConcurrentAgents` in `.opencode/opencode-onboard.json` — re-read it before each run. The lead enforces the cap; overflow queues to the next wave.
+- **Non-overlapping file domains.** Two concurrent subagents must NEVER touch the same file. Same-file tasks are packed into one worker and run sequentially.
 - **Explicit stalls.** If tasks remain but none are eligible (a dependency failed), or a full wave makes zero progress, STOP and report — never spin.
 - **Retry limit.** One retry per failed group, then surface to the user. Never retry indefinitely.
 
@@ -129,41 +128,6 @@ When user says "I've added comments to the PR" or shares a PR URL:
 
 ---
 
-## Testing the board in a browser (ttyd)
-
-> **Agents: Do NOT use ttyd unless the user explicitly asks you to check the CLI in a browser.** It is never the default. Do not start a ttyd server to run "manual pass" tasks or visual QA on your own — those tasks are for the human. Only reach for ttyd when the user says "check the board in the browser", "use ttyd", or similar.
-
-The board is an interactive TUI that needs a real TTY, so it cannot be driven from a plain captured shell. If [`ttyd`](https://github.com/tsl0922/ttyd) is installed (`ttyd --version`), you *can* use it to serve the board over HTTP and drive it with the browser tools — this is the way to exercise real keyboard navigation, forms, and rendering end-to-end (unit tests with `ink-testing-library` only cover components in isolation). But this is **opt-in only** at the user's explicit request.
-
-**Serve the board** — run from an interactive terminal. Two flags are non-negotiable on Windows:
-- `-W` — writable, or keystrokes are ignored (the board is read-only without it).
-- `-w <absolute repo path>` — sets the child's working directory. **Without it, ttyd on Windows spawns the child with no valid cwd and every command fails with `CreateProcessW failed with error 267` (`ERROR_DIRECTORY`)** — this is independent of the command (`pnpm`, `npx`, and `node` all fail identically).
-
-```bash
-# Recommended — dev/source path (pnpm run dev == tsx src/cli.ts):
-ttyd -W -w "C:\Projects\Personal\loop-cli" -p 7681 pnpm run dev
-
-# Built entry also works (after `npm run build`); use the same -w:
-ttyd -W -w "C:\Projects\Personal\loop-cli" -p 7681 node dist/entry.js
-```
-
-On macOS/Linux the `-w` is optional (the child inherits ttyd's cwd), so `ttyd -W -p 7681 pnpm run dev` is enough there — but always passing `-w <repo>` is harmless and portable.
-
-Then open `http://localhost:7681` with the browser tools and interact:
-
-1. **Navigate** to the URL, then **click the terminal** once to focus it.
-2. **Send keystrokes** to exercise the board: arrows / `j` `k` to move, `Enter` to edit/open logs, `n` to create, `/` to search, `esc` to quit. Modifier combos (Ctrl+Enter, Ctrl+U) go through as the real terminal delivers them — this is also how you reproduce terminal-specific key issues.
-3. **Read the board with screenshots, not DOM snapshots** — xterm.js renders to a `<canvas>`, so accessibility/text snapshots are empty. Screenshot after each action to observe state.
-
-Useful flags: `-t fontSize=16` (larger, more legible screenshots), `-o` (accept one client then exit — good for a single test session), `-q` (exit when the client disconnects). Kill the `ttyd` process when done. If `ttyd` is not installed, fall back to `ink-testing-library` component rendering.
-
-**Troubleshooting:**
-- `CreateProcessW failed with error 267` (Windows): the child working directory is missing — add `-w "<absolute repo path>"`. (It is *not* about `.cmd` shims; native `node` fails the same way without `-w`.)
-- Terminal shows **"Press ⏎ to Reconnect"** immediately: the child spawned but exited/crashed. The error text is printed just above the reconnect box — screenshot and read it. Verify the command runs standalone (`pnpm run dev` in a normal terminal).
-- Launching `ttyd` from a context without an attached console (a detached/piped process, some CI or agent shells) can crash its ConPTY on Windows before any client connects — start it from a real interactive terminal.
-
----
-
 ## Agents
 
 Agent files live in `.opencode/agents/`. The set is dynamic — users add specialists over time via `/ob-create-engineer`.
@@ -171,7 +135,6 @@ Agent files live in `.opencode/agents/`. The set is dynamic — users add specia
 | Agent | File | Role |
 |-------|------|------|
 | `basic-engineer` | `.opencode/agents/basic-engineer.md` | Fallback implementation worker. Used when no custom engineer matches the task domain. |
-| `frontend-engineer` | `.opencode/agents/frontend-engineer.md` | OpenTUI/React 19 TUI board components, keyboard navigation, forms, SearchSelect, i18n. |
 | `*-engineer` | `.opencode/agents/*-engineer.md` | User-created specialists. Preferred over `basic-engineer` when their domain matches the task. |
 
 Before spawning, inspect `.opencode/agents/` to build the actual list — never assume which custom engineers exist.
@@ -184,7 +147,7 @@ Every agent file declares an `## Abilities` section that maps roles to `@skill-n
 
 ```markdown
 ## Abilities
-- Guardrails: @ob-generic-guardrails, @project-guardrails
+- Guardrails: @ob-generic-guardrails, @ob-default
 - Development: @ob-default
 - Testing: @ob-default
 - Infrastructure: @ob-default
@@ -247,6 +210,13 @@ The `@caveman` skill is installed at `.agents/skills/caveman/`. Load it for full
 
 This project has CodeGraph initialized (`.codegraph/` exists). Use it for all code exploration.
 
+**IMPORTANT: CodeGraph is an MCP server, NOT a CLI tool.** Do NOT run `codegraph` as a bash command. Use the MCP tools directly:
+- `codegraph_search` — find symbols by name
+- `codegraph_callers` / `codegraph_callees` — trace call flow
+- `codegraph_impact` — check what's affected before editing
+- `codegraph_node` — get a single symbol's details
+- `codegraph_explore` — broader codebase exploration (heavier, prefer spawning an Explore sub-agent for this)
+
 **NEVER call `codegraph_explore` or `codegraph_context` directly in the main session** — these return large source payloads that fill context. Instead, ALWAYS spawn an Explore sub-agent for exploration questions ("how does X work?", "where is Y implemented?").
 
 When spawning Explore agents, include in the prompt:
@@ -262,13 +232,15 @@ When spawning Explore agents, include in the prompt:
 <!-- OB-MEMORY-START -->
 ## Basic Memory
 
-Persistent knowledge graph active (`uvx basic-memory mcp`, stdio MCP). Notes stored as plain Markdown files — readable by both agents and humans.
+Persistent knowledge graph active (`basic-memory mcp`, stdio MCP server).
 
-Key tools:
+**IMPORTANT: basic-memory is an MCP server, NOT a CLI tool.** Do NOT run `basic-memory` as a bash command. Use the MCP tools directly:
 - `write_note` / `edit_note` — store a decision, architectural note, or finding
 - `search` — find relevant notes by semantic search
 - `build_context` — navigate related notes via wikilinks
 - `recent_activity` — see what was written recently in this session
+
+Notes stored as plain Markdown files — readable by both agents and humans.
 
 Store: architecture decisions, resolved ambiguities, cross-agent context, discovered constraints.
 Query before implementing unfamiliar areas or picking up a long-running task.

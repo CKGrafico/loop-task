@@ -2,17 +2,18 @@
 description: Parse a work item or idea and propose a change plan with enriched task assignments.
 ---
 
-> **Command aliases:** Loaded skills may reference `/opsx-propose`, `/opsx-apply`, `/opsx-archive`, or `/opsx-explore`. Always substitute: `/opsx-propose` → `/ob-propose`, `/opsx-apply` → `/ob-apply`, `/opsx-archive` → `/ob-archive`, `/opsx-explore` → `/ob-explore`. Never mention the `opsx-` names in your responses to the user.
-
 Apply `## Optimizations` from AGENTS.md (RTK, codegraph, memory, etc.).
+<!-- OB-CMD-RTK-START -->
+Prefix all bash commands with `rtk` when RTK is enabled.
+<!-- OB-CMD-RTK-END -->
 
 
 **Step 0.a - Check for unarchived changes**
 
-**IMPORTANT**: Never skip this step. User must give a response before proceeding.
+**IMPORTANT**: Never skip this step, with one exception: a calling command may explicitly override it (`/ob-autopilot` does — treat the answer as `continue`). Otherwise the user must give a response before proceeding.
 
-Before proposing a new change, inspect `openspec/changes/` (ignore `openspec/changes/archive`). 
-If any folder (`us-{id}-{slug}`) exist in `openspec/changes/`, list them and warn the user with this exact prompt:
+Before proposing a new change, inspect `openspec/changes/` (ignore `openspec/changes/archive`).
+If any change folder exists in `openspec/changes/` (names vary by platform: `gh-*`, `us-*`, or a plain slug), list them and warn the user with this exact prompt:
 
 ```text
 There are unarchived changes pending to be archived:
@@ -29,11 +30,19 @@ Wait for the user to respond:
 
 **Step 0.b - Load proposal skill**
 
-**If a work item URL is provided** (GitHub Issue or Azure DevOps work item): load `@ob-userstory` skill and fetch the work item via CLI before continuing. Platform is set in `.opencode/opencode-onboard.json` `wizard.platform`. If platform is `none`, skip this step and work from direct user input.
+**If a work item URL or issue key is provided** (GitHub Issue, Azure DevOps work item, Jira issue, or browser-based backlog): load `@ob-userstory` skill and fetch the work item before continuing. Backlog platform is set in `.opencode/opencode-onboard.json` → `wizard.backlogPlatform` (falls back to `wizard.platform` for older configs). If backlog platform is `none`, skip this step and work from direct user input.
 
 Load `@openspec-propose` skill and follow its instructions.
 
 > ⚠️ **CHECKPOINT — `tasks.md` was just written. STOP. Do NOT show the plan yet. You MUST complete the enrichment below before continuing. Skipping this breaks `/ob-apply`.**
+
+<!-- OB-CMD-CODEGRAPH-START -->
+Use codegraph MCP tools (NOT CLI commands). Do NOT run `codegraph` in bash — use the MCP tools directly: `codegraph_search`, `codegraph_impact`, `codegraph_callers`, `codegraph_callees`, `codegraph_node`.
+<!-- OB-CMD-CODEGRAPH-END -->
+
+<!-- OB-CMD-MEMORY-START -->
+Use basic-memory MCP tools (NOT CLI commands). Do NOT run `basic-memory` in bash — use the MCP tools directly: `write_note`, `edit_note`, `search`, `build_context`, `recent_activity`.
+<!-- OB-CMD-MEMORY-END -->
 
 1. List every `*-engineer.md` file in `.opencode/agents/`. For each file read:
    - `description:` from the YAML frontmatter — the engineer's specialization summary
@@ -64,8 +73,13 @@ Example result (note same-file tasks like 1.1/1.2 share `touches`, so `/ob-apply
 - [ ] 4.1 Run typecheck and fix errors <!-- agent: basic-engineer.fast, depends_on: [2.1,3.1], touches: [] -->
 ```
 
-`/ob-apply` reads these annotations to build conflict-free waves: `depends_on` gates ordering, `touches` keeps concurrent agents file-disjoint, and the tier suffix in `agent` determines the model (resolved at startup by the `ob-subagent-tiers` plugin). **`depends_on` is mandatory; `touches` is a best-effort hint** that codegraph impact refines at apply time.
+`/ob-apply` reads these annotations to build conflict-free waves: `depends_on` gates ordering, `touches` keeps concurrent agents file-disjoint, and the tier suffix in `agent` determines the model (resolved at startup by the `ob-subagent-tiers` plugin). **`depends_on` is mandatory; `touches` is a best-effort hint** that codegraph MCP tools refine at apply time.
 
 **After enrichment, show the plan:** change name, total task count, full task list with agent (including tier suffix) and dependency annotations.
+
+<!-- OB-CMD-MEMORY-START -->
+After showing the plan:
+- `write_note` with title `proposal-{change-slug}` containing the change id, task count, and agent+tier assignments. This lets `/ob-apply` verify the plan on resume.
+<!-- OB-CMD-MEMORY-END -->
 
 **Stop.** Ask the user: "Ready to implement? Run `/ob-apply` to start." Do NOT run `/ob-apply` automatically.
