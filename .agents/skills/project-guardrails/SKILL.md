@@ -10,122 +10,140 @@ license: MIT
 
 ## Architecture Constraints
 
-- **Client-daemon over local IPC**: CLI client (short-lived) talks to background daemon (long-lived) over Unix socket / Windows named pipe. Never mix client and daemon code in the same process.
+- **Client-daemon separation**: The short-lived CLI client and long-lived background daemon communicate over a local IPC transport (Unix socket on POSIX, named pipe on Windows). Never mix client and daemon code in the same process.
 - **`src/core/` is runtime-agnostic**: `loop-controller.ts`, `command-runner.ts`, `context-parser.ts`, `template.ts`, `foreground-loop.ts`, `log-rotator.ts`, `scheduling.ts`, `log-parser.ts` must NOT import from `src/daemon/` or `src/tui/`. Used by both daemon and foreground runner.
-- **`src/types.ts` is the IPC contract**: The single source of truth for `LoopOptions`, `LoopMeta`, `LoopStatus`, `IpcRequest`/`IpcResponse`, `TaskDefinition`, `Project`. Changes here affect both client and daemon.
-- **`src/tui/` is TUI only**: TUI components (`App.tsx`, `components/*`, `hooks/*`) must NOT import directly from `src/daemon/` internals. They communicate via `src/tui/daemon.ts` (typed IPC bridge).
-- **Daemon state writes are atomic**: Use `writeFileAtomic` (temp-then-rename) from `src/shared/fs-utils.ts`. Keep them synchronous to preserve immediate-disk-state-on-pause semantics.
-- **Socket-bind-before-init single-flight guard**: `IpcServer.listen()` binds the socket BEFORE `manager.init()`. Losing racers `exit(0)` cleanly. Never call `manager.init()` before the socket is bound.
-- **No network listener**: The daemon listens on a local socket/pipe only. Never add HTTP/WebSocket/network listeners.
-- **Filesystem-backed persistence**: All state lives under `~/.loop-cli/` (overridable via `LOOP_CLI_HOME`). Consolidated JSON files: `loops.json`, `tasks.json`, `projects.json`. Never introduce a database.
-- **TUI is Ink 7 + React 19**: All terminal UI lives in `src/tui/`. Uses `ink` (v7.1.0), `react` (v19), `ink-combobox`, `ink-scroll-list`, `ink-spinner`, `ink-text-input`, `ink-select-input`. The old `src/board/` (OpenTUI) code is kept for reference but is NOT compiled or used - `src/board` is excluded in `tsconfig.json` and `tsconfig.build.json`.
+- **`src/types.ts` is the IPC contract**: Single source of truth for `LoopOptions`, `LoopMeta`, `LoopStatus`, `IpcRequest`/`IpcResponse`, `TaskDefinition`, `Project`. Changes here affect both client and daemon — treat as a breaking-change boundary.
+- **`src/tui/` communicates via `tui/daemon.ts` only**: TUI components must NOT import directly from `src/daemon/` internals. All daemon calls go through `src/tui/daemon.ts` (the typed IPC bridge).
+- **Daemon state writes are atomic**: Use `writeFileAtomic` (temp-then-rename) from `src/shared/fs-utils.ts`. Writes are synchronous to preserve immediate-disk-state-on-pause semantics.
+- **Socket-bind-before-init**: `IpcServer.listen()` binds the socket BEFORE `manager.init()`. Losing racers `exit(0)` cleanly. Never call `manager.init()` before the socket is bound.
+- **No network listener**: The daemon listens on a local socket/pipe only. The HTTP API (`127.0.0.1:8845`) is optional and localhost-only — never add public network listeners.
+- **Filesystem-backed persistence only**: All state lives under `~/.loop-cli/` (overridable via `LOOP_CLI_HOME`). Three consolidated JSON files: `loops.json`, `tasks.json`, `projects.json`. Never introduce a database.
+- **`src/board/` is dead code**: The old OpenTUI code in `src/board/` is excluded from `tsconfig.json` and `tsconfig.build.json`. Do NOT import from it; do NOT add new files there.
+- **No schema versioning yet**: `LoopMeta` shape changes risk breaking persisted JSON. Corrupted files are silently skipped. Document risk in any PR that changes `LoopMeta`.
 
-## TUI Architecture (Ink)
+## TUI Architecture (Ink 7 + React 19)
 
-- **Command-first input**: The bottom `CommandInput` is always focused. All user actions are typed commands with fuzzy autocomplete via `ink-combobox` headless hooks (`useAutocompleteState`). Plain Enter selects a command from the dropdown; Ctrl+Enter passes through to the focused panel for actions (edit loop, open log).
-- **Ctrl bypasses the input**: The CommandInput's `useInput` returns early on `if (key.ctrl) return` - all Ctrl+key combos are handled by App.tsx's global `useInput` (Ctrl+N new, Ctrl+E edit, Ctrl+D delete, Ctrl+F search, Ctrl+P commands browser, Ctrl+Enter panel action, Ctrl+Left/Ctrl+Right tab switching). Only single printable ASCII characters (`input.length === 1 && input >= " " && input <= "~"`) are inserted as text - this prevents multi-char sequences like `\r\n` (VS Code Ctrl+Enter) from injecting newlines.
-- **Three panel tabs**: `TabBar` renders Loops/Tasks/Projects. Active tab is highlighted with the tab's accent color background. Tab switching via number keys 1/2/3, Ctrl+Left/Ctrl+Right, or the `onTabChange` callback.
-- **Two-panel layout**: `LeftPanel` (60% width, `flexShrink={0}`) renders the active tab's list. `RightPanel` (40% width) renders Inspector + RunHistory. Optional `DebugPanel` (22% width) appears when debug mode is on. Tab/Shift+Tab cycles focus between left and right panels only - never into header or command input.
-- **Panel focus via `isFocused` prop**: Panels receive `isFocused` as a prop (not Ink's `useFocus()`). Internal `useInput({ isActive: isFocused })` gates key handling. When any modal is open, `isFocused` is `false` for both panels (`anyModalOpen` guard).
-- **Panel border color = active tab accent**: LeftPanel and RightPanel borders use `tabAccentColor(activeTab)` - blue on loops, purple on tasks, green on projects. Not `accent.brand`.
-- **Command dispatch uses dictionary**: `handleCommand` in App.tsx uses a `commandHandlers: Record<string, () => void>` lookup - never `switch/case` or nested `if/else`.
-- **Command registry**: `src/tui/commands.ts` exports `buildCommands(context)` (autocomplete dropdown, context-aware with selection) and `buildTabCommands(context)` (Ctrl+P browser, shows all tab commands without selection requirement). Each `Command` has `label`, `value`, `hint`, `tier`, `category`, and optional `shortcut`.
-- **Router**: `useRouter("board")` manages a stack of `View` values: `"board" | "create" | "task-create" | "task-edit"`. Tasks and Projects are NOT router views - they are tab states (`TabName: "loops" | "tasks" | "projects"`) within the board view.
-- **Forms**: Create mode uses `WizardForm` (one field per screen, breadcrumb, Ctrl+S skip). Edit mode uses `PatchEditForm` (read-only table, `change <field>` command targets individual fields, staged changes with pending count).
-- **Confirmations**: Destructive commands transition the CommandInput to `ConfirmMode` - the user types "yes" or "cancel" in the same input. No modal overlay.
-- **Search**: Typing "search" + Enter transitions to `SearchMode` in the CommandInput - same input slot, different placeholder, filters the active list in real-time. Escape cancels and clears.
-- **Floating elements**: Toast notifications use `position="absolute" bottom={0} right={0}` to float over content. Command dropdown uses `position="absolute" bottom={3}` to float above the input without pushing layout.
-- **Theme colors - 4 primary + 4 semantic**: Brand = `#fbbf24` (amber, generic UI), Loops = `#38bdf8` (blue), Tasks = `#a78bfa` (purple), Projects = `#34d399` (green). Semantic: success `#4ade80`, warning `#facc15`, danger `#f87171`, idle `#fb923c`. Plus grays (6 bg tones, 4 text tones, 2 border tones). Never use decorative colors outside this palette. No `accent.focus`, `semantic.info`, or `border.focus` - these were removed.
+- **Command-first input**: `CommandInput` is always focused. All actions are typed commands with fuzzy autocomplete via `ink-combobox` headless hooks (`useAutocompleteState`). Plain Enter selects; Ctrl+Enter passes to the focused panel.
+- **Three CommandInput modes**:
+  - **Command mode** (amber `│`): fuzzy autocomplete dropdown.
+  - **Confirm mode** (red `│`): destructive commands — shows prompt + text input exactly like SearchMode; user types "yes" + Enter to confirm. No modal overlay. No arrow-key navigation.
+  - **Search mode** (green `│`): real-time list filter. `Escape` cancels and clears.
+- **Ctrl bypasses CommandInput**: `if (key.ctrl) return` in CommandInput's `useInput`. All Ctrl shortcuts are handled by App.tsx's global `useInput`. Only single printable ASCII (`input.length === 1 && input >= " " && input <= "~"`) is inserted as text.
+- **Panel focus via `isFocused` prop**: Panels receive `isFocused` as a prop — NOT Ink's `useFocus()`. Internal `useInput({ isActive: isFocused })` gates key handling. When any modal is open, `isFocused = false` for both panels.
+- **Panel border = active tab accent**: LeftPanel and RightPanel borders use `tabAccentColor(activeTab)` — blue (loops), purple (tasks), green (projects). Not `accent.brand`.
+- **Dictionary dispatch only**: `handleCommand` in App.tsx uses `const commandHandlers: Record<string, () => void>` — never `switch/case` or nested `if/else`. Same pattern for status routers, key dispatchers, and any multi-branch logic keyed on a string.
+- **Router manages views, not tabs**: `useRouter("board")` manages `"board" | "create" | "task-create" | "task-edit"`. Tab state (`"loops" | "tasks" | "projects"`) is separate `activeTab` state — NOT a router view.
+- **Floating elements use `position="absolute"`**: Toasts (`bottom={0} right={0}`) and command dropdown (`bottom={3}`) float over content without pushing layout.
+- **Layout dimensions are constants**: `COMMAND_INPUT_HEIGHT = 6` (2 content rows inside the bordered box with `paddingY={1}`). Never add a third content row inside `CommandInput` without increasing this constant.
 
 ## Naming Conventions
 
-- **ESM import specifiers**: Use `.js` extensions for local TS module imports (e.g. `./logger.js`). TypeScript's `allowImportingTsExtensions` resolution maps them in dev.
-- **File naming**: `kebab-case` for all filenames (`loop-controller.ts`, `use-loop-polling.ts`). React component files use PascalCase (`CommandInput.tsx`, `LeftPanel.tsx`).
-- **Component naming**: PascalCase for React components (`CommandInput`, `LeftPanel`, `WizardForm`, `PatchEditForm`).
+- **ESM import specifiers**: Use `.js` extensions for all local TS module imports (e.g. `import { foo } from "./bar.js"`). TypeScript's `allowImportingTsExtensions` resolves them in dev.
+- **File naming**: `kebab-case` for all non-component files (`loop-controller.ts`, `use-loop-polling.ts`). React component files use PascalCase (`CommandInput.tsx`, `LeftPanel.tsx`).
+- **Component naming**: PascalCase for all React components.
 - **Hook naming**: `use` prefix for all hooks (`useRouter`, `useLoopPolling`, `useBreakpoint`).
-- **Constants**: `UPPER_SNAKE_CASE` for exported constants in `src/config/constants.ts` (`POLL_MS`, `COMMAND_INPUT_HEIGHT`).
-- **i18n keys**: `section.camelCase` format (e.g., `cmd.edit`, `cmdInput.placeholder`, `wizard.intervalPrompt`).
+- **Constants**: `UPPER_SNAKE_CASE` in `src/config/constants.ts`. No inline magic numbers elsewhere.
+- **i18n keys**: `section.camelCase` format (e.g., `cmdInput.placeholder`, `confirm.deleteLoop`). All user-facing strings live in `src/i18n/en.json` — no string literals in component code.
 
 ## Code Style
 
-- **TypeScript strict mode**: `strict: true` in `tsconfig.json`. No `any` types. Use proper generics.
+- **TypeScript strict mode**: `strict: true` in `tsconfig.json`. No `any`. Use proper generics.
 - **ESM only**: `"type": "module"` in `package.json`. No CommonJS (`require`, `module.exports`).
-- **ESLint 9 + typescript-eslint recommended**: `no-console` is disabled (CLI app). Config in `eslint.config.js`.
-- **No comments** unless strictly necessary; follow existing patterns.
-- **No switch/case or nested if/else for dispatch**: When code branches on a string or enum value (view, status, key name, panel, action, command), use a dictionary/map lookup (`Record<string, Handler>`) instead of stacked `if`/`else if` or `switch`/`case`. This applies to command handlers, key dispatchers, status routers, and any multi-branch logic keyed on a string. Linear guard clauses (single early returns with no nesting) are fine. Pattern: `const handlers: Record<string, () => void> = { ... }; const h = handlers[value]; if (h) h();`
-- **No user-facing string literals**: All strings live in `src/i18n/en.json`, accessed via `t(key, params?)`.
+- **ESLint 9 + typescript-eslint recommended**: Config in `eslint.config.js`. `no-console` is disabled (CLI app).
+- **No switch/case or nested if/else for dispatch**: Use a `Record<string, Handler>` dictionary lookup for any multi-branch logic keyed on a string (command names, view names, key names, status values). Linear guard clauses (single early returns) are fine.
+- **No user-facing string literals**: All strings in `src/i18n/en.json`, accessed via `t(key, params?)`.
 - **No inline magic numbers**: Add to `src/config/constants.ts` and import.
-- **Never use em dashes** (`-`). Use regular hyphens (`-`) everywhere.
-- **Feature folders, small files**: Reuse shared helpers in `src/shared/`.
+- **No em dashes**: Use regular hyphens (`-`) everywhere — never `—`.
+- **No unnecessary comments**: Follow existing code patterns; comments only when non-obvious.
+- **Small files, feature folders**: Reuse shared helpers in `src/shared/`. Keep files focused on one responsibility.
 
 ## Testing
 
 - **Framework**: Vitest 3 with `globals: true` and v8 coverage. Config in `vitest.config.ts`.
-- **Location**: Test files in `tests/` directory. Naming: `*.test.ts` for logic, `*.test.tsx` for Ink components.
+- **Location**: `tests/` directory. `*.test.ts` for pure logic; `*.test.tsx` for Ink components.
 - **Coverage gates**: 90% lines/functions/branches/statements. Excludes `src/cli.ts`, `src/types.ts`, `src/daemon/index.ts`, `src/tui/**`, `src/board/**`.
-- **TUI components are tested with `ink-testing-library`** (https://github.com/vadimdemedes/ink-testing-library): render components with `render()`, assert on `lastFrame()` output, and drive interaction via `stdin.write()`. Component tests live in `tests/*.test.tsx`. Although `src/tui/**` is excluded from coverage gates, new/changed Ink components SHOULD ship with a `.test.tsx`.
-- **ink-testing-library rules**:
-  - **Sized wrapper for absolute/100% layouts**: Components using `position="absolute"` or `width/height="100%"` (e.g. `Modal`, `ToastStack`) render empty in the test env. Wrap them in a parent `<Box height={N} width={N}>` so Yoga can lay them out.
-  - **Type one char at a time**: `stdin.write("abc")` arrives as a single multi-char input event; components that gate on `input.length === 1` (real per-keystroke handling) will reject it. Write chars individually with a small `await delay()` between them.
-  - **Await async key handling**: Ink buffers escape sequences and processes input on the next tick. After `stdin.write()` (especially lone Escape `\u001B` or Ctrl combos like `\u0013`), `await` a short delay before asserting on spies.
-  - **Ctrl combos**: A control byte (e.g. `\u0013`) is delivered to `useInput` as `input="s", key.ctrl=true`.
-- **Use `LOOP_CLI_HOME`** to isolate daemon state in tests; never write to the real state dir from tests.
-- **Gate order**: `typecheck` -> `lint` -> `test` -> `build`. Always run all four before claiming done.
-- **Test patterns**:
-  - Pure functions: direct import + `it.each()` for table-driven cases (see `tests/scheduling.test.ts`, `tests/log-parser.test.ts`).
-  - Async state machines: `vi.useFakeTimers()` + `vi.advanceTimersByTimeAsync()` + mock `execa`/`executeCommand` (see `tests/loop-controller.test.ts`).
-  - Daemon modules: mock `LoopController`/`execa`, set `LOOP_CLI_HOME` to temp dir, verify persistence via fresh manager instance (see `tests/daemon-manager.test.ts`, `tests/daemon-state.test.ts`).
-  - IPC/socket: mock `node:net.createConnection` with `vi.hoisted()` + fake socket with emit, or use real Unix socket for integration-style server tests (see `tests/daemon-server.test.ts`, `tests/client-ipc.test.ts`).
-  - Client commands: mock `sendRequest`/`streamRequest`, spy on `process.exit`, verify request payload shapes (see `tests/client-commands.test.ts`).
-- **Mocking gotchas**:
-  - `vi.mock()` must appear BEFORE importing the module under test.
-  - For `node:net` mocking, use `vi.hoisted()` to create the mock function so it's available in the hoisted `vi.mock()` factory.
-  - `vi.useFakeTimers()` + async: always use `vi.advanceTimersByTimeAsync()` / `vi.runAllTimersAsync()`, not the sync variants.
-  - `LoopController` tests: must pass 4th arg `taskResolver` (`() => null` if unused) and include `taskId`, `description`, `projectId`, `offset` in `LoopOptions`.
-- **Coverage gaps (as of gh-20)**: `src/loop-config.ts`, `src/shared/clipboard.ts`, `src/ipc/handlers/logs-stream.ts`, `src/core/command-runner.ts` still below 90%. Clipboard and logs-stream are platform/runtime-dependent and candidates for coverage exclusion. Loop-config and command-runner need more tests in a follow-up.
+- **Gate order**: `typecheck` → `lint` → `test` → `build`. Run all four before claiming done.
+
+### Bug Fix Test Policy
+
+**Every bug fix MUST include tests that would have caught the regression:**
+
+1. **Unit test first**: Write a Vitest unit test (`tests/*.test.ts` or `tests/*.test.tsx`) that directly exercises the fixed code path. The test must FAIL on the unfixed code and PASS after the fix. No exceptions.
+   - Pure function fix → `it.each()` or direct assertion.
+   - State machine / hook fix → use `ink-testing-library` with `stdin.write()` one char at a time.
+   - IPC/daemon fix → mock dependencies with `vi.mock()` and verify behavior.
+
+2. **E2E test when the bug is user-interaction-driven**: If the bug manifested as a broken UI interaction (wrong keyboard behavior, invisible input, missing confirmation flow, layout clipped), add or update an E2E test in `tests/e2e/suites/`. E2E tests for pure internal logic bugs (daemon state, scheduling math, log rotation) are NOT required.
+   - E2E tests are Playwright + ttyd; they live in `tests/e2e/` and are **manual-only** (AI agents MUST NOT run `pnpm test:e2e`).
+   - Assert the actual fixed behavior — never use `test.fixme` to skip a test for known-broken behavior that has just been fixed.
+   - A `test.fixme` is only valid while the bug is OPEN. Close it (remove `fixme`) the moment the fix lands.
+
+3. **No fixme crutches for fixed bugs**: `test.fixme` on a known-broken behavior that you're NOT fixing in the current PR is acceptable. `test.fixme` on behavior you just fixed is not — the test must pass or the fix is incomplete.
+
+### TUI Component Testing (ink-testing-library)
+
+- **Sized wrapper for absolute/100% layouts**: Wrap components using `position="absolute"` or `width/height="100%"` in a parent `<Box height={N} width={N}>` so Yoga can lay them out.
+- **Type one char at a time**: `stdin.write("abc")` arrives as one multi-char event; components gated on `input.length === 1` will reject it. Write chars individually with `await delay()` between them.
+- **Await async key handling**: After `stdin.write()` for Escape or Ctrl combos, `await` a short delay before asserting.
+- **Ctrl combos**: `\u0013` is delivered as `input="s", key.ctrl=true`.
+
+### Test Patterns
+
+- **Pure functions**: direct import + `it.each()` (see `tests/scheduling.test.ts`, `tests/log-parser.test.ts`).
+- **Async state machines**: `vi.useFakeTimers()` + `vi.advanceTimersByTimeAsync()` + mock `execa` (see `tests/loop-controller.test.ts`).
+- **Daemon modules**: mock `LoopController`/`execa`, set `LOOP_CLI_HOME` to temp dir, verify persistence via fresh manager instance.
+- **IPC/socket**: mock `node:net.createConnection` with `vi.hoisted()` + fake socket, or use real Unix socket.
+- **`vi.mock()` must appear BEFORE the module under test import.**
+- **`LoopController` tests**: pass 4th arg `taskResolver` (`() => null` if unused); include `taskId`, `description`, `projectId`, `offset` in `LoopOptions`.
+- **Use `LOOP_CLI_HOME`** to isolate daemon state; never write to the real state dir from tests.
 
 ## Build & Deployment
 
-- **Build command**: `pnpm run build` = `tsc -p tsconfig.build.json` + copy `entry.js`/`esm-loader.js` to `dist/`.
-- **Runtime**: Node >= 20 for CLI, daemon, and TUI. No Bun needed - dev uses `tsx src/cli.ts`.
-- **Dev command**: `tsx src/cli.ts` runs the full app (CLI + board TUI) directly from source.
-- **CI/CD**: GitHub Actions (`.github/workflows/ci.yml`). Matrix: ubuntu/macos/windows on Node 20, pnpm v11. Runs typecheck -> lint -> test -> build.
-- **Distribution**: Published to npm as `loop-task`. `bin` points at `dist/entry.js`.
-- **RTK active**: All shell commands must be prefixed with `rtk` (see AGENTS.md). Light read-only commands (`cat`, `ls`, `Get-Content`) are exempt.
-- **Package manager**: `pnpm` (pnpm-lock.yaml committed). NOT npm.
+- **Build command**: `rtk pnpm run build` = `tsc -p tsconfig.build.json` + copy `entry.js`/`esm-loader.js` to `dist/`.
+- **Dev command**: `rtk pnpm run dev` = `tsx src/cli.ts`.
+- **Typecheck**: `rtk pnpm run typecheck` = `tsc --noEmit`. Does NOT cover `tests/e2e/` (excluded from root tsconfig).
+- **Lint**: `rtk pnpm run lint` = `eslint src/ tests/`.
+- **Test**: `rtk pnpm run test` = `vitest run`.
+- **RTK mandatory**: All shell commands must be prefixed with `rtk` (see AGENTS.md). Light read-only commands (`cat`, `ls`, `Get-Content`) are exempt.
+- **Package manager**: `pnpm`. `pnpm-lock.yaml` is committed. Never use `npm install` or `yarn`.
+- **Runtime**: Node >= 20. No Bun.
+- **CI matrix**: ubuntu-latest, macos-latest, windows-latest × Node 20, pnpm v11 (`.github/workflows/ci.yml`).
+- **Distribution**: npm as `loop-task`. `bin` → `dist/entry.js`.
 
 ## Data & State
 
-- **Consolidated JSON files**: `loops.json` (LoopMeta[]), `tasks.json` (TaskDefinition[]), `projects.json` (Project[]). Single JSON array per domain.
-- **Migration**: On daemon init, if old `loops/`/`tasks/`/`projects/` directories exist but consolidated JSON doesn't, migrate into single files. Old files preserved, not deleted.
-- **Atomic writes**: `writeFileAtomic` = temp-then-rename. Synchronous to preserve immediate-disk-state-on-pause semantics.
-- **Log rotation**: Caps disk at `MAX_LOG_BYTES` (1 MB) x `MAX_LOG_GENERATIONS` (3) per loop.
-- **No schema versioning**: Future `LoopMeta` shape changes risk breaking persisted JSON. Corrupted files are silently skipped.
-- **Chain context is ephemeral**: In-memory only per loop iteration. Never persisted to disk or exposed via IPC.
-- **Hot-reload**: `src/daemon/file-watcher.ts` watches JSON config files. Hash-based self-write detection (debounced) prevents infinite loops. `mtime` fallback for Windows. `LoopManager.reconcile()` applies changes.
-- **Spread scheduling**: `computePhase(loopId, intervalMs)` via string hash. `--offset <duration>` overrides. Only first-run alignment; subsequent runs use `runStartedAtMs + interval`.
+- **Consolidated JSON files**: `loops.json` (`LoopMeta[]`), `tasks.json` (`TaskDefinition[]`), `projects.json` (`Project[]`). One array per domain.
+- **Atomic writes**: `writeFileAtomic` = temp-then-rename. Synchronous for crash safety.
+- **Migration**: On daemon init, migrate old `loops/`/`tasks/`/`projects/` directories to consolidated JSON if the JSON doesn't exist. Old files preserved, not deleted.
+- **Log rotation**: 1 MB max × 3 generations per loop (`MAX_LOG_BYTES`, `MAX_LOG_GENERATIONS`).
+- **Chain context is ephemeral**: In-memory only per loop iteration. Never persisted or exposed via IPC.
+- **Hot-reload**: `FileWatcher` uses SHA-1 hash comparison (+ mtime fallback on Windows) to distinguish self-writes from external edits. Debounced 300ms. Never modify `loops.json` from outside the daemon without being aware of reconciliation.
+- **Default project is permanent**: `ProjectManager` enforces that the Default project cannot be deleted. The `delete` command handler in App.tsx must check `!selectedProjectEntity.isSystem` before opening the confirm dialog — matches the RightPanel button guard.
 
 ## Security
 
-- **Trust boundary**: Local machine/user only. No network listener, no authentication layer.
-- **No secrets handling**: Loop metadata and logs are plain files in `~/.loop-cli/`. Never read or output `.env` files.
-- **Input validation**: Intervals (`parseDuration`), max-runs (`parseMaxRuns`), command emptiness, quote balancing (`parseCommandLine`) validated in `loop-config.ts`.
-- **IPC robustness**: Malformed JSON requests answered with error response, not crash.
+- **Trust boundary**: Local machine/user only. No network listener (IPC socket only). HTTP API is `127.0.0.1` only.
+- **No secrets handling**: Never read or output `.env` files. Loop metadata and logs are plain files.
+- **Input validation**: Intervals (`parseDuration`), max-runs (`parseMaxRuns`), command emptiness, quote balancing (`parseCommandLine`) — all validated in `loop-config.ts`.
+- **IPC robustness**: Malformed JSON requests return an error response, never crash the daemon.
+- **Child process isolation**: Spawned processes inherit daemon's env and run in specified `cwd`. No privilege escalation.
 
 ## Dependencies
 
-- **Package manager**: `pnpm`. `pnpm-lock.yaml` is committed.
+- **Package manager**: `pnpm`. `pnpm-lock.yaml` committed. Do NOT use `npm` or `yarn`.
 - **Runtime deps**: `ink` (^7.1.0), `react` (^19.2.7), `commander`, `execa`, `ms`, `ink-combobox` (^0.2.0), `ink-scroll-list` (^0.4.1), `ink-select-input` (^6.2.0), `ink-spinner` (^5.0.0), `ink-text-input` (^6.0.0).
-- **Dev deps**: `typescript` (^5.8.0), `typescript-eslint` (^8.30.0), `vitest` (^3.1.0), `eslint` (^9.25.0), `tsx` (^4.19.0), `ink-testing-library` (^4.0.0), `@types/node`, `@types/react`, `@vitest/coverage-v8`.
-- **No lockfile rules**: `pnpm-lock.yaml` is committed. Do NOT use `npm` for installs.
-- **Old `src/board/` deps removed**: No `@opentui/core` or `@opentui/react`. Bun is no longer a dependency.
+- **Dev deps**: `typescript` (^5.8.0), `typescript-eslint` (^8.30.0), `vitest` (^3.1.0), `eslint` (^9.25.0), `tsx` (^4.19.0), `ink-testing-library` (^4.0.0).
+- **No `@opentui/*` or Bun**: Those deps were removed with the Ink migration. Do not re-introduce.
+- **`ink-combobox` is v0.2.0**: Young package (single contributor). Do not upgrade without verifying `useAutocompleteState` API compatibility.
 
 ## Git Workflow
 
-- **Branch naming**: `feature/*` or `bugfix/*` only. Never commit directly to `main` unless using autopilot merge.
-- **Commit messages**: Conventional commits format (`feat:`, `fix:`, `docs:`, `chore:`, `archive:`).
-- **Never force push**: Never force push, never push to `main` without verification.
-- **Only commit when explicitly asked**: Never commit secrets.
-- **Platform**: GitHub (`wizard.platform: "github"`). PRs created via `gh` CLI.
-- **Max concurrent agents**: 3 (from `opencode-onboard.json`).
-- **Models**: `plan: opencode-go/glm-5.2`, `build: opencode/glm-5.1`, `fast: opencode/big-pickle`.
+- **Branch naming**: `feature/*` or `bugfix/*` only. Never commit directly to `main`.
+- **Commit messages**: Conventional commits (`feat:`, `fix:`, `fix(scope):`, `docs:`, `chore:`, `refactor:`, `test:`, `archive:`).
+- **Never force push**. Never push to `main` without a PR.
+- **Only commit when explicitly asked**. Never commit secrets.
+- **Platform**: GitHub. PRs via `gh` CLI.
+- **Max concurrent agents**: 4 (from `opencode-onboard.json`).
+- **Models**: `plan: opencode-go/glm-5.2`, `build: opencode-go/glm-5.1`, `fast: opencode/big-pickle`.
+
+<!-- Last updated: 2026-07-05T00:00:00Z -->

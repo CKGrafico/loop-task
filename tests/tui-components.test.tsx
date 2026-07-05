@@ -25,7 +25,6 @@ import { Header } from "../src/tui/components/Header.js";
 import { WizardForm, type WizardStepConfig } from "../src/tui/components/WizardForm.js";
 import { CommandInput, sanitizePaste } from "../src/tui/components/CommandInput.js";
 import { SelectModal, SelectValueField } from "../src/tui/components/SelectModal.js";
-import { CONFIRM_CANCEL, CONFIRM_YES } from "../src/config/constants.js";
 import { rankCommands } from "../src/tui/commands.js";
 import type { CommandContext, ConfirmState } from "../src/tui/types.js";
 import { darkTheme as theme } from "../src/tui/theme.js";
@@ -301,13 +300,16 @@ describe("CommandInput", () => {
     expect(lastFrame()).toContain("Type a command");
   });
 
-  it("renders confirm prompt with cancel focused (default)", () => {
+  // ── ConfirmMode: text-input behavior (mirrors SearchMode) ────────────────
+
+  it("renders confirm prompt on the same line as the input cursor", () => {
+    // ConfirmMode shows: "│ <prompt> <cursor>" — one row, no separate input row.
     const confirm: ConfirmState = {
-      prompt: 'Delete "test"?',
+      prompt: 'Type yes to delete "test-loop"',
       onConfirm: () => {},
     };
     const { lastFrame } = render(
-      <Box height={10} width={60}>
+      <Box height={10} width={80}>
         <CommandInput
           context={baseContext}
           onCommand={() => {}}
@@ -323,17 +325,92 @@ describe("CommandInput", () => {
       </Box>,
     );
     const frame = lastFrame() ?? "";
-    expect(frame).toContain('Delete "test"?');
-    // Cancel is at index 0 (default focus) so it appears as the focused option
-    expect(frame).toContain("cancel");
+    expect(frame).toContain('Type yes to delete "test-loop"');
   });
 
-  it("calls onConfirmCancel when Enter is pressed in confirm mode without navigation (cancel is default)", async () => {
-    // Task 4.1: cancel is at index 0 (default focus), so bare Enter activates cancel.
-    const confirm: ConfirmState = {
-      prompt: "Are you sure?",
-      onConfirm: () => {},
-    };
+  it("typing 'yes' + Enter calls onConfirmYes", async () => {
+    const confirm: ConfirmState = { prompt: "Type yes to delete", onConfirm: () => {} };
+    const onConfirmYes = vi.fn();
+    const onConfirmCancel = vi.fn();
+    const { stdin } = render(
+      <Box height={10} width={60}>
+        <CommandInput
+          context={baseContext}
+          onCommand={() => {}}
+          confirmState={confirm}
+          searchState={null}
+          searchValue=""
+          onSearchChange={() => {}}
+          onSearchSubmit={() => {}}
+          onSearchCancel={() => {}}
+          onConfirmYes={onConfirmYes}
+          onConfirmCancel={onConfirmCancel}
+        />
+      </Box>,
+    );
+    await typeChars(stdin, "yes");
+    stdin.write("\r");
+    await delay();
+    expect(onConfirmYes).toHaveBeenCalledTimes(1);
+    expect(onConfirmCancel).not.toHaveBeenCalled();
+  });
+
+  it("typing 'YES' (uppercase) + Enter calls onConfirmYes (case-insensitive)", async () => {
+    const confirm: ConfirmState = { prompt: "Type yes to stop", onConfirm: () => {} };
+    const onConfirmYes = vi.fn();
+    const onConfirmCancel = vi.fn();
+    const { stdin } = render(
+      <Box height={10} width={60}>
+        <CommandInput
+          context={baseContext}
+          onCommand={() => {}}
+          confirmState={confirm}
+          searchState={null}
+          searchValue=""
+          onSearchChange={() => {}}
+          onSearchSubmit={() => {}}
+          onSearchCancel={() => {}}
+          onConfirmYes={onConfirmYes}
+          onConfirmCancel={onConfirmCancel}
+        />
+      </Box>,
+    );
+    await typeChars(stdin, "YES");
+    stdin.write("\r");
+    await delay();
+    expect(onConfirmYes).toHaveBeenCalledTimes(1);
+    expect(onConfirmCancel).not.toHaveBeenCalled();
+  });
+
+  it("typing anything other than 'yes' + Enter calls onConfirmCancel", async () => {
+    const confirm: ConfirmState = { prompt: "Type yes to delete", onConfirm: () => {} };
+    const onConfirmYes = vi.fn();
+    const onConfirmCancel = vi.fn();
+    const { stdin } = render(
+      <Box height={10} width={60}>
+        <CommandInput
+          context={baseContext}
+          onCommand={() => {}}
+          confirmState={confirm}
+          searchState={null}
+          searchValue=""
+          onSearchChange={() => {}}
+          onSearchSubmit={() => {}}
+          onSearchCancel={() => {}}
+          onConfirmYes={onConfirmYes}
+          onConfirmCancel={onConfirmCancel}
+        />
+      </Box>,
+    );
+    await typeChars(stdin, "no");
+    stdin.write("\r");
+    await delay();
+    expect(onConfirmCancel).toHaveBeenCalledTimes(1);
+    expect(onConfirmYes).not.toHaveBeenCalled();
+  });
+
+  it("bare Enter (empty input) calls onConfirmCancel", async () => {
+    const confirm: ConfirmState = { prompt: "Type yes to exit", onConfirm: () => {} };
     const onConfirmCancel = vi.fn();
     const onConfirmYes = vi.fn();
     const { stdin } = render(
@@ -358,11 +435,8 @@ describe("CommandInput", () => {
     expect(onConfirmYes).not.toHaveBeenCalled();
   });
 
-  it("calls onConfirmCancel when Escape is pressed in confirm mode", async () => {
-    const confirm: ConfirmState = {
-      prompt: "Are you sure?",
-      onConfirm: () => {},
-    };
+  it("Escape calls onConfirmCancel", async () => {
+    const confirm: ConfirmState = { prompt: "Type yes to delete", onConfirm: () => {} };
     const onConfirmCancel = vi.fn();
     const { stdin } = render(
       <Box height={10} width={60}>
@@ -385,11 +459,9 @@ describe("CommandInput", () => {
     expect(onConfirmCancel).toHaveBeenCalledTimes(1);
   });
 
-  it("does not respond to keys when disabled=true (regression: confirm must not be disabled by other modals)", async () => {
-    const confirm: ConfirmState = {
-      prompt: "Stop loop?",
-      onConfirm: () => {},
-    };
+  it("backspace removes last typed char so 'yex' + backspace + 's' + Enter confirms", async () => {
+    const confirm: ConfirmState = { prompt: "Type yes to delete", onConfirm: () => {} };
+    const onConfirmYes = vi.fn();
     const onConfirmCancel = vi.fn();
     const { stdin } = render(
       <Box height={10} width={60}>
@@ -402,18 +474,69 @@ describe("CommandInput", () => {
           onSearchChange={() => {}}
           onSearchSubmit={() => {}}
           onSearchCancel={() => {}}
+          onConfirmYes={onConfirmYes}
+          onConfirmCancel={onConfirmCancel}
+        />
+      </Box>,
+    );
+    await typeChars(stdin, "yex");
+    stdin.write("\u007F"); // backspace
+    await delay();
+    await typeChars(stdin, "s");
+    stdin.write("\r");
+    await delay();
+    expect(onConfirmYes).toHaveBeenCalledTimes(1);
+    expect(onConfirmCancel).not.toHaveBeenCalled();
+  });
+
+  it("typed characters appear in the rendered output", async () => {
+    const confirm: ConfirmState = { prompt: "Type yes to delete", onConfirm: () => {} };
+    const { stdin, lastFrame } = render(
+      <Box height={10} width={60}>
+        <CommandInput
+          context={baseContext}
+          onCommand={() => {}}
+          confirmState={confirm}
+          searchState={null}
+          searchValue=""
+          onSearchChange={() => {}}
+          onSearchSubmit={() => {}}
+          onSearchCancel={() => {}}
           onConfirmYes={() => {}}
+          onConfirmCancel={() => {}}
+        />
+      </Box>,
+    );
+    await typeChars(stdin, "ye");
+    const frame = lastFrame() ?? "";
+    expect(frame).toContain("ye");
+  });
+
+  it("does not respond to keys when disabled=true", async () => {
+    const confirm: ConfirmState = { prompt: "Type yes to stop", onConfirm: () => {} };
+    const onConfirmCancel = vi.fn();
+    const onConfirmYes = vi.fn();
+    const { stdin } = render(
+      <Box height={10} width={60}>
+        <CommandInput
+          context={baseContext}
+          onCommand={() => {}}
+          confirmState={confirm}
+          searchState={null}
+          searchValue=""
+          onSearchChange={() => {}}
+          onSearchSubmit={() => {}}
+          onSearchCancel={() => {}}
+          onConfirmYes={onConfirmYes}
           onConfirmCancel={onConfirmCancel}
           disabled
         />
       </Box>,
     );
-    // When disabled=true, the confirm input is inactive (isActive:false).
-    // This documents the regression we fixed: App.tsx no longer passes disabled=true
-    // while confirmState is set, so this path should never trigger in production.
     stdin.write("\u001B");
     await delay();
     expect(onConfirmCancel).not.toHaveBeenCalled();
+    expect(onConfirmYes).not.toHaveBeenCalled();
   });
 
   it("Enter on an empty command bar triggers onPanelAction", async () => {
@@ -485,50 +608,6 @@ describe("CommandInput", () => {
     stdin.write("npm test"); // arrives as one multi-char chunk (a paste)
     await delay();
     expect(lastFrame()).toContain("npm test");
-  });
-
-  it("Esc then Enter on bare board does NOT quit the app (cancel is default in confirm)", async () => {
-    // Regression test for task 4.2: before 4.1, Escape opened the quit confirm
-    // with "yes" focused; a quick Enter would exit. Now cancel is the default,
-    // so pressing Escape then Enter on the bare board dismisses the confirm
-    // instead of confirming quit.
-    const confirm: ConfirmState = {
-      prompt: "Quit?",
-      onConfirm: () => {},
-    };
-    const onConfirmCancel = vi.fn();
-    const onConfirmYes = vi.fn();
-    const { stdin } = render(
-      <Box height={10} width={60}>
-        <CommandInput
-          context={baseContext}
-          onCommand={() => {}}
-          confirmState={confirm}
-          searchState={null}
-          searchValue=""
-          onSearchChange={() => {}}
-          onSearchSubmit={() => {}}
-          onSearchCancel={() => {}}
-          onConfirmYes={onConfirmYes}
-          onConfirmCancel={onConfirmCancel}
-        />
-      </Box>,
-    );
-    // Simulate: Esc opens confirm (already open), then Enter without navigation
-    stdin.write("\r");
-    await delay();
-    // Cancel is default → Enter dismisses, does NOT confirm quit
-    expect(onConfirmCancel).toHaveBeenCalledTimes(1);
-    expect(onConfirmYes).not.toHaveBeenCalled();
-  });
-
-  it("confirm options list cancel before yes (structural guarantee)", () => {
-    // Belt-and-suspenders: if someone reorders the options array, this test breaks.
-    // The ConfirmMode component builds options as [cancel, yes] so that
-    // index 0 (default focus) = cancel.
-    const order: string[] = [CONFIRM_CANCEL, CONFIRM_YES];
-    expect(order.indexOf(CONFIRM_CANCEL)).toBeLessThan(order.indexOf(CONFIRM_YES));
-    expect(order[0]).toBe(CONFIRM_CANCEL);
   });
 
   it("Ctrl+U clears the command bar", async () => {

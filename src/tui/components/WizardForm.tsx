@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useMemo } from "react";
+import React, { useState, useCallback, useMemo, useRef } from "react";
 import { Box, Text, useInput } from "ink";
 import { darkTheme as theme } from "../theme.js";
 import { t } from "../../i18n/index.js";
@@ -87,9 +87,22 @@ export function WizardForm(props: WizardFormProps): React.ReactNode {
     return result;
   }, [steps, values]);
 
+  // Synchronous mirror of resolvedValues — updated inside setValue so
+  // findNextField sees the new value immediately, before React re-renders.
+  // Without this, onChange("Existing task") + onAdvance() run in the same
+  // tick: setValues queues a state update, but findNextField reads stale
+  // resolvedValues where taskMode is still "" → taskId is wrongly skipped.
+  const resolvedValuesRef = useRef<Record<string, string>>({});
+  const computeResolved = (raw: Record<string, string>): Record<string, string> => {
+    const result: Record<string, string> = {};
+    for (const s of steps) result[s.key] = raw[s.key] ?? s.defaultValue ?? "";
+    return result;
+  };
+
   const setValue = useCallback((key: string, next: string) => {
+    resolvedValuesRef.current = computeResolved({ ...resolvedValuesRef.current, [key]: next });
     setValues((prev) => ({ ...prev, [key]: next }));
-  }, []);
+  }, [steps]);
 
   const clearError = useCallback((key: string) => {
     setValidationErrors((prev) => {
@@ -139,14 +152,15 @@ export function WizardForm(props: WizardFormProps): React.ReactNode {
     (from: number, delta: number): number => {
       let next = from + delta;
       const len = steps.length;
+      const vals = resolvedValuesRef.current;
       while (next >= 0 && next < len) {
         const candidate = steps[next];
-        if (!candidate.skip || !candidate.skip(resolvedValues)) return next;
+        if (!candidate.skip || !candidate.skip(vals)) return next;
         next += delta;
       }
       return from;
     },
-    [steps, values],
+    [steps],
   );
 
   const moveField = useCallback(

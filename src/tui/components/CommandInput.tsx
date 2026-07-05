@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useCallback } from "react";
+import React, { useState, useEffect, useMemo, useCallback } from "react";
 import { Box, Text, useInput } from "ink";
 import {
   useAutocompleteState,
@@ -11,8 +11,6 @@ import { buildCommands, rankCommands } from "../commands.js";
 import {
   COMMAND_INPUT_DROPDOWN_MAX_VISIBLE,
   COMMAND_INPUT_HEIGHT,
-  CONFIRM_YES,
-  CONFIRM_CANCEL,
 } from "../../config/constants.js";
 import type { CommandContext, ConfirmState, SearchState } from "../types.js";
 import { sanitizePaste } from "../utils/paste.js";
@@ -168,37 +166,6 @@ function CommandDropdown({
 }
 
 // ── Confirm inline options ────────────────────────────────────────────
-
-function ConfirmInlineOptions({
-  focusedIndex,
-  yesLabel,
-  cancelLabel,
-}: {
-  focusedIndex: number;
-  yesLabel: string;
-  cancelLabel: string;
-}): React.ReactNode {
-  // Options order: [cancel(0), yes(1)] in the autocomplete state,
-  // displayed inline as "❯ yes   cancel" (yes first, cancel second).
-  const yesFocused = focusedIndex === 1;
-  const cancelFocused = focusedIndex === 0;
-
-  return (
-    <Box paddingLeft={3}>
-      {yesFocused ? (
-        <Text color={theme.text.inverse} backgroundColor={theme.bg.active}>{`\u276f ${yesLabel}`}</Text>
-      ) : (
-        <Text color={theme.text.muted}>{`  ${yesLabel}`}</Text>
-      )}
-      <Text color={theme.text.muted}>{"   "}</Text>
-      {cancelFocused ? (
-        <Text color={theme.text.inverse} backgroundColor={theme.bg.active}>{`\u276f ${cancelLabel}`}</Text>
-      ) : (
-        <Text color={theme.text.muted}>{`  ${cancelLabel}`}</Text>
-      )}
-    </Box>
-  );
-}
 
 // ── Hint bar ──────────────────────────────────────────────────────────
 
@@ -413,58 +380,37 @@ function ConfirmMode({
   onConfirmCancel: () => void;
   disabled?: boolean;
 }): React.ReactNode {
-  const yesLabel = t("cmdInput.confirmYes");
-  const cancelLabel = t("cmdInput.confirmCancel");
-
-  const options = useMemo(
-    () => [
-      { label: cancelLabel, value: CONFIRM_CANCEL },
-      { label: yesLabel, value: CONFIRM_YES },
-    ],
-    [cancelLabel, yesLabel],
-  );
-
-  const handleSelect = useCallback(
-    (value: string) => {
-      if (value === CONFIRM_YES) { onConfirmYes(); }
-      else { onConfirmCancel(); }
-    },
-    [onConfirmYes, onConfirmCancel],
-  );
-
-  const { state, dispatch } = useAutocompleteState({
-    options,
-    visibleOptionCount: 2,
-    onSelect: handleSelect,
-  });
+  const [value, setValue] = useState("");
 
   useInput(
-    (_input, key) => {
+    (input, key) => {
       if (key.ctrl) return;
-      if (_input.length > 1 && (_input.includes("\r") || _input.includes("\n"))) return;
-      if (key.escape) { onConfirmCancel(); return; }
+      if (input.length > 1 && (input.includes("\r") || input.includes("\n"))) return;
+      if (key.escape) { setValue(""); onConfirmCancel(); return; }
       if (key.return) {
-        if (state.isOpen && state.filteredOptions.length > 0 && state.focusedIndex < state.filteredOptions.length) {
-          const focused = state.filteredOptions[state.focusedIndex];
-          dispatch({ type: "SELECT", value: focused.option.value, label: focused.option.label });
-        } else { onConfirmCancel(); }
+        if (value.toLowerCase() === "yes") { setValue(""); onConfirmYes(); }
+        else { setValue(""); onConfirmCancel(); }
         return;
       }
-      if (key.downArrow) { dispatch({ type: "FOCUS_NEXT" }); return; }
-      if (key.upArrow) { dispatch({ type: "FOCUS_PREV" }); return; }
+      if (key.backspace || key.delete) { setValue((v) => v.slice(0, -1)); return; }
+      if (input && !key.ctrl && !key.meta && input.length === 1) { setValue((v) => v + input); return; }
     },
     { isActive: !disabled },
   );
 
+  const cursor = "\x1b[7m \x1b[27m";
+
   return (
     <>
-      {/* Prompt first with danger accent bar */}
       <Box>
         <Text color={theme.semantic.danger}>{"│ "}</Text>
-        <Text color={theme.text.primary}>{confirmState.prompt}</Text>
+        <Text color={theme.text.muted}>{confirmState.prompt + " "}</Text>
+        {value.length > 0 ? (
+          <Text>{value + cursor}</Text>
+        ) : (
+          <Text>{cursor}</Text>
+        )}
       </Box>
-      {/* Inline options below the prompt */}
-      <ConfirmInlineOptions focusedIndex={state.focusedIndex} yesLabel={yesLabel} cancelLabel={cancelLabel} />
       <HintBar
         leftHint={
           <Box>

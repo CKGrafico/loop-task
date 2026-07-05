@@ -101,7 +101,7 @@ export function CreateView(props: CreateViewProps): React.ReactNode {
         hint: t("board.hintTask"),
         required: true,
         inputType: "text",
-        defaultValue: initial.taskId ?? undefined,
+        defaultValue: selectedTaskId ?? initial.taskId ?? undefined,
         skip: (values) => !values.taskMode?.includes("Existing"),
         onActivate: () => setTaskPickerOpen(true),
         renderCustom: ({ isActive }) => (

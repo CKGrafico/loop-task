@@ -244,7 +244,7 @@ export function App(props: { onQuit: () => void }): React.ReactNode {
           prompt: t("confirm.deleteTask", { id: selectedTask.id }),
           onConfirm: () => { void deleteTask(selectedTask.id).then(() => { void refreshTasks(); }); },
         });
-      } else if (activeTab === "projects" && selectedProjectEntity) {
+      } else if (activeTab === "projects" && selectedProjectEntity && !selectedProjectEntity.isSystem) {
         setConfirmState({
           prompt: t("confirm.deleteProject", { name: selectedProjectEntity.name }),
           onConfirm: async () => {
