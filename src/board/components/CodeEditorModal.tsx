@@ -2,7 +2,7 @@ import React, { useState, useCallback, useMemo } from "react";
 import { useKeyboard, useTerminalDimensions } from "@opentui/react";
 import { t } from "../../i18n/index.js";
 import { useUndoRedo } from "../../shared/useUndoRedo.js";
-import { tokenizeCommand } from "../../tui/utils/syntax.js";
+import { highlightSegments } from "../../tui/utils/syntax.js";
 import { joinCommandLines } from "../../loop-config.js";
 import { copyToClipboard, readFromClipboard } from "../../shared/clipboard.js";
 import { sanitizePaste } from "../../tui/utils/paste.js";
@@ -330,9 +330,13 @@ export function CodeEditorModal(props: CodeEditorModalProps): React.ReactNode {
               );
             }
 
-            // Non-cursor line: syntax highlighted
-            const tokens = tokenizeCommand(line);
-            if (tokens.length === 0) {
+            // Non-cursor line: syntax highlighted (whitespace preserved)
+            const segments = highlightSegments(
+              line,
+              CODE_EDITOR_SYNTAX_COLORS,
+              "#6b7280",
+            );
+            if (segments.length === 0) {
               return (
                 <box key={rowIdx} style={{ flexDirection: "row" }}>
                   <text fg="#6b7280">{lineNum} </text>
@@ -343,9 +347,9 @@ export function CodeEditorModal(props: CodeEditorModalProps): React.ReactNode {
             return (
               <box key={rowIdx} style={{ flexDirection: "row" }}>
                 <text fg="#6b7280">{lineNum} </text>
-                {tokens.map((token, ti) => (
-                  <text key={ti} fg={CODE_EDITOR_SYNTAX_COLORS[token.type]}>
-                    {token.value}
+                {segments.map((seg, ti) => (
+                  <text key={ti} fg={seg.color}>
+                    {seg.value}
                   </text>
                 ))}
               </box>
@@ -362,9 +366,9 @@ export function CodeEditorModal(props: CodeEditorModalProps): React.ReactNode {
         {/* Buttons + hint row */}
         <box style={{ flexDirection: "row", justifyContent: "space-between" }}>
           <box style={{ flexDirection: "row" }}>
-            <ActionButton label={`${t("codeEditor.buttonCopy")} shift+c`} onMouseDown={handleCopy} />
-            <ActionButton label={`${t("codeEditor.buttonPaste")} shift+v`} onMouseDown={handlePaste} />
-            <ActionButton label={`${t("codeEditor.buttonClear")} shift+x`} onMouseDown={handleClear} />
+            <ActionButton label={`${t("codeEditor.buttonCopy")} s+c`} onMouseDown={handleCopy} />
+            <ActionButton label={`${t("codeEditor.buttonPaste")} s+v`} onMouseDown={handlePaste} />
+            <ActionButton label={`${t("codeEditor.buttonClear")} s+x`} onMouseDown={handleClear} />
           </box>
           {flashMsg ? (
             <text fg="#4ade80">{flashMsg}</text>

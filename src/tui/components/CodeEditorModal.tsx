@@ -3,7 +3,7 @@ import { Box, Text, useInput } from "ink";
 import { darkTheme as theme } from "../theme.js";
 import { t } from "../../i18n/index.js";
 import { useUndoRedo } from "../../shared/useUndoRedo.js";
-import { tokenizeCommand } from "../utils/syntax.js";
+import { highlightSegments } from "../utils/syntax.js";
 import { joinCommandLines } from "../../loop-config.js";
 import { copyToClipboard, readFromClipboard } from "../../shared/clipboard.js";
 import { sanitizePaste } from "../utils/paste.js";
@@ -318,9 +318,13 @@ export function CodeEditorModal(props: CodeEditorModalProps): React.ReactNode {
               );
             }
 
-            // Non-cursor line: syntax highlighted
-            const tokens = tokenizeCommand(line);
-            if (tokens.length === 0) {
+            // Non-cursor line: syntax highlighted (whitespace preserved)
+            const segments = highlightSegments(
+              line,
+              CODE_EDITOR_SYNTAX_COLORS,
+              theme.text.muted,
+            );
+            if (segments.length === 0) {
               return (
                 <Box key={rowIdx}>
                   <Text color={theme.text.muted}>{lineNum} </Text>
@@ -331,12 +335,9 @@ export function CodeEditorModal(props: CodeEditorModalProps): React.ReactNode {
             return (
               <Box key={rowIdx}>
                 <Text color={theme.text.muted}>{lineNum} </Text>
-                {tokens.map((token, ti) => (
-                  <Text
-                    key={ti}
-                    color={CODE_EDITOR_SYNTAX_COLORS[token.type]}
-                  >
-                    {token.value}
+                {segments.map((seg, ti) => (
+                  <Text key={ti} color={seg.color}>
+                    {seg.value}
                   </Text>
                 ))}
               </Box>
@@ -350,18 +351,23 @@ export function CodeEditorModal(props: CodeEditorModalProps): React.ReactNode {
           <Text color={theme.text.secondary}>{truncatedPreview || t("codeEditor.emptyPlaceholder")}</Text>
         </Box>
 
-        {/* Buttons + hint row */}
+        {/* Buttons row */}
         <Box justifyContent="space-between">
-          <Box gap={1}>
-            <Text color={theme.text.muted}>[{t("codeEditor.buttonCopy")} shift+c]</Text>
-            <Text color={theme.text.muted}>[{t("codeEditor.buttonPaste")} shift+v]</Text>
-            <Text color={theme.text.muted}>[{t("codeEditor.buttonClear")} shift+x]</Text>
+          <Box gap={2}>
+            <Text color={theme.accent.brand}>{t("codeEditor.buttonCopy")}</Text>
+            <Text color={theme.text.muted}>s+c</Text>
+            <Text color={theme.accent.brand}>{t("codeEditor.buttonPaste")}</Text>
+            <Text color={theme.text.muted}>s+v</Text>
+            <Text color={theme.accent.brand}>{t("codeEditor.buttonClear")}</Text>
+            <Text color={theme.text.muted}>s+x</Text>
           </Box>
           {flashMsg ? (
             <Text color={theme.semantic.success}>{flashMsg}</Text>
-          ) : (
-            <Text color={theme.text.muted}>{t("codeEditor.hint")}</Text>
-          )}
+          ) : null}
+        </Box>
+        {/* Hint row */}
+        <Box>
+          <Text color={theme.text.muted}>{t("codeEditor.hint")}</Text>
         </Box>
       </Box>
     </Box>

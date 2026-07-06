@@ -1,4 +1,4 @@
-export type TokenType = "flag" | "string" | "operator" | "word";
+export type TokenType = "flag" | "string" | "operator" | "word" | "whitespace";
 
 export interface Token {
   type: TokenType;
@@ -8,11 +8,10 @@ export interface Token {
 const OPERATORS = new Set(["|", "&&", "||", ";", ">", ">>", "<"]);
 
 /**
- * Tokenize a command line for syntax highlighting purposes.
- * This is a cosmetic tokenizer — the real parsing for execution
- * lives in src/loop-config.ts parseCommandLine.
+ * Scan a command line into tokens, preserving whitespace runs as
+ * "whitespace" tokens. Used by highlightSegments for rendering.
  */
-export function tokenizeCommand(line: string): Token[] {
+function scanTokens(line: string): Token[] {
   if (!line) return [];
 
   const tokens: Token[] = [];
@@ -20,9 +19,12 @@ export function tokenizeCommand(line: string): Token[] {
   const len = line.length;
 
   while (i < len) {
-    // Skip whitespace
+    // Whitespace run — preserve it as a token
     if (line[i] === " " || line[i] === "\t") {
-      i++;
+      let j = i;
+      while (j < len && (line[j] === " " || line[j] === "\t")) j++;
+      tokens.push({ type: "whitespace", value: line.slice(i, j) });
+      i = j;
       continue;
     }
 
@@ -99,6 +101,39 @@ export function tokenizeCommand(line: string): Token[] {
 
   return tokens;
 }
+
+/**
+ * Tokenize a command line for syntax highlighting purposes.
+ * This is a cosmetic tokenizer — the real parsing for execution
+ * lives in src/loop-config.ts parseCommandLine.
+ *
+ * Whitespace is not returned (use highlightSegments for rendering
+ * that needs to preserve spacing).
+ */
+export function tokenizeCommand(line: string): Token[] {
+  return scanTokens(line).filter((tok) => tok.type !== "whitespace");
+}
+
+export interface HighlightSegment {
+  value: string;
+  color: string;
+}
+
+/**
+ * Produce colored segments for a command line, preserving whitespace
+ * exactly so token-by-token rendering does not collapse spaces.
+ */
+export function highlightSegments(
+  line: string,
+  colors: Record<Exclude<TokenType, "whitespace">, string>,
+  whitespaceColor: string,
+): HighlightSegment[] {
+  return scanTokens(line).map((tok) => ({
+    value: tok.value,
+    color: tok.type === "whitespace" ? whitespaceColor : colors[tok.type],
+  }));
+}
+
 
 function classifyWord(value: string): Token {
   // Flag: --something (long flag)
