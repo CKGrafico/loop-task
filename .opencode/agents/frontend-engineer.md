@@ -12,6 +12,6 @@ permission:
 
 ## Abilities
 - Guardrails: @ob-generic-guardrails, @project-guardrails
-- Development: @react-dev, @typescript-advanced-types
+- Development: @react-dev, @typescript-advanced-types, @react-nextjs-patterns, @feature-sliced-design, @inversify-hooks
 - Testing: @vitest-testing
 - Infrastructure: @eslint-prettier-config
