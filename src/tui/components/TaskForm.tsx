@@ -3,10 +3,12 @@ import React, { useEffect, useMemo, useCallback, useState, useRef } from "react"
 import type { TaskDefinition } from "../../types.js";
 import { WizardForm, type WizardStepConfig } from "./WizardForm.js";
 import { SelectModal, SelectValueField, type SelectOption } from "./SelectModal.js";
-import { InlineCommandEditor } from "./InlineCommandEditor.js";
+import { CodeEditorPreview } from "./CodeEditorPreview.js";
+import { CodeEditorModal } from "./CodeEditorModal.js";
 import { createTask, updateTask, listTasks } from "../daemon.js";
 import crypto from "node:crypto";
 import { t } from "../../i18n/index.js";
+import { joinCommandLines } from "../../loop-config.js";
 
 // ── Props ───────────────────────────────────────────────────────────
 
@@ -57,6 +59,7 @@ export function TaskForm(props: TaskFormProps): React.ReactNode {
     [chainOptions],
   );
 
+  const [commandEditorOpen, setCommandEditorOpen] = useState(false);
   const [openChainField, setOpenChainField] = useState<"onSuccess" | "onFailure" | null>(null);
   const chainFieldsRef = useRef<Record<string, { value: string; onChange: (v: string) => void; onAdvance: () => void }>>({});
 
@@ -95,15 +98,13 @@ export function TaskForm(props: TaskFormProps): React.ReactNode {
         required: true,
         inputType: "text",
         defaultValue: commandValue || undefined,
-        renderCustom: ({ isActive, onChange }) => (
-          <InlineCommandEditor
+        onActivate: () => setCommandEditorOpen(true),
+        renderCustom: ({ isActive }) => (
+          <CodeEditorPreview
             value={commandValue}
             hint={t("wizard.commandHint")}
             isActive={isActive}
-            onChange={(v) => {
-              setCommandValue(v);
-              onChange(v);
-            }}
+            onActivate={() => setCommandEditorOpen(true)}
           />
         ),
       },
@@ -150,11 +151,7 @@ export function TaskForm(props: TaskFormProps): React.ReactNode {
   const handleComplete = useCallback(
     (values: Record<string, string>) => {
       const name = values.name?.trim() ?? "";
-      const rawCommand = commandValue
-        .split("\n")
-        .map((l) => l.trim())
-        .filter(Boolean)
-        .join(" ");
+      const rawCommand = joinCommandLines(commandValue);
       if (!name || !rawCommand) return;
 
       const onSuccessTaskId = resolveChainId(values.onSuccess ?? "");
@@ -194,7 +191,7 @@ export function TaskForm(props: TaskFormProps): React.ReactNode {
         steps={steps}
         onComplete={handleComplete}
         onCancel={onCancel}
-        disabled={openChainField !== null}
+        disabled={openChainField !== null || commandEditorOpen}
       />
       {openChainField ? (
         <SelectModal
@@ -207,6 +204,16 @@ export function TaskForm(props: TaskFormProps): React.ReactNode {
             setOpenChainField(null);
           }}
           onClose={() => setOpenChainField(null)}
+        />
+      ) : null}
+      {commandEditorOpen ? (
+        <CodeEditorModal
+          initialValue={commandValue}
+          onSave={(v) => {
+            setCommandValue(v);
+            setCommandEditorOpen(false);
+          }}
+          onCancel={() => setCommandEditorOpen(false)}
         />
       ) : null}
     </>
