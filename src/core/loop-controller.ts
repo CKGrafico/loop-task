@@ -127,6 +127,11 @@ export class LoopController extends EventEmitter {
       if (interruptCurrentRun) {
         this.runAbortController?.abort();
       }
+      this.abortController.abort();
+      if (this.resumeResolve) {
+        this.resumeResolve();
+        this.resumeResolve = null;
+      }
       this.emit("stopped");
     }
   }
