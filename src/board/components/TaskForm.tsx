@@ -8,9 +8,11 @@ import { createTask, updateTask, listTasks } from "../daemon.js";
 import { useHoverState } from "../hooks/useHoverState.js";
 import { useInputShortcuts } from "../hooks/useInputShortcuts.js";
 import { useTabNav } from "../hooks/useTabNav.js";
-import { copyToClipboard } from "../../shared/clipboard.js";
 import { HOVER_BG } from "../../config/constants.js";
 import { SearchSelect } from "./SearchSelect.js";
+import { CodeEditorPreview } from "./CodeEditorPreview.js";
+import { CodeEditorModal } from "./CodeEditorModal.js";
+import { joinCommandLines, parseCommandLine } from "../../loop-config.js";
 
 const taskFields = ["name", "command", "onSuccessTaskId", "onFailureTaskId"] as const;
 type TaskField = (typeof taskFields)[number];
@@ -38,6 +40,7 @@ export function TaskForm(props: {
   const valuesRef = useRef(values);
   const [error, setError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [commandEditorOpen, setCommandEditorOpen] = useState(false);
   const [allTasks, setAllTasks] = useState<TaskDefinition[]>([]);
   const inputRef = useRef<InputRenderable | null>(null);
   const { width: termWidth } = useTerminalDimensions();
@@ -81,13 +84,13 @@ export function TaskForm(props: {
       setIsSubmitting(true);
       setError("");
 
-      const cmdLine = current.command.trim();
-      if (!cmdLine) {
+      const cmdLine = joinCommandLines(current.command);
+      if (!cmdLine.trim()) {
         setError(t("errors.commandEmpty"));
         return;
       }
 
-      const tokens = cmdLine.split(/\s+/);
+      const tokens = parseCommandLine(cmdLine);
       const command = tokens[0] ?? "";
       const commandArgs = tokens.slice(1);
       const onSuccessTaskId = current.onSuccessTaskId || null;
@@ -165,7 +168,7 @@ export function TaskForm(props: {
                 hints={hints}
                 chainOptions={chainOptions}
                 inputRef={inputRef}
-                onCopy={props.onCopy}
+                onCommandActivate={() => setCommandEditorOpen(true)}
                 style={{ width: "50%", paddingRight: 1 }}
               />
               {rightField ? (
@@ -182,7 +185,7 @@ export function TaskForm(props: {
                   hints={hints}
                   chainOptions={chainOptions}
                   inputRef={inputRef}
-                  onCopy={props.onCopy}
+                  onCommandActivate={() => setCommandEditorOpen(true)}
                   style={{ width: "50%" }}
                 />
               ) : (
@@ -209,6 +212,16 @@ export function TaskForm(props: {
       </box>
       <text fg="#9ca3af">{t("board.formNav")}</text>
       {error ? <text fg="#f87171">{error}</text> : null}
+      {commandEditorOpen ? (
+        <CodeEditorModal
+          initialValue={values.command}
+          onSave={(v) => {
+            updateValues({ ...valuesRef.current, command: v });
+            setCommandEditorOpen(false);
+          }}
+          onCancel={() => setCommandEditorOpen(false)}
+        />
+      ) : null}
     </box>
   );
 }
@@ -226,19 +239,26 @@ function TaskFormRow(props: {
   hints: Record<TaskField, string>;
   chainOptions: { name: string; description: string; value: string }[];
   inputRef: React.MutableRefObject<InputRenderable | null>;
-  onCopy?: (text: string) => void;
+  onCommandActivate: () => void;
   style?: { width?: number | `${number}%` | "auto"; flexGrow?: number; marginRight?: number; paddingRight?: number };
 }): React.ReactNode {
-  const { field, index, focused, values, valuesRef, updateValues, setFocusIndex, submit, labels, hints, chainOptions, inputRef, onCopy, style } = props;
+  const { field, index, focused, values, valuesRef, updateValues, setFocusIndex, submit, labels, hints, chainOptions, inputRef, onCommandActivate, style } = props;
+  const isCommandPreview = field === "command";
   const isSelect = field === "onSuccessTaskId" || field === "onFailureTaskId";
   const selectOpts = isSelect ? chainOptions : [];
-  const copyHover = useHoverState();
 
   return (
     <box style={{ flexDirection: "column", ...style }}>
       <text fg={focused ? "#38bdf8" : "#e5e7eb"}>{labels[field]}</text>
       <text fg="#6b7280">{hints[field]}</text>
-      {isSelect ? (
+      {isCommandPreview ? (
+        <CodeEditorPreview
+          value={values[field]}
+          hint={t("board.exampleCommand")}
+          focused={focused}
+          onActivate={() => { setFocusIndex(index); onCommandActivate(); }}
+        />
+      ) : isSelect ? (
         <SearchSelect
           options={selectOpts}
           value={values[field]}
@@ -246,40 +266,27 @@ function TaskFormRow(props: {
           focused={focused}
         />
       ) : (
-        <box style={{ flexDirection: "row" }}>
-          <box
-            border
-            borderColor={focused ? "#38bdf8" : undefined}
-            style={{ height: 3, width: field === "command" ? "92%" : "100%", backgroundColor: "#0b0b0b" }}
-          >
-            <input
-              ref={inputRef}
-              focused={focused}
-              value={values[field]}
-              placeholder={field === "command" ? t("board.exampleCommand") : ""}
-              onInput={(value: string) =>
-                updateValues({ ...valuesRef.current, [field]: value })
+        <box
+          border
+          borderColor={focused ? "#38bdf8" : undefined}
+          style={{ height: 3, width: "100%", backgroundColor: "#0b0b0b" }}
+        >
+          <input
+            ref={inputRef}
+            focused={focused}
+            value={values[field]}
+            placeholder={field === "command" ? t("board.exampleCommand") : ""}
+            onInput={(value: string) =>
+              updateValues({ ...valuesRef.current, [field]: value })
+            }
+            onSubmit={() => {
+              if (index < taskFields.length - 1) {
+                setFocusIndex(index + 1);
+              } else {
+                void submit(valuesRef.current);
               }
-              onSubmit={() => {
-                if (index < taskFields.length - 1) {
-                  setFocusIndex(index + 1);
-                } else {
-                  void submit(valuesRef.current);
-                }
-              }}
-            />
-          </box>
-          {field === "command" ? (
-            <box
-              border
-              borderColor={copyHover.isHovered ? "#38bdf8" : "#374151"}
-              onMouseDown={() => { copyToClipboard(valuesRef.current.command); onCopy?.(valuesRef.current.command); }}
-              style={{ width: "8%", height: 3, justifyContent: "center", alignItems: "center", backgroundColor: copyHover.isHovered ? HOVER_BG : "#0b0b0b" }}
-              {...copyHover.hoverProps}
-            >
-              <text fg={copyHover.isHovered ? "#38bdf8" : "#6b7280"}>{"\u2398"}</text>
-            </box>
-          ) : null}
+            }}
+          />
         </box>
       )}
     </box>
