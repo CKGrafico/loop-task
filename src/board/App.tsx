@@ -132,9 +132,10 @@ export function App(props: { onQuit: () => void }): React.ReactNode {
   );
 
   const filteredTasks = useMemo(() => {
-    if (!taskQuery) return tasks;
+    const sorted = [...tasks].sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: "base" }));
+    if (!taskQuery) return sorted;
     const q = taskQuery.toLowerCase();
-    return tasks.filter((t) => `${t.id} ${t.name} ${t.command}`.toLowerCase().includes(q));
+    return sorted.filter((t) => `${t.id} ${t.name} ${t.command}`.toLowerCase().includes(q));
   }, [tasks, taskQuery]);
 
   const taskClampedIndex = Math.min(taskSelectedIndex, Math.max(0, filteredTasks.length - 1));
