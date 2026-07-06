@@ -47,8 +47,7 @@ export async function executeCommand(
     return { exitCode: 1, duration: 0, startedAt, endedAt };
   }
 
-  const shellCommand = formatCommandLine(command, commandArgs);
-  const child: ResultPromise = execa(shellCommand, {
+  const child: ResultPromise = execa(formatCommandLine(command, commandArgs), {
     stdout: "pipe",
     stderr: "pipe",
     stdin: "ignore",
