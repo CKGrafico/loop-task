@@ -6,9 +6,10 @@ import { t } from "../../i18n/index.js";
 import { WizardForm, type WizardStepConfig } from "./WizardForm.js";
 import { TaskPickerModal } from "./TaskPickerModal.js";
 import { SelectModal, SelectValueField, type SelectOption } from "./SelectModal.js";
-import { InlineCommandEditor } from "./InlineCommandEditor.js";
+import { CodeEditorPreview } from "./CodeEditorPreview.js";
+import { CodeEditorModal } from "./CodeEditorModal.js";
 import { parseDuration } from "../../duration.js";
-import { parseCommandLine } from "../../loop-config.js";
+import { parseCommandLine, joinCommandLines } from "../../loop-config.js";
 
 
 // ── Props ───────────────────────────────────────────────────────────
@@ -45,6 +46,7 @@ export function CreateView(props: CreateViewProps): React.ReactNode {
 
   const [taskPickerOpen, setTaskPickerOpen] = useState(false);
   const [openSelect, setOpenSelect] = useState<"taskMode" | "runNow" | "project" | null>(null);
+  const [commandEditorOpen, setCommandEditorOpen] = useState(false);
   const [commandValue, setCommandValue] = useState(initial.command ?? "");
 
   // renderCustom is invoked on every WizardForm render for every field, so this
@@ -120,16 +122,13 @@ export function CreateView(props: CreateViewProps): React.ReactNode {
         inputType: "text",
         defaultValue: commandValue || undefined,
         skip: (values) => !!values.taskMode?.includes("Existing"),
-        // No onActivate — inline editor, owned directly by renderCustom
-        renderCustom: ({ isActive, onChange }) => (
-          <InlineCommandEditor
+        onActivate: () => setCommandEditorOpen(true),
+        renderCustom: ({ isActive }) => (
+          <CodeEditorPreview
             value={commandValue}
             hint={t("wizard.commandHint")}
             isActive={isActive}
-            onChange={(v) => {
-              setCommandValue(v);
-              onChange(v);
-            }}
+            onActivate={() => setCommandEditorOpen(true)}
           />
         ),
       },
@@ -220,7 +219,7 @@ export function CreateView(props: CreateViewProps): React.ReactNode {
 
       const cmd = isExistingTask
         ? ""
-        : cmdValue.split("\n").map((l) => l.trim()).filter(Boolean).join(" ");
+        : joinCommandLines(cmdValue);
       let cmdOnly = "";
       let args: string[] = [];
       if (cmd.trim()) {
@@ -298,7 +297,7 @@ export function CreateView(props: CreateViewProps): React.ReactNode {
         steps={steps}
         onComplete={handleComplete}
         onCancel={onCancel}
-        disabled={taskPickerOpen || openSelect !== null}
+        disabled={taskPickerOpen || openSelect !== null || commandEditorOpen}
       />
       {taskPickerOpen ? (
         <TaskPickerModal
@@ -321,6 +320,16 @@ export function CreateView(props: CreateViewProps): React.ReactNode {
             setOpenSelect(null);
           }}
           onClose={() => setOpenSelect(null)}
+        />
+      ) : null}
+      {commandEditorOpen ? (
+        <CodeEditorModal
+          initialValue={commandValue}
+          onSave={(v) => {
+            setCommandValue(v);
+            setCommandEditorOpen(false);
+          }}
+          onCancel={() => setCommandEditorOpen(false)}
         />
       ) : null}
     </>
