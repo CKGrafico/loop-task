@@ -16,6 +16,9 @@ function colorizeLine(line: string): React.ReactNode {
   if (/^\$ /.test(line)) {
     return <text fg="#f0abfc">{line}</text>;
   }
+  if (/^  cwd:/.test(line)) {
+    return <text fg="#6b7280">{line}</text>;
+  }
   if (/^--- Chain:/.test(line)) {
     return <text fg="#a78bfa"><strong>{line}</strong></text>;
   }

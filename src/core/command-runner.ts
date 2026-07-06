@@ -11,7 +11,7 @@ function quoteArg(arg: string): string {
 }
 
 function formatCommandLine(command: string, commandArgs: string[]): string {
-  return [command, ...commandArgs.map((a) => quoteArg(a.replace(/\n/g, " ").replace(/\r/g, " ")))].join(" ").trim();
+  return [command, ...commandArgs.map((a) => quoteArg(a.replace(/[\n\r]/g, " ")))].join(" ").trim();
 }
 
 export function extractExitCode(error: unknown): number {
@@ -36,6 +36,9 @@ export async function executeCommand(
     logStream.write(header);
   }
   logStream.write(t("loop.commandLine", { command: formatCommandLine(command, commandArgs) }));
+  if (cwd) {
+    logStream.write(t("loop.cwdLine", { cwd }));
+  }
 
   if (cwd && !fs.existsSync(cwd)) {
     const endedAt = new Date();
@@ -52,6 +55,7 @@ export async function executeCommand(
     cwd: cwd || undefined,
     cancelSignal: signal,
     shell: true,
+    env: process.env,
   });
 
   const stdoutChunks: string[] = [];

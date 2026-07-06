@@ -66,6 +66,7 @@
   "cli.projectInvalidColor": "Invalid color \"{color}\". Valid names: {valid}, or a #rrggbb hex",
   "loop.runHeader": "\n[Run #{runNumber} - {timestamp}]\n",
   "loop.commandLine": "$ {command}\n",
+  "loop.cwdLine": "  cwd: {cwd}\n",
   "loop.chainHeader": "\n--- Chain: {name} ({branch}, prev exit {prevExit}) ---\n",
   "loop.exitMarker": "[exit {code} · {duration}]\n",
   "loop.cwdMissingLog": "[error] working directory does not exist: {cwd}\n",
