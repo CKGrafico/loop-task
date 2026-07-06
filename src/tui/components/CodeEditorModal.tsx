@@ -39,10 +39,19 @@ export function CodeEditorModal(props: CodeEditorModalProps): React.ReactNode {
     const lines = initialValue.split("\n");
     return (lines[lines.length - 1] ?? "").length;
   });
+  const [flashMsg, setFlashMsg] = useState<string | null>(null);
 
   const lines = useMemo(() => (value ? value.split("\n") : [""]), [value]);
   const lineCount = lines.length;
   const lineNumWidth = String(lineCount).length;
+
+  // Flash message auto-clear
+  React.useEffect(() => {
+    if (flashMsg) {
+      const timer = setTimeout(() => setFlashMsg(null), 1500);
+      return () => clearTimeout(timer);
+    }
+  }, [flashMsg]);
 
   // Scroll: keep cursor visible in the editor area
   const scrollStart = useMemo(() => {
@@ -90,6 +99,7 @@ export function CodeEditorModal(props: CodeEditorModalProps): React.ReactNode {
       // Ctrl+Y → copy (NOT redo)
       if (key.ctrl && input === "y") {
         copyToClipboard(value);
+        setFlashMsg(t("codeEditor.copied"));
         return;
       }
       // Ctrl+V → paste from clipboard
@@ -105,6 +115,33 @@ export function CodeEditorModal(props: CodeEditorModalProps): React.ReactNode {
             applyMutation(next, cursorRow, cursorCol + pasted.length);
           }
         }
+        return;
+      }
+      // Shift+C → copy, Shift+V → paste, Shift+X → clear (button shortcuts)
+      if (key.shift && !key.ctrl && !key.meta && input === "C") {
+        copyToClipboard(value);
+        setFlashMsg(t("codeEditor.copied"));
+        return;
+      }
+      if (key.shift && !key.ctrl && !key.meta && input === "V") {
+        const clip = readFromClipboard();
+        if (clip) {
+          const pasted = sanitizePaste(clip);
+          if (pasted) {
+            const next = [...lines];
+            const line = next[cursorRow] ?? "";
+            next[cursorRow] =
+              line.slice(0, cursorCol) + pasted + line.slice(cursorCol);
+            applyMutation(next, cursorRow, cursorCol + pasted.length);
+          }
+        }
+        return;
+      }
+      if (key.shift && !key.ctrl && !key.meta && input === "X") {
+        setValue("");
+        setCursorRow(0);
+        setCursorCol(0);
+        setFlashMsg(t("codeEditor.cleared"));
         return;
       }
 
@@ -316,11 +353,15 @@ export function CodeEditorModal(props: CodeEditorModalProps): React.ReactNode {
         {/* Buttons + hint row */}
         <Box justifyContent="space-between">
           <Box gap={1}>
-            <Text color={theme.text.muted}>[{t("codeEditor.buttonCopy")}]</Text>
-            <Text color={theme.text.muted}>[{t("codeEditor.buttonPaste")}]</Text>
-            <Text color={theme.text.muted}>[{t("codeEditor.buttonClear")}]</Text>
+            <Text color={theme.text.muted}>[{t("codeEditor.buttonCopy")} shift+c]</Text>
+            <Text color={theme.text.muted}>[{t("codeEditor.buttonPaste")} shift+v]</Text>
+            <Text color={theme.text.muted}>[{t("codeEditor.buttonClear")} shift+x]</Text>
           </Box>
-          <Text color={theme.text.muted}>{t("codeEditor.hint")}</Text>
+          {flashMsg ? (
+            <Text color={theme.semantic.success}>{flashMsg}</Text>
+          ) : (
+            <Text color={theme.text.muted}>{t("codeEditor.hint")}</Text>
+          )}
         </Box>
       </Box>
     </Box>

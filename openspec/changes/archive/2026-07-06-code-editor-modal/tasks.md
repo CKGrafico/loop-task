@@ -42,9 +42,9 @@
 
 ## 6. Verification
 
-- [ ] 6.1 Run `rtk npx tsc --noEmit` — fix all type errors
-- [ ] 6.2 Run `rtk pnpm lint` — fix all lint issues
-- [ ] 6.3 Run `rtk pnpm test` — all tests pass, coverage ≥ 90%
+- [x] 6.1 Run `rtk npx tsc --noEmit` — fix all type errors
+- [x] 6.2 Run `rtk pnpm lint` — fix all lint issues
+- [x] 6.3 Run `rtk pnpm test` — all tests pass, coverage ≥ 90%
 - [ ] 6.4 Manual: create a loop with a multiline command using backslash continuation in both tui and board — verify `commandRaw` stored multiline, `command`+`commandArgs` parsed as single line
 - [ ] 6.5 Manual: edit an existing loop/task — verify modal loads `commandRaw` verbatim, line breaks preserved
 - [ ] 6.6 Manual: verify Copy/Paste/Clear buttons work in both modal variants

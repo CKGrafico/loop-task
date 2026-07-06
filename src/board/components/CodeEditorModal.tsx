@@ -1,10 +1,11 @@
-import { useState, useCallback, useMemo } from "react";
+import React, { useState, useCallback, useMemo } from "react";
 import { useKeyboard, useTerminalDimensions } from "@opentui/react";
 import { t } from "../../i18n/index.js";
 import { useUndoRedo } from "../../shared/useUndoRedo.js";
 import { tokenizeCommand } from "../../tui/utils/syntax.js";
 import { joinCommandLines } from "../../loop-config.js";
-import { copyToClipboard } from "../../shared/clipboard.js";
+import { copyToClipboard, readFromClipboard } from "../../shared/clipboard.js";
+import { sanitizePaste } from "../../tui/utils/paste.js";
 import { useHoverState } from "../hooks/useHoverState.js";
 import {
   CODE_EDITOR_MODAL_HEIGHT,
@@ -71,10 +72,19 @@ export function CodeEditorModal(props: CodeEditorModalProps): React.ReactNode {
     const lines = initialValue.split("\n");
     return (lines[lines.length - 1] ?? "").length;
   });
+  const [flashMsg, setFlashMsg] = useState<string | null>(null);
 
   const lines = useMemo(() => (value ? value.split("\n") : [""]), [value]);
   const lineCount = lines.length;
   const lineNumWidth = String(lineCount).length;
+
+  // Flash message auto-clear
+  React.useEffect(() => {
+    if (flashMsg) {
+      const timer = setTimeout(() => setFlashMsg(null), 1500);
+      return () => clearTimeout(timer);
+    }
+  }, [flashMsg]);
 
   // Vertical scroll: keep cursor region visible
   const scrollStart = useMemo(() => {
@@ -100,18 +110,27 @@ export function CodeEditorModal(props: CodeEditorModalProps): React.ReactNode {
 
   const handleCopy = useCallback(() => {
     copyToClipboard(value);
+    setFlashMsg(t("codeEditor.copied"));
   }, [value]);
 
   const handlePaste = useCallback(() => {
-    // OpenTUI board currently has no synchronous clipboard reader;
-    // the Ctrl+V path via useKeyboard handles paste for terminal-based boards.
-    // This button is a visual affordance — Ctrl+V is the real paste mechanism.
-  }, []);
+    const clip = readFromClipboard();
+    if (clip) {
+      const pasted = sanitizePaste(clip);
+      if (pasted) {
+        const next = [...lines];
+        const line = next[cursorRow] ?? "";
+        next[cursorRow] = line.slice(0, cursorCol) + pasted + line.slice(cursorCol);
+        applyMutation(next, cursorRow, cursorCol + pasted.length);
+      }
+    }
+  }, [lines, cursorRow, cursorCol, applyMutation]);
 
   const handleClear = useCallback(() => {
     setValue("");
     setCursorRow(0);
     setCursorCol(0);
+    setFlashMsg(t("codeEditor.cleared"));
   }, [setValue]);
 
   // ── Keyboard ───────────────────────────────────────────────────────
@@ -142,8 +161,22 @@ export function CodeEditorModal(props: CodeEditorModalProps): React.ReactNode {
       copyToClipboard(value);
       return;
     }
-    // Ctrl+V → paste (no-op for now — terminal clipboard read not available in board)
+    // Ctrl+V → paste from clipboard
     if (key.ctrl && key.name === "v") {
+      handlePaste();
+      return;
+    }
+    // Shift+C → copy, Shift+V → paste, Shift+X → clear (button shortcuts)
+    if (key.shift && !key.ctrl && !key.meta && key.sequence === "C") {
+      handleCopy();
+      return;
+    }
+    if (key.shift && !key.ctrl && !key.meta && key.sequence === "V") {
+      handlePaste();
+      return;
+    }
+    if (key.shift && !key.ctrl && !key.meta && key.sequence === "X") {
+      handleClear();
       return;
     }
     // Tab → no-op (let button focus cycle; handled by OpenTUI focus system)
@@ -329,11 +362,15 @@ export function CodeEditorModal(props: CodeEditorModalProps): React.ReactNode {
         {/* Buttons + hint row */}
         <box style={{ flexDirection: "row", justifyContent: "space-between" }}>
           <box style={{ flexDirection: "row" }}>
-            <ActionButton label={t("codeEditor.buttonCopy")} onMouseDown={handleCopy} />
-            <ActionButton label={t("codeEditor.buttonPaste")} onMouseDown={handlePaste} />
-            <ActionButton label={t("codeEditor.buttonClear")} onMouseDown={handleClear} />
+            <ActionButton label={`${t("codeEditor.buttonCopy")} shift+c`} onMouseDown={handleCopy} />
+            <ActionButton label={`${t("codeEditor.buttonPaste")} shift+v`} onMouseDown={handlePaste} />
+            <ActionButton label={`${t("codeEditor.buttonClear")} shift+x`} onMouseDown={handleClear} />
           </box>
-          <text fg="#6b7280">{t("codeEditor.hint")}</text>
+          {flashMsg ? (
+            <text fg="#4ade80">{flashMsg}</text>
+          ) : (
+            <text fg="#6b7280">{t("codeEditor.hint")}</text>
+          )}
         </box>
       </box>
     </box>
