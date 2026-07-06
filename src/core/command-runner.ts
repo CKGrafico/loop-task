@@ -47,13 +47,12 @@ export async function executeCommand(
     return { exitCode: 1, duration: 0, startedAt, endedAt };
   }
 
-  const child: ResultPromise = execa(formatCommandLine(command, commandArgs), {
+  const child: ResultPromise = execa(command, commandArgs, {
     stdout: "pipe",
     stderr: "pipe",
     stdin: "ignore",
     cwd: cwd || undefined,
     cancelSignal: signal,
-    shell: true,
     env: process.env,
   });
 
