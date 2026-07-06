@@ -422,12 +422,15 @@ export class LoopController extends EventEmitter {
           if (mainRecord) mainRecord.chainGroupId = chainGroupId;
 
           let currentTargetId: string | null = chainTargetId;
+          let prevBranch = result.exitCode === 0 ? "onSuccess" : "onFailure";
+          let prevExit = result.exitCode;
           while (currentTargetId) {
             const chainTask = this.taskResolver(currentTargetId);
             if (!chainTask) break;
 
             if (this.logStream) {
-              this.logStream.write(t("loop.chainHeader", { name: chainTask.name }));
+              this.logStream.write(t("loop.chainHeader", { name: chainTask.name, branch: prevBranch, prevExit }));
+              this.logStream.write(t("loop.commandLine", { command: [chainTask.command, ...chainTask.commandArgs.map((a) => /[\s"]/.test(a) ? `"${a.replace(/"/g, '\\"')}"` : a)].join(" ").trim() }));
             }
 
             const chainStartedAt = new Date().toISOString();
@@ -476,6 +479,8 @@ export class LoopController extends EventEmitter {
             this.lastDuration = (this.lastDuration ?? 0) + chainResult.duration;
 
             currentTargetId = (chainResult.exitCode === 0 ? chainTask.onSuccessTaskId : chainTask.onFailureTaskId) ?? null;
+            prevBranch = chainResult.exitCode === 0 ? "onSuccess" : "onFailure";
+            prevExit = chainResult.exitCode;
           }
         }
 

@@ -6,6 +6,14 @@ import { formatDuration } from "../duration.js";
 import { t } from "../i18n/index.js";
 import { MAX_CONTEXT_STDOUT_BYTES } from "../config/constants.js";
 
+function quoteArg(arg: string): string {
+  return /[\s"]/.test(arg) ? `"${arg.replace(/"/g, '\\"')}"` : arg;
+}
+
+function formatCommandLine(command: string, commandArgs: string[]): string {
+  return [command, ...commandArgs.map((a) => quoteArg(a))].join(" ").trim();
+}
+
 export function extractExitCode(error: unknown): number {
   return error && typeof error === "object" && "exitCode" in error
     ? (error as { exitCode: number }).exitCode
@@ -24,6 +32,7 @@ export async function executeCommand(
   const startedAt = new Date();
   const header = t("loop.runHeader", { timestamp: startedAt.toLocaleString(), runNumber: runNumber ?? 0 });
   logStream.write(header);
+  logStream.write(t("loop.commandLine", { command: formatCommandLine(command, commandArgs) }));
 
   if (cwd && !fs.existsSync(cwd)) {
     const endedAt = new Date();
