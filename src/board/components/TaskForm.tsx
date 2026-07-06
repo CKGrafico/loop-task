@@ -54,7 +54,7 @@ export function TaskForm(props: {
 
   useInputShortcuts(() => {
     const fi = focusedItemRef.current;
-    if (fi != null && fi !== "save" && fi !== "cancel" && fi !== "onSuccessTaskId" && fi !== "onFailureTaskId") {
+    if (fi != null && fi !== "save" && fi !== "cancel" && fi !== "onSuccessTaskId" && fi !== "onFailureTaskId" && fi !== "command") {
       return inputRef.current;
     }
     return null;
@@ -72,7 +72,8 @@ export function TaskForm(props: {
   useKeyboard((key) => {
     if (key.name === "return" || key.name === "enter") {
       const fi = focusedItemRef.current;
-      if (fi === "save") { void submit(valuesRef.current); key.preventDefault(); }
+      if (fi === "command") { setCommandEditorOpen(true); key.preventDefault(); }
+      else if (fi === "save") { void submit(valuesRef.current); key.preventDefault(); }
       else if (fi === "cancel") { props.onCancel(); key.preventDefault(); }
     }
   });

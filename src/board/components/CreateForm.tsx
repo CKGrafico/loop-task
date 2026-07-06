@@ -101,7 +101,7 @@ export function CreateView(props: {
 
   useInputShortcuts(() => {
     const fi = focusedItemRef.current;
-    if (fi === "save" || fi === "cancel" || fi === "project") return null;
+    if (fi === "save" || fi === "cancel" || fi === "project" || fi === "command") return null;
     return inputRef.current;
   });
 
@@ -175,6 +175,11 @@ export function CreateView(props: {
     }
     if (fi === "taskId" && !isInline) {
       props.onChooseTask();
+      key.preventDefault();
+      return;
+    }
+    if (fi === "command") {
+      setCommandEditorOpen(true);
       key.preventDefault();
       return;
     }
