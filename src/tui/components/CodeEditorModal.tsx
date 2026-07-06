@@ -96,9 +96,12 @@ export function CodeEditorModal(props: CodeEditorModalProps): React.ReactNode {
         redo();
         return;
       }
-      // Ctrl+Y → copy (NOT redo)
-      if (key.ctrl && input === "y") {
+      // Ctrl+X → cut (copy all to clipboard, then clear)
+      if (key.ctrl && input === "x") {
         copyToClipboard(value);
+        setValue("");
+        setCursorRow(0);
+        setCursorCol(0);
         setFlashMsg(t("codeEditor.copied"));
         return;
       }
@@ -117,27 +120,8 @@ export function CodeEditorModal(props: CodeEditorModalProps): React.ReactNode {
         }
         return;
       }
-      // Shift+C → copy, Shift+V → paste, Shift+X → clear (button shortcuts)
-      if (key.shift && !key.ctrl && !key.meta && input === "C") {
-        copyToClipboard(value);
-        setFlashMsg(t("codeEditor.copied"));
-        return;
-      }
-      if (key.shift && !key.ctrl && !key.meta && input === "V") {
-        const clip = readFromClipboard();
-        if (clip) {
-          const pasted = sanitizePaste(clip);
-          if (pasted) {
-            const next = [...lines];
-            const line = next[cursorRow] ?? "";
-            next[cursorRow] =
-              line.slice(0, cursorCol) + pasted + line.slice(cursorCol);
-            applyMutation(next, cursorRow, cursorCol + pasted.length);
-          }
-        }
-        return;
-      }
-      if (key.shift && !key.ctrl && !key.meta && input === "X") {
+      // Ctrl+L → clear all
+      if (key.ctrl && input === "l") {
         setValue("");
         setCursorRow(0);
         setCursorCol(0);
@@ -355,11 +339,11 @@ export function CodeEditorModal(props: CodeEditorModalProps): React.ReactNode {
         <Box justifyContent="space-between">
           <Box gap={2}>
             <Text color={theme.accent.brand}>{t("codeEditor.buttonCopy")}</Text>
-            <Text color={theme.text.muted}>shift+c</Text>
+            <Text color={theme.text.muted}>ctrl+x</Text>
             <Text color={theme.accent.brand}>{t("codeEditor.buttonPaste")}</Text>
-            <Text color={theme.text.muted}>shift+v</Text>
+            <Text color={theme.text.muted}>ctrl+v</Text>
             <Text color={theme.accent.brand}>{t("codeEditor.buttonClear")}</Text>
-            <Text color={theme.text.muted}>shift+x</Text>
+            <Text color={theme.text.muted}>ctrl+l</Text>
           </Box>
           {flashMsg ? (
             <Text color={theme.semantic.success}>{flashMsg}</Text>

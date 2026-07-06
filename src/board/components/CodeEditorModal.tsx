@@ -156,9 +156,10 @@ export function CodeEditorModal(props: CodeEditorModalProps): React.ReactNode {
       redo();
       return;
     }
-    // Ctrl+Y → copy (NOT redo, per spec)
-    if (key.ctrl && key.name === "y") {
-      copyToClipboard(value);
+    // Ctrl+X → cut (copy all + clear)
+    if (key.ctrl && key.name === "x") {
+      handleCopy();
+      handleClear();
       return;
     }
     // Ctrl+V → paste from clipboard
@@ -166,16 +167,8 @@ export function CodeEditorModal(props: CodeEditorModalProps): React.ReactNode {
       handlePaste();
       return;
     }
-    // Shift+C → copy, Shift+V → paste, Shift+X → clear (button shortcuts)
-    if (key.shift && !key.ctrl && !key.meta && key.sequence === "C") {
-      handleCopy();
-      return;
-    }
-    if (key.shift && !key.ctrl && !key.meta && key.sequence === "V") {
-      handlePaste();
-      return;
-    }
-    if (key.shift && !key.ctrl && !key.meta && key.sequence === "X") {
+    // Ctrl+L → clear all
+    if (key.ctrl && key.name === "l") {
       handleClear();
       return;
     }
@@ -366,9 +359,9 @@ export function CodeEditorModal(props: CodeEditorModalProps): React.ReactNode {
         {/* Buttons + hint row */}
         <box style={{ flexDirection: "row", justifyContent: "space-between" }}>
           <box style={{ flexDirection: "row" }}>
-            <ActionButton label={`${t("codeEditor.buttonCopy")} shift+c`} onMouseDown={handleCopy} />
-            <ActionButton label={`${t("codeEditor.buttonPaste")} shift+v`} onMouseDown={handlePaste} />
-            <ActionButton label={`${t("codeEditor.buttonClear")} shift+x`} onMouseDown={handleClear} />
+            <ActionButton label={`${t("codeEditor.buttonCopy")} ctrl+x`} onMouseDown={handleCopy} />
+            <ActionButton label={`${t("codeEditor.buttonPaste")} ctrl+v`} onMouseDown={handlePaste} />
+            <ActionButton label={`${t("codeEditor.buttonClear")} ctrl+l`} onMouseDown={handleClear} />
           </box>
           {flashMsg ? (
             <text fg="#4ade80">{flashMsg}</text>
