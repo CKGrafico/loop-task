@@ -11,7 +11,7 @@ function quoteArg(arg: string): string {
 }
 
 function formatCommandLine(command: string, commandArgs: string[]): string {
-  return [command, ...commandArgs.map((a) => quoteArg(a))].join(" ").trim();
+  return [command, ...commandArgs.map((a) => quoteArg(a.replace(/\n/g, " ").replace(/\r/g, " ")))].join(" ").trim();
 }
 
 export function extractExitCode(error: unknown): number {

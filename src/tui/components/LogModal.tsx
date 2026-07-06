@@ -2,7 +2,6 @@ import React, { useEffect, useState } from "react";
 import { Box, Text, useInput } from "ink";
 import type { RunRecord } from "../../types.js";
 import { darkTheme as theme } from "../theme.js";
-import { Modal } from "./Modal.js";
 import { t } from "../../i18n/index.js";
 import { streamRunLog } from "../daemon.js";
 import { formatDate } from "../format.js";
@@ -86,7 +85,7 @@ export function LogModal(props: {
     }
 
     if (key.escape) {
-      // Escape handled by App's global popLayer(); no-op here to avoid double-fire
+      props.onClose();
       return;
     }
     if (input === "/") {
@@ -94,7 +93,7 @@ export function LogModal(props: {
       setSearchQuery("");
       return;
     }
-    if (input === "c" && !key.ctrl) {
+    if (key.ctrl && input === "x") {
       copyToClipboard(lines.join("\n"));
       props.onCopy?.();
       return;
@@ -126,70 +125,88 @@ export function LogModal(props: {
         : theme.semantic.danger;
 
   return (
-    <Modal
-      title={`Run #${props.run.runNumber} - ${formatDate(props.run.startedAt)}`}
-      onClose={props.onClose}
-      width="95%"
-      height="70%"
+    <Box
+      position="absolute"
+      top={0}
+      left={0}
+      width="100%"
+      height="100%"
+      justifyContent="center"
+      alignItems="center"
     >
-      <Box marginBottom={1} justifyContent="space-between">
-        <Text color={statusColor}>
-          {statusIcon}{" "}
-          {props.run.status === "running"
-            ? t("board.logModalRunning")
-            : t("board.logModalExit", { code: props.run.exitCode })}
+      <Box
+        borderStyle="round"
+        borderColor={theme.accent.brand}
+        backgroundColor={theme.bg.elevated}
+        paddingX={2}
+        paddingY={1}
+        flexDirection="column"
+        width="95%"
+        height="70%"
+      >
+        <Text color={theme.accent.brand} bold>
+          {`Run #${props.run.runNumber} - ${formatDate(props.run.startedAt)}`}
         </Text>
-        {props.run.duration > 0 ? (
-          <Text color={theme.text.muted}> {t("board.logModalDuration")} {props.run.duration}ms</Text>
-        ) : null}
-        <Text color={theme.text.muted}>
-          {searchMode
-            ? `/${searchQuery}`
-            : follow
-              ? "f follow"
-              : `[${startIdx}-${endIdx}/${totalLines}]`}
-        </Text>
-      </Box>
 
-      {searchMode ? (
-        <Box marginBottom={1}>
-          <Text color={theme.text.muted}>Search: </Text>
-          <Text color={theme.text.primary}>{searchQuery}_</Text>
-        </Box>
-      ) : null}
+        <Box flexDirection="column" marginTop={1} flexGrow={1}>
+          <Box marginBottom={1} justifyContent="space-between">
+            <Text color={statusColor}>
+              {statusIcon}{" "}
+              {props.run.status === "running"
+                ? t("board.logModalRunning")
+                : t("board.logModalExit", { code: props.run.exitCode })}
+            </Text>
+            {props.run.duration > 0 ? (
+              <Text color={theme.text.muted}> {t("board.logModalDuration")} {props.run.duration}ms</Text>
+            ) : null}
+            <Text color={theme.text.muted}>
+              {searchMode
+                ? `/${searchQuery}`
+                : `[${startIdx}-${endIdx}/${totalLines}]`}
+            </Text>
+          </Box>
 
-      <Box flexDirection="column">
-        {visible.length === 0 ? (
-          <Text color={theme.text.muted}>
-            {isLoading
-              ? t("board.logModalLoading")
-              : searchQuery
-                ? t("board.logModalNoMatches")
-                : t("board.logModalEmpty")}
-          </Text>
-        ) : (
-          visible.map((line, i) => {
-            const realIdx = startIdx + i;
-            return (
-              <Text
-                key={realIdx}
-                color={colorForLine(line, props.run)}
-                wrap="truncate"
-              >
-                {line}
+          {searchMode ? (
+            <Box marginBottom={1}>
+              <Text color={theme.text.muted}>Search: </Text>
+              <Text color={theme.text.primary}>{searchQuery}_</Text>
+            </Box>
+          ) : null}
+
+          <Box flexDirection="column" flexGrow={1}>
+            {visible.length === 0 ? (
+              <Text color={theme.text.muted}>
+                {isLoading
+                  ? t("board.logModalLoading")
+                  : searchQuery
+                    ? t("board.logModalNoMatches")
+                    : t("board.logModalEmpty")}
               </Text>
-            );
-          })
-        )}
-      </Box>
+            ) : (
+              visible.map((line, i) => {
+                const realIdx = startIdx + i;
+                return (
+                  <Text
+                    key={realIdx}
+                    color={colorForLine(line, props.run)}
+                    wrap="truncate"
+                  >
+                    {line}
+                  </Text>
+                );
+              })
+            )}
+          </Box>
 
-      <Box marginTop={1} justifyContent="space-between">
-        <Text color={theme.text.muted}>
-          {searchMode
-            ? t("board.logModalSearchHint")
-            : t("board.logModalFooterHints")}
-        </Text>
+          <Box marginTop={1} justifyContent="space-between">
+            <Text color={theme.text.muted}>
+              {searchMode
+                ? t("board.logModalSearchHint")
+                : t("board.logModalFooterHints")}
+            </Text>
+          </Box>
+        </Box>
       </Box>
-    </Modal>
+    </Box>
   );
 }
