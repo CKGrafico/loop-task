@@ -84,6 +84,74 @@ export function parseCommandLine(input: string): string[] {
   return tokens;
 }
 
+export function joinCommandLines(text: string): string {
+  // Quote-aware split: don't split on newlines inside quoted strings
+  const segments: string[] = [];
+  let current = "";
+  let quote: '"' | "'" | null = null;
+
+  for (let i = 0; i < text.length; i += 1) {
+    const char = text[i];
+
+    if (quote) {
+      if (char === quote) {
+        quote = null;
+      } else if (char === "\\" && quote === '"' && i + 1 < text.length) {
+        current += char + text[i + 1];
+        i += 1;
+        continue;
+      }
+      current += char;
+      continue;
+    }
+
+    if (char === '"' || char === "'") {
+      quote = char;
+      current += char;
+      continue;
+    }
+
+    if (char === "\n") {
+      segments.push(current);
+      current = "";
+      continue;
+    }
+
+    current += char;
+  }
+
+  segments.push(current);
+
+  // Join segments according to backslash-continuation rules:
+  // - Empty/whitespace-only segments are dropped
+  // - Segment ending with \: backslash consumed, joins to next with NO added space
+  // - Segment NOT ending with \: joins to next with a single space
+  // Leading whitespace on each line is trimmed (indentation); trailing whitespace
+  // before \ is preserved (it's part of the content — e.g. separates tokens).
+  let result = "";
+  let prevContinued = false; // true if previous segment ended with \
+
+  for (const seg of segments) {
+    const trimmed = seg.trim();
+    if (trimmed === "") continue;
+
+    const endsBackslash = trimmed.endsWith("\\");
+    const content = endsBackslash ? trimmed.slice(0, -1) : trimmed;
+
+    if (result === "") {
+      result = content;
+    } else if (prevContinued) {
+      result += content;
+    } else {
+      result += " " + content;
+    }
+
+    prevContinued = endsBackslash;
+  }
+
+  return result;
+}
+
 export function buildLoopOptions(
   intervalHuman: string,
   input: LoopCommandOptionsInput = {}

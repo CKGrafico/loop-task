@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { parseMaxRuns, parseCommandLine, buildLoopOptions } from "../src/loop-config.js";
+import { parseMaxRuns, parseCommandLine, buildLoopOptions, joinCommandLines } from "../src/loop-config.js";
 
 // ── parseMaxRuns ────────────────────────────────────────────────────────
 
@@ -144,6 +144,62 @@ describe("parseCommandLine", () => {
       "-m",
       "fix: update tests",
     ]);
+  });
+});
+
+// ── joinCommandLines ────────────────────────────────────────────────────
+
+describe("joinCommandLines", () => {
+  it("joins lines with space when no trailing backslash", () => {
+    expect(joinCommandLines("line1\nline2")).toBe("line1 line2");
+  });
+
+  it("joins lines with no space when trailing backslash", () => {
+    expect(joinCommandLines("opencode run \\\n  --model big-pickle")).toBe(
+      "opencode run --model big-pickle"
+    );
+  });
+
+  it("handles the spec example with quoted strings and backslash continuation", () => {
+    expect(
+      joinCommandLines('opencode run \\\n  "search missing translations" \\\n  --model "big-pickle"')
+    ).toBe('opencode run "search missing translations" --model "big-pickle"');
+  });
+
+  it("preserves newlines inside quoted strings", () => {
+    expect(joinCommandLines('echo "hello\nworld"')).toBe('echo "hello\nworld"');
+  });
+
+  it("drops empty lines", () => {
+    expect(joinCommandLines("line1\n\nline2")).toBe("line1 line2");
+  });
+
+  it("drops whitespace-only lines", () => {
+    expect(joinCommandLines("line1\n   \nline2")).toBe("line1 line2");
+  });
+
+  it("returns empty string for empty input", () => {
+    expect(joinCommandLines("")).toBe("");
+  });
+
+  it("returns the line unchanged for a single line", () => {
+    expect(joinCommandLines("echo hello")).toBe("echo hello");
+  });
+
+  it("handles lines that are only a backslash — consumed to empty join", () => {
+    expect(joinCommandLines("\\\n\\")).toBe("");
+  });
+
+  it("handles mixed backslash-continuation and normal lines", () => {
+    expect(joinCommandLines("cmd \\\narg1\narg2 \\\narg3")).toBe("cmd arg1 arg2 arg3");
+  });
+
+  it("drops leading and trailing empty lines", () => {
+    expect(joinCommandLines("\nline1\nline2\n")).toBe("line1 line2");
+  });
+
+  it("handles trailing backslash on last line (consumed, no extra space)", () => {
+    expect(joinCommandLines("echo hello\\")).toBe("echo hello");
   });
 });
 
