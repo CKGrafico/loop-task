@@ -2,7 +2,9 @@ import { useRef, useState } from "react";
 import { useKeyboard, useTerminalDimensions } from "@opentui/react";
 import type { LoopMeta, Project } from "../../types.js";
 import type { InputRenderable } from "@opentui/core";
-import { buildLoopOptions, parseCommandLine } from "../../loop-config.js";
+import { buildLoopOptions, parseCommandLine, joinCommandLines } from "../../loop-config.js";
+import { CodeEditorPreview } from "./CodeEditorPreview.js";
+import { CodeEditorModal } from "./CodeEditorModal.js";
 import { t } from "../../i18n/index.js";
 import { commandLine } from "../format.js";
 import { createLoop, updateLoop, listTasks } from "../daemon.js";
@@ -68,6 +70,11 @@ export function CreateView(props: {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [selectedTaskName, setSelectedTaskName] = useState<string | null>(props.selectedTaskName ?? null);
   const [copiedField, setCopiedField] = useState<string | null>(null);
+  const [commandEditorOpen, setCommandEditorOpen] = useState(false);
+
+  function onCommandActivate(): void {
+    setCommandEditorOpen(true);
+  }
   const { validateField, validateAll } = useLoopFormValidation();
   const inputRef = useRef<InputRenderable | null>(null);
 
@@ -204,7 +211,7 @@ export function CreateView(props: {
 
       if (current.taskMode === TASK_MODE_INLINE) {
         const cwd = current.cwd.trim();
-        const tokens = parseCommandLine(current.command.trim());
+        const tokens = parseCommandLine(joinCommandLines(current.command));
         const [command, ...commandArgs] = tokens;
         const built = buildLoopOptions(current.interval.trim(), {
           now: props.mode === "create" && current.runNow === "y",
@@ -339,6 +346,7 @@ export function CreateView(props: {
                 handleFieldChange={handleFieldChange}
                 handleCopy={handleCopy}
                 copiedField={copiedField}
+                onCommandActivate={onCommandActivate}
                 style={{ width: "50%", paddingRight: 1 }}
               />
               {rightField ? (
@@ -366,6 +374,7 @@ export function CreateView(props: {
                   handleFieldChange={handleFieldChange}
                   handleCopy={handleCopy}
                   copiedField={copiedField}
+                  onCommandActivate={onCommandActivate}
                   style={{ width: "50%" }}
                 />
               ) : (
@@ -392,6 +401,16 @@ export function CreateView(props: {
       </box>
       <text fg="#9ca3af">{t("board.formNav")}</text>
       {error ? <text fg="#f87171">{error}</text> : null}
+      {commandEditorOpen ? (
+        <CodeEditorModal
+          initialValue={values.command}
+          onSave={(v) => {
+            handleFieldChange("command", v);
+            setCommandEditorOpen(false);
+          }}
+          onCancel={() => setCommandEditorOpen(false)}
+        />
+      ) : null}
     </box>
   );
 }
@@ -443,17 +462,19 @@ function FormRow(props: {
   handleFieldChange: (field: CreateField, value: string) => void;
   handleCopy: (field: string, value: string) => void;
   copiedField: string | null;
+  onCommandActivate: () => void;
   style?: { width?: number | `${number}%` | "auto"; flexGrow?: number; marginRight?: number; paddingRight?: number };
 }): React.ReactNode {
-  const { field, index, isFocused, values, valuesRef, updateValues, setFocusIndex, submit, labels, hints, examples, taskModeOptions, runNowOptions, projectOptions, selectedTaskName, onChooseTask, inputRef, style, fieldErrors, clearFieldError, mode, handleFieldChange, handleCopy, copiedField } = props;
+  const { field, index, isFocused, values, valuesRef, updateValues, setFocusIndex, submit, labels, hints, examples, taskModeOptions, runNowOptions, projectOptions, selectedTaskName, onChooseTask, inputRef, style, fieldErrors, clearFieldError, mode, handleFieldChange, handleCopy, copiedField, onCommandActivate } = props;
   const { isHovered, hoverProps } = useHoverState();
   const copyBtnHover = useHoverState();
 
   const isToggleField = field === "taskMode" || field === "runNow";
   const isTaskButton = field === "taskId";
   const isProjectField = field === "project";
+  const isCommandPreview = field === "command";
   const error = fieldErrors[field];
-  const isCopyableField = mode === "edit" && (field === "command" || field === "cwd");
+  const isCopyableField = mode === "edit" && field === "cwd";
 
   const toggleOptions = field === "taskMode" ? taskModeOptions : runNowOptions;
   const toggleValue = field === "taskMode" ? values.taskMode : values.runNow;
@@ -510,6 +531,13 @@ function FormRow(props: {
           value={values.project}
           onChange={(v) => updateValues({ ...valuesRef.current, project: v })}
           focused={isFocused}
+        />
+      ) : isCommandPreview ? (
+        <CodeEditorPreview
+          value={values.command}
+          hint={examples.command}
+          focused={isFocused}
+          onActivate={() => { setFocusIndex(index); onCommandActivate(); }}
         />
       ) : (
         <box style={{ flexDirection: "row", alignItems: "center" }}>
