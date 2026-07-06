@@ -430,7 +430,6 @@ export class LoopController extends EventEmitter {
 
             if (this.logStream) {
               this.logStream.write(t("loop.chainHeader", { name: chainTask.name, branch: prevBranch, prevExit }));
-              this.logStream.write(t("loop.commandLine", { command: [chainTask.command, ...chainTask.commandArgs.map((a) => /[\s"]/.test(a) ? `"${a.replace(/"/g, '\\"')}"` : a).map((a) => a.replace(/\n/g, " ").replace(/\r/g, " "))].join(" ").trim() }));
             }
 
             const chainStartedAt = new Date().toISOString();
@@ -456,6 +455,7 @@ export class LoopController extends EventEmitter {
               this.logStream!,
               signal,
               this.runCount,
+              true,
               true
             );
 

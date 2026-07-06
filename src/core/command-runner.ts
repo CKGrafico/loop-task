@@ -27,11 +27,14 @@ export async function executeCommand(
   logStream: fs.WriteStream,
   signal?: AbortSignal,
   runNumber?: number,
-  captureStdout: boolean = false
+  captureStdout: boolean = false,
+  isChain: boolean = false
 ): Promise<ExecutionResult> {
   const startedAt = new Date();
-  const header = t("loop.runHeader", { timestamp: startedAt.toLocaleString(), runNumber: runNumber ?? 0 });
-  logStream.write(header);
+  if (!isChain) {
+    const header = t("loop.runHeader", { timestamp: startedAt.toLocaleString(), runNumber: runNumber ?? 0 });
+    logStream.write(header);
+  }
   logStream.write(t("loop.commandLine", { command: formatCommandLine(command, commandArgs) }));
 
   if (cwd && !fs.existsSync(cwd)) {
