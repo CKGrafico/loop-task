@@ -286,9 +286,7 @@ export function CodeEditorModal(props: CodeEditorModalProps): React.ReactNode {
               const cur = cursorCol < line.length ? line[cursorCol] : " ";
               const after = cursorCol < line.length ? line.slice(cursorCol + 1) : "";
 
-              // Syntax-highlight the cursor line parts
-              const tokens = tokenizeCommand(line);
-
+              // Cursor line: render with cursor (no syntax highlight on cursor line)
               return (
                 <box key={rowIdx} style={{ flexDirection: "row" }}>
                   <text fg="#6b7280">{lineNum} </text>

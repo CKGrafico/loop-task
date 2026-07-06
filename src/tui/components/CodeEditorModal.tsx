@@ -26,7 +26,7 @@ const EDITOR_VISIBLE_LINES = CODE_EDITOR_MODAL_HEIGHT - 5;
 export function CodeEditorModal(props: CodeEditorModalProps): React.ReactNode {
   const { initialValue, onSave, onCancel } = props;
 
-  const { value, setValue, undo, redo, canUndo, canRedo } = useUndoRedo(
+  const { value, setValue, undo, redo } = useUndoRedo(
     initialValue,
     CODE_EDITOR_UNDO_LIMIT,
   );
@@ -270,8 +270,7 @@ export function CodeEditorModal(props: CodeEditorModalProps): React.ReactNode {
               const cur = cursorCol < line.length ? line[cursorCol] : " ";
               const after = cursorCol < line.length ? line.slice(cursorCol + 1) : "";
 
-              // Tokenize the full line, then split the token stream at cursorCol
-              const tokens = tokenizeCommand(line);
+              // Cursor line: render with cursor (no syntax highlight on cursor line)
               return (
                 <Box key={rowIdx}>
                   <Text color={theme.text.muted}>{lineNum} </Text>

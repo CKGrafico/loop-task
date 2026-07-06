@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from "vitest";
+import { describe, it, expect } from "vitest";
 import { tokenizeCommand } from "../src/tui/utils/syntax.js";
 import { joinCommandLines } from "../src/loop-config.js";
 import { UndoRedoStack } from "../src/shared/useUndoRedo.js";

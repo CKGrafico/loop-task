@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { tokenizeCommand, type Token, type TokenType } from "../src/tui/utils/syntax.js";
+import { tokenizeCommand } from "../src/tui/utils/syntax.js";
 
 describe("tokenizeCommand", () => {
   it("returns empty array for empty string", () => {
