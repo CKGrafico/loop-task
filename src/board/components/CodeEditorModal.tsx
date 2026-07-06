@@ -366,9 +366,9 @@ export function CodeEditorModal(props: CodeEditorModalProps): React.ReactNode {
         {/* Buttons + hint row */}
         <box style={{ flexDirection: "row", justifyContent: "space-between" }}>
           <box style={{ flexDirection: "row" }}>
-            <ActionButton label={`${t("codeEditor.buttonCopy")} s+c`} onMouseDown={handleCopy} />
-            <ActionButton label={`${t("codeEditor.buttonPaste")} s+v`} onMouseDown={handlePaste} />
-            <ActionButton label={`${t("codeEditor.buttonClear")} s+x`} onMouseDown={handleClear} />
+            <ActionButton label={`${t("codeEditor.buttonCopy")} shift+c`} onMouseDown={handleCopy} />
+            <ActionButton label={`${t("codeEditor.buttonPaste")} shift+v`} onMouseDown={handlePaste} />
+            <ActionButton label={`${t("codeEditor.buttonClear")} shift+x`} onMouseDown={handleClear} />
           </box>
           {flashMsg ? (
             <text fg="#4ade80">{flashMsg}</text>

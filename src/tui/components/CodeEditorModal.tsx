@@ -355,11 +355,11 @@ export function CodeEditorModal(props: CodeEditorModalProps): React.ReactNode {
         <Box justifyContent="space-between">
           <Box gap={2}>
             <Text color={theme.accent.brand}>{t("codeEditor.buttonCopy")}</Text>
-            <Text color={theme.text.muted}>s+c</Text>
+            <Text color={theme.text.muted}>shift+c</Text>
             <Text color={theme.accent.brand}>{t("codeEditor.buttonPaste")}</Text>
-            <Text color={theme.text.muted}>s+v</Text>
+            <Text color={theme.text.muted}>shift+v</Text>
             <Text color={theme.accent.brand}>{t("codeEditor.buttonClear")}</Text>
-            <Text color={theme.text.muted}>s+x</Text>
+            <Text color={theme.text.muted}>shift+x</Text>
           </Box>
           {flashMsg ? (
             <Text color={theme.semantic.success}>{flashMsg}</Text>
