@@ -28,7 +28,7 @@ export function createInitialValues(loop: LoopMeta | null, currentProjectId?: st
       interval: "30m",
       taskMode: TASK_MODE_INLINE,
       command: "",
-      cwd: process.cwd(),
+      cwd: "",
       taskId: "",
       description: "",
       runNow: "n",

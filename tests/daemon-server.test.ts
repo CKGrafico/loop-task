@@ -418,7 +418,7 @@ describe("IpcServer", () => {
   it("routes project-create request", async () => {
     const responses = await sendRequest({ type: "project-create", payload: { name: "MyProj", color: "#123456" } });
     expect(responses[0].type).toBe("ok");
-    expect(mockCreateProject).toHaveBeenCalledWith("MyProj", "#123456");
+    expect(mockCreateProject).toHaveBeenCalledWith("MyProj", "#123456", undefined);
   });
 
   it("returns error for project-create with empty name", async () => {

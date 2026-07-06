@@ -75,6 +75,7 @@ export class ProjectManager {
       id: "default",
       name: "Default",
       color: "#ffffff",
+      directory: "",
       createdAt: new Date().toISOString(),
       isSystem: true,
       isDefault: true,
@@ -90,12 +91,13 @@ export class ProjectManager {
     return this.projects.get(id);
   }
 
-  create(name: string, color: string): Project {
+  create(name: string, color: string, directory?: string): Project {
     const id = crypto.randomBytes(4).toString("hex");
     const project: Project = {
       id,
       name,
       color,
+      directory: directory ?? "",
       createdAt: new Date().toISOString(),
       isSystem: false,
       isDefault: false,
@@ -104,12 +106,13 @@ export class ProjectManager {
     return project;
   }
 
-  update(id: string, name: string, color?: string): void {
+  update(id: string, name: string, color?: string, directory?: string): void {
     const project = this.projects.get(id);
     if (!project) throw new Error(`Project ${id} not found`);
     if (project.isSystem) throw new Error("Cannot rename system project");
     project.name = name;
     if (color) project.color = color;
+    if (directory !== undefined) project.directory = directory;
     this.saveProject(project);
   }
 

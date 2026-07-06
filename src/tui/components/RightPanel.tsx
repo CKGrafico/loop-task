@@ -20,13 +20,12 @@ export function RightPanel(props: {
   onSelectRun: (index: number) => void;
   onOpenRun: (run: RunRecord) => void;
   selectedTask?: TaskDefinition | null;
-  // Task list for chain name resolution
   allTasks?: TaskDefinition[];
-  // Project props
   selectedProject?: Project | null;
   projectLoopCount?: number;
   onProjectEdit?: () => void;
   onProjectDelete?: () => void;
+  projects?: Project[];
 }): React.ReactNode {
   const {
     isFocused,
@@ -42,6 +41,7 @@ export function RightPanel(props: {
     projectLoopCount,
     onProjectEdit,
     onProjectDelete,
+    projects,
   } = props;
   const borderColor = isFocused ? tabAccentColor(activeTab) : theme.border.default;
 
@@ -63,7 +63,7 @@ export function RightPanel(props: {
         <TaskInspector task={selectedTask ?? null} allTasks={allTasks ?? []} />
       ) : (
         <>
-          <Inspector loop={loop} />
+          <Inspector loop={loop} projects={projects} />
           <RunHistory
             loop={loop}
             selectedRunIndex={selectedRunIndex}
@@ -189,6 +189,13 @@ function ProjectInspector(props: {
         <Text color={theme.text.muted}>{t("project.fieldCreated")}</Text>
         <Text color={theme.text.secondary}>{project.createdAt.slice(0, 10)}</Text>
       </Box>
+
+      {project.directory && (
+        <Box>
+          <Text color={theme.text.muted}>{t("project.fieldDirectory")}</Text>
+          <Text color={theme.text.secondary}>{project.directory}</Text>
+        </Box>
+      )}
 
       {project.isSystem && (
         <Box marginTop={1}>

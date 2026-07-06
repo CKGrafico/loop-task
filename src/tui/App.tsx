@@ -733,6 +733,7 @@ export function App(props: { onQuit: () => void }): React.ReactNode {
               allTasks={tasks}
               selectedProject={selectedProjectEntity}
               projectLoopCount={projectLoopCount}
+              projects={projects}
               onProjectEdit={() => { if (selectedProjectEntity && !selectedProjectEntity.isSystem) { commandHandlers["edit"]?.(); } }}
               onProjectDelete={() => { if (selectedProjectEntity && !selectedProjectEntity.isSystem) { commandHandlers["delete"]?.(); } }}
             />

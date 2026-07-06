@@ -2,6 +2,7 @@ export interface Project {
   id: string;
   name: string;
   color: string;
+  directory?: string;
   createdAt: string;
   isSystem: boolean;
   isDefault: boolean;
@@ -115,8 +116,8 @@ export type IpcRequest =
   | { type: "task-get"; payload: { id: string } }
   | { type: "task-delete"; payload: { id: string } }
   | { type: "project-list" }
-  | { type: "project-create"; payload: { name: string; color: string } }
-  | { type: "project-update"; payload: { id: string; name: string; color?: string } }
+  | { type: "project-create"; payload: { name: string; color: string; directory?: string } }
+  | { type: "project-update"; payload: { id: string; name: string; color?: string; directory?: string } }
   | { type: "project-delete"; payload: { id: string } }
   | { type: "subscribe" }
   | { type: "shutdown" };

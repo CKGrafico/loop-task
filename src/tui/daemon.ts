@@ -151,14 +151,14 @@ export async function listProjects(): Promise<Project[]> {
   return response.data as Project[];
 }
 
-export async function createProject(name: string, color: string): Promise<Project> {
-  const response = await sendRequest({ type: "project-create", payload: { name, color } });
+export async function createProject(name: string, color: string, directory?: string): Promise<Project> {
+  const response = await sendRequest({ type: "project-create", payload: { name, color, directory } });
   if (response.type !== "ok") throw new Error((response as { message: string }).message);
   return response.data as Project;
 }
 
-export async function updateProject(id: string, name: string, color?: string): Promise<void> {
-  const response = await sendRequest({ type: "project-update", payload: { id, name, color } });
+export async function updateProject(id: string, name: string, color?: string, directory?: string): Promise<void> {
+  const response = await sendRequest({ type: "project-update", payload: { id, name, color, directory } });
   expectOk((response as { message?: string }).message ?? t("project.error.updateFailed"), response.type);
 }
 

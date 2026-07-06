@@ -58,7 +58,15 @@ export function ProjectFormView(props: ProjectFormViewProps): React.ReactNode {
         );
       },
     },
-  ], [editProject]);
+    {
+      key: "directory",
+      prompt: t("project.wizard.directoryPrompt"),
+      hint: t("project.wizard.directoryHint"),
+      required: false,
+      inputType: "text",
+      defaultValue: mode === "create" ? process.cwd() : (editProject?.directory || undefined),
+    },
+  ], [editProject, mode]);
 
   const handleComplete = useCallback(
     (values: Record<string, string>) => {
@@ -69,11 +77,11 @@ export function ProjectFormView(props: ProjectFormViewProps): React.ReactNode {
       const color = PROJECT_COLORS[colorKey] ?? PROJECT_COLORS.cyan;
 
       if (mode === "edit" && editProject) {
-        updateProject(editProject.id, name, color)
+        updateProject(editProject.id, name, color, values.directory?.trim() || undefined)
           .then(() => onDone(true, name))
           .catch(() => { /* error handled silently */ });
       } else {
-        createProject(name, color)
+        createProject(name, color, values.directory?.trim() || undefined)
           .then(() => onDone(false, name))
           .catch(() => { /* error handled silently */ });
       }

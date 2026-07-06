@@ -240,24 +240,24 @@ export class IpcServer {
       }
 
       case "project-create": {
-        const { name, color } = request.payload;
+        const { name, color, directory } = request.payload;
         if (!name || !name.trim()) {
           send(socket, { type: "error", message: t("project.error.nameRequired") });
           break;
         }
-        const project = this.manager.createProject(name.trim(), color);
+        const project = this.manager.createProject(name.trim(), color, directory);
         send(socket, { type: "ok", data: project });
         break;
       }
 
       case "project-update": {
-        const { id, name, color } = request.payload;
+        const { id, name, color, directory } = request.payload;
         if (!name || !name.trim()) {
           send(socket, { type: "error", message: t("project.error.nameEmpty") });
           break;
         }
         try {
-          this.manager.updateProject(id, name.trim(), color);
+          this.manager.updateProject(id, name.trim(), color, directory);
           send(socket, { type: "ok" });
         } catch (err) {
           send(socket, { type: "error", message: err instanceof Error ? err.message : String(err) });

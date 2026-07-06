@@ -278,6 +278,20 @@ export function ProjectsPage(props: ProjectsPageProps): React.ReactNode {
                   </Text>
                 </Box>
 
+                {selected.directory ? (
+                  <Box>
+                    <Text color={theme.text.muted}>{t("project.fieldDirectory")}</Text>
+                    <Text color={theme.text.secondary}>{selected.directory}</Text>
+                  </Box>
+                ) : null}
+
+                {selected.directory ? (
+                  <Box>
+                    <Text color={theme.text.muted}>Dir:      </Text>
+                    <Text color={theme.text.secondary}>{selected.directory}</Text>
+                  </Box>
+                ) : null}
+
                 {selected.isSystem && (
                   <Box marginTop={1}>
                     <Text color={theme.semantic.warning}>{t("project.systemLabel")}</Text>

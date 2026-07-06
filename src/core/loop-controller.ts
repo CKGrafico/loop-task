@@ -10,6 +10,7 @@ import { computePhase, alignToPhase } from "./scheduling.js";
 import { t } from "../i18n/index.js";
 import { parseStdout } from "./context-parser.js";
 import { interpolate } from "./template.js";
+import { resolveEffectiveCwd } from "./resolve-cwd.js";
 
 export type TaskResolver = (taskId: string) => TaskDefinition | null;
 
@@ -49,6 +50,7 @@ export class LoopController extends EventEmitter {
   private readonly options: LoopOptions;
   private readonly logPath: string;
   private readonly taskResolver: TaskResolver;
+  private readonly projectDirectory: string | undefined;
   private remainingDelayMs: number | null = null;
   private logStream: fs.WriteStream | null = null;
   private loopPromise: Promise<void> | null = null;
@@ -62,13 +64,15 @@ export class LoopController extends EventEmitter {
     options: LoopOptions,
     logPath: string,
     taskResolver: TaskResolver,
-    state?: LoopControllerState
+    state?: LoopControllerState,
+    projectDirectory?: string,
   ) {
     super();
     this.id = id;
     this.options = options;
     this.logPath = logPath;
     this.taskResolver = taskResolver;
+    this.projectDirectory = projectDirectory;
     this.abortController = new AbortController();
     this.createdAt = state?.createdAt ?? new Date().toISOString();
     this.runCount = state?.runCount ?? 0;
@@ -372,7 +376,7 @@ export class LoopController extends EventEmitter {
         const task = this.options.taskId ? this.taskResolver(this.options.taskId) : null;
         const command = task?.command ?? this.options.command;
         const commandArgs = task?.commandArgs ?? this.options.commandArgs;
-        const cwd = this.options.cwd;
+        const cwd = resolveEffectiveCwd(this.options.cwd, this.projectDirectory);
         const chainContext: Record<string, unknown> = {};
         const hasChainTasks = !!(task?.onSuccessTaskId || task?.onFailureTaskId);
         const result = await executeCommand(
@@ -451,7 +455,7 @@ export class LoopController extends EventEmitter {
             const chainResult = await executeCommand(
               interpolatedCommand,
               interpolatedArgs,
-              this.options.cwd,
+              cwd,
               this.logStream!,
               signal,
               this.runCount,

@@ -31,6 +31,10 @@ export class LoopManager {
 
   private taskResolver = (taskId: string) => this.taskManager.get(taskId);
 
+  private getProjectDirectory(projectId: string): string | undefined {
+    return this.projectManager.get(projectId)?.directory;
+  }
+
   init(): void {
     // Initialize projects first
     this.projectManager.init();
@@ -59,6 +63,7 @@ export class LoopManager {
         offset: (meta as LoopMeta & { offset?: number | null }).offset ?? null,
       };
       const logPath = getLogPath(meta.id);
+      const projectDir = this.getProjectDirectory(options.projectId ?? "default");
       const controller = new LoopController(meta.id, options, logPath, this.taskResolver, {
         status: meta.status,
         createdAt: meta.createdAt,
@@ -70,7 +75,7 @@ export class LoopManager {
         nextRunAt: meta.nextRunAt,
         remainingDelayMs: meta.remainingDelayMs,
         runHistory: meta.runHistory,
-      });
+      }, projectDir);
       this.loops.set(meta.id, {
         controller,
         options,
@@ -90,7 +95,8 @@ export class LoopManager {
   start(options: LoopOptions, intervalHuman: string): string {
     const id = crypto.randomUUID().slice(0, 8);
     const logPath = getLogPath(id);
-    const controller = new LoopController(id, options, logPath, this.taskResolver);
+    const projectDir = this.getProjectDirectory(options.projectId ?? "default");
+    const controller = new LoopController(id, options, logPath, this.taskResolver, undefined, projectDir);
     this.loops.set(id, { controller, options, intervalHuman });
     controller.start();
     this.wireEvents(id, controller, options, intervalHuman);
@@ -144,12 +150,12 @@ export class LoopManager {
     return this.projectManager.getAll();
   }
 
-  createProject(name: string, color: string): Project {
-    return this.projectManager.create(name, color);
+  createProject(name: string, color: string, directory?: string): Project {
+    return this.projectManager.create(name, color, directory);
   }
 
-  updateProject(id: string, name: string, color?: string): void {
-    this.projectManager.update(id, name, color);
+  updateProject(id: string, name: string, color?: string, directory?: string): void {
+    this.projectManager.update(id, name, color, directory);
   }
 
   deleteProject(id: string): void {
@@ -292,19 +298,20 @@ export class LoopManager {
               projectId: (meta as LoopMeta & { projectId?: string }).projectId ?? "default",
               offset: (meta as LoopMeta & { offset?: number | null }).offset ?? null,
             };
-            const logPath = getLogPath(meta.id);
-            const controller = new LoopController(meta.id, options, logPath, this.taskResolver, {
-              status: meta.status,
-              createdAt: meta.createdAt,
-              runCount: meta.runCount,
-              sessionStartedAt: meta.sessionStartedAt,
-              lastRunAt: meta.lastRunAt,
-              lastExitCode: meta.lastExitCode,
-              lastDuration: meta.lastDuration,
-              nextRunAt: meta.nextRunAt,
-              remainingDelayMs: meta.remainingDelayMs,
-              runHistory: meta.runHistory,
-            });
+      const logPath = getLogPath(meta.id);
+      const projectDir = this.getProjectDirectory(options.projectId ?? "default");
+      const controller = new LoopController(meta.id, options, logPath, this.taskResolver, {
+        status: meta.status,
+        createdAt: meta.createdAt,
+        runCount: meta.runCount,
+        sessionStartedAt: meta.sessionStartedAt,
+        lastRunAt: meta.lastRunAt,
+        lastExitCode: meta.lastExitCode,
+        lastDuration: meta.lastDuration,
+        nextRunAt: meta.nextRunAt,
+        remainingDelayMs: meta.remainingDelayMs,
+        runHistory: meta.runHistory,
+      }, projectDir);
             this.loops.set(meta.id, { controller, options, intervalHuman: meta.intervalHuman });
             this.wireEvents(meta.id, controller, options, meta.intervalHuman);
             if (shouldAutoStart(meta.status)) {
@@ -327,6 +334,7 @@ export class LoopManager {
           offset: (meta as LoopMeta & { offset?: number | null }).offset ?? null,
         };
         const logPath = getLogPath(meta.id);
+        const projectDir = this.getProjectDirectory(options.projectId ?? "default");
         const controller = new LoopController(meta.id, options, logPath, this.taskResolver, {
           status: meta.status,
           createdAt: meta.createdAt,
@@ -338,7 +346,7 @@ export class LoopManager {
           nextRunAt: meta.nextRunAt,
           remainingDelayMs: meta.remainingDelayMs,
           runHistory: meta.runHistory,
-        });
+        }, projectDir);
         this.loops.set(meta.id, { controller, options, intervalHuman: meta.intervalHuman });
         this.wireEvents(meta.id, controller, options, meta.intervalHuman);
         if (shouldAutoStart(meta.status)) {
