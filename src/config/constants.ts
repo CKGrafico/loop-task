@@ -110,3 +110,14 @@ export const EXPORT_MAX_PREVIEW_LINES = 200;
 
 export const CTRL_SHORTCUT_EDIT = "Ctrl+E";
 export const CTRL_SHORTCUT_DELETE = "Ctrl+D";
+
+// ── Code editor constants ──────────────────────────────────────────
+export const CODE_EDITOR_MAX_VISIBLE = 2;
+export const CODE_EDITOR_MODAL_HEIGHT = 20;
+export const CODE_EDITOR_UNDO_LIMIT = 50;
+export const CODE_EDITOR_SYNTAX_COLORS = {
+  flag: "#38bdf8",
+  string: "#4ade80",
+  operator: "#facc15",
+  word: "#e5e7eb",
+} as const;
