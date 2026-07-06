@@ -47,14 +47,26 @@ export async function executeCommand(
     return { exitCode: 1, duration: 0, startedAt, endedAt };
   }
 
-  const child: ResultPromise = execa(command, commandArgs, {
-    stdout: "pipe",
-    stderr: "pipe",
-    stdin: "ignore",
-    cwd: cwd || undefined,
-    cancelSignal: signal,
-    env: process.env,
-  });
+  const shellCommand = formatCommandLine(command, commandArgs);
+  const needShell = /(\$\(|`|&&|\|\||;|>|<|\|)/.test(shellCommand);
+  const child: ResultPromise = needShell
+    ? execa(shellCommand, {
+      stdout: "pipe",
+      stderr: "pipe",
+      stdin: "ignore",
+      cwd: cwd || undefined,
+      cancelSignal: signal,
+      shell: true,
+      env: process.env,
+    })
+    : execa(command, commandArgs, {
+      stdout: "pipe",
+      stderr: "pipe",
+      stdin: "ignore",
+      cwd: cwd || undefined,
+      cancelSignal: signal,
+      env: process.env,
+    });
 
   const stdoutChunks: string[] = [];
   let stdoutTruncated = false;
