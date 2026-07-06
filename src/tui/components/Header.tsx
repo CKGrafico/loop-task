@@ -6,6 +6,8 @@ import { HEADER_COMPACT_WIDTH } from "../../config/constants.js";
 import { t } from "../../i18n/index.js";
 import { TabBar } from "./TabBar.js";
 
+const VERSION = "v" + (process.env.npm_package_version ?? "dev");
+
 interface HeaderProps {
   daemonStatus: DaemonStatus;
   counts: { total: number; running: number; waiting: number; paused: number; idle: number };
@@ -55,6 +57,7 @@ export function Header(props: HeaderProps): React.ReactNode {
       <Box justifyContent="space-between">
         <Box gap={1}>
           <Text color={theme.accent.brand} bold>{t("board.appName")}</Text>
+          <Text color={theme.text.muted}>{VERSION}</Text>
           <Text color={daemonColor(props.daemonStatus)}>{daemonSymbol(props.daemonStatus)}</Text>
           <Text color={theme.text.secondary}>{daemonText(props.daemonStatus)}</Text>
           {!compact && entries.map((e) =>

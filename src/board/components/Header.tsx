@@ -5,6 +5,8 @@ import type { DaemonStatus, View } from "../types.js";
 import { useHoverState } from "../hooks/useHoverState.js";
 import { HOVER_BG } from "../../config/constants.js";
 
+const VERSION = "v" + (process.env.npm_package_version ?? "dev");
+
 function ActionButton(props: {
   label: string;
   textColor: string;
@@ -77,6 +79,7 @@ export function Header(props: {
       <box style={{ flexDirection: "row", paddingLeft: 1, paddingRight: 1 }}>
         <text>
           <strong fg="#a3e635">{t("board.appName")}</strong>
+          <text fg="#6b7280">{VERSION}</text>
           {compact ? null : <span fg="#6b7280">{t("board.appTagline")}</span>}
         </text>
       </box>
