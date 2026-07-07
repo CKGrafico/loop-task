@@ -6,7 +6,7 @@ import { useUndoRedo } from "../../shared/useUndoRedo.js";
 import { highlightSegments } from "../utils/syntax.js";
 import { joinCommandLines } from "../../loop-config.js";
 import { copyToClipboard, readFromClipboard } from "../../shared/clipboard.js";
-import { sanitizeMultilinePaste } from "../utils/paste.js";
+import { sanitizeMultilinePaste, wrapCommand } from "../utils/paste.js";
 import {
   CODE_EDITOR_MODAL_HEIGHT,
   CODE_EDITOR_MODAL_WIDTH,
@@ -90,7 +90,7 @@ export function CodeEditorModal(props: CodeEditorModalProps): React.ReactNode {
       // Must be detected BEFORE the escape check — the leading ESC trips
       // key.escape and would close the modal before paste is handled.
       if (input.includes("\x1b[200~")) {
-        const pasted = sanitizeMultilinePaste(input);
+        const pasted = wrapCommand(sanitizeMultilinePaste(input));
         if (pasted) {
           const next = [...lines];
           const line = next[cursorRow] ?? "";
@@ -231,7 +231,7 @@ export function CodeEditorModal(props: CodeEditorModalProps): React.ReactNode {
       // Multi-char printable input = unbracketed paste (e.g. right-click
       // in terminals that don't support DECSET 2004). Preserve newlines.
       if (input.length > 1 && !key.meta) {
-        const pasted = sanitizeMultilinePaste(input);
+        const pasted = wrapCommand(sanitizeMultilinePaste(input));
         if (pasted) {
           const next = [...lines];
           const line = next[cursorRow] ?? "";

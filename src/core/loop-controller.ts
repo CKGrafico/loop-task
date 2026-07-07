@@ -413,10 +413,19 @@ export class LoopController extends EventEmitter {
             )
           );
 
+          let stepStdout = "";
           for (const r of stepResults) {
             if (r.status === "fulfilled") {
               totalDuration += r.value.duration;
-              if (r.value.stdout) combinedStdout += (combinedStdout ? "\n" : "") + r.value.stdout;
+              if (r.value.stdout) stepStdout += (stepStdout ? "\n" : "") + r.value.stdout;
+            }
+          }
+          combinedStdout += (combinedStdout && stepStdout ? "\n" : "") + stepStdout;
+
+          if (shouldCaptureStdout && stepStdout) {
+            const parsed = parseStdout(stepStdout);
+            if (parsed !== null) {
+              Object.assign(chainContext, parsed);
             }
           }
 
@@ -433,13 +442,6 @@ export class LoopController extends EventEmitter {
           }
         }
         this.runAbortController = null;
-
-        if (shouldCaptureStdout && combinedStdout) {
-          const parsed = parseStdout(combinedStdout);
-          if (parsed !== null) {
-            Object.assign(chainContext, parsed);
-          }
-        }
 
         const result = {
           exitCode,
