@@ -13,16 +13,62 @@ license: MIT
 - **Client-daemon separation**: The short-lived CLI client and long-lived background daemon communicate over a local IPC transport (Unix socket on POSIX, named pipe on Windows). Never mix client and daemon code in the same process.
 - **`src/core/` is runtime-agnostic**: `loop-controller.ts`, `command-runner.ts`, `context-parser.ts`, `template.ts`, `foreground-loop.ts`, `log-rotator.ts`, `scheduling.ts`, `log-parser.ts` must NOT import from `src/daemon/` or `src/tui/`. Used by both daemon and foreground runner.
 - **`src/types.ts` is the IPC contract**: Single source of truth for `LoopOptions`, `LoopMeta`, `LoopStatus`, `IpcRequest`/`IpcResponse`, `TaskDefinition`, `Project`. Changes here affect both client and daemon — treat as a breaking-change boundary.
-- **`src/tui/` communicates via `tui/daemon.ts` only**: TUI components must NOT import directly from `src/daemon/` internals. All daemon calls go through `src/tui/daemon.ts` (the typed IPC bridge).
+- **DI container for TUI services**: The TUI app is wrapped in `InversifyProvider`. All service access uses `useInject<T>(TYPES.X)` — never import service implementations directly in components or hooks. Services are bound in the container at app startup.
+- **FSD layer dependency rules** (app → widgets → features → entities → shared):
+  - `app/` may import from any layer.
+  - `widgets/` may import from `features/`, `entities/`, `shared/`.
+  - `features/` may import from `entities/`, `shared/`.
+  - `entities/` may import from `shared/` only.
+  - `shared/` may not import from any other layer.
+  - **No cross-imports within the same layer** — two widget directories cannot import from each other; two feature directories cannot import from each other.
+- **File size limits**: No file over 300 lines in `widgets/`, `features/`, or `entities/`. If a module grows larger, decompose into sub-modules within the same directory.
+- **`src/tui/` communicates via DI-injected services only**: TUI components must NOT import directly from `src/daemon/` internals. All daemon calls go through services injected via the DI container (e.g., `useInject<ILoopService>(TYPES.LoopService)`).
 - **Daemon state writes are atomic**: Use `writeFileAtomic` (temp-then-rename) from `src/shared/fs-utils.ts`. Writes are synchronous to preserve immediate-disk-state-on-pause semantics.
 - **Socket-bind-before-init**: `IpcServer.listen()` binds the socket BEFORE `manager.init()`. Losing racers `exit(0)` cleanly. Never call `manager.init()` before the socket is bound.
 - **No network listener**: The daemon listens on a local socket/pipe only. The HTTP API (`127.0.0.1:8845`) is optional and localhost-only — never add public network listeners.
 - **Filesystem-backed persistence only**: All state lives under `~/.loop-cli/` (overridable via `LOOP_CLI_HOME`). Three consolidated JSON files: `loops.json`, `tasks.json`, `projects.json`. Never introduce a database.
-- **`src/board/` is dead code**: The old OpenTUI code in `src/board/` is excluded from `tsconfig.json` and `tsconfig.build.json`. Do NOT import from it; do NOT add new files there.
 - **No schema versioning yet**: `LoopMeta` shape changes risk breaking persisted JSON. Corrupted files are silently skipped. Document risk in any PR that changes `LoopMeta`.
+
+### FSD Directory Structure (src/tui/)
+
+```text
+src/tui/
+├── app/                     # App layer — providers, root layout, global hooks
+│   ├── App.tsx              # Root component with InversifyProvider
+│   ├── providers.tsx        # InversifyProvider + container config
+│   └── index.ts
+├── widgets/                 # Composite UI blocks (page-level sections)
+│   ├── header/              # Header.tsx + index.ts
+│   ├── left-panel/          # LeftPanel.tsx + index.ts
+│   ├── right-panel/         # RightPanel.tsx + index.ts
+│   ├── command-input/       # CommandInput.tsx + index.ts
+│   └── debug-panel/         # DebugPanel.tsx + index.ts
+├── features/                # Business logic hooks & handlers
+│   ├── commands/            # useCommandHandlers.ts + index.ts
+│   ├── navigation/          # useRouter, panel focus logic
+│   ├── loop-polling/        # useLoopPolling, data refresh
+│   ├── log-stream/          # useLogStream
+│   └── search/              # Filter & search logic
+├── entities/                # Domain models, filters, sorters
+│   ├── loops/               # filters.ts, sorters.ts, types.ts, index.ts
+│   ├── tasks/               # filters.ts, sorters.ts, types.ts, index.ts
+│   └── projects/            # filters.ts, sorters.ts, types.ts, index.ts
+├── shared/                  # Cross-cutting utilities
+│   ├── hooks/               # useBreakpoint, useHoverState, useToasts
+│   ├── lib/                 # format.ts, theme.ts, state helpers
+│   ├── ui/                  # Base UI components (FocusableInput, FocusableButton, etc.)
+│   └── types/               # Shared TUI types (View, Mode, TabName, etc.)
+├── index.tsx                # launchBoard: Ink render(<App/>)
+└── container.ts             # Inversify container configuration + TYPES constants
+```
 
 ## TUI Architecture (Ink 7 + React 19)
 
+- **InversifyProvider wraps the app**: Service injection via `useInject<T>(TYPES.X)`. Never import service classes directly — always resolve through the DI container. Bind services in `src/tui/container.ts`.
+- **Feature modules own their hooks**: e.g., `features/commands/useCommandHandlers.ts`, `features/loop-polling/useLoopPolling.ts`. Hooks that own business logic live in features, not in shared.
+- **Widget components are directory-scoped**: e.g., `widgets/header/Header.tsx` + `widgets/header/index.ts`. Each widget directory is self-contained with its component and public API barrel export.
+- **Entity filter/sort functions**: `entities/loops/filters.ts`, `entities/tasks/filters.ts`. Pure functions for filtering and sorting domain data. No React hooks in entities — only pure logic.
+- **Shared hooks boundary**: `shared/hooks/` for hooks used across features (e.g., `useBreakpoint`, `useHoverState`, `useToasts`). Feature-specific hooks stay in their feature directory.
 - **Command-first input**: `CommandInput` is always focused. All actions are typed commands with fuzzy autocomplete via `ink-combobox` headless hooks (`useAutocompleteState`). Plain Enter selects; Ctrl+Enter passes to the focused panel.
 - **Three CommandInput modes**:
   - **Command mode** (amber `│`): fuzzy autocomplete dropdown.
@@ -31,19 +77,28 @@ license: MIT
 - **Ctrl bypasses CommandInput**: `if (key.ctrl) return` in CommandInput's `useInput`. All Ctrl shortcuts are handled by App.tsx's global `useInput`. Only single printable ASCII (`input.length === 1 && input >= " " && input <= "~"`) is inserted as text.
 - **Panel focus via `isFocused` prop**: Panels receive `isFocused` as a prop — NOT Ink's `useFocus()`. Internal `useInput({ isActive: isFocused })` gates key handling. When any modal is open, `isFocused = false` for both panels.
 - **Panel border = active tab accent**: LeftPanel and RightPanel borders use `tabAccentColor(activeTab)` — blue (loops), purple (tasks), green (projects). Not `accent.brand`.
-- **Dictionary dispatch only**: `handleCommand` in App.tsx uses `const commandHandlers: Record<string, () => void>` — never `switch/case` or nested `if/else`. Same pattern for status routers, key dispatchers, and any multi-branch logic keyed on a string.
+- **Dictionary dispatch only**: `handleCommand` uses `const commandHandlers: Record<string, () => void>` — never `switch/case` or nested `if/else`. Same pattern for status routers, key dispatchers, and any multi-branch logic keyed on a string.
 - **Router manages views, not tabs**: `useRouter("board")` manages `"board" | "create" | "task-create" | "task-edit"`. Tab state (`"loops" | "tasks" | "projects"`) is separate `activeTab` state — NOT a router view.
 - **Floating elements use `position="absolute"`**: Toasts (`bottom={0} right={0}`) and command dropdown (`bottom={3}`) float over content without pushing layout.
 - **Layout dimensions are constants**: `COMMAND_INPUT_HEIGHT = 6` (2 content rows inside the bordered box with `paddingY={1}`). Never add a third content row inside `CommandInput` without increasing this constant.
 
+### Skill References
+
+- **@react-nextjs-patterns** — Performance rules: no inline components, proper memoization, async patterns. Apply to all React/Ink component code.
+- **@feature-sliced-design** — FSD layer dependency rules and module structuring. This is the authoritative reference for layer boundaries.
+- **@inversify-hooks** — DI container usage patterns: `useInject<T>(TYPES.X)`, container configuration, service binding. Follow these patterns for all DI code.
+
 ## Naming Conventions
 
 - **ESM import specifiers**: Use `.js` extensions for all local TS module imports (e.g. `import { foo } from "./bar.js"`). TypeScript's `allowImportingTsExtensions` resolves them in dev.
+- **FSD directories use `kebab-case`**: e.g., `widgets/left-panel/`, `features/loop-polling/`, `entities/loops/`. All FSD directory names are kebab-case.
+- **Each FSD module exports via `index.ts`**: Public API barrel export. Consumers import from the directory, not from internal files: `import { LeftPanel } from "../widgets/left-panel/index.js"` or shorthand `from "../widgets/left-panel.js"`.
 - **File naming**: `kebab-case` for all non-component files (`loop-controller.ts`, `use-loop-polling.ts`). React component files use PascalCase (`CommandInput.tsx`, `LeftPanel.tsx`).
 - **Component naming**: PascalCase for all React components.
 - **Hook naming**: `use` prefix for all hooks (`useRouter`, `useLoopPolling`, `useBreakpoint`).
 - **Constants**: `UPPER_SNAKE_CASE` in `src/config/constants.ts`. No inline magic numbers elsewhere.
 - **i18n keys**: `section.camelCase` format (e.g., `cmdInput.placeholder`, `confirm.deleteLoop`). All user-facing strings live in `src/i18n/en.json` — no string literals in component code.
+- **DI TYPES constants**: `UPPER_SNAKE_CASE` in `src/tui/container.ts` (e.g., `TYPES.LoopService`, `TYPES.TaskService`).
 
 ## Code Style
 
@@ -56,23 +111,32 @@ license: MIT
 - **No em dashes**: Use regular hyphens (`-`) everywhere — never `—`.
 - **No unnecessary comments**: Follow existing code patterns; comments only when non-obvious.
 - **No section-separator comments**: Never add decorative comment lines like `// ── Section Name ──────────────────`, `// == Section ==`, `// ## Section`, or any variant. These are noise. If a section needs a name, use a function or a type. The only acceptable comments are short `// why` explanations on non-obvious logic — never `// what` descriptions of what the code does.
-- **Small files, feature folders**: Reuse shared helpers in `src/shared/`. Keep files focused on one responsibility.
+- **Small files, feature folders**: Reuse shared helpers in `src/shared/`. Keep files focused on one responsibility. Max 300 lines in widgets/features/entities — decompose if larger.
+- **DI over direct imports**: Use `useInject<T>(TYPES.X)` for services — never `new ServiceClass()` or direct class imports in components/hooks. Bind implementations in `container.ts`.
 
 ## Testing
 
 - **Framework**: Vitest 3 with `globals: true` and v8 coverage. Config in `vitest.config.ts`.
-- **Location**: `tests/` directory. `*.test.ts` for pure logic; `*.test.tsx` for Ink components.
-- **Coverage gates**: 90% lines/functions/branches/statements. Excludes `src/cli.ts`, `src/types.ts`, `src/daemon/index.ts`, `src/tui/**`, `src/board/**`.
+- **Location**: Test files mirror the FSD structure: `tests/widgets/header/`, `tests/features/commands/`, `tests/entities/loops/`, `tests/shared/hooks/`.
+- **Coverage gates**: 90% lines/functions/branches/statements. Excludes `src/cli.ts`, `src/types.ts`, `src/daemon/index.ts`, `src/board/**`.
 - **Gate order**: `typecheck` → `lint` → `test` → `build`. Run all four before claiming done.
+
+### DI Mock Patterns
+
+- **Mock services via DI container in tests**: Override bindings in test setup instead of using `vi.mock()` for service classes.
+- **Rebind for tests**: `container.rebind(TYPES.LoopService).toConstantValue(mockLoopService)` in test setup — replaces the real service with a mock for the duration of the test.
+- **Factory helpers**: Create test container factory functions (e.g., `createTestContainer(overrides?)`) that return a pre-configured container with sensible mock defaults.
+- **Type-safe mocks**: Use `vi.fn()` for method stubs on mock service objects. Ensure mock objects satisfy the service interface.
 
 ### Bug Fix Test Policy
 
 **Every bug fix MUST include tests that would have caught the regression:**
 
-1. **Unit test first**: Write a Vitest unit test (`tests/*.test.ts` or `tests/*.test.tsx`) that directly exercises the fixed code path. The test must FAIL on the unfixed code and PASS after the fix. No exceptions.
+1. **Unit test first**: Write a Vitest unit test that directly exercises the fixed code path. The test must FAIL on the unfixed code and PASS after the fix. No exceptions.
    - Pure function fix → `it.each()` or direct assertion.
    - State machine / hook fix → use `ink-testing-library` with `stdin.write()` one char at a time.
    - IPC/daemon fix → mock dependencies with `vi.mock()` and verify behavior.
+   - Feature/hook fix → rebind DI service with mock, test hook behavior.
 
 2. **E2E test when the bug is user-interaction-driven**: If the bug manifested as a broken UI interaction (wrong keyboard behavior, invisible input, missing confirmation flow, layout clipped), add or update an E2E test in `tests/e2e/suites/`. E2E tests for pure internal logic bugs (daemon state, scheduling math, log rotation) are NOT required.
    - E2E tests are Playwright + ttyd; they live in `tests/e2e/` and are **manual-only** (AI agents MUST NOT run `pnpm test:e2e`).
@@ -87,6 +151,7 @@ license: MIT
 - **Type one char at a time**: `stdin.write("abc")` arrives as one multi-char event; components gated on `input.length === 1` will reject it. Write chars individually with `await delay()` between them.
 - **Await async key handling**: After `stdin.write()` for Escape or Ctrl combos, `await` a short delay before asserting.
 - **Ctrl combos**: `\u0013` is delivered as `input="s", key.ctrl=true`.
+- **Wrap with InversifyProvider in component tests**: Components that use `useInject` must be wrapped in a test container's `InversifyProvider` in test renders.
 
 ### Test Patterns
 
@@ -95,8 +160,9 @@ license: MIT
 - **Daemon modules**: mock `LoopController`/`execa`, set `LOOP_CLI_HOME` to temp dir, verify persistence via fresh manager instance.
 - **IPC/socket**: mock `node:net.createConnection` with `vi.hoisted()` + fake socket, or use real Unix socket.
 - **`vi.mock()` must appear BEFORE the module under test import.**
-- **`LoopController` tests**: pass 4th arg `taskResolver` (`() => null` if unused); include `taskId`, `description`, `projectId`, `offset` in `LoopOptions`.
+- **LoopController tests**: pass 4th arg `taskResolver` (`() => null` if unused); include `taskId`, `description`, `projectId`, `offset` in `LoopOptions`.
 - **Use `LOOP_CLI_HOME`** to isolate daemon state; never write to the real state dir from tests.
+- **DI feature/hook tests**: Use `createTestContainer()` to inject mocks, render with `InversifyProvider`, assert behavior without hitting real services.
 
 ## Build & Deployment
 
@@ -119,7 +185,7 @@ license: MIT
 - **Log rotation**: 1 MB max × 3 generations per loop (`MAX_LOG_BYTES`, `MAX_LOG_GENERATIONS`).
 - **Chain context is ephemeral**: In-memory only per loop iteration. Never persisted or exposed via IPC.
 - **Hot-reload**: `FileWatcher` uses SHA-1 hash comparison (+ mtime fallback on Windows) to distinguish self-writes from external edits. Debounced 300ms. Never modify `loops.json` from outside the daemon without being aware of reconciliation.
-- **Default project is permanent**: `ProjectManager` enforces that the Default project cannot be deleted. The `delete` command handler in App.tsx must check `!selectedProjectEntity.isSystem` before opening the confirm dialog — matches the RightPanel button guard.
+- **Default project is permanent**: `ProjectManager` enforces that the Default project cannot be deleted. The `delete` command handler must check `!selectedProjectEntity.isSystem` before opening the confirm dialog.
 
 ## Security
 
@@ -132,10 +198,11 @@ license: MIT
 ## Dependencies
 
 - **Package manager**: `pnpm`. `pnpm-lock.yaml` committed. Do NOT use `npm` or `yarn`.
-- **Runtime deps**: `ink` (^7.1.0), `react` (^19.2.7), `commander`, `execa`, `ms`, `ink-combobox` (^0.2.0), `ink-scroll-list` (^0.4.1), `ink-select-input` (^6.2.0), `ink-spinner` (^5.0.0), `ink-text-input` (^6.0.0).
+- **Runtime deps**: `ink` (^7.1.0), `react` (^19.2.7), `commander`, `execa`, `ms`, `ink-combobox` (^0.2.0), `ink-scroll-list` (^0.4.1), `ink-select-input` (^6.2.0), `ink-spinner` (^5.0.0), `ink-text-input` (^6.0.0), `inversify` (^6.x), `reflect-metadata` (^0.2.x).
 - **Dev deps**: `typescript` (^5.8.0), `typescript-eslint` (^8.30.0), `vitest` (^3.1.0), `eslint` (^9.25.0), `tsx` (^4.19.0), `ink-testing-library` (^4.0.0).
 - **No `@opentui/*` or Bun**: Those deps were removed with the Ink migration. Do not re-introduce.
 - **`ink-combobox` is v0.2.0**: Young package (single contributor). Do not upgrade without verifying `useAutocompleteState` API compatibility.
+- **`inversify` + `reflect-metadata`**: Required for DI container. `reflect-metadata` must be imported at the app entry point before any container usage.
 
 ## Git Workflow
 
@@ -147,4 +214,4 @@ license: MIT
 - **Max concurrent agents**: 4 (from `opencode-onboard.json`).
 - **Models**: `plan: opencode-go/glm-5.2`, `build: opencode-go/glm-5.1`, `fast: opencode/big-pickle`.
 
-<!-- Last updated: 2026-07-05T00:00:00Z -->
+<!-- Last updated: 2026-07-07T00:00:00Z -->
