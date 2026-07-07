@@ -171,7 +171,7 @@ export async function exportConfig(): Promise<{ json: string; filePath: string }
   const exportData = {
     version: 2,
     exportedAt: new Date().toISOString(),
-    loops,
+    loops: loops.map(({ runHistory: _ignored, ...rest }) => rest),
     tasks,
     projects,
   };

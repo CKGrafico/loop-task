@@ -44,7 +44,7 @@ const LOOP_FIELDS: FieldSpec[] = [
   { name: "remainingDelayMs", type: "number", nullable: true },
   { name: "pid", type: "number", nullable: false },
   { name: "maxRunsReached", type: "boolean", nullable: false },
-  { name: "runHistory", type: "array", nullable: false },
+  { name: "runHistory", type: "array", nullable: true },
   { name: "skippedCount", type: "number", nullable: false },
   { name: "projectId", type: "string", nullable: false },
   { name: "offset", type: "number", nullable: true },

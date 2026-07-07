@@ -114,6 +114,19 @@ describe("atomicImportWrite", () => {
     expect(loopsData[0].id).toBe("loop-1");
   });
 
+  it("normalizes missing runHistory to empty array", () => {
+    const { runHistory: _ignored, ...loopWithoutHistory } = validLoop();
+    const result = atomicImportWrite(
+      [loopWithoutHistory as LoopMeta],
+      [validTask()],
+      [validProject()],
+    );
+    expect(result.success).toBe(true);
+
+    const loopsData = JSON.parse(fs.readFileSync(path.join(dataDir, "loops.json"), "utf-8"));
+    expect(loopsData[0].runHistory).toEqual([]);
+  });
+
   it("handles missing pre-existing store files", () => {
     const result = atomicImportWrite([validLoop()], [validTask()], [validProject()]);
     expect(result.success).toBe(true);

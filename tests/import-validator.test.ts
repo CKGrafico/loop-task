@@ -163,6 +163,19 @@ describe("validateExportFile", () => {
     expect(result.valid).toBe(true);
   });
 
+  it("accepts loops with runHistory omitted (optional in export format)", () => {
+    const { runHistory: _ignored, ...loopWithoutHistory } = validLoop();
+    const result = validateExportFile({ ...validExport, loops: [loopWithoutHistory] });
+    expect(result.valid).toBe(true);
+    expect(result.data!.loops).toHaveLength(1);
+  });
+
+  it("accepts loops with runHistory set to null", () => {
+    const loopWithNullHistory = { ...validLoop(), runHistory: null };
+    const result = validateExportFile({ ...validExport, loops: [loopWithNullHistory] });
+    expect(result.valid).toBe(true);
+  });
+
   it("reports multiple item errors", () => {
     const badLoop0 = { ...validLoop(), id: undefined };
     const badLoop1 = { ...validLoop({ id: "loop-2" }), interval: "bad" };

@@ -1359,4 +1359,120 @@ describe("CodeEditorModal", () => {
     const frame = lastFrame() ?? "";
     expect(frame).toContain("Enter command...");
   });
+
+  it("bracketed paste inserts text without triggering escape/cancel", async () => {
+    const onCancel = vi.fn();
+    const onSave = vi.fn();
+    const { stdin } = render(
+      <Box height={25} width={70}>
+        <CodeEditorModal
+          initialValue=""
+          onSave={onSave}
+          onCancel={onCancel}
+        />
+      </Box>,
+    );
+    // Simulate a bracketed paste: ESC[200~hello worldESC[201~
+    stdin.write("\x1b[200~hello world\x1b[201~");
+    await delay();
+    // Modal should NOT have been cancelled by the leading ESC
+    expect(onCancel).not.toHaveBeenCalled();
+    // Save and check the pasted text was inserted
+    stdin.write("\u0013"); // Ctrl+S
+    await delay();
+    expect(onSave).toHaveBeenCalledWith("hello world");
+  });
+
+  it("bracketed paste does not close modal when editing existing text", async () => {
+    const onCancel = vi.fn();
+    const { stdin, lastFrame } = render(
+      <Box height={25} width={70}>
+        <CodeEditorModal
+          initialValue="echo "
+          onSave={() => {}}
+          onCancel={onCancel}
+        />
+      </Box>,
+    );
+    stdin.write("\x1b[200~npm test\x1b[201~");
+    await delay();
+    expect(onCancel).not.toHaveBeenCalled();
+    const frame = lastFrame() ?? "";
+    expect(frame).toContain("echo npm test");
+  });
+
+  it("Ctrl+V with empty clipboard flashes hint instead of crashing", async () => {
+    const { stdin, lastFrame } = render(
+      <Box height={25} width={70}>
+        <CodeEditorModal
+          initialValue="abc"
+          onSave={() => {}}
+          onCancel={() => {}}
+        />
+      </Box>,
+    );
+    // Send raw \x16 (Ctrl+V / SYN). On this test host, readFromClipboard()
+    // will return either real clipboard contents or "" — either way the
+    // modal must not crash. If clipboard is empty, the hint should flash.
+    stdin.write("\x16");
+    await delay();
+    const frame = lastFrame() ?? "";
+    // Either text was pasted (clipboard had contents) or the hint flashed.
+    // We only assert no crash + modal still open with its title visible.
+    expect(frame).toContain("Command Editor");
+  });
+
+  it("raw \\x13 (Ctrl+S) saves even without key.ctrl", async () => {
+    const onSave = vi.fn();
+    const { stdin } = render(
+      <Box height={25} width={70}>
+        <CodeEditorModal
+          initialValue="hello"
+          onSave={onSave}
+          onCancel={() => {}}
+        />
+      </Box>,
+    );
+    stdin.write("\x13"); // raw Ctrl+S byte
+    await delay();
+    expect(onSave).toHaveBeenCalledWith("hello");
+  });
+
+  it("raw \\x18 (Ctrl+X) cuts even without key.ctrl", async () => {
+    const onSave = vi.fn();
+    const { stdin } = render(
+      <Box height={25} width={70}>
+        <CodeEditorModal
+          initialValue="hello"
+          onSave={onSave}
+          onCancel={() => {}}
+        />
+      </Box>,
+    );
+    stdin.write("\x18"); // raw Ctrl+X byte
+    await delay();
+    stdin.write("\x13"); // save
+    await delay();
+    expect(onSave).toHaveBeenCalledWith("");
+  });
+
+  it("raw \\x1a (Ctrl+Z) undo even without key.ctrl", async () => {
+    const onSave = vi.fn();
+    const { stdin } = render(
+      <Box height={25} width={70}>
+        <CodeEditorModal
+          initialValue="abc"
+          onSave={onSave}
+          onCancel={() => {}}
+        />
+      </Box>,
+    );
+    await typeChars(stdin, "x");
+    await delay();
+    stdin.write("\x1a"); // raw Ctrl+Z byte
+    await delay();
+    stdin.write("\x13"); // save
+    await delay();
+    expect(onSave).toHaveBeenCalledWith("abc");
+  });
 });

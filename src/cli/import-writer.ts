@@ -23,8 +23,12 @@ export function atomicImportWrite(
 ): ImportWriteResult {
   const dataDir = getDataDir();
   fs.mkdirSync(dataDir, { recursive: true });
+  const normalizedLoops = loops.map((loop) => ({
+    ...loop,
+    runHistory: Array.isArray(loop.runHistory) ? loop.runHistory : [],
+  }));
   const contents: Record<string, string> = {
-    "loops.json": JSON.stringify(loops, null, 2),
+    "loops.json": JSON.stringify(normalizedLoops, null, 2),
     "tasks.json": JSON.stringify(tasks, null, 2),
     "projects.json": JSON.stringify(projects, null, 2),
   };

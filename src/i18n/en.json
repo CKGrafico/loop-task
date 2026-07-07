@@ -290,6 +290,7 @@
   "codeEditor.fieldHint": "press enter to open editor",
   "codeEditor.copied": "Copied!",
   "codeEditor.cleared": "Cleared",
+  "codeEditor.clipboardEmpty": "Clipboard empty — right-click to paste",
   "board.exampleInterval": "30m",
   "board.exampleCommand": "opencode run \"search missing translations and translate them, 3 maximum\" --model \"opencode/big-pickle\"",
   "board.exampleDescription": "translate missing strings",

@@ -76,18 +76,33 @@ export function CodeEditorModal(props: CodeEditorModalProps): React.ReactNode {
   // ---- Keyboard handling ----
   useInput(
     (input, key) => {
+      // Bracketed paste: content wrapped in ESC[200~ ... ESC[201~
+      // Must be detected BEFORE the escape check — the leading ESC trips
+      // key.escape and would close the modal before paste is handled.
+      if (input.includes("\x1b[200~")) {
+        const pasted = sanitizePaste(input);
+        if (pasted) {
+          const next = [...lines];
+          const line = next[cursorRow] ?? "";
+          next[cursorRow] =
+            line.slice(0, cursorCol) + pasted + line.slice(cursorCol);
+          applyMutation(next, cursorRow, cursorCol + pasted.length);
+        }
+        return;
+      }
+
       // Esc → cancel
       if (key.escape) {
         onCancel();
         return;
       }
-      // Ctrl+S → save
-      if (key.ctrl && input === "s") {
+      // Ctrl+S → save (also accept raw \x13 fallback)
+      if ((key.ctrl && input === "s") || input === "\x13") {
         onSave(value);
         return;
       }
-      // Ctrl+Z → undo
-      if (key.ctrl && !key.shift && input === "z") {
+      // Ctrl+Z → undo (also accept raw \x1a fallback)
+      if ((key.ctrl && !key.shift && input === "z") || input === "\x1a") {
         undo();
         return;
       }
@@ -96,8 +111,8 @@ export function CodeEditorModal(props: CodeEditorModalProps): React.ReactNode {
         redo();
         return;
       }
-      // Ctrl+X → cut (copy all to clipboard, then clear)
-      if (key.ctrl && input === "x") {
+      // Ctrl+X → cut (copy all to clipboard, then clear; also accept \x18)
+      if ((key.ctrl && input === "x") || input === "\x18") {
         copyToClipboard(value);
         setValue("");
         setCursorRow(0);
@@ -105,8 +120,9 @@ export function CodeEditorModal(props: CodeEditorModalProps): React.ReactNode {
         setFlashMsg(t("codeEditor.copied"));
         return;
       }
-      // Ctrl+V → paste from clipboard
-      if (key.ctrl && input === "v") {
+      // Ctrl+V → paste from clipboard (also accept raw \x16 fallback for
+      // terminals that don't set key.ctrl on the SYN control byte)
+      if ((key.ctrl && input === "v") || input === "\x16") {
         const clip = readFromClipboard();
         if (clip) {
           const pasted = sanitizePaste(clip);
@@ -117,11 +133,15 @@ export function CodeEditorModal(props: CodeEditorModalProps): React.ReactNode {
               line.slice(0, cursorCol) + pasted + line.slice(cursorCol);
             applyMutation(next, cursorRow, cursorCol + pasted.length);
           }
+        } else {
+          // No clipboard tool available (common over SSH). Bracketed paste
+          // (right-click in the terminal) still works — point the user at it.
+          setFlashMsg(t("codeEditor.clipboardEmpty"));
         }
         return;
       }
       // Ctrl+L → clear all
-      if (key.ctrl && input === "l") {
+      if ((key.ctrl && input === "l") || input === "\x0c") {
         setValue("");
         setCursorRow(0);
         setCursorCol(0);
@@ -194,19 +214,6 @@ export function CodeEditorModal(props: CodeEditorModalProps): React.ReactNode {
           const cur = next[cursorRow] ?? "";
           next.splice(cursorRow - 1, 2, prev + cur);
           applyMutation(next, cursorRow - 1, prev.length);
-        }
-        return;
-      }
-
-      // Bracketed paste: content wrapped in ESC[200~ ... ESC[201~
-      if (input.includes("\x1b[200~")) {
-        const pasted = sanitizePaste(input);
-        if (pasted) {
-          const next = [...lines];
-          const line = next[cursorRow] ?? "";
-          next[cursorRow] =
-            line.slice(0, cursorCol) + pasted + line.slice(cursorCol);
-          applyMutation(next, cursorRow, cursorCol + pasted.length);
         }
         return;
       }

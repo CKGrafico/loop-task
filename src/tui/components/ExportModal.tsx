@@ -24,6 +24,12 @@ export function ExportModal(props: ExportModalProps): React.ReactNode {
   const [scrollOffset, setScrollOffset] = useState(0);
 
   useInput((input, key) => {
+    // Bracketed paste: content wrapped in ESC[200~ ... ESC[201~. Must come
+    // before the escape check — the leading ESC trips key.escape and would
+    // close the modal on a right-click paste.
+    if (input.includes("\x1b[200~")) {
+      return;
+    }
     if (key.escape) { props.onClose(); return; }
     if (key.downArrow) { setScrollOffset((o) => Math.min(o + 1, maxScroll)); return; }
     if (key.upArrow) { setScrollOffset((o) => Math.max(0, o - 1)); return; }

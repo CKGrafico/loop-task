@@ -241,10 +241,11 @@ program
       sendRequest({ type: "task-list" }),
       sendRequest({ type: "project-list" }),
     ]);
+    const loops = loopsRes.type === "ok" ? (loopsRes.data as import("./types.js").LoopMeta[]) : [];
     const exportData = {
       version: 2,
       exportedAt: new Date().toISOString(),
-      loops: loopsRes.type === "ok" ? loopsRes.data : [],
+      loops: loops.map(({ runHistory: _ignored, ...rest }) => rest),
       tasks: tasksRes.type === "ok" ? tasksRes.data : [],
       projects: projectsRes.type === "ok" ? projectsRes.data : [],
     };

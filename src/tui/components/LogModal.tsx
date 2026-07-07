@@ -69,6 +69,14 @@ export function LogModal(props: {
   const visible = filtered.slice(startIdx, endIdx);
 
   useInput((input, key) => {
+    // Bracketed paste: content wrapped in ESC[200~ ... ESC[201~. Must come
+    // before the escape check — the leading ESC trips key.escape and would
+    // close the modal before the paste is acknowledged. LogModal doesn't
+    // insert pastes, so just swallow the sequence.
+    if (input.includes("\x1b[200~")) {
+      return;
+    }
+
     if (searchMode) {
       if (key.escape || key.return) {
         setSearchMode(false);
