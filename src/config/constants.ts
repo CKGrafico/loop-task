@@ -115,7 +115,7 @@ export const CTRL_SHORTCUT_DELETE = "Ctrl+D";
 export const CODE_EDITOR_MAX_VISIBLE = 2;
 export const CODE_EDITOR_MODAL_HEIGHT = 40;
 export const CODE_EDITOR_MODAL_WIDTH = 120;
-export const CODE_EDITOR_WRAP_LENGTH = 40;
+export const CODE_EDITOR_WRAP_LENGTH = 80;
 export const CODE_EDITOR_UNDO_LIMIT = 50;
 export const CODE_EDITOR_SYNTAX_COLORS = {
   flag: "#38bdf8",
