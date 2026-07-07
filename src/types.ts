@@ -14,13 +14,17 @@ export interface TaskCommand {
   commandRaw?: string;
 }
 
+export interface TaskStep {
+  commands: TaskCommand[];
+}
+
 export interface TaskDefinition {
   id: string;
   name: string;
-  command: string;              // kept for backward compat (first/single command)
+  command: string;
   commandArgs: string[];
   commandRaw?: string;
-  commands?: TaskCommand[];     // parallel commands (max 4)
+  steps?: TaskStep[];
   onSuccessTaskId: string | null;
   onFailureTaskId: string | null;
   createdAt: string;

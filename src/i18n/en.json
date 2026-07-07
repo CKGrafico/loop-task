@@ -279,7 +279,7 @@
   "cmdEditor.lines": "lines",
   "cmdEditor.inlineHint": "enter: new line . ctrl+v: paste . ctrl+y: copy . tab: next field . ctrl+s: save",
   "codeEditor.title": "Command Editor",
-  "codeEditor.hint": "ctrl+s save . esc cancel . ctrl+z/ctrl+shift+z undo/redo . use && for parallel commands",
+  "codeEditor.hint": "ctrl+s save . esc cancel . ctrl+z/ctrl+shift+z undo/redo . && sequential . || parallel",
   "codeEditor.buttonCopy": "Copy",
   "codeEditor.buttonPaste": "Paste",
   "codeEditor.buttonClear": "Clear",

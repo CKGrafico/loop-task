@@ -1,7 +1,7 @@
 import { EventEmitter } from "node:events";
 import fs from "node:fs";
 import crypto from "node:crypto";
-import type { LoopOptions, LoopStatus, LoopMeta, RunRecord, TaskDefinition, TaskCommand, ExecutionResult } from "../types.js";
+import type { LoopOptions, LoopStatus, LoopMeta, RunRecord, TaskDefinition, TaskCommand, TaskStep, ExecutionResult } from "../types.js";
 import { sleep } from "../shared/sleep.js";
 import { SLEEP_CHUNK_MS } from "../config/constants.js";
 import { executeCommand } from "./command-runner.js";
@@ -383,66 +383,69 @@ export class LoopController extends EventEmitter {
         const chainContext: Record<string, unknown> = {};
         const hasChainTasks = !!(task?.onSuccessTaskId || task?.onFailureTaskId);
 
-        // Determine the command(s) to run
-        const taskCommands: TaskCommand[] = task?.commands?.length
-          ? task.commands
-          : [{
-              command: task?.command ?? this.options.command,
-              commandArgs: task?.commandArgs ?? this.options.commandArgs,
-              commandRaw: task?.commandRaw ?? this.options.commandRaw,
-            }];
+        const singleCommandFallback: TaskCommand = {
+          command: task?.command ?? this.options.command,
+          commandArgs: task?.commandArgs ?? this.options.commandArgs,
+          commandRaw: task?.commandRaw ?? this.options.commandRaw,
+        };
+        const taskSteps: TaskStep[] = task?.steps?.length
+          ? task.steps
+          : [{ commands: [singleCommandFallback] }];
 
-        const shouldCaptureStdout = hasChainTasks || taskCommands.length > 1;
+        const shouldCaptureStdout = hasChainTasks || taskSteps.length > 1 || taskSteps[0]!.commands.length > 1;
 
-        const results = await Promise.allSettled(
-          taskCommands.map((cmd) =>
-            executeCommand(
-              cmd.command,
-              cmd.commandArgs,
-              cwd,
-              this.logStream!,
-              AbortSignal.any([signal, this.runAbortController!.signal]),
-              this.runCount,
-              shouldCaptureStdout,
+        let exitCode = 0;
+        let totalDuration = 0;
+        let combinedStdout = "";
+
+        for (const step of taskSteps) {
+          const stepResults = await Promise.allSettled(
+            step.commands.map((cmd) =>
+              executeCommand(
+                interpolate(cmd.command, chainContext),
+                cmd.commandArgs.map(a => interpolate(a, chainContext)),
+                cwd,
+                this.logStream!,
+                AbortSignal.any([signal, this.runAbortController!.signal]),
+                this.runCount,
+                shouldCaptureStdout,
+              )
             )
-          )
-        );
+          );
+
+          for (const r of stepResults) {
+            if (r.status === "fulfilled") {
+              totalDuration += r.value.duration;
+              if (r.value.stdout) combinedStdout += (combinedStdout ? "\n" : "") + r.value.stdout;
+            }
+          }
+
+          const stepFailure = stepResults.some(
+            (r) => r.status === "rejected" || (r.status === "fulfilled" && r.value.exitCode !== 0)
+          );
+          if (stepFailure) {
+            const failed = stepResults.find(
+              (r): r is PromiseFulfilledResult<ExecutionResult> =>
+                r.status === "fulfilled" && r.value.exitCode !== 0
+            );
+            exitCode = failed ? failed.value.exitCode : 1;
+            break;
+          }
+        }
         this.runAbortController = null;
 
-        // Find first failure (if any) — stop-immediately policy
-        const firstFailure = results.find(
-          (r): r is PromiseRejectedResult => r.status === "rejected"
-        );
-        const firstNonZero = results.find(
-          (r): r is PromiseFulfilledResult<ExecutionResult> =>
-            r.status === "fulfilled" && r.value.exitCode !== 0
-        );
-
-        const exitCode = firstFailure ? 1 : (firstNonZero?.value.exitCode ?? 0);
-        const totalDuration = results.reduce((sum, r) => {
-          if (r.status === "fulfilled") return sum + r.value.duration;
-          return sum;
-        }, 0);
-        const combinedStdout = results
-          .filter(
-            (r): r is PromiseFulfilledResult<ExecutionResult> =>
-              r.status === "fulfilled" && !!r.value.stdout
-          )
-          .map((r) => r.value.stdout!)
-          .join("\n");
+        if (shouldCaptureStdout && combinedStdout) {
+          const parsed = parseStdout(combinedStdout);
+          if (parsed !== null) {
+            Object.assign(chainContext, parsed);
+          }
+        }
 
         const result = {
           exitCode,
           duration: totalDuration,
           stdout: combinedStdout || undefined,
         };
-
-        if (shouldCaptureStdout && result.stdout) {
-          const parsed = parseStdout(result.stdout);
-          if (parsed !== null) {
-            Object.assign(chainContext, parsed);
-          }
-        }
 
         this.lastExitCode = result.exitCode;
         this.lastDuration = result.duration;

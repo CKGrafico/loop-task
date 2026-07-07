@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useCallback, useState, useRef } from "react";
 
-import type { TaskDefinition, TaskCommand } from "../../types.js";
+import type { TaskDefinition, TaskCommand, TaskStep } from "../../types.js";
 import { WizardForm, type WizardStepConfig } from "./WizardForm.js";
 import { SelectModal, SelectValueField, type SelectOption } from "./SelectModal.js";
 import { CodeEditorPreview } from "./CodeEditorPreview.js";
@@ -43,8 +43,10 @@ export function TaskForm(props: TaskFormProps): React.ReactNode {
   const [tasks, setTasks] = useState<TaskDefinition[]>([]);
   const [commandValue, setCommandValue] = useState(
     editTask
-      ? (editTask.commands?.length
-        ? editTask.commands.map(c => c.commandRaw ?? [c.command, ...c.commandArgs].join(" ")).join("\n&&\n")
+      ? (editTask.steps?.length
+        ? editTask.steps.map(step =>
+            step.commands.map(c => c.commandRaw ?? [c.command, ...c.commandArgs].join(" ")).join("\n||\n")
+          ).join("\n&&\n")
         : (editTask.commandRaw ?? joinCommand(editTask)))
       : "",
   );
@@ -161,8 +163,6 @@ export function TaskForm(props: TaskFormProps): React.ReactNode {
       const onSuccessTaskId = resolveChainId(values.onSuccess ?? "");
       const onFailureTaskId = resolveChainId(values.onFailure ?? "");
 
-      // Split by && to build parallel commands. If only one command, keep
-      // backward compat (command + commandArgs, no commands[]).
       const commandSegments = commandValue
         .split(/\n&&\n|\n&&|&&\n|&&/)
         .map(s => s.trim())
@@ -170,23 +170,31 @@ export function TaskForm(props: TaskFormProps): React.ReactNode {
 
       let payload;
 
-      if (commandSegments.length > 1) {
-        const commands: TaskCommand[] = commandSegments.slice(0, 4).map(seg => {
-          const joined = joinCommandLines(seg);
-          const tokens = parseCommandLine(joined);
-          return {
-            command: tokens[0] ?? "",
-            commandArgs: tokens.slice(1),
-            commandRaw: seg,
-          };
+      if (commandSegments.length > 1 || commandValue.includes("||")) {
+        const steps: TaskStep[] = commandSegments.slice(0, 8).map(seg => {
+          const parallelCmds = seg
+            .split(/\n\|\|\n|\n\|\||\|\|\n|\|\|/)
+            .map(s => s.trim())
+            .filter(s => s.length > 0)
+            .slice(0, 4)
+            .map(cmdSeg => {
+              const joined = joinCommandLines(cmdSeg);
+              const tokens = parseCommandLine(joined);
+              return {
+                command: tokens[0] ?? "",
+                commandArgs: tokens.slice(1),
+                commandRaw: cmdSeg,
+              };
+            });
+          return { commands: parallelCmds };
         });
-        // First command also populates command/commandArgs for backward compat
+        const firstCmd = steps[0]!.commands[0]!;
         payload = {
           name,
-          command: commands[0]!.command,
-          commandArgs: commands[0]!.commandArgs,
-          commandRaw: commands[0]!.commandRaw,
-          commands,
+          command: firstCmd.command,
+          commandArgs: firstCmd.commandArgs,
+          commandRaw: firstCmd.commandRaw,
+          steps,
           onSuccessTaskId,
           onFailureTaskId,
         };
