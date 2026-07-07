@@ -316,7 +316,9 @@ export function App(props: { onQuit: () => void }): React.ReactNode {
       if (activeTab === "loops" && selected) {
         const runs = selected.runHistory;
         if (runs && runs.length > 0) {
-          handleOpenRunLog(runs[runs.length - 1]!);
+          const reversed = [...runs].reverse();
+          const run = reversed[selectedRunIndex] ?? runs[runs.length - 1];
+          if (run) handleOpenRunLog(run);
         }
       }
     },
@@ -449,8 +451,13 @@ export function App(props: { onQuit: () => void }): React.ReactNode {
       "loops:right": () => {
         if (!selected) return;
         const runs = selected.runHistory;
-        if (runs && runs.length > 0) handleOpenRunLog(runs[runs.length - 1]!);
-        else editSelectedLoop();
+        if (runs && runs.length > 0) {
+          const reversed = [...runs].reverse();
+          const run = reversed[selectedRunIndex] ?? runs[runs.length - 1];
+          if (run) handleOpenRunLog(run);
+        } else {
+          editSelectedLoop();
+        }
       },
       "loops:left": editSelectedLoop,
     };
