@@ -857,14 +857,14 @@ describe("Humanized avg / formatRunDuration (task 7.1)", () => {
 
 
 
-import { commandLine } from "../src/board/format.js";
+import { commandLine } from "../src/shared/ui/format.js";
 import type { LoopMeta } from "../src/types.js";
 
 const TASK_MODE_INLINE = "inline";
 const TASK_MODE_EXISTING = "existing";
 
 /**
- * Reimplemented from src/board/components/CreateForm.tsx — the module has a
+ * Reimplemented from the former src/board/components/CreateForm.tsx — the module had a
  * duplicate `validateAll` declaration that breaks esbuild during vitest
  * transforms, so we duplicate the tiny pure function here.
  */

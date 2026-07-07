@@ -118,7 +118,7 @@ src/tui/
 
 - **Framework**: Vitest 3 with `globals: true` and v8 coverage. Config in `vitest.config.ts`.
 - **Location**: Test files mirror the FSD structure: `tests/widgets/header/`, `tests/features/commands/`, `tests/entities/loops/`, `tests/shared/hooks/`.
-- **Coverage gates**: 90% lines/functions/branches/statements. Excludes `src/cli.ts`, `src/types.ts`, `src/daemon/index.ts`, `src/board/**`.
+- **Coverage gates**: 90% lines/functions/branches/statements. Excludes `src/cli.ts`, `src/types.ts`, `src/daemon/index.ts`.
 - **Gate order**: `typecheck` → `lint` → `test` → `build`. Run all four before claiming done.
 
 ### DI Mock Patterns

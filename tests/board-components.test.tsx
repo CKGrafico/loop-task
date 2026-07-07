@@ -148,26 +148,3 @@ describe("board CodeEditorModal — i18n keys", () => {
     }
   });
 });
-
-describe("board CodeEditorModal — import", () => {
-  it("module can be imported without error", async () => {
-    // Dynamic import to verify the module compiles and exports correctly.
-    // @opentui/react is a runtime-only dep (not available in vitest),
-    // so the import may fail in CI. We catch and mark as expected-skip.
-    try {
-      const mod = await import("../src/board/components/CodeEditorModal.js");
-      expect(mod.CodeEditorModal).toBeDefined();
-      expect(typeof mod.CodeEditorModal).toBe("function");
-    } catch (err: unknown) {
-      // If the error is about @opentui/react missing, that's expected in test env
-      const msg = err instanceof Error ? err.message : String(err);
-      if (msg.includes("@opentui/react")) {
-        // TypeScript compilation already verified via `tsc --noEmit`
-        // (passed separately). Runtime import fails because the TUI runtime
-        // isn't available in Node.js test env — this is expected.
-        return;
-      }
-      throw err;
-    }
-  });
-});

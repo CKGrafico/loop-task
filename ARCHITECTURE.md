@@ -73,8 +73,8 @@ loop-task/
 │   │   ├── index.tsx           # launchBoard: Ink render(<App/>)
 │   │   ├── App.tsx             # Top-level board container + state orchestration
 │   │   ├── daemon.ts           # TUI -> daemon bridge (typed IPC calls)
-│   │   ├── state.ts            # Filters/sort logic (applyLoopFilters, cycleSortMode, cycleStatusFilter)
-│   │   ├── format.ts           # Display formatters (statusColor, timing, truncate)
+│   │   ├── state.ts            # Re-exports from shared/ui/state (filters/sort logic)
+│   │   ├── format.ts           # Re-exports from shared/ui/format (display formatters)
 │   │   ├── types.ts            # View/Mode/TabName/PanelFocus/Command/CommandContext/ConfirmState
 │   │   ├── router.ts           # useRouter hook (push/pop/replace navigation stack)
 │   │   ├── commands.ts         # buildCommands/buildTabCommands (command registry, context-aware)
@@ -95,7 +95,11 @@ loop-task/
 │   │   ├── fs-utils.ts         # writeFileAtomic (temp-then-rename), removeIfExists
 │   │   ├── sleep.ts            # sleep(): abortable chunked sleep (SLEEP_CHUNK_MS)
 │   │   ├── tail.ts             # tail(): last N lines of a string
-│   │   └── clipboard.ts        # copyToClipboard / readFromClipboard (cross-platform)
+│   │   ├── clipboard.ts        # copyToClipboard / readFromClipboard (cross-platform)
+│   │   └── ui/                 # Shared UI utilities (format, state, hooks)
+│   │       ├── format.ts           # Display formatters (describeLoop, statusLabel, commandLine, etc.)
+│   │       ├── state.ts            # Filters/sort logic (applyLoopFilters, cycleSortMode, etc.)
+│   │       └── hooks/              # useHoverState (shared UI hooks)
 │   │
 │   ├── config/
 │   │   ├── constants.ts        # All magic numbers (POLL_MS, SLEEP_CHUNK_MS, MAX_LOG_BYTES, etc.)
@@ -104,8 +108,6 @@ loop-task/
 │   ├── i18n/
 │   │   ├── en.json             # All user-facing strings (490+ keys)
 │   │   └── index.ts            # t(key, params?) function with Mustache interpolation
-│   │
-│   └── board/                  # OLD OpenTUI code (NOT compiled, kept for reference only)
 │
 ├── tests/                      # Vitest test files (*.test.ts)
 ├── openspec/                   # OpenSpec change management (proposals, specs, tasks)
@@ -114,7 +116,7 @@ loop-task/
 │
 ├── package.json                # pnpm, ESM, Node >= 20, Ink 7 + React 19
 ├── tsconfig.json               # TypeScript strict, ESNext, JSX react-jsx
-├── tsconfig.build.json         # Build config (nodenext, outDir dist/, excludes src/board)
+├── tsconfig.build.json         # Build config (nodenext, outDir dist/)
 ├── vitest.config.ts            # Vitest 3, v8 coverage at 90% threshold
 ├── eslint.config.js            # ESLint 9 + typescript-eslint recommended
 ├── DESIGN.md                   # Design system: 4 primary colors + semantic + grays
@@ -508,7 +510,7 @@ All shell commands must be prefixed with `rtk` in agent contexts (see AGENTS.md)
 | Framework | Vitest 3 with `globals: true` |
 | Location | `tests/` directory, `*.test.ts` for logic, `*.test.tsx` for Ink components |
 | Coverage | v8 provider, 90% thresholds (lines/functions/branches/statements) |
-| Coverage excludes | `src/cli.ts`, `src/types.ts`, `src/daemon/index.ts`, `src/tui/**`, `src/board/**` |
+| Coverage excludes | `src/cli.ts`, `src/types.ts`, `src/daemon/index.ts`, `src/tui/**` |
 | Known issues | `tests/cli.test.ts` has pre-existing failures (version assertion, `--description` flag requirement). `tests/loop-controller.test.ts` has timer mock issues. `tests/projects.test.ts` has test-dir cleanup issues. |
 | TUI testing | TUI components tested with `ink-testing-library` (`render()`, `lastFrame()`, `stdin.write()`). Component tests in `tests/*.test.tsx`. Coverage excludes `src/tui/**` but new/changed components should ship with a `.test.tsx`. |
 | TUI testing rules | Wrap absolute/100% layouts in a sized `<Box>`; type chars one-at-a-time with `await delay()` between them; `await` after `stdin.write()` for async key handling (esc, ctrl combos). |
@@ -520,7 +522,7 @@ All shell commands must be prefixed with `rtk` in agent contexts (see AGENTS.md)
 
 | Decision | Rationale | Evidence |
 |---|---|---|
-| Ink 7 over OpenTUI | OpenTUI's `useKeyboard` has stale closure bugs; Ink's `useInput` re-registers every render | `src/tui/` replaces `src/board/`; package.json drops `@opentui/*` |
+| Ink 7 over OpenTUI | OpenTUI's `useKeyboard` has stale closure bugs; Ink's `useInput` re-registers every render | `src/tui/` replaces `src/board/`; package.json drops `@opentui/*`; board deleted |
 | Command-first input | Replaces 13+ Tab stops with a single always-focused command palette; all actions discoverable via fuzzy autocomplete | `CommandInput.tsx`, `commands.ts` registry |
 | Dictionary dispatch | `Record<string, () => void>` instead of `switch/case` for command handling | `App.tsx` `commandHandlers` object; project-guardrails rule |
 | Filesystem over database | No database dependency; atomic JSON writes via temp-then-rename; simple backup/inspect | `shared/fs-utils.ts`, `daemon/state.ts` |
@@ -536,7 +538,7 @@ All shell commands must be prefixed with `rtk` in agent contexts (see AGENTS.md)
 
 | Risk/Debt | Impact | Mitigation |
 |---|---|---|
-| `src/board/` stale code | Confusion; 70+ files kept for reference but not compiled/used | `tsconfig.json` and `tsconfig.build.json` exclude `src/board`; should be deleted eventually |
+| `src/board/` stale code | Confusion; 70+ files kept for reference but not compiled/used | **Deleted** in refactor; shared code extracted to `src/shared/ui/` |
 | No schema versioning | Future `LoopMeta` shape changes risk breaking persisted JSON | Corrupted files silently skipped; no migration path |
 | Pre-existing test failures | 11 tests fail on `main` before any changes; coverage gate may be unreliable | Confirm failures are pre-existing before touching assertions |
 | `ink-combobox` is young | v0.2.0, 0 stars, single contributor | Headless hooks isolate us from breaking changes; MIT, small package, can fork if needed |
@@ -555,7 +557,7 @@ All shell commands must be prefixed with `rtk` in agent contexts (see AGENTS.md)
 - Wire `ProjectsPage` into LeftPanel tab content (currently shows placeholder text)
 
 **Recommendations (not yet documented):**
-- Delete `src/board/` directory entirely to eliminate confusion
+- ~~Delete `src/board/` directory entirely to eliminate confusion~~ DONE
 - Add schema versioning to JSON files for safe migrations
 - Add integration tests for TUI components using `ink-testing-library` (done - `tests/tui-components.test.tsx`)
 - Replace polling with push-event-only updates (reduce `POLL_MS` or eliminate)

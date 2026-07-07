@@ -7,7 +7,7 @@ import {
   defaultFilters,
   resolveInputOwner,
   type InputOwnerState,
-} from "../src/board/state.js";
+} from "../src/shared/ui/state.js";
 
 function loop(id: string, values: Partial<LoopMeta> = {}): LoopMeta {
   return {

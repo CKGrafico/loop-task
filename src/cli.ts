@@ -224,7 +224,7 @@ program
       console.log(JSON.stringify(loops, null, 2));
     } else {
       for (const loop of loops) {
-        const { describeLoop, statusLabel } = await import("./board/format.js");
+        const { describeLoop, statusLabel } = await import("./shared/ui/format.js");
         console.log(`${loop.id}  ${statusLabel(loop.status)}  ${describeLoop(loop)}`);
       }
     }

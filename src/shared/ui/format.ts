@@ -1,5 +1,5 @@
-import type { LoopMeta } from "../types.js";
-import { t } from "../i18n/index.js";
+import type { LoopMeta } from "../../types.js";
+import { t } from "../../i18n/index.js";
 
 export function unescapeCommand(str: string): string {
   return str
