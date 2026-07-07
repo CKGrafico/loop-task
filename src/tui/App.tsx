@@ -18,7 +18,7 @@ import { CommandsBrowserModal } from "./components/CommandsBrowserModal.js";
 import { DebugPanel, MAX_ENTRIES, type DebugEntry } from "./components/DebugPanel.js";
 import { ContextHelpModal } from "./components/ContextHelpModal.js";
 import { ExportModal } from "./components/ExportModal.js";
-import { fetchRunLog, deleteLoop, pauseLoop, resumeLoop, stopLoop, triggerLoop, listTasks, deleteTask, listProjects, exportConfig } from "./daemon.js";
+import { fetchRunLog, deleteLoop, pauseLoop, resumeLoop, stopLoop, playLoop, triggerLoop, listTasks, deleteTask, listProjects, exportConfig } from "./daemon.js";
 import { applyLoopFilters, applyProjectFilters, cycleSortMode, cycleStatusFilter, cycleProjectSortMode, cycleProjectHasLoopsFilter, cycleProjectIsSystemFilter, defaultFilters, defaultProjectFilters, resolveInputOwner, type Filters, type SortMode, type ProjectFilters, type InputOwner } from "./state.js";
 import { t } from "../i18n/index.js";
 import { copyToClipboard } from "../shared/clipboard.js";
@@ -269,7 +269,10 @@ export function App(props: { onQuit: () => void }): React.ReactNode {
     },
     play: () => {
       if (activeTab === "loops" && selected) {
-        void runAction(t("board.toastResumed", { desc: selected.description }), () => resumeLoop(selected.id))();
+        const isPaused = selected.status === "paused";
+        const toastKey = isPaused ? "board.toastResumed" : "board.toastPlayed";
+        const fn = isPaused ? () => resumeLoop(selected.id) : () => playLoop(selected.id);
+        void runAction(t(toastKey, { desc: selected.description }), fn)();
       }
     },
     stop: () => {
