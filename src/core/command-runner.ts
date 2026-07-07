@@ -7,7 +7,16 @@ import { t } from "../i18n/index.js";
 import { MAX_CONTEXT_STDOUT_BYTES } from "../config/constants.js";
 
 function quoteArg(arg: string): string {
-  return /[\s"]/.test(arg) ? `"${arg.replace(/"/g, '\\"')}"` : arg;
+  if (arg.length === 0) return '""';
+  // If the arg already starts with a single quote (from interpolate's
+  // shellEscape), it's already safely shell-quoted — pass through as-is.
+  if (arg.startsWith("'") && arg.endsWith("'")) return arg;
+  // Safe characters: no quoting needed
+  if (/^[A-Za-z0-9_\-=:./,@]+$/.test(arg)) return arg;
+  // Otherwise: double-quote and escape inner double-quotes.
+  // Replace newlines with spaces (shell command line is single-line).
+  const cleaned = arg.replace(/[\n\r]/g, " ");
+  return `"${cleaned.replace(/"/g, '\\"')}"`;
 }
 
 function formatCommandLine(command: string, commandArgs: string[]): string {
