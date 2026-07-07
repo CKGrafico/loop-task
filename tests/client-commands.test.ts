@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { IpcRequest, IpcResponse, LoopOptions } from "../src/types.js";
 import { PROJECT_COLORS } from "../src/config/constants.js";
 
-// ── Mock ipc module (relative to commands.ts which imports "./ipc.js") ──
+
 // Since commands.ts does `import { sendRequest, streamRequest } from "./ipc.js"`,
 // we mock the module at the path the test file would import it from.
 vi.mock("../src/client/ipc.js", () => ({
@@ -10,7 +10,7 @@ vi.mock("../src/client/ipc.js", () => ({
   streamRequest: vi.fn(),
 }));
 
-// ── Import after mocks are registered ───────────────────────────────────
+
 import { sendRequest, streamRequest } from "../src/client/ipc.js";
 import {
   resolveColor,
@@ -31,7 +31,7 @@ import {
   deleteProjectCli,
 } from "../src/client/commands.js";
 
-// ── Helpers ─────────────────────────────────────────────────────────────
+
 
 const mockedSendRequest = vi.mocked(sendRequest);
 const mockedStreamRequest = vi.mocked(streamRequest);
@@ -69,7 +69,7 @@ function makeLoopOptions(overrides?: Partial<LoopOptions>): LoopOptions {
   };
 }
 
-// ── resolveColor ────────────────────────────────────────────────────────
+
 
 describe("resolveColor", () => {
   it("resolves a known color name to its hex value", () => {
@@ -132,7 +132,7 @@ describe("resolveColor", () => {
   });
 });
 
-// ── createBackgroundLoop ────────────────────────────────────────────────
+
 
 describe("createBackgroundLoop", () => {
   it("sends a start request and returns the id", async () => {
@@ -180,7 +180,7 @@ describe("createBackgroundLoop", () => {
   });
 });
 
-// ── listLoops ───────────────────────────────────────────────────────────
+
 
 describe("listLoops", () => {
   it("sends a list request", async () => {
@@ -246,7 +246,7 @@ describe("listLoops", () => {
   it("prints no loops message when list is empty", async () => {
     const okResponse: IpcResponse = { type: "ok", data: [] };
     mockedSendRequest.mockResolvedValue(okResponse);
-    const consoleSpy = vi.spyOn(console, "log").mockImplementation(() => {});
+    const consoleSpy = vi.spyOn(console, "log").mockImplementation(() => { });
 
     try {
       await listLoops();
@@ -276,7 +276,7 @@ describe("listLoops", () => {
   });
 });
 
-// ── showStatus ──────────────────────────────────────────────────────────
+
 
 describe("showStatus", () => {
   it("sends a status request with id", async () => {
@@ -387,7 +387,7 @@ describe("showStatus", () => {
   });
 });
 
-// ── pauseLoop ───────────────────────────────────────────────────────────
+
 
 describe("pauseLoop", () => {
   it("sends a pause request with id", async () => {
@@ -438,7 +438,7 @@ describe("pauseLoop", () => {
   });
 });
 
-// ── resumeLoop ──────────────────────────────────────────────────────────
+
 
 describe("resumeLoop", () => {
   it("sends a resume request with id", async () => {
@@ -489,7 +489,7 @@ describe("resumeLoop", () => {
   });
 });
 
-// ── deleteLoop ──────────────────────────────────────────────────────────
+
 
 describe("deleteLoop", () => {
   it("sends a delete request with id", async () => {
@@ -540,7 +540,7 @@ describe("deleteLoop", () => {
   });
 });
 
-// ── resolveProjectId ────────────────────────────────────────────────────
+
 
 describe("resolveProjectId", () => {
   it("resolves by id when project id matches", async () => {
@@ -602,12 +602,12 @@ describe("resolveProjectId", () => {
   });
 });
 
-// ── startLoop ───────────────────────────────────────────────────────────
+
 
 describe("startLoop", () => {
   it("logs success messages and calls process.exit(0)", async () => {
     mockedSendRequest.mockResolvedValue({ type: "ok", data: { id: "loop1" } });
-    const consoleSpy = vi.spyOn(console, "log").mockImplementation(() => {});
+    const consoleSpy = vi.spyOn(console, "log").mockImplementation(() => { });
 
     try {
       await startLoop(makeLoopOptions(), "1s");
@@ -633,7 +633,7 @@ describe("startLoop", () => {
   });
 });
 
-// ── viewLogs ────────────────────────────────────────────────────────────
+
 
 describe("viewLogs", () => {
   it("writes log content and exits on non-follow success", async () => {
@@ -708,13 +708,13 @@ describe("viewLogs", () => {
   });
 });
 
-// ── attachLoop ──────────────────────────────────────────────────────────
+
 
 describe("attachLoop", () => {
   it("sets up stream and console.log for attach", async () => {
     const fakeSocket = { destroy: vi.fn(), on: vi.fn() } as any;
     mockedStreamRequest.mockReturnValue(fakeSocket);
-    const consoleSpy = vi.spyOn(console, "log").mockImplementation(() => {});
+    const consoleSpy = vi.spyOn(console, "log").mockImplementation(() => { });
 
     const promise = attachLoop("abc");
 
@@ -728,12 +728,12 @@ describe("attachLoop", () => {
   });
 });
 
-// ── listProjectsCli ─────────────────────────────────────────────────────
+
 
 describe("listProjectsCli", () => {
   it("prints no projects message and exits when empty", async () => {
     mockedSendRequest.mockResolvedValue({ type: "ok", data: [] });
-    const consoleSpy = vi.spyOn(console, "log").mockImplementation(() => {});
+    const consoleSpy = vi.spyOn(console, "log").mockImplementation(() => { });
 
     try {
       await listProjectsCli();
@@ -754,7 +754,7 @@ describe("listProjectsCli", () => {
         ],
       })
       .mockResolvedValueOnce({ type: "ok", data: [] as any[] });
-    const consoleSpy = vi.spyOn(console, "log").mockImplementation(() => {});
+    const consoleSpy = vi.spyOn(console, "log").mockImplementation(() => { });
 
     try {
       await listProjectsCli();
@@ -779,12 +779,12 @@ describe("listProjectsCli", () => {
   });
 });
 
-// ── createProjectCli ────────────────────────────────────────────────────
+
 
 describe("createProjectCli", () => {
   it("creates project with default cyan color when no color provided", async () => {
     mockedSendRequest.mockResolvedValue({ type: "ok", data: { id: "new1" } });
-    const consoleSpy = vi.spyOn(console, "log").mockImplementation(() => {});
+    const consoleSpy = vi.spyOn(console, "log").mockImplementation(() => { });
 
     try {
       await createProjectCli("MyProj");
@@ -804,7 +804,7 @@ describe("createProjectCli", () => {
 
   it("creates project with specified color", async () => {
     mockedSendRequest.mockResolvedValue({ type: "ok", data: { id: "new2" } });
-    const consoleSpy = vi.spyOn(console, "log").mockImplementation(() => {});
+    const consoleSpy = vi.spyOn(console, "log").mockImplementation(() => { });
 
     try {
       await createProjectCli("MyProj", "green");
@@ -834,7 +834,7 @@ describe("createProjectCli", () => {
   });
 });
 
-// ── renameProjectCli ────────────────────────────────────────────────────
+
 
 describe("renameProjectCli", () => {
   it("renames project by resolved id", async () => {
@@ -846,7 +846,7 @@ describe("renameProjectCli", () => {
         ],
       })
       .mockResolvedValueOnce({ type: "ok" });
-    const consoleSpy = vi.spyOn(console, "log").mockImplementation(() => {});
+    const consoleSpy = vi.spyOn(console, "log").mockImplementation(() => { });
 
     try {
       await renameProjectCli("proj-1", "Beta");
@@ -880,7 +880,7 @@ describe("renameProjectCli", () => {
   });
 });
 
-// ── setProjectColorCli ──────────────────────────────────────────────────
+
 
 describe("setProjectColorCli", () => {
   it("sets color by project id", async () => {
@@ -892,7 +892,7 @@ describe("setProjectColorCli", () => {
         ],
       })
       .mockResolvedValueOnce({ type: "ok" });
-    const consoleSpy = vi.spyOn(console, "log").mockImplementation(() => {});
+    const consoleSpy = vi.spyOn(console, "log").mockImplementation(() => { });
 
     try {
       await setProjectColorCli("p1", "green");
@@ -919,7 +919,7 @@ describe("setProjectColorCli", () => {
         ],
       })
       .mockResolvedValueOnce({ type: "ok" });
-    const consoleSpy = vi.spyOn(console, "log").mockImplementation(() => {});
+    const consoleSpy = vi.spyOn(console, "log").mockImplementation(() => { });
 
     try {
       await setProjectColorCli("Alpha", "green");
@@ -982,7 +982,7 @@ describe("setProjectColorCli", () => {
   });
 });
 
-// ── deleteProjectCli ────────────────────────────────────────────────────
+
 
 describe("deleteProjectCli", () => {
   it("deletes project by resolved id", async () => {
@@ -994,7 +994,7 @@ describe("deleteProjectCli", () => {
         ],
       })
       .mockResolvedValueOnce({ type: "ok" });
-    const consoleSpy = vi.spyOn(console, "log").mockImplementation(() => {});
+    const consoleSpy = vi.spyOn(console, "log").mockImplementation(() => { });
 
     try {
       await deleteProjectCli("p1");

@@ -3,7 +3,7 @@ import { parseDuration } from "../duration.js";
 import { parseMaxRuns } from "../loop-config.js";
 import { t } from "../i18n/index.js";
 
-// ── Types ───────────────────────────────────────────────────────────
+
 
 export const createFields = [
   "interval",
@@ -19,7 +19,7 @@ export const createFields = [
 
 export type CreateField = (typeof createFields)[number];
 
-// ── Validation ──────────────────────────────────────────────────────
+
 
 /**
  * Validates a single loop form field and returns an error string, or
@@ -40,7 +40,7 @@ function validateField(
   const value = values[key] ?? "";
 
   switch (key) {
-    // ── interval ──────────────────────────────────────────────────
+
     // Always required; delegates to parseDuration() which throws on
     // empty, invalid syntax, or non-positive values.
     case "interval": {
@@ -55,7 +55,7 @@ function validateField(
       }
     }
 
-    // ── command ───────────────────────────────────────────────────
+
     // Required only when the user chose inline mode.
     case "command": {
       if (values.taskMode === "existing") return null;
@@ -65,7 +65,7 @@ function validateField(
       return null;
     }
 
-    // ── cwd ───────────────────────────────────────────────────────
+
     // Optional; if provided the directory must exist on disk.
     case "cwd": {
       if (!value.trim()) return null;
@@ -75,7 +75,7 @@ function validateField(
       return null;
     }
 
-    // ── description ───────────────────────────────────────────────
+
     // Always required.
     case "description": {
       if (!value.trim()) {
@@ -84,7 +84,7 @@ function validateField(
       return null;
     }
 
-    // ── maxRuns ───────────────────────────────────────────────────
+
     // Optional; if provided it must be a positive integer.
     case "maxRuns": {
       if (!value.trim()) return null;
@@ -96,7 +96,7 @@ function validateField(
       }
     }
 
-    // ── no validation needed ──────────────────────────────────────
+
     case "taskMode":
     case "runNow":
     case "project":
@@ -132,7 +132,7 @@ function validateAll(
   return errors;
 }
 
-// ── Hook ────────────────────────────────────────────────────────────
+
 
 /**
  * Shared form-validation hook for loop creation / edit forms.

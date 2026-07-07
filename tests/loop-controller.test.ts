@@ -235,7 +235,7 @@ describe("LoopController", () => {
     await controller.stop();
   });
 
-  // ── State transitions ──────────────────────────────────────────────
+
   it("transitions running → paused → resumed → running → stopped", async () => {
     const controller = new LoopController("state01", makeOptions({ immediate: true, interval: 5000 }), logPath, noopTaskResolver);
     controller.start();

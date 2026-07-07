@@ -45,10 +45,10 @@ export function App(props: { onQuit: () => void }): React.ReactNode {
   const { exit } = useApp();
   const { loops, daemonStatus, refresh } = useLoopPolling();
   const { view, push, pop } = useRouter("board");
-  // ── Tab and panel state (8.1, 8.2) ──
+
   const [activeTab, setActiveTab] = useState<TabName>("loops");
   const [focusedPanel, setFocusedPanel] = useState<PanelFocus>("left");
-  // ── Filter state ──
+
   const [filters, setFilters] = useState<Filters>(defaultFilters);
   const [sort, setSort] = useState<SortMode>("description");
   const [selectedIndex, setSelectedIndex] = useState(0);
@@ -69,19 +69,19 @@ export function App(props: { onQuit: () => void }): React.ReactNode {
   const [currentProjectId, setCurrentProjectId] = useState<string>("all");
   const [projectSelectedIndex, setProjectSelectedIndex] = useState(0);
   const [projectFilters, setProjectFilters] = useState<ProjectFilters>(defaultProjectFilters);
-  // ── Overlay state ──
+
   const [commandsBrowserOpen, setCommandsBrowserOpen] = useState(false);
   const [contextHelpOpen, setContextHelpOpen] = useState(false);
   const [exportModal, setExportModal] = useState<{ json: string; filePath: string | null; error: string | null } | null>(null);
-  // ── Confirm state (8.3) ──
+
   const [confirmState, setConfirmState] = useState<ConfirmState | null>(null);
-  // ── Search state (command-driven search) ──
+
   const [searchState, setSearchState] = useState<SearchState | null>(null);
   const [searchValue, setSearchValue] = useState("");
   const [debugMode, setDebugMode] = useState(false);
   const [debugEntries, setDebugEntries] = useState<DebugEntry[]>([]);
   const [chordState, setChordState] = useState<"ctrl+f" | "ctrl+a" | null>(null);
-  // ── Command bar input state (for InputOwner resolution) ──
+
   const [commandBarHasText, setCommandBarHasText] = useState(false);
   const [commandBarDropdownOpen, setCommandBarDropdownOpen] = useState(false);
   const { toasts, push: pushToast } = useToasts();
@@ -206,7 +206,7 @@ export function App(props: { onQuit: () => void }): React.ReactNode {
     if (handler) handler();
   }, [activeTab, selected, selectedTask, selectedProjectEntity, pushToast]);
 
-  // ── Command handler — dictionary dispatch, no switch/case ──
+
   const commandHandlers: Record<string, () => void> = {
     edit: () => {
       if (activeTab === "loops" && selected) {
@@ -343,7 +343,7 @@ export function App(props: { onQuit: () => void }): React.ReactNode {
     }
   }
 
-  // ── Confirm handlers (8.3) ──
+
   const handleConfirmYes = useCallback(() => {
     if (confirmState) {
       confirmState.onConfirm();
@@ -386,12 +386,12 @@ export function App(props: { onQuit: () => void }): React.ReactNode {
     pushToast("success", updated ? t("project.toastUpdated", { name }) : t("project.toastCreated", { name }));
   };
 
-  // ── Resolve query for LeftPanel based on activeTab + search state ──
+
   const leftPanelQuery = searchState?.active
     ? searchValue
     : activeTab === "tasks" ? taskQuery : filters.query;
 
-  // ── Search handlers ──
+
   const handleSearchChange = useCallback((value: string) => {
     setSearchValue(value);
     if (activeTab === "tasks") {
@@ -415,7 +415,7 @@ export function App(props: { onQuit: () => void }): React.ReactNode {
     setSearchState(null);
   }, [activeTab]);
 
-  // ── Command context (8.3) ──
+
   const commandContext: CommandContext = useMemo(
     () => ({ activeTab, selectedLoop: selected, selectedTask, selectedProject: selectedProjectEntity }),
     [activeTab, selected, selectedTask]
@@ -453,7 +453,7 @@ export function App(props: { onQuit: () => void }): React.ReactNode {
     handlers[handlerKey]?.();
   };
 
-  // ── Pop topmost overlay layer (Escape handler helper) ──
+
   const popLayer = (): boolean => {
     if (confirmState) { setConfirmState(null); return true; }
     if (searchState?.active) {
@@ -474,7 +474,7 @@ export function App(props: { onQuit: () => void }): React.ReactNode {
     return true;
   };
 
-  // ── Global useInput (8.2) ──
+
   useInput((input, key) => {
     // Ctrl+C always quits if no modal open
     if (key.ctrl && input === "c") {
@@ -578,7 +578,7 @@ export function App(props: { onQuit: () => void }): React.ReactNode {
     // Search mode is handled by CommandInput component, not here (non-Escape only)
     if (searchState?.active && !key.escape) return;
 
-    // ── Escape: pop the topmost overlay layer (2.2) ──
+
     if (key.escape) { popLayer(); return; }
 
     if (logModalRun) {
@@ -636,7 +636,7 @@ export function App(props: { onQuit: () => void }): React.ReactNode {
   const anyModalOpen = !!(logModalRun || commandsBrowserOpen || exportModal);
   const commandInputDisabled = anyModalOpen;
 
-  // ── Resolved input owner (1.2) ──
+
   const inputOwner: InputOwner = useMemo(
     () => resolveInputOwner({
       modalOpen: !!(logModalRun || commandsBrowserOpen || exportModal || contextHelpOpen || confirmState || searchState?.active),

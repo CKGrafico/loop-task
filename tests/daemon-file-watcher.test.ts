@@ -77,7 +77,7 @@ describe("FileWatcher", () => {
     watcher.stop();
   });
 
-  // ── hash-based change detection (via processChange) ──────────────
+
 
   describe("hash-based change detection", () => {
     it("skips onChange when file content hash matches (self-write protection)", async () => {
@@ -155,7 +155,7 @@ describe("FileWatcher", () => {
     });
   });
 
-  // ── registerSelfWrite ────────────────────────────────────────────
+
 
   describe("registerSelfWrite()", () => {
     it("updates the hash to prevent self-triggering", () => {
@@ -175,7 +175,7 @@ describe("FileWatcher", () => {
     });
   });
 
-  // ── debounce ─────────────────────────────────────────────────────
+
 
   describe("debounce behavior", () => {
     it("multiple rapid events result in a single callback after debounce", async () => {
@@ -201,7 +201,7 @@ describe("FileWatcher", () => {
     });
   });
 
-  // ── handleLoopsChange / handleTasksChange / handleProjectsChange ─
+
 
   describe("change handlers", () => {
     it("handles malformed loops.json gracefully", async () => {
@@ -242,7 +242,7 @@ describe("FileWatcher", () => {
     });
   });
 
-  // ── stop ─────────────────────────────────────────────────────────
+
 
   describe("stop()", () => {
     it("clears all watchers and timers", () => {
@@ -267,7 +267,7 @@ describe("FileWatcher", () => {
     });
   });
 
-  // ── setManagers ──────────────────────────────────────────────────
+
 
   describe("setManagers()", () => {
     it("sets the managers for change handling", () => {

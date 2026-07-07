@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useCallback, useState, useRef } from "react";
 
-import type { TaskDefinition } from "../../types.js";
+import type { TaskDefinition, TaskCommand } from "../../types.js";
 import { WizardForm, type WizardStepConfig } from "./WizardForm.js";
 import { SelectModal, SelectValueField, type SelectOption } from "./SelectModal.js";
 import { CodeEditorPreview } from "./CodeEditorPreview.js";
@@ -8,9 +8,9 @@ import { CodeEditorModal } from "./CodeEditorModal.js";
 import { createTask, updateTask, listTasks } from "../daemon.js";
 import crypto from "node:crypto";
 import { t } from "../../i18n/index.js";
-import { joinCommandLines } from "../../loop-config.js";
+import { joinCommandLines, parseCommandLine } from "../../loop-config.js";
 
-// ── Props ───────────────────────────────────────────────────────────
+
 
 interface TaskFormProps {
   mode: "create" | "edit";
@@ -19,7 +19,7 @@ interface TaskFormProps {
   onDone: (updated: boolean, id: string) => void;
 }
 
-// ── Utility ─────────────────────────────────────────────────────────
+
 
 function parseArgs(cmd: string): string[] {
   const tokens: string[] = [];
@@ -35,14 +35,18 @@ function joinCommand(task: TaskDefinition): string {
   return [task.command, ...task.commandArgs].join(" ");
 }
 
-// ── Component ───────────────────────────────────────────────────────
+
 
 export function TaskForm(props: TaskFormProps): React.ReactNode {
   const { mode, editTask, onCancel, onDone } = props;
 
   const [tasks, setTasks] = useState<TaskDefinition[]>([]);
   const [commandValue, setCommandValue] = useState(
-    editTask ? (editTask.commandRaw ?? joinCommand(editTask)) : "",
+    editTask
+      ? (editTask.commands?.length
+        ? editTask.commands.map(c => c.commandRaw ?? [c.command, ...c.commandArgs].join(" ")).join("\n&&\n")
+        : (editTask.commandRaw ?? joinCommand(editTask)))
+      : "",
   );
 
   useEffect(() => {
@@ -157,14 +161,45 @@ export function TaskForm(props: TaskFormProps): React.ReactNode {
       const onSuccessTaskId = resolveChainId(values.onSuccess ?? "");
       const onFailureTaskId = resolveChainId(values.onFailure ?? "");
 
-      const payload = {
-        name,
-        command: rawCommand.split(" ")[0] ?? "",
-        commandArgs: parseArgs(rawCommand),
-        commandRaw: commandValue,
-        onSuccessTaskId,
-        onFailureTaskId,
-      };
+      // Split by && to build parallel commands. If only one command, keep
+      // backward compat (command + commandArgs, no commands[]).
+      const commandSegments = commandValue
+        .split(/\n&&\n|\n&&|&&\n|&&/)
+        .map(s => s.trim())
+        .filter(s => s.length > 0);
+
+      let payload;
+
+      if (commandSegments.length > 1) {
+        const commands: TaskCommand[] = commandSegments.slice(0, 4).map(seg => {
+          const joined = joinCommandLines(seg);
+          const tokens = parseCommandLine(joined);
+          return {
+            command: tokens[0] ?? "",
+            commandArgs: tokens.slice(1),
+            commandRaw: seg,
+          };
+        });
+        // First command also populates command/commandArgs for backward compat
+        payload = {
+          name,
+          command: commands[0]!.command,
+          commandArgs: commands[0]!.commandArgs,
+          commandRaw: commands[0]!.commandRaw,
+          commands,
+          onSuccessTaskId,
+          onFailureTaskId,
+        };
+      } else {
+        payload = {
+          name,
+          command: rawCommand.split(" ")[0] ?? "",
+          commandArgs: parseArgs(rawCommand),
+          commandRaw: commandValue,
+          onSuccessTaskId,
+          onFailureTaskId,
+        };
+      }
 
       if (mode === "edit" && editTask) {
         updateTask(editTask.id, payload)

@@ -151,7 +151,7 @@ describe("LoopManager", () => {
     manager = new LoopManager(taskManager, projectManager);
   });
 
-  // ── init ──────────────────────────────────────────────────────────
+
 
   describe("init()", () => {
     it("initializes project manager", () => {
@@ -206,7 +206,7 @@ describe("LoopManager", () => {
     });
   });
 
-  // ── start ─────────────────────────────────────────────────────────
+
 
   describe("start()", () => {
     it("creates a loop and returns an id", () => {
@@ -234,7 +234,7 @@ describe("LoopManager", () => {
     });
   });
 
-  // ── list ──────────────────────────────────────────────────────────
+
 
   describe("list()", () => {
     it("returns empty array when no loops", () => {
@@ -250,7 +250,7 @@ describe("LoopManager", () => {
     });
   });
 
-  // ── status ────────────────────────────────────────────────────────
+
 
   describe("status()", () => {
     it("returns meta for a known loop id", () => {
@@ -265,7 +265,7 @@ describe("LoopManager", () => {
     });
   });
 
-  // ── pause / resume / stopLoop / trigger / playLoop ───────────────
+
 
   describe("pause()", () => {
     it("delegates to controller.pause() and persists", () => {
@@ -338,7 +338,7 @@ describe("LoopManager", () => {
     });
   });
 
-  // ── isMaxRunsBlocked / isRunning ──────────────────────────────────
+
 
   describe("isMaxRunsBlocked()", () => {
     it("returns false for unknown id", () => {
@@ -364,7 +364,7 @@ describe("LoopManager", () => {
     });
   });
 
-  // ── delete ────────────────────────────────────────────────────────
+
 
   describe("delete()", () => {
     it("stops and removes a loop, returns true", async () => {
@@ -386,7 +386,7 @@ describe("LoopManager", () => {
     });
   });
 
-  // ── stopAllLoops ──────────────────────────────────────────────────
+
 
   describe("stopAllLoops()", () => {
     it("stops all loops and returns the count", () => {
@@ -402,7 +402,7 @@ describe("LoopManager", () => {
     });
   });
 
-  // ── getLogPath ────────────────────────────────────────────────────
+
 
   describe("getLogPath()", () => {
     it("returns log path for known loop", () => {
@@ -417,7 +417,7 @@ describe("LoopManager", () => {
     });
   });
 
-  // ── shutdown ──────────────────────────────────────────────────────
+
 
   describe("shutdown()", () => {
     it("stops all loops and clears internal map", async () => {
@@ -430,7 +430,7 @@ describe("LoopManager", () => {
     });
   });
 
-  // ── reconcile ─────────────────────────────────────────────────────
+
 
   describe("reconcile()", () => {
     it("removes loops that are not in the new list", () => {
@@ -466,7 +466,7 @@ describe("LoopManager", () => {
     });
   });
 
-  // ── update ────────────────────────────────────────────────────────
+
 
   describe("update()", () => {
     it("updates an existing loop and returns true", async () => {
@@ -487,7 +487,7 @@ describe("LoopManager", () => {
     });
   });
 
-  // ── Project delegation ────────────────────────────────────────────
+
 
   describe("project delegation", () => {
     it("listProjects delegates to projectManager", () => {

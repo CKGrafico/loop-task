@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { parseMaxRuns, parseCommandLine, buildLoopOptions, joinCommandLines } from "../src/loop-config.js";
 
-// ── parseMaxRuns ────────────────────────────────────────────────────────
+
 
 describe("parseMaxRuns", () => {
   it("returns null for null", () => {
@@ -57,7 +57,7 @@ describe("parseMaxRuns", () => {
   });
 });
 
-// ── parseCommandLine ────────────────────────────────────────────────────
+
 
 describe("parseCommandLine", () => {
   it("parses simple tokens", () => {
@@ -147,7 +147,7 @@ describe("parseCommandLine", () => {
   });
 });
 
-// ── joinCommandLines ────────────────────────────────────────────────────
+
 
 describe("joinCommandLines", () => {
   it("joins lines with space when no trailing backslash", () => {
@@ -203,7 +203,7 @@ describe("joinCommandLines", () => {
   });
 });
 
-// ── buildLoopOptions ────────────────────────────────────────────────────
+
 
 describe("buildLoopOptions", () => {
   it("builds options with valid input", () => {

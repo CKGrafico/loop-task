@@ -26,7 +26,7 @@ describe("ProjectManager", () => {
     manager = new ProjectManager();
   });
 
-  // ── init ──────────────────────────────────────────────────────────
+
 
   describe("init()", () => {
     it("creates Default project when empty", () => {
@@ -50,7 +50,7 @@ describe("ProjectManager", () => {
     });
   });
 
-  // ── create ────────────────────────────────────────────────────────
+
 
   describe("create()", () => {
     it("returns a project with correct fields", () => {
@@ -87,7 +87,7 @@ describe("ProjectManager", () => {
     });
   });
 
-  // ── get ───────────────────────────────────────────────────────────
+
 
   describe("get()", () => {
     it("returns project by id", () => {
@@ -103,7 +103,7 @@ describe("ProjectManager", () => {
     });
   });
 
-  // ── getAll ────────────────────────────────────────────────────────
+
 
   describe("getAll()", () => {
     it("returns all projects including default", () => {
@@ -114,7 +114,7 @@ describe("ProjectManager", () => {
     });
   });
 
-  // ── update ────────────────────────────────────────────────────────
+
 
   describe("update()", () => {
     it("renames a project", () => {
@@ -166,7 +166,7 @@ describe("ProjectManager", () => {
     });
   });
 
-  // ── delete ────────────────────────────────────────────────────────
+
 
   describe("delete()", () => {
     it("removes a project", () => {
@@ -197,7 +197,7 @@ describe("ProjectManager", () => {
     });
   });
 
-  // ── reload ────────────────────────────────────────────────────────
+
 
   describe("reload()", () => {
     it("replaces all projects and ensures default exists", () => {
@@ -260,7 +260,7 @@ describe("ProjectManager", () => {
     });
   });
 
-  // ── migration ─────────────────────────────────────────────────────
+
 
   describe("migration from old dir format", () => {
     it("migrates individual project JSON files to projects.json", () => {

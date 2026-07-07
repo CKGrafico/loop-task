@@ -89,7 +89,7 @@ function makeTaskDef(overrides: Partial<TaskDefinition> = {}): TaskDefinition {
   };
 }
 
-// ── saveLoop / loadLoop / loadAllLoops / deleteLoop ──────────────────
+
 
 describe("saveLoop / loadLoop / loadAllLoops / deleteLoop", () => {
   it("saveLoop persists a loop that loadLoop can retrieve", () => {
@@ -168,7 +168,7 @@ describe("saveLoop / loadLoop / loadAllLoops / deleteLoop", () => {
   });
 });
 
-// ── saveTask / loadTask / loadAllTasks / deleteTask ──────────────────
+
 
 describe("saveTask / loadTask / loadAllTasks / deleteTask", () => {
   it("saveTask persists a task that loadTask can retrieve", () => {
@@ -234,7 +234,7 @@ describe("saveTask / loadTask / loadAllTasks / deleteTask", () => {
   });
 });
 
-// ── PID file management ─────────────────────────────────────────────
+
 
 describe("writeDaemonPid / readDaemonPid / removeDaemonPid", () => {
   it("writeDaemonPid writes and readDaemonPid reads", () => {
@@ -267,7 +267,7 @@ describe("writeDaemonPid / readDaemonPid / removeDaemonPid", () => {
   });
 });
 
-// ── Signature file management ──────────────────────────────────────
+
 
 describe("writeDaemonSignature / readDaemonSignature / removeDaemonSignature", () => {
   it("writeDaemonSignature writes and readDaemonSignature reads", () => {
@@ -300,7 +300,7 @@ describe("writeDaemonSignature / readDaemonSignature / removeDaemonSignature", (
   });
 });
 
-// ── getLogPath ─────────────────────────────────────────────────────
+
 
 describe("getLogPath", () => {
   it("returns a path under logs directory", () => {
@@ -319,7 +319,7 @@ describe("getLogPath", () => {
   });
 });
 
-// ── removeSocketFile ──────────────────────────────────────────────
+
 
 describe("removeSocketFile", () => {
   it("does not throw when socket file does not exist", () => {
@@ -327,7 +327,7 @@ describe("removeSocketFile", () => {
   });
 });
 
-// ── Migration: migrateLoopsToJson ─────────────────────────────────
+
 
 describe("migrateLoopsToJson", () => {
   it("migrates individual loop JSON files to loops.json array", () => {
@@ -413,7 +413,7 @@ describe("migrateLoopsToJson", () => {
   });
 });
 
-// ── Migration: migrateTasksToJson ─────────────────────────────────
+
 
 describe("migrateTasksToJson", () => {
   it("migrates individual task JSON files to tasks.json array", () => {

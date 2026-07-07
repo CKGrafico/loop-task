@@ -6,9 +6,10 @@ import { useUndoRedo } from "../../shared/useUndoRedo.js";
 import { highlightSegments } from "../utils/syntax.js";
 import { joinCommandLines } from "../../loop-config.js";
 import { copyToClipboard, readFromClipboard } from "../../shared/clipboard.js";
-import { sanitizePaste } from "../utils/paste.js";
+import { sanitizeMultilinePaste } from "../utils/paste.js";
 import {
   CODE_EDITOR_MODAL_HEIGHT,
+  CODE_EDITOR_MODAL_WIDTH,
   CODE_EDITOR_UNDO_LIMIT,
   CODE_EDITOR_SYNTAX_COLORS,
 } from "../../config/constants.js";
@@ -19,12 +20,21 @@ export interface CodeEditorModalProps {
   onCancel: () => void;
 }
 
-// Lines available for the editor content area:
-// total height - title row - preview row - buttons row - 2 padding = -5
-const EDITOR_VISIBLE_LINES = CODE_EDITOR_MODAL_HEIGHT - 5;
+// Cap modal to terminal size: never exceed (terminal - 2) so the border
+// and a 1-row margin are always visible. Ideal max is the constant.
+function useModalDimensions(): { modalWidth: number; modalHeight: number; editorVisibleLines: number } {
+  const termRows = process.stdout.rows || 24;
+  const termCols = process.stdout.columns || 80;
+  const modalHeight = Math.min(CODE_EDITOR_MODAL_HEIGHT, termRows - 2);
+  const modalWidth = Math.min(CODE_EDITOR_MODAL_WIDTH, termCols - 2);
+  // total height - title - preview - buttons - hint - 2 padding = -6
+  const editorVisibleLines = Math.max(3, modalHeight - 6);
+  return { modalWidth, modalHeight, editorVisibleLines };
+}
 
 export function CodeEditorModal(props: CodeEditorModalProps): React.ReactNode {
   const { initialValue, onSave, onCancel } = props;
+  const { modalWidth, modalHeight, editorVisibleLines: EDITOR_VISIBLE_LINES } = useModalDimensions();
 
   const { value, setValue, undo, redo } = useUndoRedo(
     initialValue,
@@ -80,7 +90,7 @@ export function CodeEditorModal(props: CodeEditorModalProps): React.ReactNode {
       // Must be detected BEFORE the escape check — the leading ESC trips
       // key.escape and would close the modal before paste is handled.
       if (input.includes("\x1b[200~")) {
-        const pasted = sanitizePaste(input);
+        const pasted = sanitizeMultilinePaste(input);
         if (pasted) {
           const next = [...lines];
           const line = next[cursorRow] ?? "";
@@ -125,7 +135,7 @@ export function CodeEditorModal(props: CodeEditorModalProps): React.ReactNode {
       if ((key.ctrl && input === "v") || input === "\x16") {
         const clip = readFromClipboard();
         if (clip) {
-          const pasted = sanitizePaste(clip);
+          const pasted = sanitizeMultilinePaste(clip);
           if (pasted) {
             const next = [...lines];
             const line = next[cursorRow] ?? "";
@@ -218,13 +228,10 @@ export function CodeEditorModal(props: CodeEditorModalProps): React.ReactNode {
         return;
       }
 
-      // Multi-char containing CR/LF with no bracketed markers — ignore
-      if (input.length > 1 && (input.includes("\r") || input.includes("\n")))
-        return;
-
-      // Multi-char printable input = unbracketed single-line paste
+      // Multi-char printable input = unbracketed paste (e.g. right-click
+      // in terminals that don't support DECSET 2004). Preserve newlines.
       if (input.length > 1 && !key.meta) {
-        const pasted = sanitizePaste(input);
+        const pasted = sanitizeMultilinePaste(input);
         if (pasted) {
           const next = [...lines];
           const line = next[cursorRow] ?? "";
@@ -249,7 +256,7 @@ export function CodeEditorModal(props: CodeEditorModalProps): React.ReactNode {
 
   // ---- Live preview footer ----
   const joined = joinCommandLines(value);
-  const innerWidth = 58;
+  const innerWidth = modalWidth - 2;
   const truncatedPreview =
     joined.length > innerWidth
       ? joined.slice(0, innerWidth - 1) + t("codeEditor.previewTruncated")
@@ -268,8 +275,8 @@ export function CodeEditorModal(props: CodeEditorModalProps): React.ReactNode {
       alignItems="center"
     >
       <Box
-        width={60}
-        height={CODE_EDITOR_MODAL_HEIGHT}
+        width={modalWidth}
+        height={modalHeight}
         flexDirection="column"
         backgroundColor={theme.bg.elevated}
         borderStyle="round"

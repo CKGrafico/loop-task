@@ -17,7 +17,7 @@ import { sanitizePaste } from "../utils/paste.js";
 
 export { sanitizePaste } from "../utils/paste.js";
 
-// ── Props ────────────────────────────────────────────────────────────
+
 
 export interface CommandInputProps {
   context: CommandContext;
@@ -37,7 +37,7 @@ export interface CommandInputProps {
   onInputStateChange?: (hasText: boolean, dropdownOpen: boolean) => void;
 }
 
-// ── Rendered input with cursor ───────────────────────────────────────
+
 
 function renderInputLine(
   value: string,
@@ -61,7 +61,7 @@ function renderInputLine(
   return result;
 }
 
-// ── Highlight matching ranges ────────────────────────────────────────
+
 
 interface MatchRange {
   start: number;
@@ -101,7 +101,7 @@ function renderHighlightedLabel(
   return result;
 }
 
-// ── Dropdown ─────────────────────────────────────────────────────────
+
 
 function CommandDropdown({
   state,
@@ -165,9 +165,9 @@ function CommandDropdown({
   );
 }
 
-// ── Confirm inline options ────────────────────────────────────────────
 
-// ── Hint bar ──────────────────────────────────────────────────────────
+
+
 
 function HintBar({
   leftHint,
@@ -193,7 +193,7 @@ function KeyHint({ keyLabel, action }: { keyLabel: string; action: string }): Re
   );
 }
 
-// ── Command mode ─────────────────────────────────────────────────────
+
 
 function CommandMode({
   context,
@@ -367,7 +367,7 @@ function CommandMode({
   );
 }
 
-// ── Confirm mode ─────────────────────────────────────────────────────
+
 
 function ConfirmMode({
   confirmState,
@@ -424,7 +424,7 @@ function ConfirmMode({
   );
 }
 
-// ── Search mode ──────────────────────────────────────────────────────
+
 
 function SearchMode({
   value,
@@ -439,7 +439,7 @@ function SearchMode({
   onSearchCancel: () => void;
   disabled?: boolean;
 }): React.ReactNode {
-   useInput(
+  useInput(
     (input, key) => {
       if (key.ctrl) return;
       if (input.length > 1 && (input.includes("\r") || input.includes("\n"))) return;
@@ -477,7 +477,7 @@ function SearchMode({
   );
 }
 
-// ── Main component ───────────────────────────────────────────────────
+
 
 export function CommandInput(props: CommandInputProps): React.ReactNode {
   const {

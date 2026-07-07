@@ -12,7 +12,7 @@ import { parseDuration } from "../../duration.js";
 import { parseCommandLine, joinCommandLines } from "../../loop-config.js";
 
 
-// ── Props ───────────────────────────────────────────────────────────
+
 
 interface CreateViewProps {
   mode: "create" | "edit";
@@ -28,7 +28,7 @@ interface CreateViewProps {
   onChooseTask: (task: { id: string; name: string }) => void;
 }
 
-// ── Component ───────────────────────────────────────────────────────
+
 
 export function CreateView(props: CreateViewProps): React.ReactNode {
   const {
@@ -288,7 +288,7 @@ export function CreateView(props: CreateViewProps): React.ReactNode {
   const selectTitleFor = (field: "taskMode" | "runNow" | "project"): string =>
     field === "taskMode" ? t("wizard.taskModePrompt")
       : field === "runNow" ? t("wizard.runNowPrompt")
-      : t("wizard.projectPrompt");
+        : t("wizard.projectPrompt");
 
   return (
     <>
@@ -334,4 +334,4 @@ export function CreateView(props: CreateViewProps): React.ReactNode {
       ) : null}
     </>
   );
-}
+}

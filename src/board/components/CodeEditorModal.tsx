@@ -23,7 +23,7 @@ export interface CodeEditorModalProps {
 // total height - title row - preview row - buttons row - 2 padding = -5
 const EDITOR_VISIBLE_LINES = CODE_EDITOR_MODAL_HEIGHT - 5;
 
-// ── ActionButton with hover ──────────────────────────────────────────
+
 
 function ActionButton({
   label,
@@ -53,7 +53,7 @@ function ActionButton({
   );
 }
 
-// ── CodeEditorModal ──────────────────────────────────────────────────
+
 
 export function CodeEditorModal(props: CodeEditorModalProps): React.ReactNode {
   const { initialValue, onSave, onCancel } = props;
@@ -106,7 +106,7 @@ export function CodeEditorModal(props: CodeEditorModalProps): React.ReactNode {
     [setValue],
   );
 
-  // ── Button handlers ────────────────────────────────────────────────
+
 
   const handleCopy = useCallback(() => {
     copyToClipboard(value);
@@ -133,7 +133,7 @@ export function CodeEditorModal(props: CodeEditorModalProps): React.ReactNode {
     setFlashMsg(t("codeEditor.cleared"));
   }, [setValue]);
 
-  // ── Keyboard ───────────────────────────────────────────────────────
+
 
   useKeyboard((key) => {
     // Esc or Ctrl+C → cancel
@@ -256,7 +256,7 @@ export function CodeEditorModal(props: CodeEditorModalProps): React.ReactNode {
     }
   });
 
-  // ── Live preview footer ────────────────────────────────────────────
+
 
   const joined = joinCommandLines(value);
   const maxLen = Math.floor(width * 0.85);
@@ -265,7 +265,7 @@ export function CodeEditorModal(props: CodeEditorModalProps): React.ReactNode {
       ? joined.slice(0, maxLen) + t("codeEditor.previewTruncated")
       : joined;
 
-  // ── Render ─────────────────────────────────────────────────────────
+
 
   return (
     <box

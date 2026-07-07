@@ -40,7 +40,7 @@ describe("TaskManager", () => {
     manager = new TaskManager();
   });
 
-  // ── create ────────────────────────────────────────────────────────
+
 
   describe("create()", () => {
     it("adds a task to the map and returns it with createdAt", () => {
@@ -74,7 +74,7 @@ describe("TaskManager", () => {
     });
   });
 
-  // ── get ───────────────────────────────────────────────────────────
+
 
   describe("get()", () => {
     it("returns the created task", () => {
@@ -91,7 +91,7 @@ describe("TaskManager", () => {
     });
   });
 
-  // ── list ──────────────────────────────────────────────────────────
+
 
   describe("list()", () => {
     it("returns empty array when no tasks", () => {
@@ -110,7 +110,7 @@ describe("TaskManager", () => {
     });
   });
 
-  // ── update ────────────────────────────────────────────────────────
+
 
   describe("update()", () => {
     it("modifies an existing task", () => {
@@ -162,7 +162,7 @@ describe("TaskManager", () => {
     });
   });
 
-  // ── delete ────────────────────────────────────────────────────────
+
 
   describe("delete()", () => {
     it("removes a task and returns true", () => {
@@ -187,7 +187,7 @@ describe("TaskManager", () => {
     });
   });
 
-  // ── createInline ──────────────────────────────────────────────────
+
 
   describe("createInline()", () => {
     it("auto-generates id and name from command and args", () => {
@@ -221,7 +221,7 @@ describe("TaskManager", () => {
     });
   });
 
-  // ── reload ────────────────────────────────────────────────────────
+
 
   describe("reload()", () => {
     it("clears existing tasks and loads from the provided array", () => {
@@ -266,7 +266,7 @@ describe("TaskManager", () => {
     });
   });
 
-  // ── init ──────────────────────────────────────────────────────────
+
 
   describe("init()", () => {
     it("loads persisted tasks from disk", () => {

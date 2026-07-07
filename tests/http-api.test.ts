@@ -4,7 +4,7 @@ import { HttpApiServer } from "../src/daemon/http-server.js";
 import type { LoopMeta } from "../src/types.js";
 import type { TaskDefinition } from "../src/types.js";
 
-// ── Mock managers ──────────────────────────────────────────────────
+
 
 function makeMockMeta(id: string): LoopMeta {
   return {
@@ -56,8 +56,8 @@ function createMocks() {
   const mockTaskManager = {
     list: vi.fn(() => []),
     get: vi.fn((_id: string) => null),
-    create: vi.fn((input: Omit<TaskDefinition, "createdAt">) => ({ ...input, createdAt: new Date().toISOString() }) ),
-    update: vi.fn((_id: string, input: Omit<TaskDefinition, "id" | "createdAt">) => ({ id: _id, ...input, createdAt: new Date().toISOString() }) ),
+    create: vi.fn((input: Omit<TaskDefinition, "createdAt">) => ({ ...input, createdAt: new Date().toISOString() })),
+    update: vi.fn((_id: string, input: Omit<TaskDefinition, "id" | "createdAt">) => ({ id: _id, ...input, createdAt: new Date().toISOString() })),
     delete: vi.fn((_id: string) => true),
   };
   const mockProjectManager = {
@@ -76,7 +76,7 @@ function createMocks() {
   return { mockManager, mockTaskManager, mockProjectManager };
 }
 
-// ── HTTP request helper ───────────────────────────────────────────
+
 
 interface HttpResponse {
   status: number;
@@ -132,7 +132,7 @@ async function request(
   });
 }
 
-// ── Raw HTTP helper for malformed JSON bodies ─────────────────────
+
 
 async function requestRaw(
   port: number,
@@ -180,7 +180,7 @@ async function requestRaw(
   });
 }
 
-// ── SSE helper: get headers and first chunk, then close ───────────
+
 
 async function sseRequest(
   port: number,
@@ -240,7 +240,7 @@ async function sseRequest(
   });
 }
 
-// ── Test suite ────────────────────────────────────────────────────
+
 
 describe("HttpApiServer integration", () => {
   let server: HttpApiServer;
@@ -265,7 +265,7 @@ describe("HttpApiServer integration", () => {
     await server.close();
   });
 
-  // ── Loops lifecycle ─────────────────────────────────────────────
+
 
   describe("Loops", () => {
     it("POST /api/loops with valid body returns 201 and id", async () => {
@@ -489,7 +489,7 @@ describe("HttpApiServer integration", () => {
     });
   });
 
-  // ── Tasks ───────────────────────────────────────────────────────
+
 
   describe("Tasks", () => {
     it("GET /api/tasks returns 200 and array", async () => {
@@ -641,7 +641,7 @@ describe("HttpApiServer integration", () => {
     });
   });
 
-  // ── Projects ───────────────────────────────────────────────────
+
 
   describe("Projects", () => {
     it("GET /api/projects returns 200 and array", async () => {
@@ -739,7 +739,7 @@ describe("HttpApiServer integration", () => {
     });
   });
 
-  // ── Swagger / OpenAPI ───────────────────────────────────────────
+
 
   describe("Swagger / OpenAPI", () => {
     it("GET /api/openapi.json returns 200 with OpenAPI 3.0.3 spec", async () => {
@@ -775,7 +775,7 @@ describe("HttpApiServer integration", () => {
     });
   });
 
-  // ── SSE Events ─────────────────────────────────────────────────
+
 
   describe("SSE", () => {
     it("GET /api/events returns text/event-stream", async () => {
@@ -808,7 +808,7 @@ describe("HttpApiServer integration", () => {
     });
   });
 
-  // ── Error cases ────────────────────────────────────────────────
+
 
   describe("Error handling", () => {
     it("unknown route returns 404", async () => {
@@ -850,7 +850,7 @@ describe("HttpApiServer integration", () => {
     });
   });
 
-  // ── Response envelope consistency ──────────────────────────────
+
 
   describe("Response envelope", () => {
     it("success responses use { ok: true, data: ... }", async () => {

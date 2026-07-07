@@ -171,7 +171,7 @@ export class HttpApiServer {
       this.routes.push({ method, segments, handler });
     };
 
-    // ── Loops ──────────────────────────────────────────────────────
+
     r("GET", "/api/loops", (_req, res) => {
       sendOk(res, this.manager.list());
     });
@@ -289,7 +289,7 @@ export class HttpApiServer {
       sendOk(res, { count });
     });
 
-    // ── Loop logs ─────────────────────────────────────────────────
+
     r("GET", "/api/loops/:id/logs", (_req, res, params) => {
       const logPath = this.manager.getLogPath(params.id);
       if (!logPath) {
@@ -407,7 +407,7 @@ export class HttpApiServer {
       sendOk(res, parts.join(""));
     });
 
-    // ── Tasks ──────────────────────────────────────────────────────
+
     r("GET", "/api/tasks", (_req, res) => {
       sendOk(res, this.taskManager.list());
     });
@@ -461,7 +461,7 @@ export class HttpApiServer {
       sendOk(res);
     });
 
-    // ── Projects ───────────────────────────────────────────────────
+
     r("GET", "/api/projects", (_req, res) => {
       sendOk(res, this.projectManager.getAll());
     });
@@ -513,7 +513,7 @@ export class HttpApiServer {
       }
     });
 
-    // ── Swagger / OpenAPI ────────────────────────────────────────
+
     r("GET", "/api/openapi.json", (_req, res) => {
       const spec = this.buildOpenApiSpec();
       const body = JSON.stringify(spec, null, 2);
@@ -542,7 +542,7 @@ export class HttpApiServer {
       res.end(html);
     });
 
-    // ── SSE Events ────────────────────────────────────────────────
+
     r("GET", "/api/events", (_req, res) => {
       res.writeHead(200, {
         "Content-Type": "text/event-stream",

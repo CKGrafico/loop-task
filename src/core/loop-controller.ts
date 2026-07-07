@@ -1,7 +1,7 @@
 import { EventEmitter } from "node:events";
 import fs from "node:fs";
 import crypto from "node:crypto";
-import type { LoopOptions, LoopStatus, LoopMeta, RunRecord, TaskDefinition } from "../types.js";
+import type { LoopOptions, LoopStatus, LoopMeta, RunRecord, TaskDefinition, TaskCommand, ExecutionResult } from "../types.js";
 import { sleep } from "../shared/sleep.js";
 import { SLEEP_CHUNK_MS } from "../config/constants.js";
 import { executeCommand } from "./command-runner.js";
@@ -379,23 +379,65 @@ export class LoopController extends EventEmitter {
 
         this.runAbortController = new AbortController();
         const task = this.options.taskId ? this.taskResolver(this.options.taskId) : null;
-        const command = task?.command ?? this.options.command;
-        const commandArgs = task?.commandArgs ?? this.options.commandArgs;
         const cwd = resolveEffectiveCwd(this.options.cwd, this.projectDirectory);
         const chainContext: Record<string, unknown> = {};
         const hasChainTasks = !!(task?.onSuccessTaskId || task?.onFailureTaskId);
-        const result = await executeCommand(
-          command,
-          commandArgs,
-          cwd,
-          this.logStream!,
-          AbortSignal.any([signal, this.runAbortController.signal]),
-          this.runCount,
-          hasChainTasks
+
+        // Determine the command(s) to run
+        const taskCommands: TaskCommand[] = task?.commands?.length
+          ? task.commands
+          : [{
+              command: task?.command ?? this.options.command,
+              commandArgs: task?.commandArgs ?? this.options.commandArgs,
+              commandRaw: task?.commandRaw ?? this.options.commandRaw,
+            }];
+
+        const shouldCaptureStdout = hasChainTasks || taskCommands.length > 1;
+
+        const results = await Promise.allSettled(
+          taskCommands.map((cmd) =>
+            executeCommand(
+              cmd.command,
+              cmd.commandArgs,
+              cwd,
+              this.logStream!,
+              AbortSignal.any([signal, this.runAbortController!.signal]),
+              this.runCount,
+              shouldCaptureStdout,
+            )
+          )
         );
         this.runAbortController = null;
 
-        if (hasChainTasks && result.stdout) {
+        // Find first failure (if any) — stop-immediately policy
+        const firstFailure = results.find(
+          (r): r is PromiseRejectedResult => r.status === "rejected"
+        );
+        const firstNonZero = results.find(
+          (r): r is PromiseFulfilledResult<ExecutionResult> =>
+            r.status === "fulfilled" && r.value.exitCode !== 0
+        );
+
+        const exitCode = firstFailure ? 1 : (firstNonZero?.value.exitCode ?? 0);
+        const totalDuration = results.reduce((sum, r) => {
+          if (r.status === "fulfilled") return sum + r.value.duration;
+          return sum;
+        }, 0);
+        const combinedStdout = results
+          .filter(
+            (r): r is PromiseFulfilledResult<ExecutionResult> =>
+              r.status === "fulfilled" && !!r.value.stdout
+          )
+          .map((r) => r.value.stdout!)
+          .join("\n");
+
+        const result = {
+          exitCode,
+          duration: totalDuration,
+          stdout: combinedStdout || undefined,
+        };
+
+        if (shouldCaptureStdout && result.stdout) {
           const parsed = parseStdout(result.stdout);
           if (parsed !== null) {
             Object.assign(chainContext, parsed);

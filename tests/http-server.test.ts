@@ -6,7 +6,7 @@ import type { TaskManager } from "../src/daemon/task-manager.js";
 import type { ProjectManager } from "../src/daemon/projects.js";
 import type { LoopMeta, TaskDefinition, Project } from "../src/types.js";
 
-// ── Fixtures ─────────────────────────────────────────────────────────
+
 
 const fakeLoopMeta: LoopMeta = {
   id: "abc123",
@@ -57,7 +57,7 @@ const fakeProject: Project = {
   isDefault: false,
 };
 
-// ── Mock managers ────────────────────────────────────────────────────
+
 //
 // vi.fn() lets us both assert calls and override return values per test
 // with mockReturnValueOnce / mockReturnValue.
@@ -103,7 +103,7 @@ const mockProjectManager = {
   delete: vi.fn(),
 };
 
-// ── HTTP request helpers ─────────────────────────────────────────────
+
 
 function httpRequest(
   port: number,
@@ -123,9 +123,9 @@ function httpRequest(
           Connection: "close",
           ...(data
             ? {
-                "Content-Type": "application/json",
-                "Content-Length": Buffer.byteLength(data),
-              }
+              "Content-Type": "application/json",
+              "Content-Length": Buffer.byteLength(data),
+            }
             : {}),
         },
       },
@@ -148,7 +148,7 @@ function readBody(res: http.IncomingMessage): Promise<string> {
   });
 }
 
-// ── Test suite ────────────────────────────────────────────────────────
+
 
 describe("HttpApiServer — route matching & JSON envelope", () => {
   let httpServer: HttpApiServer;
@@ -214,7 +214,7 @@ describe("HttpApiServer — route matching & JSON envelope", () => {
     await httpServer.close();
   });
 
-  // ── GET /api/loops ──────────────────────────────────────────────
+
 
   it("GET /api/loops returns 200 with array in success envelope", async () => {
     const res = await httpRequest(port, "GET", "/api/loops");
@@ -229,7 +229,7 @@ describe("HttpApiServer — route matching & JSON envelope", () => {
     expect(mockManager.list).toHaveBeenCalledOnce();
   });
 
-  // ── GET /api/loops/:id ───────────────────────────────────────────
+
 
   it("GET /api/loops/:id returns 200 with object when found", async () => {
     const res = await httpRequest(port, "GET", "/api/loops/abc123");
@@ -252,7 +252,7 @@ describe("HttpApiServer — route matching & JSON envelope", () => {
     expect(body.error.message).toContain("missing");
   });
 
-  // ── POST /api/loops ──────────────────────────────────────────────
+
 
   it("POST /api/loops returns 201 with id when body is valid", async () => {
     const res = await httpRequest(port, "POST", "/api/loops", {
@@ -289,7 +289,7 @@ describe("HttpApiServer — route matching & JSON envelope", () => {
     expect(body.ok).toBe(false);
   });
 
-  // ── DELETE /api/loops/:id ───────────────────────────────────────
+
 
   it("DELETE /api/loops/:id returns 200 when deleted", async () => {
     mockManager.delete.mockResolvedValue(true);
@@ -313,7 +313,7 @@ describe("HttpApiServer — route matching & JSON envelope", () => {
     expect(body.ok).toBe(false);
   });
 
-  // ── PATCH /api/loops/:id ────────────────────────────────────────
+
 
   it("PATCH /api/loops/:id returns 200 with id when updated", async () => {
     mockManager.update.mockResolvedValue(true);
@@ -349,7 +349,7 @@ describe("HttpApiServer — route matching & JSON envelope", () => {
     expect(body.ok).toBe(false);
   });
 
-  // ── POST /api/loops/:id/pause ───────────────────────────────────
+
 
   it("POST /api/loops/:id/pause returns 200 when loop exists", async () => {
     mockManager.pause.mockReturnValue(true);
@@ -372,7 +372,7 @@ describe("HttpApiServer — route matching & JSON envelope", () => {
     expect(body.ok).toBe(false);
   });
 
-  // ── GET /api/tasks ──────────────────────────────────────────────
+
 
   it("GET /api/tasks returns 200 with array", async () => {
     const res = await httpRequest(port, "GET", "/api/tasks");
@@ -384,7 +384,7 @@ describe("HttpApiServer — route matching & JSON envelope", () => {
     expect(mockTaskManager.list).toHaveBeenCalledOnce();
   });
 
-  // ── GET /api/projects ───────────────────────────────────────────
+
 
   it("GET /api/projects returns 200 with array", async () => {
     const res = await httpRequest(port, "GET", "/api/projects");
@@ -396,7 +396,7 @@ describe("HttpApiServer — route matching & JSON envelope", () => {
     expect(mockProjectManager.getAll).toHaveBeenCalledOnce();
   });
 
-  // ── GET /api/events (SSE) ───────────────────────────────────────
+
 
   it("GET /api/events returns text/event-stream content-type", async () => {
     const res = await httpRequest(port, "GET", "/api/events");
@@ -409,7 +409,7 @@ describe("HttpApiServer — route matching & JSON envelope", () => {
     res.destroy();
   });
 
-  // ── GET /api/docs (Swagger UI) ──────────────────────────────────
+
 
   it("GET /api/docs returns HTML content-type", async () => {
     const res = await httpRequest(port, "GET", "/api/docs");
@@ -420,7 +420,7 @@ describe("HttpApiServer — route matching & JSON envelope", () => {
     expect(body).toContain("<html");
   });
 
-  // ── GET /api/openapi.json ────────────────────────────────────────
+
 
   it("GET /api/openapi.json returns JSON with openapi field", async () => {
     const res = await httpRequest(port, "GET", "/api/openapi.json");
@@ -433,7 +433,7 @@ describe("HttpApiServer — route matching & JSON envelope", () => {
     expect(body.paths).toBeDefined();
   });
 
-  // ── GET / (root — Swagger redirect) ──────────────────────────────
+
 
   it("GET / returns HTML (Swagger UI)", async () => {
     const res = await httpRequest(port, "GET", "/");
@@ -444,7 +444,7 @@ describe("HttpApiServer — route matching & JSON envelope", () => {
     expect(body).toContain("<html");
   });
 
-  // ── Unknown route ───────────────────────────────────────────────
+
 
   it("unknown route returns 404 error envelope", async () => {
     const res = await httpRequest(port, "GET", "/api/nonexistent");
@@ -464,7 +464,7 @@ describe("HttpApiServer — route matching & JSON envelope", () => {
     expect(body.ok).toBe(false);
   });
 
-  // ── JSON envelope consistency ───────────────────────────────────
+
 
   it("all success responses use { ok: true, data } structure", async () => {
     const res = await httpRequest(port, "GET", "/api/loops");

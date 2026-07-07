@@ -39,7 +39,7 @@ import { t } from "../src/i18n/index.js";
 describe("TabBar", () => {
   it("renders all three tab labels", () => {
     const { lastFrame } = render(
-      <TabBar activeTab="loops" onTabChange={() => {}} />,
+      <TabBar activeTab="loops" onTabChange={() => { }} />,
     );
     const frame = lastFrame() ?? "";
     expect(frame).toContain("Loops");
@@ -126,7 +126,7 @@ describe("Modal", () => {
   it("renders title and children", () => {
     const { lastFrame } = render(
       <Box height={10} width={40}>
-        <Modal title="Help" onClose={() => {}}>
+        <Modal title="Help" onClose={() => { }}>
           <></>
         </Modal>
       </Box>,
@@ -156,7 +156,7 @@ describe("Header", () => {
         daemonStatus="connected"
         counts={{ total: 5, running: 1, waiting: 2, paused: 1, idle: 1 }}
         activeTab="loops"
-        onTabChange={() => {}}
+        onTabChange={() => { }}
       />,
     );
     const frame = lastFrame() ?? "";
@@ -170,7 +170,7 @@ describe("Header", () => {
         daemonStatus="error"
         counts={{ total: 0, running: 0, waiting: 0, paused: 0, idle: 0 }}
         activeTab="tasks"
-        onTabChange={() => {}}
+        onTabChange={() => { }}
       />,
     );
     expect(lastFrame()).toContain("offline");
@@ -202,8 +202,8 @@ describe("WizardForm", () => {
       <WizardForm
         title="New loop"
         steps={steps}
-        onComplete={() => {}}
-        onCancel={() => {}}
+        onComplete={() => { }}
+        onCancel={() => { }}
       />,
     );
     const frame = lastFrame() ?? "";
@@ -217,8 +217,8 @@ describe("WizardForm", () => {
       <WizardForm
         title="New loop"
         steps={steps}
-        onComplete={() => {}}
-        onCancel={() => {}}
+        onComplete={() => { }}
+        onCancel={() => { }}
       />,
     );
     await typeChars(stdin, "45m");
@@ -231,7 +231,7 @@ describe("WizardForm", () => {
       <WizardForm
         title="New loop"
         steps={steps}
-        onComplete={() => {}}
+        onComplete={() => { }}
         onCancel={onCancel}
       />,
     );
@@ -247,7 +247,7 @@ describe("WizardForm", () => {
         title="New loop"
         steps={steps}
         onComplete={onComplete}
-        onCancel={() => {}}
+        onCancel={() => { }}
       />,
     );
     stdin.write("\u0013"); // ctrl+s
@@ -262,7 +262,7 @@ describe("WizardForm", () => {
         title="New loop"
         steps={steps}
         onComplete={onComplete}
-        onCancel={() => {}}
+        onCancel={() => { }}
       />,
     );
     await typeChars(stdin, "30s");
@@ -286,42 +286,42 @@ describe("CommandInput", () => {
       <Box height={10} width={60}>
         <CommandInput
           context={baseContext}
-          onCommand={() => {}}
+          onCommand={() => { }}
           confirmState={null}
           searchState={null}
           searchValue=""
-          onSearchChange={() => {}}
-          onSearchSubmit={() => {}}
-          onSearchCancel={() => {}}
-          onConfirmYes={() => {}}
-          onConfirmCancel={() => {}}
+          onSearchChange={() => { }}
+          onSearchSubmit={() => { }}
+          onSearchCancel={() => { }}
+          onConfirmYes={() => { }}
+          onConfirmCancel={() => { }}
         />
       </Box>,
     );
     expect(lastFrame()).toContain("Type a command");
   });
 
-  // ── ConfirmMode: text-input behavior (mirrors SearchMode) ────────────────
+
 
   it("renders confirm prompt on the same line as the input cursor", () => {
     // ConfirmMode shows: "│ <prompt> <cursor>" — one row, no separate input row.
     const confirm: ConfirmState = {
       prompt: 'Type yes to delete "test-loop"',
-      onConfirm: () => {},
+      onConfirm: () => { },
     };
     const { lastFrame } = render(
       <Box height={10} width={80}>
         <CommandInput
           context={baseContext}
-          onCommand={() => {}}
+          onCommand={() => { }}
           confirmState={confirm}
           searchState={null}
           searchValue=""
-          onSearchChange={() => {}}
-          onSearchSubmit={() => {}}
-          onSearchCancel={() => {}}
-          onConfirmYes={() => {}}
-          onConfirmCancel={() => {}}
+          onSearchChange={() => { }}
+          onSearchSubmit={() => { }}
+          onSearchCancel={() => { }}
+          onConfirmYes={() => { }}
+          onConfirmCancel={() => { }}
         />
       </Box>,
     );
@@ -330,20 +330,20 @@ describe("CommandInput", () => {
   });
 
   it("typing 'yes' + Enter calls onConfirmYes", async () => {
-    const confirm: ConfirmState = { prompt: "Type yes to delete", onConfirm: () => {} };
+    const confirm: ConfirmState = { prompt: "Type yes to delete", onConfirm: () => { } };
     const onConfirmYes = vi.fn();
     const onConfirmCancel = vi.fn();
     const { stdin } = render(
       <Box height={10} width={60}>
         <CommandInput
           context={baseContext}
-          onCommand={() => {}}
+          onCommand={() => { }}
           confirmState={confirm}
           searchState={null}
           searchValue=""
-          onSearchChange={() => {}}
-          onSearchSubmit={() => {}}
-          onSearchCancel={() => {}}
+          onSearchChange={() => { }}
+          onSearchSubmit={() => { }}
+          onSearchCancel={() => { }}
           onConfirmYes={onConfirmYes}
           onConfirmCancel={onConfirmCancel}
         />
@@ -357,20 +357,20 @@ describe("CommandInput", () => {
   });
 
   it("typing 'YES' (uppercase) + Enter calls onConfirmYes (case-insensitive)", async () => {
-    const confirm: ConfirmState = { prompt: "Type yes to stop", onConfirm: () => {} };
+    const confirm: ConfirmState = { prompt: "Type yes to stop", onConfirm: () => { } };
     const onConfirmYes = vi.fn();
     const onConfirmCancel = vi.fn();
     const { stdin } = render(
       <Box height={10} width={60}>
         <CommandInput
           context={baseContext}
-          onCommand={() => {}}
+          onCommand={() => { }}
           confirmState={confirm}
           searchState={null}
           searchValue=""
-          onSearchChange={() => {}}
-          onSearchSubmit={() => {}}
-          onSearchCancel={() => {}}
+          onSearchChange={() => { }}
+          onSearchSubmit={() => { }}
+          onSearchCancel={() => { }}
           onConfirmYes={onConfirmYes}
           onConfirmCancel={onConfirmCancel}
         />
@@ -384,20 +384,20 @@ describe("CommandInput", () => {
   });
 
   it("typing anything other than 'yes' + Enter calls onConfirmCancel", async () => {
-    const confirm: ConfirmState = { prompt: "Type yes to delete", onConfirm: () => {} };
+    const confirm: ConfirmState = { prompt: "Type yes to delete", onConfirm: () => { } };
     const onConfirmYes = vi.fn();
     const onConfirmCancel = vi.fn();
     const { stdin } = render(
       <Box height={10} width={60}>
         <CommandInput
           context={baseContext}
-          onCommand={() => {}}
+          onCommand={() => { }}
           confirmState={confirm}
           searchState={null}
           searchValue=""
-          onSearchChange={() => {}}
-          onSearchSubmit={() => {}}
-          onSearchCancel={() => {}}
+          onSearchChange={() => { }}
+          onSearchSubmit={() => { }}
+          onSearchCancel={() => { }}
           onConfirmYes={onConfirmYes}
           onConfirmCancel={onConfirmCancel}
         />
@@ -411,20 +411,20 @@ describe("CommandInput", () => {
   });
 
   it("bare Enter (empty input) calls onConfirmCancel", async () => {
-    const confirm: ConfirmState = { prompt: "Type yes to exit", onConfirm: () => {} };
+    const confirm: ConfirmState = { prompt: "Type yes to exit", onConfirm: () => { } };
     const onConfirmCancel = vi.fn();
     const onConfirmYes = vi.fn();
     const { stdin } = render(
       <Box height={10} width={60}>
         <CommandInput
           context={baseContext}
-          onCommand={() => {}}
+          onCommand={() => { }}
           confirmState={confirm}
           searchState={null}
           searchValue=""
-          onSearchChange={() => {}}
-          onSearchSubmit={() => {}}
-          onSearchCancel={() => {}}
+          onSearchChange={() => { }}
+          onSearchSubmit={() => { }}
+          onSearchCancel={() => { }}
           onConfirmYes={onConfirmYes}
           onConfirmCancel={onConfirmCancel}
         />
@@ -437,20 +437,20 @@ describe("CommandInput", () => {
   });
 
   it("Escape calls onConfirmCancel", async () => {
-    const confirm: ConfirmState = { prompt: "Type yes to delete", onConfirm: () => {} };
+    const confirm: ConfirmState = { prompt: "Type yes to delete", onConfirm: () => { } };
     const onConfirmCancel = vi.fn();
     const { stdin } = render(
       <Box height={10} width={60}>
         <CommandInput
           context={baseContext}
-          onCommand={() => {}}
+          onCommand={() => { }}
           confirmState={confirm}
           searchState={null}
           searchValue=""
-          onSearchChange={() => {}}
-          onSearchSubmit={() => {}}
-          onSearchCancel={() => {}}
-          onConfirmYes={() => {}}
+          onSearchChange={() => { }}
+          onSearchSubmit={() => { }}
+          onSearchCancel={() => { }}
+          onConfirmYes={() => { }}
           onConfirmCancel={onConfirmCancel}
         />
       </Box>,
@@ -461,20 +461,20 @@ describe("CommandInput", () => {
   });
 
   it("backspace removes last typed char so 'yex' + backspace + 's' + Enter confirms", async () => {
-    const confirm: ConfirmState = { prompt: "Type yes to delete", onConfirm: () => {} };
+    const confirm: ConfirmState = { prompt: "Type yes to delete", onConfirm: () => { } };
     const onConfirmYes = vi.fn();
     const onConfirmCancel = vi.fn();
     const { stdin } = render(
       <Box height={10} width={60}>
         <CommandInput
           context={baseContext}
-          onCommand={() => {}}
+          onCommand={() => { }}
           confirmState={confirm}
           searchState={null}
           searchValue=""
-          onSearchChange={() => {}}
-          onSearchSubmit={() => {}}
-          onSearchCancel={() => {}}
+          onSearchChange={() => { }}
+          onSearchSubmit={() => { }}
+          onSearchCancel={() => { }}
           onConfirmYes={onConfirmYes}
           onConfirmCancel={onConfirmCancel}
         />
@@ -491,20 +491,20 @@ describe("CommandInput", () => {
   });
 
   it("typed characters appear in the rendered output", async () => {
-    const confirm: ConfirmState = { prompt: "Type yes to delete", onConfirm: () => {} };
+    const confirm: ConfirmState = { prompt: "Type yes to delete", onConfirm: () => { } };
     const { stdin, lastFrame } = render(
       <Box height={10} width={60}>
         <CommandInput
           context={baseContext}
-          onCommand={() => {}}
+          onCommand={() => { }}
           confirmState={confirm}
           searchState={null}
           searchValue=""
-          onSearchChange={() => {}}
-          onSearchSubmit={() => {}}
-          onSearchCancel={() => {}}
-          onConfirmYes={() => {}}
-          onConfirmCancel={() => {}}
+          onSearchChange={() => { }}
+          onSearchSubmit={() => { }}
+          onSearchCancel={() => { }}
+          onConfirmYes={() => { }}
+          onConfirmCancel={() => { }}
         />
       </Box>,
     );
@@ -514,20 +514,20 @@ describe("CommandInput", () => {
   });
 
   it("does not respond to keys when disabled=true", async () => {
-    const confirm: ConfirmState = { prompt: "Type yes to stop", onConfirm: () => {} };
+    const confirm: ConfirmState = { prompt: "Type yes to stop", onConfirm: () => { } };
     const onConfirmCancel = vi.fn();
     const onConfirmYes = vi.fn();
     const { stdin } = render(
       <Box height={10} width={60}>
         <CommandInput
           context={baseContext}
-          onCommand={() => {}}
+          onCommand={() => { }}
           confirmState={confirm}
           searchState={null}
           searchValue=""
-          onSearchChange={() => {}}
-          onSearchSubmit={() => {}}
-          onSearchCancel={() => {}}
+          onSearchChange={() => { }}
+          onSearchSubmit={() => { }}
+          onSearchCancel={() => { }}
           onConfirmYes={onConfirmYes}
           onConfirmCancel={onConfirmCancel}
           disabled
@@ -546,15 +546,15 @@ describe("CommandInput", () => {
       <Box height={10} width={60}>
         <CommandInput
           context={baseContext}
-          onCommand={() => {}}
+          onCommand={() => { }}
           confirmState={null}
           searchState={null}
           searchValue=""
-          onSearchChange={() => {}}
-          onSearchSubmit={() => {}}
-          onSearchCancel={() => {}}
-          onConfirmYes={() => {}}
-          onConfirmCancel={() => {}}
+          onSearchChange={() => { }}
+          onSearchSubmit={() => { }}
+          onSearchCancel={() => { }}
+          onConfirmYes={() => { }}
+          onConfirmCancel={() => { }}
           onPanelAction={onPanelAction}
         />
       </Box>,
@@ -570,15 +570,15 @@ describe("CommandInput", () => {
       <Box height={10} width={60}>
         <CommandInput
           context={baseContext}
-          onCommand={() => {}}
+          onCommand={() => { }}
           confirmState={null}
           searchState={null}
           searchValue=""
-          onSearchChange={() => {}}
-          onSearchSubmit={() => {}}
-          onSearchCancel={() => {}}
-          onConfirmYes={() => {}}
-          onConfirmCancel={() => {}}
+          onSearchChange={() => { }}
+          onSearchSubmit={() => { }}
+          onSearchCancel={() => { }}
+          onConfirmYes={() => { }}
+          onConfirmCancel={() => { }}
           onPanelAction={onPanelAction}
         />
       </Box>,
@@ -594,15 +594,15 @@ describe("CommandInput", () => {
       <Box height={10} width={60}>
         <CommandInput
           context={baseContext}
-          onCommand={() => {}}
+          onCommand={() => { }}
           confirmState={null}
           searchState={null}
           searchValue=""
-          onSearchChange={() => {}}
-          onSearchSubmit={() => {}}
-          onSearchCancel={() => {}}
-          onConfirmYes={() => {}}
-          onConfirmCancel={() => {}}
+          onSearchChange={() => { }}
+          onSearchSubmit={() => { }}
+          onSearchCancel={() => { }}
+          onConfirmYes={() => { }}
+          onConfirmCancel={() => { }}
         />
       </Box>,
     );
@@ -616,15 +616,15 @@ describe("CommandInput", () => {
       <Box height={10} width={60}>
         <CommandInput
           context={baseContext}
-          onCommand={() => {}}
+          onCommand={() => { }}
           confirmState={null}
           searchState={null}
           searchValue=""
-          onSearchChange={() => {}}
-          onSearchSubmit={() => {}}
-          onSearchCancel={() => {}}
-          onConfirmYes={() => {}}
-          onConfirmCancel={() => {}}
+          onSearchChange={() => { }}
+          onSearchSubmit={() => { }}
+          onSearchCancel={() => { }}
+          onConfirmYes={() => { }}
+          onConfirmCancel={() => { }}
         />
       </Box>,
     );
@@ -738,7 +738,7 @@ describe("Double-handling regressions (tasks 1.3 / 1.4)", () => {
   });
 });
 
-// ── Task 7.1 tests ──────────────────────────────────────────────────────
+
 
 describe("Failing-row indicator (task 7.1)", () => {
   it("statusColor returns red for stopped status (non-zero exit code loops end as stopped)", () => {
@@ -855,7 +855,7 @@ describe("Humanized avg / formatRunDuration (task 7.1)", () => {
   });
 });
 
-// ── Task 2.2 tests ──────────────────────────────────────────────────────
+
 
 import { commandLine } from "../src/board/format.js";
 import type { LoopMeta } from "../src/types.js";
@@ -1061,7 +1061,7 @@ describe("SelectModal", () => {
   it("renders the title and all options", () => {
     const { lastFrame } = render(
       <Box height={15} width={60}>
-        <SelectModal title="Pick a mode" options={options} onSelect={() => {}} onClose={() => {}} />
+        <SelectModal title="Pick a mode" options={options} onSelect={() => { }} onClose={() => { }} />
       </Box>,
     );
     const frame = lastFrame() ?? "";
@@ -1073,7 +1073,7 @@ describe("SelectModal", () => {
   it("filters options by typed query", async () => {
     const { stdin, lastFrame } = render(
       <Box height={15} width={60}>
-        <SelectModal title="Pick a mode" options={options} onSelect={() => {}} onClose={() => {}} />
+        <SelectModal title="Pick a mode" options={options} onSelect={() => { }} onClose={() => { }} />
       </Box>,
     );
     await typeChars(stdin, "existing");
@@ -1087,7 +1087,7 @@ describe("SelectModal", () => {
     const onSelect = vi.fn();
     const { stdin } = render(
       <Box height={15} width={60}>
-        <SelectModal title="Pick a mode" options={options} onSelect={onSelect} onClose={() => {}} />
+        <SelectModal title="Pick a mode" options={options} onSelect={onSelect} onClose={() => { }} />
       </Box>,
     );
     stdin.write("\r");
@@ -1099,7 +1099,7 @@ describe("SelectModal", () => {
     const onSelect = vi.fn();
     const { stdin } = render(
       <Box height={15} width={60}>
-        <SelectModal title="Pick a mode" options={options} onSelect={onSelect} onClose={() => {}} />
+        <SelectModal title="Pick a mode" options={options} onSelect={onSelect} onClose={() => { }} />
       </Box>,
     );
     stdin.write("[B"); // down arrow
@@ -1113,7 +1113,7 @@ describe("SelectModal", () => {
     const onClose = vi.fn();
     const { stdin } = render(
       <Box height={15} width={60}>
-        <SelectModal title="Pick a mode" options={options} onSelect={() => {}} onClose={onClose} />
+        <SelectModal title="Pick a mode" options={options} onSelect={() => { }} onClose={onClose} />
       </Box>,
     );
     stdin.write("");
@@ -1124,7 +1124,7 @@ describe("SelectModal", () => {
   it("shows the empty state when nothing matches the filter", async () => {
     const { stdin, lastFrame } = render(
       <Box height={15} width={60}>
-        <SelectModal title="Pick a mode" options={options} onSelect={() => {}} onClose={() => {}} />
+        <SelectModal title="Pick a mode" options={options} onSelect={() => { }} onClose={() => { }} />
       </Box>,
     );
     await typeChars(stdin, "zzz");
@@ -1152,7 +1152,7 @@ describe("SelectValueField", () => {
   });
 });
 
-// ── CodeEditorModal tests (tasks 2.2 / 2.3 / 2.4) ──────────────────────
+
 
 describe("CodeEditorModal", () => {
   it("renders with initial value — lines visible", () => {
@@ -1160,8 +1160,8 @@ describe("CodeEditorModal", () => {
       <Box height={25} width={70}>
         <CodeEditorModal
           initialValue={'opencode run "search missing translations"'}
-          onSave={() => {}}
-          onCancel={() => {}}
+          onSave={() => { }}
+          onCancel={() => { }}
         />
       </Box>,
     );
@@ -1175,8 +1175,8 @@ describe("CodeEditorModal", () => {
       <Box height={25} width={70}>
         <CodeEditorModal
           initialValue={"line1\nline2\nline3"}
-          onSave={() => {}}
-          onCancel={() => {}}
+          onSave={() => { }}
+          onCancel={() => { }}
         />
       </Box>,
     );
@@ -1190,7 +1190,7 @@ describe("CodeEditorModal", () => {
       <Box height={25} width={70}>
         <CodeEditorModal
           initialValue="hello"
-          onSave={() => {}}
+          onSave={() => { }}
           onCancel={onCancel}
         />
       </Box>,
@@ -1207,7 +1207,7 @@ describe("CodeEditorModal", () => {
         <CodeEditorModal
           initialValue="hello"
           onSave={onSave}
-          onCancel={() => {}}
+          onCancel={() => { }}
         />
       </Box>,
     );
@@ -1222,8 +1222,8 @@ describe("CodeEditorModal", () => {
       <Box height={25} width={70}>
         <CodeEditorModal
           initialValue="hel"
-          onSave={() => {}}
-          onCancel={() => {}}
+          onSave={() => { }}
+          onCancel={() => { }}
         />
       </Box>,
     );
@@ -1237,8 +1237,8 @@ describe("CodeEditorModal", () => {
       <Box height={25} width={70}>
         <CodeEditorModal
           initialValue="test"
-          onSave={() => {}}
-          onCancel={() => {}}
+          onSave={() => { }}
+          onCancel={() => { }}
         />
       </Box>,
     );
@@ -1253,8 +1253,8 @@ describe("CodeEditorModal", () => {
       <Box height={25} width={70}>
         <CodeEditorModal
           initialValue="hello"
-          onSave={() => {}}
-          onCancel={() => {}}
+          onSave={() => { }}
+          onCancel={() => { }}
         />
       </Box>,
     );
@@ -1271,7 +1271,7 @@ describe("CodeEditorModal", () => {
         <CodeEditorModal
           initialValue="abc"
           onSave={onSave}
-          onCancel={() => {}}
+          onCancel={() => { }}
         />
       </Box>,
     );
@@ -1294,7 +1294,7 @@ describe("CodeEditorModal", () => {
         <CodeEditorModal
           initialValue="abc"
           onSave={onSave}
-          onCancel={() => {}}
+          onCancel={() => { }}
         />
       </Box>,
     );
@@ -1317,8 +1317,8 @@ describe("CodeEditorModal", () => {
       <Box height={25} width={70}>
         <CodeEditorModal
           initialValue={"echo hello \\\nworld"}
-          onSave={() => {}}
-          onCancel={() => {}}
+          onSave={() => { }}
+          onCancel={() => { }}
         />
       </Box>,
     );
@@ -1335,7 +1335,7 @@ describe("CodeEditorModal", () => {
         <CodeEditorModal
           initialValue="ab"
           onSave={onSave}
-          onCancel={() => {}}
+          onCancel={() => { }}
         />
       </Box>,
     );
@@ -1351,8 +1351,8 @@ describe("CodeEditorModal", () => {
       <Box height={25} width={70}>
         <CodeEditorModal
           initialValue=""
-          onSave={() => {}}
-          onCancel={() => {}}
+          onSave={() => { }}
+          onCancel={() => { }}
         />
       </Box>,
     );
@@ -1389,7 +1389,7 @@ describe("CodeEditorModal", () => {
       <Box height={25} width={70}>
         <CodeEditorModal
           initialValue="echo "
-          onSave={() => {}}
+          onSave={() => { }}
           onCancel={onCancel}
         />
       </Box>,
@@ -1406,8 +1406,8 @@ describe("CodeEditorModal", () => {
       <Box height={25} width={70}>
         <CodeEditorModal
           initialValue="abc"
-          onSave={() => {}}
-          onCancel={() => {}}
+          onSave={() => { }}
+          onCancel={() => { }}
         />
       </Box>,
     );
@@ -1429,7 +1429,7 @@ describe("CodeEditorModal", () => {
         <CodeEditorModal
           initialValue="hello"
           onSave={onSave}
-          onCancel={() => {}}
+          onCancel={() => { }}
         />
       </Box>,
     );
@@ -1445,7 +1445,7 @@ describe("CodeEditorModal", () => {
         <CodeEditorModal
           initialValue="hello"
           onSave={onSave}
-          onCancel={() => {}}
+          onCancel={() => { }}
         />
       </Box>,
     );
@@ -1463,7 +1463,7 @@ describe("CodeEditorModal", () => {
         <CodeEditorModal
           initialValue="abc"
           onSave={onSave}
-          onCancel={() => {}}
+          onCancel={() => { }}
         />
       </Box>,
     );

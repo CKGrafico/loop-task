@@ -5,7 +5,7 @@ import { UndoRedoStack } from "../src/shared/useUndoRedo.js";
 import { CODE_EDITOR_SYNTAX_COLORS, CODE_EDITOR_UNDO_LIMIT, CODE_EDITOR_MODAL_HEIGHT } from "../src/config/constants.js";
 import { t } from "../src/i18n/index.js";
 
-// ── Pure logic tests ─────────────────────────────────────────────────
+
 // The board CodeEditorModal uses OpenTUI primitives (useKeyboard,
 // useTerminalDimensions) which cannot be rendered via ink-testing-library.
 // We test the pure functions it depends on, plus verify the component

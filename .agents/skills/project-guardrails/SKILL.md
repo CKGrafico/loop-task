@@ -55,6 +55,7 @@ license: MIT
 - **No inline magic numbers**: Add to `src/config/constants.ts` and import.
 - **No em dashes**: Use regular hyphens (`-`) everywhere — never `—`.
 - **No unnecessary comments**: Follow existing code patterns; comments only when non-obvious.
+- **No section-separator comments**: Never add decorative comment lines like `// ── Section Name ──────────────────`, `// == Section ==`, `// ## Section`, or any variant. These are noise. If a section needs a name, use a function or a type. The only acceptable comments are short `// why` explanations on non-obvious logic — never `// what` descriptions of what the code does.
 - **Small files, feature folders**: Reuse shared helpers in `src/shared/`. Keep files focused on one responsibility.
 
 ## Testing

@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { computePhase, alignToPhase } from "../src/core/scheduling.js";
 
-// ── computePhase ────────────────────────────────────────────────────────
+
 
 describe("computePhase", () => {
   it("returns a deterministic value for the same inputs", () => {
@@ -54,7 +54,7 @@ describe("computePhase", () => {
   });
 });
 
-// ── alignToPhase ────────────────────────────────────────────────────────
+
 
 describe("alignToPhase", () => {
   it("returns 0 delay when now equals the phase (exactly aligned)", () => {

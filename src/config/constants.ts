@@ -28,7 +28,7 @@ export const HEADER_COMPACT_WIDTH = 60;
 
 export const SEARCH_SELECT_HEIGHT = 6;
 
-// ── Clipboard / bracketed paste ─────────────────────────────────────
+
 // DECSET 2004: terminal wraps pasted text in ESC[200~ ... ESC[201~ so the
 // app can insert it wholesale instead of processing each char as a keypress.
 export const BRACKETED_PASTE_ENABLE = "\x1b[?2004h";
@@ -55,7 +55,7 @@ export const ENTITY_COLORS = {
   project: "#34d399", // green
 } as const;
 
-// ── Wizard step counts ──────────────────────────────────────────────
+
 export const WIZARD_LOOP_REQUIRED_STEPS = 3;
 export const WIZARD_LOOP_TOTAL_STEPS = 7;
 export const WIZARD_TASK_REQUIRED_STEPS = 2;
@@ -63,27 +63,27 @@ export const WIZARD_TASK_TOTAL_STEPS = 4;
 export const WIZARD_PROJECT_REQUIRED_STEPS = 1;
 export const WIZARD_PROJECT_TOTAL_STEPS = 2;
 
-// ── Command tiers ───────────────────────────────────────────────────
+
 export const COMMAND_TIER_ACTION = "action";
 export const COMMAND_TIER_CONFIRM = "confirm";
 export const COMMAND_TIER_GLOBAL = "global";
 
-// ── Command categories ─────────────────────────────────────────────
+
 export const COMMAND_CATEGORY_GLOBAL = "global";
 export const COMMAND_CATEGORY_FILTERS = "filters";
 export const COMMAND_CATEGORY_LOOP = "loop";
 export const COMMAND_CATEGORY_TASK = "task";
 export const COMMAND_CATEGORY_PROJECT = "project";
 
-// ── Confirm keywords ────────────────────────────────────────────────
+
 export const CONFIRM_YES = "yes";
 export const CONFIRM_CANCEL = "cancel";
 
-// ── Panel focus types ───────────────────────────────────────────────
+
 export const PANEL_LEFT = "left";
 export const PANEL_RIGHT = "right";
 
-// ── Command builder templates ──────────────────────────────────────
+
 export const COMMAND_TEMPLATES: { label: string; command: string; args: string }[] = [
   { label: "npm run", command: "npm", args: "run" },
   { label: "npm test", command: "npm", args: "test" },
@@ -97,23 +97,24 @@ export const COMMAND_TEMPLATES: { label: string; command: string; args: string }
   { label: "shell script", command: "bash", args: "./script.sh" },
 ];
 
-// ── Command input constants ─────────────────────────────────────────
+
 export const COMMAND_INPUT_HEIGHT = 6;
 export const COMMAND_INPUT_DROPDOWN_MAX_VISIBLE = 6;
 
-// ── HTTP API server ─────────────────────────────────────────────────
+
 export const HTTP_API_PORT = 8845;
 export const HTTP_API_HOST = "127.0.0.1";
 
-// ── Ctrl shortcut hints (for display) ───────────────────────────────
+
 export const EXPORT_MAX_PREVIEW_LINES = 200;
 
 export const CTRL_SHORTCUT_EDIT = "Ctrl+E";
 export const CTRL_SHORTCUT_DELETE = "Ctrl+D";
 
-// ── Code editor constants ──────────────────────────────────────────
+
 export const CODE_EDITOR_MAX_VISIBLE = 2;
-export const CODE_EDITOR_MODAL_HEIGHT = 20;
+export const CODE_EDITOR_MODAL_HEIGHT = 40;
+export const CODE_EDITOR_MODAL_WIDTH = 120;
 export const CODE_EDITOR_UNDO_LIMIT = 50;
 export const CODE_EDITOR_SYNTAX_COLORS = {
   flag: "#38bdf8",

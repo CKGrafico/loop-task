@@ -382,7 +382,7 @@ describe("IpcServer", () => {
     expect(responses[0].type).toBe("error");
   });
 
-  // ── Task routes ──────────────────────────────────────────────────
+
   it("routes task-create request", async () => {
     const taskDef = { id: "t1", name: "Task", command: "echo", commandArgs: [], onSuccessTaskId: null, onFailureTaskId: null };
     const responses = await sendRequest({ type: "task-create", payload: taskDef });
@@ -408,7 +408,7 @@ describe("IpcServer", () => {
     expect(responses[0].type).toBe("ok");
   });
 
-  // ── Project routes ───────────────────────────────────────────────
+
   it("routes project-list request", async () => {
     const responses = await sendRequest({ type: "project-list" });
     expect(responses[0].type).toBe("ok");
@@ -442,13 +442,13 @@ describe("IpcServer", () => {
     expect(responses[0].type).toBe("error");
   });
 
-  // ── Subscribe ────────────────────────────────────────────────────
+
   it("routes subscribe request", async () => {
     const responses = await sendRequest({ type: "subscribe" });
     expect(responses[0].type).toBe("ok");
   });
 
-  // ── Push events ──────────────────────────────────────────────────
+
   it("pushEvent sends event to subscribers", async () => {
     // Subscribe first
     const subSocket = net.createConnection((server as any).socketPath);
@@ -484,7 +484,7 @@ describe("IpcServer", () => {
     subSocket.destroy();
   });
 
-  // ── Update route ─────────────────────────────────────────────────
+
   it("routes update request", async () => {
     const responses = await sendRequest({
       type: "update",
