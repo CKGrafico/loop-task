@@ -1,4 +1,4 @@
-import type { LoopMeta } from "../types.js";
+import type { LoopMeta } from "../../types.js";
 
 export type StatusFilter =
   | "all"
@@ -170,10 +170,10 @@ export const defaultProjectFilters: ProjectFilters = {
 };
 
 export function applyProjectFilters(
-  projects: import("../types.js").Project[],
-  loops: import("../types.js").LoopMeta[],
+  projects: import("../../types.js").Project[],
+  loops: import("../../types.js").LoopMeta[],
   filters: ProjectFilters,
-): import("../types.js").Project[] {
+): import("../../types.js").Project[] {
   const filtered = projects.filter((project) => {
     if (filters.hasLoops === "with-loops") {
       const count = loops.filter((l) => (l.projectId ?? "default") === project.id).length;

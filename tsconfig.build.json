@@ -8,5 +8,5 @@
     "allowImportingTsExtensions": false,
     "types": ["node"]
   },
-  "exclude": ["node_modules", "dist", "tests", "src/board"]
+  "exclude": ["node_modules", "dist", "tests"]
 }
