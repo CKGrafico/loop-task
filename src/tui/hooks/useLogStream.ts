@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import type net from "node:net";
-import { streamLogs } from "../daemon.js";
+import { useInject } from "../../shared/hooks/useInject.js";
+import { TYPES } from "../../shared/services/types.js";
+import type { LogService } from "../../shared/services/types.js";
 import { t } from "../../i18n/index.js";
 import { LOG_LINES_MAX } from "../../config/constants.js";
 import type { View } from "../types.js";
@@ -10,6 +12,7 @@ export function useLogStream(
   view: View,
   onError: (error: Error) => void
 ): { logLines: string[]; destroy: () => void } {
+  const logService = useInject<LogService>(TYPES.LogService);
   const [logLines, setLogLines] = useState<string[]>([]);
   const logSocket = useRef<net.Socket | null>(null);
 
@@ -23,7 +26,7 @@ export function useLogStream(
     }
 
     setLogLines([t("board.logWaiting")]);
-    const socket = streamLogs(
+    const socket = logService.streamLogs(
       selectedId,
       (line) =>
         setLogLines((prev) => {
@@ -40,7 +43,7 @@ export function useLogStream(
         logSocket.current = null;
       }
     };
-  }, [selectedId, view]);
+  }, [selectedId, view, logService]);
 
   return {
     logLines,

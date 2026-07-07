@@ -3,7 +3,9 @@ import { Box, Text, useInput } from "ink";
 import type { RunRecord } from "../../types.js";
 import { darkTheme as theme } from "../theme.js";
 import { t } from "../../i18n/index.js";
-import { streamRunLog } from "../daemon.js";
+import { useInject } from "../../shared/hooks/useInject.js";
+import { TYPES } from "../../shared/services/types.js";
+import type { LogService } from "../../shared/services/types.js";
 import { formatDate } from "../format.js";
 import { copyToClipboard } from "../../shared/clipboard.js";
 
@@ -36,6 +38,7 @@ export function LogModal(props: {
   const [searchQuery, setSearchQuery] = useState("");
   const [follow, setFollow] = useState(true);
   const [scrollOffset, setScrollOffset] = useState(0);
+  const logService = useInject<LogService>(TYPES.LogService);
 
   useEffect(() => {
     setLines(props.logLines);
@@ -45,7 +48,7 @@ export function LogModal(props: {
     if (!props.loopId) return;
     if (props.run.status !== "running") return;
     setStreaming(true);
-    const socket = streamRunLog(
+    const socket = logService.streamRunLog(
       props.loopId,
       props.run.runNumber,
       (line) => setLines((prev) => [...prev, line]),
@@ -55,7 +58,7 @@ export function LogModal(props: {
     return () => {
       socket.destroy();
     };
-  }, [props.loopId, props.run.runNumber, props.run.status]);
+  }, [props.loopId, props.run.runNumber, props.run.status, logService]);
 
   const filtered = searchQuery
     ? lines.filter((l) => l.toLowerCase().includes(searchQuery.toLowerCase()))

@@ -1,7 +1,9 @@
 import React, { useMemo, useCallback, useState, useRef } from "react";
 
 import type { Project } from "../../types.js";
-import { createProject, updateProject } from "../daemon.js";
+import { useInject } from "../../shared/hooks/useInject.js";
+import { TYPES } from "../../shared/services/types.js";
+import type { ProjectService } from "../../shared/services/types.js";
 import { t } from "../../i18n/index.js";
 import { WizardForm, type WizardStepConfig } from "./WizardForm.js";
 import { SelectModal, SelectValueField, type SelectOption } from "./SelectModal.js";
@@ -17,6 +19,7 @@ interface ProjectFormViewProps {
 
 export function ProjectFormView(props: ProjectFormViewProps): React.ReactNode {
   const { mode, editProject, onCancel, onDone } = props;
+  const projectService = useInject<ProjectService>(TYPES.ProjectService);
 
   const colorKeyFor = (color: string | undefined): string => {
     const found = PROJECT_COLOR_KEYS.find((k) => PROJECT_COLORS[k] === color);
@@ -77,11 +80,11 @@ export function ProjectFormView(props: ProjectFormViewProps): React.ReactNode {
       const color = PROJECT_COLORS[colorKey] ?? PROJECT_COLORS.cyan;
 
       if (mode === "edit" && editProject) {
-        updateProject(editProject.id, name, color, values.directory?.trim() || undefined)
+        projectService.update(editProject.id, name, color, values.directory?.trim() || undefined)
           .then(() => onDone(true, name))
           .catch(() => { /* error handled silently */ });
       } else {
-        createProject(name, color, values.directory?.trim() || undefined)
+        projectService.create(name, color, values.directory?.trim() || undefined)
           .then(() => onDone(false, name))
           .catch(() => { /* error handled silently */ });
       }

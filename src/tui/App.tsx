@@ -18,7 +18,9 @@ import { CommandsBrowserModal } from "./components/CommandsBrowserModal.js";
 import { DebugPanel, MAX_ENTRIES, type DebugEntry } from "./components/DebugPanel.js";
 import { ContextHelpModal } from "./components/ContextHelpModal.js";
 import { ExportModal } from "./components/ExportModal.js";
-import { fetchRunLog, deleteLoop, pauseLoop, resumeLoop, stopLoop, playLoop, triggerLoop, listTasks, deleteTask, listProjects, exportConfig } from "./daemon.js";
+import { useInject } from "../shared/hooks/useInject.js";
+import { TYPES } from "../shared/services/types.js";
+import type { LoopService, TaskService, ProjectService, LogService, ExportService } from "../shared/services/types.js";
 import { applyLoopFilters, applyProjectFilters, cycleSortMode, cycleStatusFilter, cycleProjectSortMode, cycleProjectHasLoopsFilter, cycleProjectIsSystemFilter, defaultFilters, defaultProjectFilters, resolveInputOwner, type Filters, type SortMode, type ProjectFilters, type InputOwner } from "./state.js";
 import { t } from "../i18n/index.js";
 import { copyToClipboard } from "../shared/clipboard.js";
@@ -43,6 +45,11 @@ function isBoardView(view: View): boolean {
 export function App(props: { onQuit: () => void }): React.ReactNode {
   const { onQuit } = props;
   const { exit } = useApp();
+  const loopService = useInject<LoopService>(TYPES.LoopService);
+  const taskService = useInject<TaskService>(TYPES.TaskService);
+  const projectService = useInject<ProjectService>(TYPES.ProjectService);
+  const logService = useInject<LogService>(TYPES.LogService);
+  const exportService = useInject<ExportService>(TYPES.ExportService);
   const { loops, daemonStatus, refresh } = useLoopPolling();
   const { view, push, pop } = useRouter("board");
 
@@ -127,11 +134,11 @@ export function App(props: { onQuit: () => void }): React.ReactNode {
     : 0;
 
   async function refreshTasks(): Promise<void> {
-    try { setTasks(await listTasks()); } catch { /* ignore */ }
+    try { setTasks(await taskService.list()); } catch { /* ignore */ }
   }
 
   async function refreshProjects(): Promise<void> {
-    try { setProjects(await listProjects()); } catch { /* ignore */ }
+    try { setProjects(await projectService.list()); } catch { /* ignore */ }
   }
 
   useEffect(() => { void refreshTasks(); void refreshProjects(); }, []);
@@ -163,7 +170,7 @@ export function App(props: { onQuit: () => void }): React.ReactNode {
     }
     setLogModalLoading(true);
     setLogModalLines([]);
-    fetchRunLog(selectedId, run.runNumber)
+    logService.fetchRunLog(selectedId, run.runNumber)
       .then((log) => {
         const lines = log
           ? log.split("\n").map((l) => l.replace(/\r$/, ""))
@@ -238,20 +245,19 @@ export function App(props: { onQuit: () => void }): React.ReactNode {
       if (activeTab === "loops" && selected) {
         setConfirmState({
           prompt: t("confirm.deleteLoop", { name: selected.description || selected.id }),
-          onConfirm: () => { void deleteLoop(selected.id).then(() => { void refresh(); }); },
+          onConfirm: () => { void loopService.delete(selected.id).then(() => { void refresh(); }); },
         });
       } else if (activeTab === "tasks" && selectedTask) {
         setConfirmState({
           prompt: t("confirm.deleteTask", { id: selectedTask.id }),
-          onConfirm: () => { void deleteTask(selectedTask.id).then(() => { void refreshTasks(); }); },
+          onConfirm: () => { void taskService.delete(selectedTask.id).then(() => { void refreshTasks(); }); },
         });
       } else if (activeTab === "projects" && selectedProjectEntity && !selectedProjectEntity.isSystem) {
         setConfirmState({
           prompt: t("confirm.deleteProject", { name: selectedProjectEntity.name }),
           onConfirm: async () => {
             try {
-              const { deleteProject: dp } = await import("./daemon.js");
-              await dp(selectedProjectEntity.id);
+              await projectService.delete(selectedProjectEntity.id);
               pushToast("success", t("project.toastDeleted", { name: selectedProjectEntity.name }));
               setProjectSelectedIndex(0);
               void refreshProjects();
@@ -264,14 +270,14 @@ export function App(props: { onQuit: () => void }): React.ReactNode {
     },
     pause: () => {
       if (activeTab === "loops" && selected) {
-        void runAction(t("board.toastPaused", { desc: selected.description }), () => pauseLoop(selected.id))();
+        void runAction(t("board.toastPaused", { desc: selected.description }), () => loopService.pause(selected.id))();
       }
     },
     play: () => {
       if (activeTab === "loops" && selected) {
         const isPaused = selected.status === "paused";
         const toastKey = isPaused ? "board.toastResumed" : "board.toastPlayed";
-        const fn = isPaused ? () => resumeLoop(selected.id) : () => playLoop(selected.id);
+        const fn = isPaused ? () => loopService.resume(selected.id) : () => loopService.play(selected.id);
         void runAction(t(toastKey, { desc: selected.description }), fn)();
       }
     },
@@ -279,13 +285,13 @@ export function App(props: { onQuit: () => void }): React.ReactNode {
       if (activeTab === "loops" && selected) {
         setConfirmState({
           prompt: t("confirm.stopLoop", { name: selected.description || selected.id }),
-          onConfirm: () => { void stopLoop(selected.id).then(() => { void refresh(); }); },
+          onConfirm: () => { void loopService.stop(selected.id).then(() => { void refresh(); }); },
         });
       }
     },
     trigger: () => {
       if (activeTab === "loops" && selected) {
-        void runAction(t("board.toastTriggered", { desc: selected.description }), () => triggerLoop(selected.id))();
+        void runAction(t("board.toastTriggered", { desc: selected.description }), () => loopService.trigger(selected.id))();
       }
     },
     "new-loop": () => { setEditTarget(null); push("create"); },
@@ -327,7 +333,7 @@ export function App(props: { onQuit: () => void }): React.ReactNode {
     },
     status: () => { pushToast("info", `Command "status" coming soon`); },
     export: () => {
-      exportConfig()
+      exportService.exportConfig()
         .then(({ json, filePath }) => setExportModal({ json, filePath, error: null }))
         .catch((e) => setExportModal({ json: "", filePath: null, error: e instanceof Error ? e.message : String(e) }));
     },

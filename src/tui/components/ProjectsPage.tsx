@@ -6,7 +6,9 @@ import { FocusableList } from "./FocusableList.js";
 import { FocusableButton } from "./FocusableButton.js";
 import { Modal } from "./Modal.js";
 import { t } from "../../i18n/index.js";
-import { deleteProject } from "../daemon.js";
+import { useInject } from "../../shared/hooks/useInject.js";
+import { TYPES } from "../../shared/services/types.js";
+import type { ProjectService } from "../../shared/services/types.js";
 
 interface ProjectsPageProps {
   projects: Project[];
@@ -151,6 +153,7 @@ function ListFocusWrapper(props: {
 export function ProjectsPage(props: ProjectsPageProps): React.ReactNode {
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [subModal, setSubModal] = useState<SubModal>("none");
+  const projectService = useInject<ProjectService>(TYPES.ProjectService);
 
   const defaultProject = props.projects.find((p) => p.isDefault) ?? null;
   const defaultProjectId = defaultProject?.id ?? null;
@@ -192,7 +195,7 @@ export function ProjectsPage(props: ProjectsPageProps): React.ReactNode {
   async function handleDelete(): Promise<void> {
     if (!selected) return;
     try {
-      await deleteProject(selected.id);
+      await projectService.delete(selected.id);
       props.onToast(t("project.toastDeleted", { name: selected.name }));
       await props.onRefresh();
       setSubModal("none");

@@ -1,7 +1,9 @@
 import React, { useMemo, useCallback, useState, useRef } from "react";
 
 import type { Project, LoopOptions, TaskDefinition } from "../../types.js";
-import { createLoop, updateLoop } from "../daemon.js";
+import { useInject } from "../../shared/hooks/useInject.js";
+import { TYPES } from "../../shared/services/types.js";
+import type { LoopService } from "../../shared/services/types.js";
 import { t } from "../../i18n/index.js";
 import { WizardForm, type WizardStepConfig } from "./WizardForm.js";
 import { TaskPickerModal } from "./TaskPickerModal.js";
@@ -12,7 +14,7 @@ import { parseDuration } from "../../duration.js";
 import { parseCommandLine, joinCommandLines } from "../../loop-config.js";
 
 
-
+// ── Props ───────────────────────────────────────────────────────────
 
 interface CreateViewProps {
   mode: "create" | "edit";
@@ -28,7 +30,7 @@ interface CreateViewProps {
   onChooseTask: (task: { id: string; name: string }) => void;
 }
 
-
+// ── Component ───────────────────────────────────────────────────────
 
 export function CreateView(props: CreateViewProps): React.ReactNode {
   const {
@@ -44,6 +46,7 @@ export function CreateView(props: CreateViewProps): React.ReactNode {
     onChooseTask,
   } = props;
 
+  const loopService = useInject<LoopService>(TYPES.LoopService);
   const [taskPickerOpen, setTaskPickerOpen] = useState(false);
   const [openSelect, setOpenSelect] = useState<"taskMode" | "runNow" | "project" | null>(null);
   const [commandEditorOpen, setCommandEditorOpen] = useState(false);
@@ -260,11 +263,11 @@ export function CreateView(props: CreateViewProps): React.ReactNode {
       const desc = (values.description ?? "").trim() || [cmdOnly, ...args].join(" ").trim();
 
       if (mode === "edit" && editId) {
-        updateLoop(editId, options, intervalHuman)
+        loopService.update(editId, options, intervalHuman)
           .then((id) => onDone(true, id, desc))
           .catch(() => { /* error handled silently */ });
       } else {
-        createLoop(options, intervalHuman)
+        loopService.create(options, intervalHuman)
           .then((id) => onDone(false, id, desc))
           .catch(() => { /* error handled silently */ });
       }
@@ -288,7 +291,7 @@ export function CreateView(props: CreateViewProps): React.ReactNode {
   const selectTitleFor = (field: "taskMode" | "runNow" | "project"): string =>
     field === "taskMode" ? t("wizard.taskModePrompt")
       : field === "runNow" ? t("wizard.runNowPrompt")
-        : t("wizard.projectPrompt");
+      : t("wizard.projectPrompt");
 
   return (
     <>
@@ -334,4 +337,4 @@ export function CreateView(props: CreateViewProps): React.ReactNode {
       ) : null}
     </>
   );
-}
+}

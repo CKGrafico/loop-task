@@ -2,7 +2,9 @@ import React, { useState, useMemo, useEffect } from "react";
 import { Box, Text, useInput } from "ink";
 import type { TaskDefinition } from "../../types.js";
 import { darkTheme as theme } from "../theme.js";
-import { listTasks } from "../daemon.js";
+import { useInject } from "../../shared/hooks/useInject.js";
+import { TYPES } from "../../shared/services/types.js";
+import type { TaskService } from "../../shared/services/types.js";
 import { commandLine } from "../format.js";
 
 interface ChainNode {
@@ -76,10 +78,11 @@ export function ChainEditor(props: {
 }): React.ReactNode {
   const [tasks, setTasks] = useState<TaskDefinition[]>([]);
   const [selectedIndex, setSelectedIndex] = useState(0);
+  const taskService = useInject<TaskService>(TYPES.TaskService);
 
   useEffect(() => {
-    listTasks().then(setTasks).catch(() => setTasks([]));
-  }, []);
+    taskService.list().then(setTasks).catch(() => setTasks([]));
+  }, [taskService]);
 
   const trees = useMemo(() => buildChains(tasks), [tasks]);
   const flatNodes = useMemo(() => {

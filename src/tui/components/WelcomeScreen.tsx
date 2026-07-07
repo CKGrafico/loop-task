@@ -1,7 +1,9 @@
 import React from "react";
 import { Box, Text, useInput } from "ink";
 import { darkTheme as theme } from "../theme.js";
-import { createLoop } from "../daemon.js";
+import { useInject } from "../../shared/hooks/useInject.js";
+import { TYPES } from "../../shared/services/types.js";
+import type { LoopService } from "../../shared/services/types.js";
 import { parseDuration } from "../../duration.js";
 import type { LoopOptions } from "../../types.js";
 
@@ -16,6 +18,7 @@ export function WelcomeScreen(props: {
   onCreateLoop: () => void;
   onRefresh: () => Promise<void>;
 }): React.ReactNode {
+  const loopService = useInject<LoopService>(TYPES.LoopService);
   const [selectedIndex, setSelectedIndex] = React.useState(0);
   const [creating, setCreating] = React.useState<string | null>(null);
   const items = [...EXAMPLES.map((e) => e.label), "Create empty loop"];
@@ -51,7 +54,7 @@ export function WelcomeScreen(props: {
           projectId: "default",
           offset: null,
         };
-        createLoop(options, example.interval)
+        loopService.create(options, example.interval)
           .then(() => props.onRefresh())
           .then(() => props.onCreateLoop())
           .catch(() => setCreating(null));

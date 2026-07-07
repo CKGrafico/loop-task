@@ -5,7 +5,9 @@ import { WizardForm, type WizardStepConfig } from "./WizardForm.js";
 import { SelectModal, SelectValueField, type SelectOption } from "./SelectModal.js";
 import { CodeEditorPreview } from "./CodeEditorPreview.js";
 import { CodeEditorModal } from "./CodeEditorModal.js";
-import { createTask, updateTask, listTasks } from "../daemon.js";
+import { useInject } from "../../shared/hooks/useInject.js";
+import { TYPES } from "../../shared/services/types.js";
+import type { TaskService } from "../../shared/services/types.js";
 import crypto from "node:crypto";
 import { t } from "../../i18n/index.js";
 import { joinCommandLines, parseCommandLine } from "../../loop-config.js";
@@ -40,6 +42,7 @@ function joinCommand(task: TaskDefinition): string {
 export function TaskForm(props: TaskFormProps): React.ReactNode {
   const { mode, editTask, onCancel, onDone } = props;
 
+  const taskService = useInject<TaskService>(TYPES.TaskService);
   const [tasks, setTasks] = useState<TaskDefinition[]>([]);
   const [commandValue, setCommandValue] = useState(
     editTask
@@ -52,7 +55,7 @@ export function TaskForm(props: TaskFormProps): React.ReactNode {
   );
 
   useEffect(() => {
-    listTasks().then(setTasks).catch(() => setTasks([]));
+    taskService.list().then(setTasks).catch(() => setTasks([]));
   }, []);
 
   const chainOptions = useMemo(
@@ -210,12 +213,12 @@ export function TaskForm(props: TaskFormProps): React.ReactNode {
       }
 
       if (mode === "edit" && editTask) {
-        updateTask(editTask.id, payload)
+        taskService.update(editTask.id, payload)
           .then(() => onDone(true, editTask.id))
           .catch(() => { /* error handled silently */ });
       } else {
         const id = crypto.randomUUID().slice(0, 8);
-        createTask({ id, ...payload })
+        taskService.create({ id, ...payload })
           .then((result) => onDone(false, result.id))
           .catch(() => { /* error handled silently */ });
       }
