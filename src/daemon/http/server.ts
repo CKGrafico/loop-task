@@ -1,0 +1,76 @@
+import http from "node:http";
+import { LoopManager } from "../managers/loop-manager.js";
+import { TaskManager } from "../managers/task-manager.js";
+import { ProjectManager } from "../managers/project-manager.js";
+import { HTTP_API_PORT, HTTP_API_HOST } from "../../shared/config/constants.js";
+import { daemonLog } from "../daemon-log.js";
+import { sendError, matchRoute, parsePath } from "./helpers.js";
+import type { RouteEntry } from "./helpers.js";
+import { SseClientSet } from "./sse.js";
+import { registerRoutes } from "./routes.js";
+
+export class HttpApiServer {
+  private server: http.Server;
+  private routes: RouteEntry[] = [];
+  private sseClients = new SseClientSet();
+
+  constructor(
+    private manager: LoopManager,
+    private taskManager: TaskManager,
+    private projectManager: ProjectManager,
+  ) {
+    this.server = http.createServer((req, res) => this.handleRequest(req, res));
+    this.routes = registerRoutes({
+      manager: this.manager,
+      taskManager: this.taskManager,
+      projectManager: this.projectManager,
+      sseClients: this.sseClients,
+    });
+  }
+
+  async listen(port: number = HTTP_API_PORT, host: string = HTTP_API_HOST): Promise<void> {
+    return new Promise((resolve, reject) => {
+      this.server.on("error", (err: NodeJS.ErrnoException) => {
+        if (err.code === "EADDRINUSE") {
+          daemonLog(`HTTP API server: port ${port} already in use, skipping HTTP transport`);
+          resolve();
+        } else {
+          reject(err);
+        }
+      });
+      this.server.listen(port, host, () => {
+        daemonLog(`HTTP API server listening on ${host}:${port}`);
+        resolve();
+      });
+    });
+  }
+
+  async close(): Promise<void> {
+    this.sseClients.destroyAll();
+    return new Promise((resolve) => {
+      this.server.close(() => resolve());
+    });
+  }
+
+  broadcastEvent(event: string, data?: unknown): void {
+    this.sseClients.broadcast(event, data);
+  }
+
+  private async handleRequest(req: http.IncomingMessage, res: http.ServerResponse): Promise<void> {
+    try {
+      const pathSegments = parsePath(req.url);
+      const match = matchRoute(this.routes, req.method ?? "GET", pathSegments);
+
+      if (!match) {
+        sendError(res, 404, `Not found: ${req.method} ${req.url}`);
+        return;
+      }
+
+      await match.handler(req, res, match.params);
+    } catch (err) {
+      if (!res.headersSent) {
+        sendError(res, 500, err instanceof Error ? err.message : String(err));
+      }
+    }
+  }
+}

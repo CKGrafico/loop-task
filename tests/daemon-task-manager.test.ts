@@ -3,8 +3,8 @@ import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import type { TaskDefinition } from "../src/types.js";
-import { TaskManager } from "../src/daemon/task-manager.js";
-import { saveTask, loadAllTasks } from "../src/daemon/state.js";
+import { TaskManager } from "../src/daemon/managers/task-manager.js";
+import { saveTask, loadAllTasks } from "../src/daemon/state/index.js";
 
 let tmpDir: string;
 let origHome: string | undefined;

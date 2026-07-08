@@ -26,7 +26,7 @@ const mockCreateProject = vi.fn().mockReturnValue({ id: "p1", name: "Proj", colo
 const mockUpdateProject = vi.fn();
 const mockDeleteProject = vi.fn();
 
-vi.mock("../src/daemon/manager.js", () => ({
+vi.mock("../src/daemon/managers/loop-manager.js", () => ({
   LoopManager: vi.fn().mockImplementation(() => ({
     start: mockStart,
     list: mockList,
@@ -57,7 +57,7 @@ const mockTaskList = vi.fn().mockReturnValue([]);
 const mockTaskGet = vi.fn().mockReturnValue(null);
 const mockTaskDelete = vi.fn().mockReturnValue(false);
 
-vi.mock("../src/daemon/task-manager.js", () => ({
+vi.mock("../src/daemon/managers/task-manager.js", () => ({
   TaskManager: vi.fn().mockImplementation(() => ({
     create: mockTaskCreate,
     update: mockTaskUpdate,
@@ -77,8 +77,8 @@ vi.mock("../src/shared/tail.js", () => ({
 }));
 
 // Mock state.js removeSocketFile to avoid file system issues
-vi.mock("../src/daemon/state.js", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("../src/daemon/state.js")>();
+vi.mock("../src/daemon/state/index.js", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("../src/daemon/state/index.js")>();
   return {
     ...actual,
     removeSocketFile: vi.fn(),
@@ -86,9 +86,9 @@ vi.mock("../src/daemon/state.js", async (importOriginal) => {
   };
 });
 
-import { IpcServer } from "../src/daemon/server.js";
-import { LoopManager } from "../src/daemon/manager.js";
-import { TaskManager } from "../src/daemon/task-manager.js";
+import { IpcServer } from "../src/daemon/server/index.js";
+import { LoopManager } from "../src/daemon/managers/loop-manager.js";
+import { TaskManager } from "../src/daemon/managers/task-manager.js";
 
 let tmpDir: string;
 let origHome: string | undefined;

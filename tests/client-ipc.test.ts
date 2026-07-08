@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { IpcRequest, IpcResponse } from "../src/types.js";
 
-vi.mock("../src/daemon/spawner.js", () => ({
+vi.mock("../src/daemon/spawner/index.js", () => ({
   ensureDaemon: vi.fn(),
   getSocket: vi.fn().mockReturnValue("/tmp/test-loop-cli.sock"),
 }));
@@ -19,7 +19,7 @@ vi.mock("node:net", () => {
   };
 });
 
-import { ensureDaemon, getSocket } from "../src/daemon/spawner.js";
+import { ensureDaemon, getSocket } from "../src/daemon/spawner/index.js";
 import { sendRequest, streamRequest } from "../src/client/ipc.js";
 
 function createMockSocket() {

@@ -14,7 +14,7 @@ const { mockReadDaemonPid, mockIsDaemonAlive, mockRemoveDaemonPid, mockRemoveDae
   mockGetSocketPath: vi.fn().mockReturnValue("/tmp/test-daemon.sock"),
 }));
 
-vi.mock("../src/daemon/state.js", () => ({
+vi.mock("../src/daemon/state/index.js", () => ({
   readDaemonPid: (...args: any[]) => mockReadDaemonPid(...args),
   isDaemonAlive: (...args: any[]) => mockIsDaemonAlive(...args),
   removeDaemonPid: (...args: any[]) => mockRemoveDaemonPid(...args),
@@ -24,7 +24,7 @@ vi.mock("../src/daemon/state.js", () => ({
   getSocketPath: (...args: any[]) => mockGetSocketPath(...args),
 }));
 
-import { getSocket, stopDaemon } from "../src/daemon/spawner.js";
+import { getSocket, stopDaemon } from "../src/daemon/spawner/index.js";
 
 let tmpDir: string;
 let origHome: string | undefined;

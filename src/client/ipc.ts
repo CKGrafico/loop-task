@@ -1,8 +1,8 @@
 import net from "node:net";
 import type { IpcRequest, IpcResponse } from "../types.js";
-import { ensureDaemon, getSocket } from "../daemon/spawner.js";
-import { t } from "../i18n/index.js";
-import { IPC_TIMEOUT_MS } from "../config/constants.js";
+import { ensureDaemon, getSocket } from "../daemon/spawner/index.js";
+import { t } from "../shared/i18n/index.js";
+import { IPC_TIMEOUT_MS } from "../shared/config/constants.js";
 
 export async function sendRequest(request: IpcRequest): Promise<IpcResponse> {
   ensureDaemon();

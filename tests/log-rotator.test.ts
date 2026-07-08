@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import fs from "node:fs";
 import path from "node:path";
 import os from "node:os";
-import { rotateLogIfNeeded } from "../src/core/log-rotator.js";
+import { rotateLogIfNeeded } from "../src/core/logging/log-rotator.js";
 
 const MAX_LOG_BYTES = 1024 * 1024;
 const MAX_LOG_GENERATIONS = 3;

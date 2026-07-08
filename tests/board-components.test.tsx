@@ -1,9 +1,9 @@
 import { describe, it, expect } from "vitest";
-import { tokenizeCommand } from "../src/tui/utils/syntax.js";
+import { tokenizeCommand } from "../src/shared/utils/syntax.js";
 import { joinCommandLines } from "../src/loop-config.js";
-import { UndoRedoStack } from "../src/shared/useUndoRedo.js";
-import { CODE_EDITOR_SYNTAX_COLORS, CODE_EDITOR_UNDO_LIMIT, CODE_EDITOR_MODAL_HEIGHT } from "../src/config/constants.js";
-import { t } from "../src/i18n/index.js";
+import { UndoRedoStack } from "../src/shared/hooks/useUndoRedo.js";
+import { CODE_EDITOR_SYNTAX_COLORS, CODE_EDITOR_UNDO_LIMIT, CODE_EDITOR_MODAL_HEIGHT } from "../src/shared/config/constants.js";
+import { t } from "../src/shared/i18n/index.js";
 
 
 // The board CodeEditorModal uses OpenTUI primitives (useKeyboard,

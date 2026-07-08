@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { parseStdout } from "../src/core/context-parser.js";
+import { parseStdout } from "../src/core/context/context-parser.js";
 
 describe("parseStdout", () => {
   it("returns null for empty string", () => {

@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
-import { parseStdout } from "../src/core/context-parser.js";
-import { interpolate } from "../src/core/template.js";
+import { parseStdout } from "../src/core/context/context-parser.js";
+import { interpolate } from "../src/core/context/template.js";
 
 describe("parseStdout", () => {
   it("returns null for empty string", () => {

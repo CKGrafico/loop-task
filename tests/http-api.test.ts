@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import http from "node:http";
-import { HttpApiServer } from "../src/daemon/http-server.js";
+import { HttpApiServer } from "../src/daemon/http/server.js";
 import type { LoopMeta } from "../src/types.js";
 import type { TaskDefinition } from "../src/types.js";
 
@@ -251,9 +251,9 @@ describe("HttpApiServer integration", () => {
     vi.clearAllMocks();
     mocks = createMocks();
     server = new HttpApiServer(
-      mocks.mockManager as unknown as import("../src/daemon/manager.js").LoopManager,
-      mocks.mockTaskManager as unknown as import("../src/daemon/task-manager.js").TaskManager,
-      mocks.mockProjectManager as unknown as import("../src/daemon/projects.js").ProjectManager
+      mocks.mockManager as unknown as import("../src/daemon/managers/loop-manager.js").LoopManager,
+      mocks.mockTaskManager as unknown as import("../src/daemon/managers/task-manager.js").TaskManager,
+      mocks.mockProjectManager as unknown as import("../src/daemon/managers/project-manager.js").ProjectManager
     );
     await server.listen(0, "127.0.0.1");
     // Retrieve the actual assigned port

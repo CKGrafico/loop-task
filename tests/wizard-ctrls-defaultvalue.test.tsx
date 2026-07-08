@@ -6,7 +6,7 @@ import { render } from "ink-testing-library";
 const delay = (ms = 60): Promise<void> =>
   new Promise((resolve) => setTimeout(resolve, ms));
 
-import { WizardForm, type WizardStepConfig } from "../src/tui/components/WizardForm.js";
+import { WizardForm, type WizardStepConfig } from "../src/widgets/loop-form/WizardForm.js";
 
 // Regression test for "Ctrl+S refocuses taskId instead of saving":
 //

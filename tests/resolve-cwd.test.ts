@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import path from "node:path";
-import { resolveEffectiveCwd } from "../src/core/resolve-cwd.js";
+import { resolveEffectiveCwd } from "../src/core/command/resolve-cwd.js";
 
 describe("resolveEffectiveCwd", () => {
   it("returns project directory when loop cwd is empty", () => {

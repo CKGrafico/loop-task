@@ -2,7 +2,7 @@ import { injectable } from "inversify";
 import type { LoopMeta, TaskDefinition, Project } from "../../types.js";
 import fs from "node:fs/promises";
 import path from "node:path";
-import { getDataDir } from "../../config/paths.js";
+import { getDataDir } from "../config/paths.js";
 import type { LoopService, TaskService, ProjectService, ExportService } from "./types.js";
 
 @injectable()

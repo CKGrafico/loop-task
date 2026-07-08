@@ -10,29 +10,29 @@ const mockReconcile = vi.fn();
 const mockTaskReload = vi.fn();
 const mockProjectReload = vi.fn();
 
-vi.mock("../src/daemon/manager.js", () => ({
+vi.mock("../src/daemon/managers/loop-manager.js", () => ({
   LoopManager: vi.fn().mockImplementation(() => ({
     reconcile: mockReconcile,
   })),
 }));
 
-vi.mock("../src/daemon/task-manager.js", () => ({
+vi.mock("../src/daemon/managers/task-manager.js", () => ({
   TaskManager: vi.fn().mockImplementation(() => ({
     reload: mockTaskReload,
   })),
 }));
 
-vi.mock("../src/daemon/projects.js", () => ({
+vi.mock("../src/daemon/managers/project-manager.js", () => ({
   ProjectManager: vi.fn().mockImplementation(() => ({
     reload: mockProjectReload,
   })),
 }));
 
-import { FileWatcher } from "../src/daemon/file-watcher.js";
-import { loopsJson, tasksJson, projectsJson } from "../src/config/paths.js";
-import { LoopManager } from "../src/daemon/manager.js";
-import { TaskManager } from "../src/daemon/task-manager.js";
-import { ProjectManager } from "../src/daemon/projects.js";
+import { FileWatcher } from "../src/daemon/watcher/index.js";
+import { loopsJson, tasksJson, projectsJson } from "../src/shared/config/paths.js";
+import { LoopManager } from "../src/daemon/managers/loop-manager.js";
+import { TaskManager } from "../src/daemon/managers/task-manager.js";
+import { ProjectManager } from "../src/daemon/managers/project-manager.js";
 
 let tmpDir: string;
 let origHome: string | undefined;
