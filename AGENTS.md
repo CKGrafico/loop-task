@@ -135,6 +135,7 @@ Agent files live in `.opencode/agents/`. The set is dynamic — users add specia
 | Agent | File | Role |
 |-------|------|------|
 | `basic-engineer` | `.opencode/agents/basic-engineer.md` | Fallback implementation worker. Used when no custom engineer matches the task domain. |
+| `docs-ui-engineer` | `.opencode/agents/docs-ui-engineer.md` | Docs website specialist — HTML/CSS/JS landing page in `docs/`, design taste, web design guidelines. |
 | `*-engineer` | `.opencode/agents/*-engineer.md` | User-created specialists. Preferred over `basic-engineer` when their domain matches the task. |
 
 Before spawning, inspect `.opencode/agents/` to build the actual list — never assume which custom engineers exist.
