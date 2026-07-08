@@ -3,6 +3,7 @@ import { copyToClipboard } from "../../shared/clipboard.js";
 import { commandLine } from "../../shared/ui/format.js";
 import { t } from "../../shared/i18n/index.js";
 import type { ActionContext } from "../../app/types.js";
+import { groupRunsByCycle } from "../../widgets/right-panel/RunHistory.js";
 
 export function useContextualActions(context: ActionContext) {
   const {
@@ -59,7 +60,7 @@ export function useContextualActions(context: ActionContext) {
       "projects:": () => { if (selectedProjectEntity) handleCommand("edit"); },
       "loops:right": () => {
         if (!selected) return;
-        const reversed = [...selected.runHistory].reverse();
+        const reversed = [...groupRunsByCycle(selected.runHistory)].reverse();
         if (reversed.length > 0) {
           const run = reversed[Math.min(selectedRunIndex, reversed.length - 1)];
           handleOpenRunLog(run ?? reversed[0]!);

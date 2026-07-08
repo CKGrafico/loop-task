@@ -2,6 +2,7 @@ import { t } from "../../shared/i18n/index.js";
 import { cycleSortMode, cycleStatusFilter } from "../../entities/loops/filters.js";
 import { cycleProjectSortMode, cycleProjectHasLoopsFilter, cycleProjectIsSystemFilter } from "../../entities/projects/filters.js";
 import type { CommandHandlerContext } from "../../app/types.js";
+import { groupRunsByCycle } from "../../widgets/right-panel/RunHistory.js";
 
 export function useCommandHandlers(context: CommandHandlerContext) {
   const {
@@ -119,7 +120,7 @@ export function useCommandHandlers(context: CommandHandlerContext) {
     debug: () => { setDebugMode((prev) => !prev); },
     logs: () => {
       if (activeTab === "loops" && selected) {
-        const reversed = [...selected.runHistory].reverse();
+        const reversed = [...groupRunsByCycle(selected.runHistory)].reverse();
         if (reversed.length > 0) {
           const run = reversed[Math.min(selectedRunIndex, reversed.length - 1)];
           handleOpenRunLog(run ?? reversed[0]!);

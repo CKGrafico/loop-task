@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { Box, Text, useInput, useStdout } from "ink";
 import type { RunRecord } from "../../types.js";
 import { darkTheme as theme } from "../../shared/ui/theme.js";
@@ -36,7 +36,10 @@ export function LogModal(props: {
   const [searchQuery, setSearchQuery] = useState("");
   const [follow, setFollow] = useState(true);
   const [scrollOffset, setScrollOffset] = useState(0);
-  const logService = useInject<LogService>(TYPES.LogService);
+  const bottomDistanceRef = useRef(0);
+  const injectedLogService = useInject<LogService>(TYPES.LogService);
+  const logServiceRef = useRef(injectedLogService);
+  const logService = logServiceRef.current;
   const { stdout } = useStdout();
   const terminalHeight = stdout?.rows ?? 24;
   const MAX_VISIBLE_LINES = Math.max(1, Math.floor(terminalHeight * 0.7) - 7);
@@ -122,13 +125,15 @@ export function LogModal(props: {
       return;
     }
     if (key.downArrow) {
+      const base = follow ? Math.max(0, totalLines - MAX_VISIBLE_LINES) : scrollOffset;
       setFollow(false);
-      setScrollOffset((o) => Math.min(o + 1, Math.max(0, totalLines - MAX_VISIBLE_LINES)));
+      setScrollOffset(Math.min(base + 1, Math.max(0, totalLines - MAX_VISIBLE_LINES)));
       return;
     }
     if (key.upArrow) {
+      const base = follow ? Math.max(0, totalLines - MAX_VISIBLE_LINES) : scrollOffset;
       setFollow(false);
-      setScrollOffset((o) => Math.max(0, o - 1));
+      setScrollOffset(Math.max(0, base - 1));
       return;
     }
   });

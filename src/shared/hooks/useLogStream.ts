@@ -12,7 +12,9 @@ export function useLogStream(
   view: View,
   onError: (error: Error) => void
 ): { logLines: string[]; destroy: () => void } {
-  const logService = useInject<LogService>(TYPES.LogService);
+  const injectedLogService = useInject<LogService>(TYPES.LogService);
+  const logServiceRef = useRef(injectedLogService);
+  const logService = logServiceRef.current;
   const [logLines, setLogLines] = useState<string[]>([]);
   const logSocket = useRef<net.Socket | null>(null);
 
