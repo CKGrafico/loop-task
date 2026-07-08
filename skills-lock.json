@@ -91,6 +91,18 @@
       "skillPath": "skills/output-skill/SKILL.md",
       "computedHash": "524f7c7950c3fde726101613f630140411c7d080e63be718687f4b38f919be81"
     },
+    "fumadocs-component-docs": {
+      "source": "theorcdev/8bitcn-ui",
+      "sourceType": "github",
+      "skillPath": ".claude/skills/fumadocs-component-docs/SKILL.md",
+      "computedHash": "a138321af90f7f6806996dea4ca59e4e613f8de588dbdda5aa259db2513d0ff2"
+    },
+    "fumadocs-mdx-structure": {
+      "source": "theorcdev/8bitcn-ui",
+      "sourceType": "github",
+      "skillPath": ".claude/skills/fumadocs-mdx-structure/SKILL.md",
+      "computedHash": "f1b810c9074c3d9b7fae58fa1dde5eb21a5a60d37cff5089156fc750f8a91d77"
+    },
     "gpt-taste": {
       "source": "leonxlnx/taste-skill",
       "sourceType": "github",

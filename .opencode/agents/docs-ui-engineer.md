@@ -12,5 +12,5 @@ permission:
 
 ## Abilities
 - Guardrails: @ob-generic-guardrails, @project-guardrails
-- Development: @design-taste-frontend, @web-design-guidelines, @high-end-visual-design, @documentation-writer, @humanize
+- Development: @design-taste-frontend, @web-design-guidelines, @high-end-visual-design, @documentation-writer, @humanize, @fumadocs-component-docs, @fumadocs-mdx-structure
 - Testing: @web-design-guidelines
