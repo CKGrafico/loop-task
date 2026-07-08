@@ -37,6 +37,9 @@ export async function startLoop(
   console.log(t("cli.startedCommand", { command: options.command }));
   console.log(t("cli.startedInterval", { interval: intervalHuman }));
   console.log(t("cli.startedStatus"));
+  if (options.interval === 0) {
+    console.log("  Note: manual loop — use 'trigger' to run on demand");
+  }
   console.log();
   console.log(t("cli.startedHint"));
   process.exit(0);
@@ -102,7 +105,8 @@ export async function showStatus(id: string): Promise<void> {
 
   console.log(t("cli.statusTitle", { id: loop.id }));
   console.log(t("cli.statusCommand", { command: cmd }));
-  console.log(t("cli.statusInterval", { interval: loop.intervalHuman, duration: formatDuration(loop.interval) }));
+  const intervalDisplay = loop.interval === 0 ? "manual" : formatDuration(loop.interval);
+  console.log(t("cli.statusInterval", { interval: loop.intervalHuman, duration: intervalDisplay }));
   console.log(t("cli.statusStatus", { status: loop.status }));
   console.log(t("cli.statusRuns", { runs: loop.runCount, maxRuns }));
   console.log(t("cli.statusCreated", { created: loop.createdAt }));

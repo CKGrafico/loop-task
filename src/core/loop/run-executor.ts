@@ -54,7 +54,7 @@ export async function executeRunImpl(ctrl: ExecuteRunAccess, signal: AbortSignal
   ctrl.runAbortController = new AbortController();
   const task = ctrl.options.taskId ? ctrl.taskResolver(ctrl.options.taskId) : null;
   const cwd = resolveEffectiveCwd(ctrl.options.cwd, ctrl.projectDirectory);
-  const chainContext: Record<string, unknown> = {};
+  const chainContext: Record<string, unknown> = { ...(task?.context ?? {}), ...(ctrl.options.context ?? {}) };
   const hasChainTasks = !!(task?.onSuccessTaskId || task?.onFailureTaskId);
 
   const singleCommandFallback: TaskCommand = {

@@ -91,17 +91,35 @@ program
   .option("--project <name>", t("cli.optProject"))
   .option("--offset <duration>", "Phase offset (e.g. 5m, 15m)")
   .option("--description <desc>", "Description of the loop")
+  .option("-C, --context <json>", "Initial context JSON (e.g. {\"env\":\"staging\"})")
   .action(
     async (
       intervalStr: string,
       cmdArgs: string[],
-      opts: { now: boolean; maxRuns?: number; verbose: boolean; cwd?: string; project?: string; offset?: string; description?: string }
+      opts: { now: boolean; maxRuns?: number; verbose: boolean; cwd?: string; project?: string; offset?: string; description?: string; context?: string }
     ) => {
       try {
         const projectId = opts.project
           ? await resolveProjectId(opts.project)
           : undefined;
         const offsetMs = opts.offset ? parseDuration(opts.offset) : null;
+        let context: Record<string, unknown> | undefined;
+        if (opts.context) {
+          const { validateContext } = await import("./core/context/validate-context.js");
+          let parsed: unknown;
+          try {
+            parsed = JSON.parse(opts.context);
+          } catch {
+            console.error("Invalid JSON in --context flag");
+            process.exit(1);
+          }
+          const result = validateContext(parsed);
+          if (!result.valid) {
+            console.error(`Invalid context: ${result.error}`);
+            process.exit(1);
+          }
+          context = result.context;
+        }
         const built = buildLoopOptions(intervalStr, {
           ...opts,
           command: cmdArgs[0],
@@ -110,6 +128,7 @@ program
           projectId,
           offset: offsetMs,
           description: opts.description ?? cmdArgs.join(" "),
+          context,
         });
         await startLoop(built.options, built.intervalHuman);
       } catch (error: unknown) {
@@ -130,11 +149,12 @@ program
   .option("--verbose", t("cli.optVerbose"))
   .option("--cwd <dir>", t("cli.optCwd"))
   .option("--description <desc>", "Description of the loop")
+  .option("-C, --context <json>", "Initial context JSON (e.g. {\"env\":\"staging\"})")
   .action(
     async (
       intervalStr: string | undefined,
       cmdArgs: string[] | undefined,
-      opts: { now?: boolean; maxRuns?: string; verbose?: boolean; cwd?: string; description?: string }
+      opts: { now?: boolean; maxRuns?: string; verbose?: boolean; cwd?: string; description?: string; context?: string }
     ) => {
       if (!intervalStr || !cmdArgs || cmdArgs.length === 0) {
         program.help();
@@ -142,13 +162,36 @@ program
       }
 
       const logger = new Logger(opts.verbose ?? false);
+      let context: Record<string, unknown> | undefined;
+      if (opts.context) {
+        const { validateContext } = await import("./core/context/validate-context.js");
+        let parsed: unknown;
+        try {
+          parsed = JSON.parse(opts.context);
+        } catch {
+          console.error("Invalid JSON in --context flag");
+          process.exit(1);
+        }
+        const result = validateContext(parsed);
+        if (!result.valid) {
+          console.error(`Invalid context: ${result.error}`);
+          process.exit(1);
+        }
+        context = result.context;
+      }
       const built = buildLoopOptions(intervalStr, {
         ...opts,
         command: cmdArgs[0],
         commandArgs: cmdArgs.slice(1),
         cwd: opts.cwd ?? process.cwd(),
         description: opts.description ?? cmdArgs.join(" "),
+        context,
       });
+
+      if (built.options.interval === 0) {
+        console.error("Manual loops are not supported in foreground mode. Use 'loop-task new manual -- <command>' instead.");
+        process.exit(1);
+      }
 
       const controller = new AbortController();
       process.on("SIGINT", () => controller.abort());

@@ -27,11 +27,24 @@ describe("parseDuration", () => {
     it.each([
       ["abc", "Invalid duration"],
       ["foo", "Invalid duration"],
-      ["0", "Duration must be positive"],
       ["-1h", "Duration must be positive"],
       ["", "Duration cannot be empty"],
     ])("rejects %s", (input, expectedError) => {
       expect(() => parseDuration(input)).toThrow(expectedError);
+    });
+  });
+
+  describe("manual / zero interval", () => {
+    it("parses 'manual' as 0", () => {
+      expect(parseDuration("manual")).toBe(0);
+    });
+
+    it("parses '0' as 0", () => {
+      expect(parseDuration("0")).toBe(0);
+    });
+
+    it("handles whitespace around 'manual'", () => {
+      expect(parseDuration("  manual  ")).toBe(0);
     });
   });
 });
@@ -41,5 +54,9 @@ describe("formatDuration", () => {
     expect(formatDuration(1000)).toBe("1 second");
     expect(formatDuration(60_000)).toBe("1 minute");
     expect(formatDuration(3_600_000)).toBe("1 hour");
+  });
+
+  it("returns 'manual trigger only' for 0", () => {
+    expect(formatDuration(0)).toBe("manual trigger only");
   });
 });

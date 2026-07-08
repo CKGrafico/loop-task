@@ -27,6 +27,7 @@ export interface TaskDefinition {
   steps?: TaskStep[];
   onSuccessTaskId: string | null;
   onFailureTaskId: string | null;
+  context?: Record<string, unknown>;
   createdAt: string;
 }
 
@@ -43,6 +44,7 @@ export interface LoopOptions {
   description: string;
   projectId: string;
   offset: number | null;
+  context?: Record<string, unknown>;
 }
 
 export interface ExecutionResult {

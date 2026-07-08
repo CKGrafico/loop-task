@@ -8,7 +8,7 @@ export type StatusFilter =
   | "idle"
   | "stopped";
 
-export type IntervalFilter = "all" | "short" | "medium" | "long";
+export type IntervalFilter = "all" | "manual" | "short" | "medium" | "long";
 
 export type ActivityFilter = "all" | "active" | "stale";
 
@@ -37,6 +37,7 @@ const statusOrder: Record<LoopMeta["status"], number> = {
 };
 
 function intervalBucketOf(interval: number): IntervalFilter {
+  if (interval === 0) return "manual";
   if (interval <= 60_000) return "short";
   if (interval <= 3_600_000) return "medium";
   return "long";

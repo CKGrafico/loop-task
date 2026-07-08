@@ -68,6 +68,7 @@ export function statusColor(status: LoopMeta["status"]): string {
 }
 
 export function timingLabel(loop: LoopMeta): string {
+  if (loop.interval === 0) return t("format.durationManual");
   if (loop.status === "paused") return t("format.timingPaused");
   if (loop.status === "idle") return t("format.timingIdle");
   if (loop.nextRunAt) return t("format.timingNext", { timeAgo: timeUntil(loop.nextRunAt) });

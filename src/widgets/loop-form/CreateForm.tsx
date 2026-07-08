@@ -45,7 +45,9 @@ export function CreateView(props: CreateViewProps): React.ReactNode {
   const [taskPickerOpen, setTaskPickerOpen] = useState(false);
   const [openSelect, setOpenSelect] = useState<"taskMode" | "runNow" | "project" | null>(null);
   const [commandEditorOpen, setCommandEditorOpen] = useState(false);
+  const [contextEditorOpen, setContextEditorOpen] = useState(false);
   const [commandValue, setCommandValue] = useState(initial.command ?? "");
+  const [contextValue, setContextValue] = useState(initial.context ?? "");
 
   const fieldCallbacksRef = useRef<Record<string, { value: string; onChange: (v: string) => void; onAdvance: () => void }>>({});
 
@@ -64,10 +66,12 @@ export function CreateView(props: CreateViewProps): React.ReactNode {
     selectedTaskId,
     resolvedTaskName,
     commandValue,
+    contextValue,
     projects: props.projects,
     setOpenSelect,
     setTaskPickerOpen,
     setCommandEditorOpen,
+    setContextEditorOpen,
     fieldCallbacksRef,
     taskModeInitial,
   });
@@ -108,7 +112,7 @@ export function CreateView(props: CreateViewProps): React.ReactNode {
         steps={steps}
         onComplete={handleComplete}
         onCancel={onCancel}
-        disabled={taskPickerOpen || openSelect !== null || commandEditorOpen}
+        disabled={taskPickerOpen || openSelect !== null || commandEditorOpen || contextEditorOpen}
       />
       {taskPickerOpen ? (
         <TaskPickerModal
@@ -141,6 +145,16 @@ export function CreateView(props: CreateViewProps): React.ReactNode {
             setCommandEditorOpen(false);
           }}
           onCancel={() => setCommandEditorOpen(false)}
+        />
+      ) : null}
+      {contextEditorOpen ? (
+        <CodeEditorModal
+          initialValue={contextValue}
+          onSave={(v) => {
+            setContextValue(v);
+            setContextEditorOpen(false);
+          }}
+          onCancel={() => setContextEditorOpen(false)}
         />
       ) : null}
     </>
