@@ -13,6 +13,7 @@ export interface LoopCommandOptionsInput {
   cwd?: string;
   projectId?: string;
   offset?: number | null;
+  context?: Record<string, unknown>;
 }
 
 export interface BuiltLoopOptions {
@@ -187,6 +188,7 @@ export function buildLoopOptions(
       description,
       projectId: input.projectId ?? "default",
       offset: input.offset ?? null,
+      context: input.context,
     },
   };
 }

@@ -8,6 +8,7 @@ import { CodeEditorModal } from "../../features/code-editor/CodeEditorModal.js";
 import { useInject } from "../../shared/hooks/useInject.js";
 import { TYPES } from "../../shared/services/types.js";
 import type { TaskService } from "../../shared/services/types.js";
+import { validateContext } from "../../core/context/validate-context.js";
 import crypto from "node:crypto";
 import { t } from "../../shared/i18n/index.js";
 import { joinCommandLines, parseCommandLine } from "../../loop-config.js";
@@ -69,6 +70,10 @@ export function TaskForm(props: TaskFormProps): React.ReactNode {
   );
 
   const [commandEditorOpen, setCommandEditorOpen] = useState(false);
+  const [contextEditorOpen, setContextEditorOpen] = useState(false);
+  const [contextValue, setContextValue] = useState(
+    editTask?.context ? JSON.stringify(editTask.context) : "",
+  );
   const [openChainField, setOpenChainField] = useState<"onSuccess" | "onFailure" | null>(null);
   const chainFieldsRef = useRef<Record<string, { value: string; onChange: (v: string) => void; onAdvance: () => void }>>({});
 
@@ -153,9 +158,37 @@ export function TaskForm(props: TaskFormProps): React.ReactNode {
           );
         },
       },
+      {
+        key: "context",
+        prompt: t("wizard.contextPrompt"),
+        hint: t("wizard.contextHint"),
+        required: false,
+        inputType: "text",
+        defaultValue: contextValue || undefined,
+        onActivate: () => setContextEditorOpen(true),
+        validate: (value: string) => {
+          if (!value?.trim()) return true;
+          try {
+            const parsed = JSON.parse(value);
+            const result = validateContext(parsed);
+            return result.valid;
+          } catch {
+            return false;
+          }
+        },
+        validationError: t("wizard.contextInvalid"),
+        renderCustom: ({ isActive }) => (
+          <CodeEditorPreview
+            value={contextValue}
+            hint={t("wizard.contextHint")}
+            isActive={isActive}
+            onActivate={() => setContextEditorOpen(true)}
+          />
+        ),
+      },
     ];
     return list;
-  }, [commandValue, chainOptions, editTask, resolveChainName]);
+  }, [commandValue, chainOptions, editTask, resolveChainName, contextValue]);
 
   const handleComplete = useCallback(
     (values: Record<string, string>) => {
@@ -165,6 +198,20 @@ export function TaskForm(props: TaskFormProps): React.ReactNode {
 
       const onSuccessTaskId = resolveChainId(values.onSuccess ?? "");
       const onFailureTaskId = resolveChainId(values.onFailure ?? "");
+
+      let context: Record<string, unknown> | undefined;
+      const contextStr = contextValue?.trim();
+      if (contextStr) {
+        try {
+          const parsed = JSON.parse(contextStr);
+          const result = validateContext(parsed);
+          if (result.valid) {
+            context = result.context;
+          }
+        } catch {
+          // invalid context, skip
+        }
+      }
 
       const commandSegments = commandValue
         .split(/\n&&\n|\n&&|&&\n|&&/)
@@ -200,6 +247,7 @@ export function TaskForm(props: TaskFormProps): React.ReactNode {
           steps,
           onSuccessTaskId,
           onFailureTaskId,
+          context,
         };
       } else {
         payload = {
@@ -209,6 +257,7 @@ export function TaskForm(props: TaskFormProps): React.ReactNode {
           commandRaw: commandValue,
           onSuccessTaskId,
           onFailureTaskId,
+          context,
         };
       }
 
@@ -223,7 +272,7 @@ export function TaskForm(props: TaskFormProps): React.ReactNode {
           .catch(() => { /* error handled silently */ });
       }
     },
-    [commandValue, resolveChainId, mode, editTask, onDone],
+    [commandValue, resolveChainId, mode, editTask, onDone, contextValue],
   );
 
   const title = mode === "edit"
@@ -237,7 +286,7 @@ export function TaskForm(props: TaskFormProps): React.ReactNode {
         steps={steps}
         onComplete={handleComplete}
         onCancel={onCancel}
-        disabled={openChainField !== null || commandEditorOpen}
+        disabled={openChainField !== null || commandEditorOpen || contextEditorOpen}
       />
       {openChainField ? (
         <SelectModal
@@ -260,6 +309,16 @@ export function TaskForm(props: TaskFormProps): React.ReactNode {
             setCommandEditorOpen(false);
           }}
           onCancel={() => setCommandEditorOpen(false)}
+        />
+      ) : null}
+      {contextEditorOpen ? (
+        <CodeEditorModal
+          initialValue={contextValue}
+          onSave={(v) => {
+            setContextValue(v);
+            setContextEditorOpen(false);
+          }}
+          onCancel={() => setContextEditorOpen(false)}
         />
       ) : null}
     </>

@@ -6,6 +6,7 @@ import { t } from "../../shared/i18n/index.js";
 import { type WizardStepConfig } from "./WizardForm.js";
 import { SelectValueField } from "../../shared/ui/SelectModal.js";
 import { CodeEditorPreview } from "../../features/code-editor/CodeEditorPreview.js";
+import { validateContext } from "../../core/context/validate-context.js";
 
 interface FieldCallbacks {
   value: string;
@@ -18,10 +19,12 @@ interface UseCreateStepsParams {
   selectedTaskId: string | null;
   resolvedTaskName: string | null;
   commandValue: string;
+  contextValue: string;
   projects: Project[];
   setOpenSelect: (v: "taskMode" | "runNow" | "project" | null) => void;
   setTaskPickerOpen: (v: boolean) => void;
   setCommandEditorOpen: (v: boolean) => void;
+  setContextEditorOpen: (v: boolean) => void;
   fieldCallbacksRef: React.RefObject<Record<string, FieldCallbacks>>;
   taskModeInitial: string;
 }
@@ -32,10 +35,12 @@ export function useCreateSteps(params: UseCreateStepsParams): WizardStepConfig[]
     selectedTaskId,
     resolvedTaskName,
     commandValue,
+    contextValue,
     projects,
     setOpenSelect,
     setTaskPickerOpen,
     setCommandEditorOpen,
+    setContextEditorOpen,
     fieldCallbacksRef,
     taskModeInitial,
   } = params;
@@ -167,7 +172,35 @@ export function useCreateSteps(params: UseCreateStepsParams): WizardStepConfig[]
           );
         },
       },
+      {
+        key: "context",
+        prompt: t("wizard.contextPrompt"),
+        hint: t("wizard.contextHint"),
+        required: false,
+        inputType: "text",
+        defaultValue: contextValue || undefined,
+        onActivate: () => setContextEditorOpen(true),
+        validate: (value: string) => {
+          if (!value?.trim()) return true;
+          try {
+            const parsed = JSON.parse(value);
+            const result = validateContext(parsed);
+            return result.valid;
+          } catch {
+            return false;
+          }
+        },
+        validationError: t("wizard.contextInvalid"),
+        renderCustom: ({ isActive }) => (
+          <CodeEditorPreview
+            value={contextValue}
+            hint={t("wizard.contextHint")}
+            isActive={isActive}
+            onActivate={() => setContextEditorOpen(true)}
+          />
+        ),
+      },
     ];
     return list;
-  }, [taskModeInitial, selectedTaskId, resolvedTaskName, initial, commandValue, projects]);
+  }, [taskModeInitial, selectedTaskId, resolvedTaskName, initial, commandValue, contextValue, projects]);
 }
