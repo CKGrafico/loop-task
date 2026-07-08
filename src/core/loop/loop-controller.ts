@@ -76,6 +76,7 @@ export class LoopController extends EventEmitter {
   }
 
   start(): void {
+    if (this._status === "running") return;
     this.skippedCount = 0;
     this.logStream?.end();
     this.abortController = new AbortController();
@@ -139,7 +140,6 @@ export class LoopController extends EventEmitter {
     this.sessionStartedAt = new Date().toISOString();
     this._resetSchedule = true;
     this._paused = false;
-    this._status = "waiting";
     const phase = this.options.offset !== null
       ? this.options.offset
       : computePhase(this.id, this.options.interval);
@@ -150,6 +150,7 @@ export class LoopController extends EventEmitter {
       this.resumeResolve = null;
     }
     this.start();
+    this._status = "waiting";
     this.emit("resumed");
     return true;
   }
@@ -163,8 +164,8 @@ export class LoopController extends EventEmitter {
     if (needsStart) {
       this._stopAfterRun = true;
       this._paused = false;
-      this._status = "running";
       this.start();
+      this._status = "running";
     } else {
       if (this._paused) this.resume();
     }
