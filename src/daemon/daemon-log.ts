@@ -1,5 +1,5 @@
 import fs from "node:fs";
-import { getDataDir, getDaemonLogFile } from "../config/paths.js";
+import { getDataDir, getDaemonLogFile } from "../shared/config/paths.js";
 
 export function daemonLog(message: string): void {
   try {

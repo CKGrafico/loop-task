@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
-import { resolveColor } from "../src/client/commands.js";
-import { PROJECT_COLORS } from "../src/config/constants.js";
+import { resolveColor } from "../src/client/project-commands.js";
+import { PROJECT_COLORS } from "../src/shared/config/constants.js";
 
 describe("resolveColor", () => {
   it("resolves a known color name to its hex value", () => {

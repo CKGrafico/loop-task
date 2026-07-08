@@ -1,7 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { writeFileAtomic } from "../shared/fs-utils.js";
-import { getDataDir } from "../config/paths.js";
+import { getDataDir } from "../shared/config/paths.js";
 import type { LoopMeta, TaskDefinition, Project } from "../types.js";
 
 const STORE_FILES = ["loops.json", "tasks.json", "projects.json"] as const;

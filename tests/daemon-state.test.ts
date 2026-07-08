@@ -26,8 +26,8 @@ import {
   removeSocketFile,
   migrateLoopsToJson,
   migrateTasksToJson,
-} from "../src/daemon/state.js";
-import { loopsJson, tasksJson, getLoopsDir, getTasksDir } from "../src/config/paths.js";
+} from "../src/daemon/state/index.js";
+import { loopsJson, tasksJson, getLoopsDir, getTasksDir } from "../src/shared/config/paths.js";
 
 let tmpDir: string;
 let origHome: string | undefined;

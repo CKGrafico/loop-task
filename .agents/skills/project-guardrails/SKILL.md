@@ -11,63 +11,101 @@ license: MIT
 ## Architecture Constraints
 
 - **Client-daemon separation**: The short-lived CLI client and long-lived background daemon communicate over a local IPC transport (Unix socket on POSIX, named pipe on Windows). Never mix client and daemon code in the same process.
-- **`src/core/` is runtime-agnostic**: `loop-controller.ts`, `command-runner.ts`, `context-parser.ts`, `template.ts`, `foreground-loop.ts`, `log-rotator.ts`, `scheduling.ts`, `log-parser.ts` must NOT import from `src/daemon/` or `src/tui/`. Used by both daemon and foreground runner.
+- **`src/core/` is runtime-agnostic**: Organized into subdirectories: `loop/`, `command/`, `context/`, `scheduling/`, `logging/`, `foreground/`. These must NOT import from `src/daemon/` or `src/app/`. Used by both daemon and foreground runner.
 - **`src/types.ts` is the IPC contract**: Single source of truth for `LoopOptions`, `LoopMeta`, `LoopStatus`, `IpcRequest`/`IpcResponse`, `TaskDefinition`, `Project`. Changes here affect both client and daemon — treat as a breaking-change boundary.
-- **DI container for TUI services**: The TUI app is wrapped in `InversifyProvider`. All service access uses `useInject<T>(TYPES.X)` — never import service implementations directly in components or hooks. Services are bound in the container at app startup.
+- **DI container for TUI services**: The app is wrapped in `InversifyProvider` (`src/shared/providers/`). All service access uses `useInject<T>(TYPES.X)` — never import service implementations directly in components or hooks. Services are bound in the container at `src/shared/container/`.
 - **FSD layer dependency rules** (app → widgets → features → entities → shared):
   - `app/` may import from any layer.
   - `widgets/` may import from `features/`, `entities/`, `shared/`.
   - `features/` may import from `entities/`, `shared/`.
   - `entities/` may import from `shared/` only.
-  - `shared/` may not import from any other layer.
+  - `shared/` may not import from any other layer — it can import from `../../types.js`, `../../client/`, `../../duration.js`, etc. (root boundary files).
   - **No cross-imports within the same layer** — two widget directories cannot import from each other; two feature directories cannot import from each other.
 - **File size limits**: No file over 300 lines in `widgets/`, `features/`, or `entities/`. If a module grows larger, decompose into sub-modules within the same directory.
-- **`src/tui/` communicates via DI-injected services only**: TUI components must NOT import directly from `src/daemon/` internals. All daemon calls go through services injected via the DI container (e.g., `useInject<ILoopService>(TYPES.LoopService)`).
+- **FSD frontend communicates via DI-injected services only**: Components in `src/app/`, `src/widgets/`, `src/features/` must NOT import directly from `src/daemon/` internals. All daemon calls go through services injected via the DI container (e.g., `useInject<LoopService>(TYPES.LoopService)`).
 - **Daemon state writes are atomic**: Use `writeFileAtomic` (temp-then-rename) from `src/shared/fs-utils.ts`. Writes are synchronous to preserve immediate-disk-state-on-pause semantics.
 - **Socket-bind-before-init**: `IpcServer.listen()` binds the socket BEFORE `manager.init()`. Losing racers `exit(0)` cleanly. Never call `manager.init()` before the socket is bound.
 - **No network listener**: The daemon listens on a local socket/pipe only. The HTTP API (`127.0.0.1:8845`) is optional and localhost-only — never add public network listeners.
 - **Filesystem-backed persistence only**: All state lives under `~/.loop-cli/` (overridable via `LOOP_CLI_HOME`). Three consolidated JSON files: `loops.json`, `tasks.json`, `projects.json`. Never introduce a database.
 - **No schema versioning yet**: `LoopMeta` shape changes risk breaking persisted JSON. Corrupted files are silently skipped. Document risk in any PR that changes `LoopMeta`.
 
-### FSD Directory Structure (src/tui/)
+### FSD Directory Structure
 
 ```text
-src/tui/
-├── app/                     # App layer — providers, root layout, global hooks
-│   ├── App.tsx              # Root component with InversifyProvider
-│   ├── providers.tsx        # InversifyProvider + container config
-│   └── index.ts
-├── widgets/                 # Composite UI blocks (page-level sections)
-│   ├── header/              # Header.tsx + index.ts
-│   ├── left-panel/          # LeftPanel.tsx + index.ts
-│   ├── right-panel/         # RightPanel.tsx + index.ts
-│   ├── command-input/       # CommandInput.tsx + index.ts
-│   └── debug-panel/         # DebugPanel.tsx + index.ts
-├── features/                # Business logic hooks & handlers
-│   ├── commands/            # useCommandHandlers.ts + index.ts
-│   ├── navigation/          # useRouter, panel focus logic
-│   ├── loop-polling/        # useLoopPolling, data refresh
-│   ├── log-stream/          # useLogStream
-│   └── search/              # Filter & search logic
-├── entities/                # Domain models, filters, sorters
-│   ├── loops/               # filters.ts, sorters.ts, types.ts, index.ts
-│   ├── tasks/               # filters.ts, sorters.ts, types.ts, index.ts
-│   └── projects/            # filters.ts, sorters.ts, types.ts, index.ts
-├── shared/                  # Cross-cutting utilities
-│   ├── hooks/               # useBreakpoint, useHoverState, useToasts
-│   ├── lib/                 # format.ts, theme.ts, state helpers
-│   ├── ui/                  # Base UI components (FocusableInput, FocusableButton, etc.)
-│   └── types/               # Shared TUI types (View, Mode, TabName, etc.)
-├── index.tsx                # launchBoard: Ink render(<App/>)
-└── container.ts             # Inversify container configuration + TYPES constants
+src/
+ ├── app/                           ← App-wide setup (FSD app layer)
+ │   ├── App.tsx                    ← Root component
+ │   ├── index.tsx                  ← launchBoard: Ink render(<App/>)
+ │   ├── providers/index.ts         ← Re-exports InversifyProvider
+ │   ├── router/index.ts            ← useRouter hook
+ │   └── types.ts                   ← View, Command, CommandContext types
+├── widgets/                       ← Composed UI blocks (FSD widgets layer)
+│   ├── header/                    ← Header.tsx, TabBar.tsx
+│   ├── left-panel/                ← LeftPanel.tsx, Navigator.tsx, TaskBrowser.tsx, ProjectsPage.tsx, ProjectsPageParts.tsx
+│   ├── right-panel/               ← RightPanel.tsx, Inspector.tsx, RunHistory.tsx
+│   ├── command-input/             ← CommandInput.tsx, CommandDropdown.tsx, HintBar.tsx, InputModes.tsx
+│   ├── log-modal/                 ← LogModal.tsx
+│   ├── task-form/                 ← TaskForm.tsx
+│   ├── loop-form/                 ← CreateForm.tsx, WizardForm.tsx, TextField.tsx, useCreateSteps.ts, useHandleComplete.ts
+│   ├── project-form/              ← ProjectForm.tsx
+│   └── commands-browser/          ← CommandsBrowserModal.tsx
+├── features/                      ← User interactions (FSD features layer)
+│   ├── commands/                  ← commands.ts, useCommandHandlers.ts, useGlobalShortcuts.ts, useContextualActions.ts
+│   ├── overlays/                  ← OverlayStack.tsx, HelpModal.tsx, ExportModal.tsx, etc.
+│   ├── forms/                     ← FormRouter.tsx
+│   ├── code-editor/               ← CodeEditorModal.tsx, CodeEditorPreview.tsx, useEditorKeyboard.ts, useModalDimensions.ts
+│   ├── chain-editor/              ← ChainEditor.tsx
+│   └── state/                     ← useAppState.ts
+├── entities/                      ← Business domain models (FSD entities layer)
+│   ├── loops/                     ← filters.ts, index.ts
+│   ├── tasks/                     ← filters.ts, index.ts
+│   └── projects/                  ← filters.ts, index.ts
+├── shared/                        ← App-agnostic infrastructure (FSD shared layer)
+│   ├── container/                 ← DI container (inversify) + TYPES
+│   ├── providers/                 ← InversifyProvider.tsx
+│   ├── services/                  ← Service interfaces + IPC implementations
+│   ├── ui/                        ← format.ts, theme.ts, Button.tsx, Toast.tsx, Modal.tsx, state.ts (InputOwner + re-exports), etc.
+│   ├── hooks/                     ← useLoopPolling, useLogStream, useHoverState, useBreakpoint, useUndoRedo, useInject
+│   ├── utils/                     ← clipboard, paste, syntax, validation
+│   ├── config/                    ← constants.ts, paths.ts
+│   └── i18n/                      ← en.json, index.ts
+├── daemon/                        ← Daemon process (NOT FSD — backend)
+│   ├── index.ts                   ← Daemon main entry
+│   ├── daemon-log.ts              ← Operational logging
+│   ├── server/                    ← IPC server (IpcServer) + handlers/
+│   │   └── handlers/              ← loop-handlers, task-handlers, project-handlers, log-handlers
+│   ├── http/                      ← HTTP API server + route handlers
+│   ├── ipc/                       ← IPC send + log streaming helpers
+│   ├── state/                     ← Persistence (loops.json, tasks.json, projects.json)
+│   ├── managers/                  ← LoopManager (loop-options, loop-entry, loop-serialization), TaskManager, ProjectManager
+│   ├── watcher/                   ← File watcher
+│   └── spawner/                   ← Process spawner
+├── core/                          ← Runtime-agnostic logic (NOT FSD)
+│   ├── loop/                      ← loop-controller, chain-executor, run-executor, delay-utils, loop-runner, types
+│   ├── command/                   ← command-runner, resolve-cwd
+│   ├── context/                   ← context-parser, template
+│   ├── scheduling/                ← Phase alignment + offset
+│   ├── logging/                   ← log-rotator, log-parser
+│   └── foreground/                ← foreground-loop
+├── client/                        ← CLI client (NOT FSD)
+│   ├── ipc.ts                     ← IPC transport (sendRequest, streamRequest)
+│   ├── commands.ts                ← Loop CLI command handlers
+│   ├── project-commands.ts        ← Project CLI command handlers
+│   └── cli-format.ts              ← Shared CLI formatting utils
+├── cli/                           ← CLI import/export utilities
+├── cli.ts                         ← CLI entry point
+├── types.ts                       ← IPC contract (shared boundary)
+├── duration.ts                    ← parseDuration, formatDuration
+├── loop-config.ts                 ← buildLoopOptions, parseCommandLine
+└── logger.ts                      ← Logger class
 ```
 
 ## TUI Architecture (Ink 7 + React 19)
 
-- **InversifyProvider wraps the app**: Service injection via `useInject<T>(TYPES.X)`. Never import service classes directly — always resolve through the DI container. Bind services in `src/tui/container.ts`.
-- **Feature modules own their hooks**: e.g., `features/commands/useCommandHandlers.ts`, `features/loop-polling/useLoopPolling.ts`. Hooks that own business logic live in features, not in shared.
+- **InversifyProvider wraps the app**: Service injection via `useInject<T>(TYPES.X)`. Never import service classes directly — always resolve through the DI container. Bind services in `src/shared/container/index.ts`.
+- **Feature modules own their hooks**: e.g., `features/commands/useCommandHandlers.ts`, `shared/hooks/useLoopPolling.ts`. Hooks that own business logic live in features; cross-cutting hooks live in `shared/hooks/`.
 - **Widget components are directory-scoped**: e.g., `widgets/header/Header.tsx` + `widgets/header/index.ts`. Each widget directory is self-contained with its component and public API barrel export.
-- **Entity filter/sort functions**: `entities/loops/filters.ts`, `entities/tasks/filters.ts`. Pure functions for filtering and sorting domain data. No React hooks in entities — only pure logic.
+- **Entity filter/sort functions**: `entities/loops/filters.ts`, `entities/projects/filters.ts`. Pure functions for filtering and sorting domain data. No React hooks in entities — only pure logic. Import directly from entity layers (`../../entities/loops/filters.js`) rather than re-exports from `shared/ui/state.ts`.
 - **Shared hooks boundary**: `shared/hooks/` for hooks used across features (e.g., `useBreakpoint`, `useHoverState`, `useToasts`). Feature-specific hooks stay in their feature directory.
 - **Command-first input**: `CommandInput` is always focused. All actions are typed commands with fuzzy autocomplete via `ink-combobox` headless hooks (`useAutocompleteState`). Plain Enter selects; Ctrl+Enter passes to the focused panel.
 - **Three CommandInput modes**:
@@ -96,9 +134,9 @@ src/tui/
 - **File naming**: `kebab-case` for all non-component files (`loop-controller.ts`, `use-loop-polling.ts`). React component files use PascalCase (`CommandInput.tsx`, `LeftPanel.tsx`).
 - **Component naming**: PascalCase for all React components.
 - **Hook naming**: `use` prefix for all hooks (`useRouter`, `useLoopPolling`, `useBreakpoint`).
-- **Constants**: `UPPER_SNAKE_CASE` in `src/config/constants.ts`. No inline magic numbers elsewhere.
-- **i18n keys**: `section.camelCase` format (e.g., `cmdInput.placeholder`, `confirm.deleteLoop`). All user-facing strings live in `src/i18n/en.json` — no string literals in component code.
-- **DI TYPES constants**: `UPPER_SNAKE_CASE` in `src/tui/container.ts` (e.g., `TYPES.LoopService`, `TYPES.TaskService`).
+- **Constants**: `UPPER_SNAKE_CASE` in `src/shared/config/constants.ts`. No inline magic numbers elsewhere.
+- **i18n keys**: `section.camelCase` format (e.g., `cmdInput.placeholder`, `confirm.deleteLoop`). All user-facing strings live in `src/shared/i18n/en.json` — no string literals in component code.
+- **DI TYPES constants**: `UPPER_SNAKE_CASE` in `src/shared/services/types.ts` (e.g., `TYPES.LoopService`, `TYPES.TaskService`).
 
 ## Code Style
 
@@ -107,17 +145,18 @@ src/tui/
 - **ESLint 9 + typescript-eslint recommended**: Config in `eslint.config.js`. `no-console` is disabled (CLI app).
 - **No switch/case or nested if/else for dispatch**: Use a `Record<string, Handler>` dictionary lookup for any multi-branch logic keyed on a string (command names, view names, key names, status values). Linear guard clauses (single early returns) are fine.
 - **No user-facing string literals**: All strings in `src/i18n/en.json`, accessed via `t(key, params?)`.
-- **No inline magic numbers**: Add to `src/config/constants.ts` and import.
+- **No inline magic numbers**: Add to `src/shared/config/constants.ts` and import.
 - **No em dashes**: Use regular hyphens (`-`) everywhere — never `—`.
 - **No unnecessary comments**: Follow existing code patterns; comments only when non-obvious.
 - **No section-separator comments**: Never add decorative comment lines like `// ── Section Name ──────────────────`, `// == Section ==`, `// ## Section`, or any variant. These are noise. If a section needs a name, use a function or a type. The only acceptable comments are short `// why` explanations on non-obvious logic — never `// what` descriptions of what the code does.
 - **Small files, feature folders**: Reuse shared helpers in `src/shared/`. Keep files focused on one responsibility. Max 300 lines in widgets/features/entities — decompose if larger.
-- **DI over direct imports**: Use `useInject<T>(TYPES.X)` for services — never `new ServiceClass()` or direct class imports in components/hooks. Bind implementations in `container.ts`.
+- **DI over direct imports**: Use `useInject<T>(TYPES.X)` for services — never `new ServiceClass()` or direct class imports in components/hooks. Bind implementations in `src/shared/container/index.ts`.
 
 ## Testing
 
 - **Framework**: Vitest 3 with `globals: true` and v8 coverage. Config in `vitest.config.ts`.
 - **Location**: Test files mirror the FSD structure: `tests/widgets/header/`, `tests/features/commands/`, `tests/entities/loops/`, `tests/shared/hooks/`.
+- **Import paths**: Test files import from `../src/<layer>/...` using the new FSD paths (e.g., `../src/core/loop/loop-controller.js`, `../src/daemon/managers/loop-manager.js`, `../src/shared/config/constants.js`).
 - **Coverage gates**: 90% lines/functions/branches/statements. Excludes `src/cli.ts`, `src/types.ts`, `src/daemon/index.ts`.
 - **Gate order**: `typecheck` → `lint` → `test` → `build`. Run all four before claiming done.
 
@@ -214,4 +253,4 @@ src/tui/
 - **Max concurrent agents**: 4 (from `opencode-onboard.json`).
 - **Models**: `plan: opencode-go/glm-5.2`, `build: opencode-go/glm-5.1`, `fast: opencode/big-pickle`.
 
-<!-- Last updated: 2026-07-07T00:00:00Z -->
+<!-- Last updated: 2026-07-08T08:00:00Z -->

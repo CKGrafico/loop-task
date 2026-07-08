@@ -1,7 +1,7 @@
 import { injectable } from "inversify";
 import type net from "node:net";
 import { sendRequest, streamRequest } from "../../client/ipc.js";
-import { LOG_TAIL_DEFAULT } from "../../config/constants.js";
+import { LOG_TAIL_DEFAULT } from "../config/constants.js";
 import type { LogService } from "./types.js";
 
 @injectable()

@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
-import { ProjectManager } from "../src/daemon/projects.js";
+import { ProjectManager } from "../src/daemon/managers/project-manager.js";
 import { mkdtempSync, rmSync, mkdirSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -159,10 +159,10 @@ describe("ProjectManager migration", () => {
     // Write as individual .json file in the old loops/ directory format
     writeFileSync(join(loopsDir, "test1234.json"), JSON.stringify(loopWithoutProject, null, 2));
 
-    const { LoopManager } = await import("../src/daemon/manager.js");
-    const { TaskManager } = await import("../src/daemon/task-manager.js");
-    const { ProjectManager } = await import("../src/daemon/projects.js");
-    const { migrateLoopsToJson, migrateTasksToJson } = await import("../src/daemon/state.js");
+    const { LoopManager } = await import("../src/daemon/managers/loop-manager.js");
+    const { TaskManager } = await import("../src/daemon/managers/task-manager.js");
+    const { ProjectManager } = await import("../src/daemon/managers/project-manager.js");
+    const { migrateLoopsToJson, migrateTasksToJson } = await import("../src/daemon/state/index.js");
 
     // Migrate old per-file format to loops.json
     migrateLoopsToJson();
@@ -173,7 +173,7 @@ describe("ProjectManager migration", () => {
     const loopManager = new LoopManager(taskManager, projectManager);
     loopManager.init();
 
-    const { loadAllLoops } = await import("../src/daemon/state.js");
+    const { loadAllLoops } = await import("../src/daemon/state/index.js");
     const loops = loadAllLoops();
     const migrated = loops.find((l) => l.id === "test1234");
     expect(migrated).toBeDefined();

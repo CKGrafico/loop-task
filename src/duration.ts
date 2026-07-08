@@ -1,5 +1,5 @@
 import ms from "ms";
-import { t } from "./i18n/index.js";
+import { t } from "./shared/i18n/index.js";
 
 export function parseDuration(input: string): number {
   const trimmed = input.trim();

@@ -1,5 +1,5 @@
 import { parseDuration } from "./duration.js";
-import { t } from "./i18n/index.js";
+import { t } from "./shared/i18n/index.js";
 import type { LoopOptions } from "./types.js";
 
 export interface LoopCommandOptionsInput {
@@ -45,9 +45,13 @@ export function parseCommandLine(input: string): string[] {
     if (quote) {
       if (char === quote) {
         quote = null;
-      } else if (char === "\\" && quote === '"' && i + 1 < input.length) {
-        i += 1;
-        current += input[i];
+      } else if (char === "\\" && quote === '"') {
+        if (i + 1 < input.length) {
+          i += 1;
+          current += input[i];
+        } else {
+          current += char;
+        }
       } else {
         current += char;
       }
