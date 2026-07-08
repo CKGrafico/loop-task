@@ -75,7 +75,7 @@ export async function runLoop(ctrl: RunAccess): Promise<void> {
       }
 
       const runStartedAtMs = Date.now();
-      const { exitCode, totalDuration } = await executeRunImpl(ctrl, signal);
+      const { exitCode, totalDuration, chainContext } = await executeRunImpl(ctrl, signal);
 
       const chainTargetId = exitCode === 0
         ? (ctrl.options.taskId ? ctrl.taskResolver(ctrl.options.taskId)?.onSuccessTaskId : undefined)
@@ -84,7 +84,6 @@ export async function runLoop(ctrl: RunAccess): Promise<void> {
       if (chainTargetId) {
         const task = ctrl.options.taskId ? ctrl.taskResolver(ctrl.options.taskId) : null;
         const cwd = resolveEffectiveCwd(ctrl.options.cwd, ctrl.projectDirectory);
-        const chainContext: Record<string, unknown> = {};
         const chainResult = await executeChain({
           chainTargetId,
           exitCode,

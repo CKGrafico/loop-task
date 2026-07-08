@@ -27,7 +27,7 @@ export interface ExecuteRunAccess {
   emit(event: string, ...args: unknown[]): boolean;
 }
 
-export async function executeRunImpl(ctrl: ExecuteRunAccess, signal: AbortSignal): Promise<{ exitCode: number; totalDuration: number }> {
+export async function executeRunImpl(ctrl: ExecuteRunAccess, signal: AbortSignal): Promise<{ exitCode: number; totalDuration: number; chainContext: Record<string, unknown> }> {
   ctrl._status = "running";
   ctrl._forceRun = false;
   ctrl.runCount++;
@@ -137,5 +137,5 @@ export async function executeRunImpl(ctrl: ExecuteRunAccess, signal: AbortSignal
     });
   }
 
-  return { exitCode, totalDuration };
+  return { exitCode, totalDuration, chainContext };
 }
