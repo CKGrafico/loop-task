@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { interpolate } from "../src/core/template.js";
+import { interpolate } from "../src/core/context/template.js";
 
 describe("interpolate", () => {
   it("replaces existing key with value", () => {

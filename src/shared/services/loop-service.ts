@@ -1,7 +1,7 @@
 import { injectable } from "inversify";
 import type { LoopMeta, LoopOptions } from "../../types.js";
 import { sendRequest } from "../../client/ipc.js";
-import { t } from "../../i18n/index.js";
+import { t } from "../i18n/index.js";
 import type { LoopService } from "./types.js";
 
 @injectable()

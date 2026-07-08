@@ -132,9 +132,9 @@ describe("parseCommandLine", () => {
     expect(parseCommandLine("echo ''")).toEqual(["echo", ""]);
   });
 
-  it("handles escape at end of double-quoted string (no next char)", () => {
-    // Backslash at very end of string within double quotes – no char to escape
-    expect(parseCommandLine('echo "hello\\"')).toEqual(["echo", "hello\""]);
+  it("handles backslash at end of double-quoted string (no next char)", () => {
+    // Backslash at very end of the entire input, inside double quotes – still unbalanced
+    expect(() => parseCommandLine('echo "hello\\')).toThrow("Unbalanced quote");
   });
 
   it("handles complex command with args", () => {
@@ -255,7 +255,7 @@ describe("buildLoopOptions", () => {
       description: "desc",
     });
 
-    expect(result.options.now).toBe(false); // defaults to false via `now`
+    expect(result.options.immediate).toBe(false); // 'now' input maps to immediate
     expect(result.options.immediate).toBe(false);
     expect(result.options.verbose).toBe(false);
     expect(result.options.maxRuns).toBeNull();

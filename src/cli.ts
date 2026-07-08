@@ -3,7 +3,7 @@
 import { Command } from "commander";
 import { createRequire } from "node:module";
 import { Logger } from "./logger.js";
-import { runLoop } from "./core/foreground-loop.js";
+import { runLoop } from "./core/foreground/index.js";
 import { buildLoopOptions } from "./loop-config.js";
 import { parseDuration } from "./duration.js";
 import { startLoop } from "./client/commands.js";
@@ -14,9 +14,9 @@ import {
   setProjectColorCli,
   deleteProjectCli,
   resolveProjectId,
-} from "./client/commands.js";
-import { t } from "./i18n/index.js";
-import { HTTP_API_PORT, HTTP_API_HOST } from "./config/constants.js";
+} from "./client/project-commands.js";
+import { t } from "./shared/i18n/index.js";
+import { HTTP_API_PORT, HTTP_API_HOST } from "./shared/config/constants.js";
 
 const require = createRequire(import.meta.url);
 const packageJson = require("../package.json") as { version: string };
@@ -32,7 +32,7 @@ program
   .command("start")
   .description(t("cli.startDescription"))
   .action(async () => {
-    const { ensureDaemon } = await import("./daemon/spawner.js");
+    const { ensureDaemon } = await import("./daemon/spawner/index.js");
     ensureDaemon();
     console.log(t("cli.daemonStarted"));
   });
@@ -65,8 +65,8 @@ program
   .command("restart")
   .description("Kill the daemon and all running loops, then restart fresh")
   .action(async () => {
-    const { stopDaemon, ensureDaemon } = await import("./daemon/spawner.js");
-    const { readDaemonPid, removeDaemonPid, removeDaemonSignature } = await import("./daemon/state.js");
+    const { stopDaemon, ensureDaemon } = await import("./daemon/spawner/index.js");
+    const { readDaemonPid, removeDaemonPid, removeDaemonSignature } = await import("./daemon/state/index.js");
     const pid = readDaemonPid();
     if (pid !== null) {
       console.log("Stopping daemon...");
@@ -204,7 +204,7 @@ projectCmd
   });
 
 program.action(async () => {
-  const { launchBoard } = await import("./tui/index.js");
+  const { launchBoard } = await import("./app/index.js");
   await launchBoard();
 });
 

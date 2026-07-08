@@ -1,9 +1,9 @@
 import { describe, it, expect, beforeAll, afterAll, beforeEach, vi } from "vitest";
 import http from "node:http";
-import { HttpApiServer } from "../src/daemon/http-server.js";
-import type { LoopManager } from "../src/daemon/manager.js";
-import type { TaskManager } from "../src/daemon/task-manager.js";
-import type { ProjectManager } from "../src/daemon/projects.js";
+import { HttpApiServer } from "../src/daemon/http/server.js";
+import type { LoopManager } from "../src/daemon/managers/loop-manager.js";
+import type { TaskManager } from "../src/daemon/managers/task-manager.js";
+import type { ProjectManager } from "../src/daemon/managers/project-manager.js";
 import type { LoopMeta, TaskDefinition, Project } from "../src/types.js";
 
 

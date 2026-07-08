@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import { mkdtempSync, rmSync, mkdirSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { ProjectManager } from "../src/daemon/projects.js";
+import { ProjectManager } from "../src/daemon/managers/project-manager.js";
 
 let tmpDir: string;
 let origHome: string | undefined;

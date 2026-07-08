@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { computePhase, alignToPhase } from "../src/core/scheduling.js";
+import { computePhase, alignToPhase } from "../src/core/scheduling/index.js";
 
 
 

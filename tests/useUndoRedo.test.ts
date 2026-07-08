@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { UndoRedoStack } from "../src/shared/useUndoRedo.js";
+import { UndoRedoStack } from "../src/shared/hooks/useUndoRedo.js";
 
 describe("UndoRedoStack", () => {
   it("initial state: canUndo=false, canRedo=false, value=initial", () => {

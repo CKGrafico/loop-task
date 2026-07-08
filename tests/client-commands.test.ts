@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { IpcRequest, IpcResponse, LoopOptions } from "../src/types.js";
-import { PROJECT_COLORS } from "../src/config/constants.js";
+import { PROJECT_COLORS } from "../src/shared/config/constants.js";
 
 
 // Since commands.ts does `import { sendRequest, streamRequest } from "./ipc.js"`,
@@ -13,23 +13,26 @@ vi.mock("../src/client/ipc.js", () => ({
 
 import { sendRequest, streamRequest } from "../src/client/ipc.js";
 import {
-  resolveColor,
   createBackgroundLoop,
   listLoops,
   showStatus,
   pauseLoop,
   resumeLoop,
   deleteLoop,
-  resolveProjectId,
   startLoop,
   viewLogs,
   attachLoop,
+} from "../src/client/commands.js";
+
+import {
+  resolveColor,
+  resolveProjectId,
   listProjectsCli,
   createProjectCli,
   renameProjectCli,
   setProjectColorCli,
   deleteProjectCli,
-} from "../src/client/commands.js";
+} from "../src/client/project-commands.js";
 
 
 
@@ -704,7 +707,7 @@ describe("viewLogs", () => {
 
     // Clean up - simulate the onEnd callback
     const onEnd = mockedStreamRequest.mock.calls[0][2] as () => void;
-    onEnd(); // triggers process.exit(0)
+    try { onEnd(); } catch { /* process.exit spy throws */ }
   });
 });
 
@@ -723,7 +726,7 @@ describe("attachLoop", () => {
 
     // Clean up - simulate the onEnd callback
     const onEnd = mockedStreamRequest.mock.calls[0][2] as () => void;
-    onEnd();
+    try { onEnd(); } catch { /* process.exit spy throws */ }
     consoleSpy.mockRestore();
   });
 });

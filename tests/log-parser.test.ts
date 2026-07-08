@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { splitLogByRuns } from "../src/core/log-parser.js";
+import { splitLogByRuns } from "../src/core/logging/log-parser.js";
 
 describe("splitLogByRuns", () => {
   it("parses a single run with header and exit marker", () => {

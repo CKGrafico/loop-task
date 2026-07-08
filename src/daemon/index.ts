@@ -1,9 +1,9 @@
-import { LoopManager } from "./manager.js";
-import { TaskManager } from "./task-manager.js";
-import { ProjectManager } from "./projects.js";
-import { IpcServer } from "./server.js";
-import { HttpApiServer } from "./http-server.js";
-import { FileWatcher } from "./file-watcher.js";
+import { LoopManager } from "./managers/loop-manager.js";
+import { TaskManager } from "./managers/task-manager.js";
+import { ProjectManager } from "./managers/project-manager.js";
+import { IpcServer } from "./server/index.js";
+import { HttpApiServer } from "./http/server.js";
+import { FileWatcher } from "./watcher/index.js";
 import {
   writeDaemonPid,
   removeDaemonPid,
@@ -12,8 +12,8 @@ import {
   computeCodeSignature,
   migrateTasksToJson,
   migrateLoopsToJson,
-} from "./state.js";
-import { t } from "../i18n/index.js";
+} from "./state/index.js";
+import { t } from "../shared/i18n/index.js";
 import { daemonLog } from "./daemon-log.js";
 
 async function main(): Promise<void> {
@@ -52,8 +52,6 @@ async function main(): Promise<void> {
 
   let shuttingDown = false;
   const cleanup = async () => {
-    // Re-entry guard: a persist failure during shutdown must not re-trigger
-    // cleanup via uncaughtException, or the daemon crash-loops forever.
     if (shuttingDown) return;
     shuttingDown = true;
     daemonLog(`shutting down pid=${process.pid}`);
