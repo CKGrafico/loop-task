@@ -21,5 +21,6 @@ export function buildLoopOptions(meta: LoopMeta): LoopOptions {
     description: meta.description ?? "",
     projectId: meta.projectId ?? "default",
     offset: meta.offset ?? null,
+    context: meta.context,
   };
 }
