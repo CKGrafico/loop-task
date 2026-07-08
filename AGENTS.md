@@ -219,8 +219,11 @@ This project has CodeGraph initialized (`.codegraph/` exists). Use it for all co
 
 **NEVER call `codegraph_explore` or `codegraph_context` directly in the main session** — these return large source payloads that fill context. Instead, ALWAYS spawn an Explore sub-agent for exploration questions ("how does X work?", "where is Y implemented?").
 
-When spawning Explore agents, include in the prompt:
-> This project has CodeGraph initialized. Use `codegraph_explore` as your PRIMARY tool. Do NOT re-read files that codegraph_explore already returned. Only fall back to grep/glob/read for files listed under "Additional relevant files".
+**MANDATORY: When spawning ANY Explore sub-agent, you MUST include this exact text in the spawn prompt:**
+
+> This project has CodeGraph MCP tools available. Use `codegraph_explore` as your PRIMARY exploration tool — it is faster and more accurate than grep/glob/read. Call `codegraph_explore` with a descriptive query about what you're looking for. Do NOT re-read files that codegraph_explore already returned. Only fall back to grep/glob/read for files listed under "Additional relevant files" in the codegraph output, or if codegraph returns no results.
+
+Without this instruction, the Explore sub-agent will not know codegraph exists and will waste time with slow grep/glob/read calls.
 
 **The main session may only use these lightweight tools directly** (targeted lookups before edits):
 - `codegraph_search` — find symbols by name
@@ -244,17 +247,12 @@ Notes stored as plain Markdown files — readable by both agents and humans.
 
 Store: architecture decisions, resolved ambiguities, cross-agent context, discovered constraints.
 Query before implementing unfamiliar areas or picking up a long-running task.
+
+**When spawning Explore or engineer sub-agents, include this in the prompt if they need context:**
+
+> This project has basic-memory MCP tools available. Use `search` to find prior decisions, architecture notes, or context relevant to your task before starting. After finishing, use `write_note` to store a summary of what you found or decided (title: `task-<id>-result` or `exploration-<topic>`).
+
+Without this instruction, sub-agents will not know basic-memory exists and will miss prior context.
 <!-- OB-MEMORY-END -->
-
-<!-- CODEGRAPH_START -->
-## CodeGraph
-
-In repositories indexed by CodeGraph (a `.codegraph/` directory exists at the repo root), reach for it BEFORE grep/find or reading files when you need to understand or locate code:
-
-- **MCP tool** (when available): `codegraph_explore` answers most code questions in one call — the relevant symbols' verbatim source plus the call paths between them, including dynamic-dispatch hops grep can't follow. Name a file or symbol in the query to read its current line-numbered source. If it's listed but deferred, load it by name via tool search.
-- **Shell** (always works): `codegraph explore "<symbol names or question>"` prints the same output.
-
-If there is no `.codegraph/` directory, skip CodeGraph entirely — indexing is the user's decision.
-<!-- CODEGRAPH_END -->
 
 
