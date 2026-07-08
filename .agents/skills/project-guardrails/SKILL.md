@@ -33,11 +33,12 @@ license: MIT
 
 ```text
 src/
-├── app/                           ← App-wide setup (FSD app layer)
-│   ├── App.tsx                    ← Root component
-│   ├── index.tsx                  ← launchBoard: Ink render(<App/>)
-│   ├── router/index.ts            ← useRouter hook
-│   └── types.ts                   ← View, Command, CommandContext types
+ ├── app/                           ← App-wide setup (FSD app layer)
+ │   ├── App.tsx                    ← Root component
+ │   ├── index.tsx                  ← launchBoard: Ink render(<App/>)
+ │   ├── providers/index.ts         ← Re-exports InversifyProvider
+ │   ├── router/index.ts            ← useRouter hook
+ │   └── types.ts                   ← View, Command, CommandContext types
 ├── widgets/                       ← Composed UI blocks (FSD widgets layer)
 │   ├── header/                    ← Header.tsx, TabBar.tsx
 │   ├── left-panel/                ← LeftPanel.tsx, Navigator.tsx, TaskBrowser.tsx, ProjectsPage.tsx, ProjectsPageParts.tsx
@@ -252,4 +253,4 @@ src/
 - **Max concurrent agents**: 4 (from `opencode-onboard.json`).
 - **Models**: `plan: opencode-go/glm-5.2`, `build: opencode-go/glm-5.1`, `fast: opencode/big-pickle`.
 
-<!-- Last updated: 2026-07-08T00:00:00Z -->
+<!-- Last updated: 2026-07-08T08:00:00Z -->

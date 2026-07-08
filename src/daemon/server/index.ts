@@ -115,7 +115,7 @@ export class IpcServer {
     const handled = await dispatch(request, socket, {
       manager: this.manager,
       taskManager: this.taskManager,
-      respondOk: (s, ok, id, data) => this.respondOk(s, ok, id, data),
+      respondOk: (s: import("node:net").Socket, ok: boolean, id: string, data?: unknown) => this.respondOk(s, ok, id, data),
     });
 
     if (!handled) {

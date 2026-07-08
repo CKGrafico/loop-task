@@ -2,6 +2,8 @@ import type net from "node:net";
 import type { IpcRequest } from "../../../types.js";
 import type { TaskManager } from "../../managers/task-manager.js";
 import type { HandlerContext } from "./loop-handlers.js";
+
+export type { HandlerContext } from "./loop-handlers.js";
 export type { TaskHandlerContext } from "./task-handlers.js";
 
 import {
