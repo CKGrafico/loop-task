@@ -1,5 +1,6 @@
 import type { TaskDefinition } from "../../types.js";
 import { TaskManager } from "../managers/task-manager.js";
+import { validateContext } from "../../core/context/validate-context.js";
 import { sendOk, sendError, sendNotFound, readBody } from "./helpers.js";
 import type { RouteHandler } from "./helpers.js";
 
@@ -28,6 +29,14 @@ export function registerTaskRoutes(taskManager: TaskManager, r: (method: string,
         sendError(res, 400, "Task command is required");
         return;
       }
+      if (body.context !== undefined) {
+        const result = validateContext(body.context);
+        if (!result.valid) {
+          sendError(res, 400, result.error);
+          return;
+        }
+        body.context = result.context;
+      }
       const task = taskManager.create(body);
       sendOk(res, task, 201);
     } catch (err) {
@@ -38,6 +47,14 @@ export function registerTaskRoutes(taskManager: TaskManager, r: (method: string,
   r("PATCH", "/api/tasks/:id", async (req, res, params) => {
     try {
       const body = await readBody(req) as Omit<TaskDefinition, "id" | "createdAt">;
+      if (body.context !== undefined) {
+        const result = validateContext(body.context);
+        if (!result.valid) {
+          sendError(res, 400, result.error);
+          return;
+        }
+        body.context = result.context;
+      }
       const updated = taskManager.update(params.id, body);
       if (!updated) {
         sendNotFound(res, params.id);

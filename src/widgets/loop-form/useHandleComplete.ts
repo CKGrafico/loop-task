@@ -5,6 +5,7 @@ import type { LoopService } from "../../shared/services/types.js";
 import { t } from "../../shared/i18n/index.js";
 import { parseDuration } from "../../duration.js";
 import { parseCommandLine, joinCommandLines } from "../../loop-config.js";
+import { validateContext } from "../../core/context/validate-context.js";
 
 interface UseHandleCompleteParams {
   selectedTaskId: string | null;
@@ -41,7 +42,8 @@ export function useHandleComplete(params: UseHandleCompleteParams): (values: Rec
         return;
       }
 
-      const intervalHuman = intervalInput.trim();
+      const isManual = interval === 0;
+      const intervalHuman = isManual ? "manual" : intervalInput.trim();
       const isExistingTask = !!values.taskMode?.includes("Existing");
 
       if (isExistingTask && !selectedTaskId && !values.taskId?.trim()) return;
@@ -69,6 +71,20 @@ export function useHandleComplete(params: UseHandleCompleteParams): (values: Rec
       const project = projects.find((p) => p.name === projectName);
       const projectId = project?.id ?? currentProjectId;
 
+      let context: Record<string, unknown> | undefined;
+      const contextStr = (values.context ?? "").trim();
+      if (contextStr) {
+        try {
+          const parsed = JSON.parse(contextStr);
+          const result = validateContext(parsed);
+          if (result.valid) {
+            context = result.context;
+          }
+        } catch {
+          // invalid context, skip
+        }
+      }
+
       const options: LoopOptions = {
         interval,
         taskId: isExistingTask
@@ -78,7 +94,7 @@ export function useHandleComplete(params: UseHandleCompleteParams): (values: Rec
         commandArgs: args,
         commandRaw: isExistingTask ? undefined : cmdValue,
         cwd: (values.cwd ?? "").trim() || process.cwd(),
-        immediate: runNowValue,
+        immediate: isManual ? false : runNowValue,
         maxRuns: (values.maxRuns ?? "").trim()
           ? parseInt(values.maxRuns, 10)
           : null,
@@ -86,6 +102,7 @@ export function useHandleComplete(params: UseHandleCompleteParams): (values: Rec
         description: (values.description ?? "").trim(),
         projectId,
         offset: null,
+        context,
       };
 
       const desc = (values.description ?? "").trim() || [cmdOnly, ...args].join(" ").trim();

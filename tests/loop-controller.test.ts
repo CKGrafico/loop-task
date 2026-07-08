@@ -343,14 +343,66 @@ describe("LoopController", () => {
 
   it("triggerNow from idle/stopped state starts a one-shot run", async () => {
     const controller = new LoopController("trigidle", makeOptions({ immediate: false, interval: 10000, maxRuns: 2 }), logPath, noopTaskResolver);
-    // Start without immediate, then stop it to get to idle
     controller.start();
+    await vi.advanceTimersByTimeAsync(100);
     controller.stopLoop();
-    // Now triggerNow should start it
+    await vi.advanceTimersByTimeAsync(10);
     const result = controller.triggerNow();
     expect(result).toBe(true);
     await vi.runAllTimersAsync();
     expect(controller.getMeta().runCount).toBeGreaterThanOrEqual(1);
     await controller.stop();
+  });
+
+  describe("manual-only loops (interval === 0)", () => {
+    it("start() sets status to idle without scheduling", () => {
+      const controller = new LoopController("manual01", makeOptions({ interval: 0, immediate: false }), logPath, noopTaskResolver);
+      controller.start();
+      expect(controller.status).toBe("idle");
+      expect(controller.getMeta().nextRunAt).toBeNull();
+    });
+
+    it("triggerNow executes once and returns to idle", async () => {
+      const controller = new LoopController("manual02", makeOptions({ interval: 0, immediate: false, maxRuns: 5 }), logPath, noopTaskResolver);
+      controller.start();
+      expect(controller.status).toBe("idle");
+
+      controller.triggerNow();
+      await vi.runAllTimersAsync();
+      expect(controller.getMeta().runCount).toBe(1);
+      expect(controller.status).toBe("idle");
+      await controller.stop();
+    });
+
+    it("triggerNow works multiple times on a manual loop", async () => {
+      const controller = new LoopController("manual03", makeOptions({ interval: 0, immediate: false, maxRuns: 5 }), logPath, noopTaskResolver);
+      controller.start();
+      expect(controller.status).toBe("idle");
+
+      controller.triggerNow();
+      await vi.runAllTimersAsync();
+      expect(controller.getMeta().runCount).toBe(1);
+      expect(controller.status).toBe("idle");
+
+      controller.triggerNow();
+      await vi.runAllTimersAsync();
+      expect(controller.getMeta().runCount).toBe(2);
+      expect(controller.status).toBe("idle");
+
+      await controller.stop();
+    });
+
+    it("playLoop returns false for manual loops", () => {
+      const controller = new LoopController("manual04", makeOptions({ interval: 0 }), logPath, noopTaskResolver);
+      controller.start();
+      expect(controller.playLoop()).toBe(false);
+    });
+
+    it("immediate flag is ignored for manual loops", () => {
+      const controller = new LoopController("manual05", makeOptions({ interval: 0, immediate: true }), logPath, noopTaskResolver);
+      controller.start();
+      expect(controller.status).toBe("idle");
+      expect(controller.getMeta().nextRunAt).toBeNull();
+    });
   });
 });

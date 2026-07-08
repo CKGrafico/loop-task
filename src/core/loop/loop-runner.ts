@@ -138,6 +138,14 @@ export async function runLoop(ctrl: RunAccess): Promise<void> {
           if (!completed) break;
         }
       } else {
+        if (ctrl.options.interval === 0) {
+          ctrl._paused = true;
+          ctrl._status = "idle";
+          ctrl.remainingDelayMs = null;
+          ctrl.nextRunAt = null;
+          ctrl.emit("stopped");
+          return;
+        }
         const nextSlotMs = runStartedAtMs + ctrl.options.interval;
         const overrunMs = Date.now() - nextSlotMs;
         if (overrunMs >= 0) {

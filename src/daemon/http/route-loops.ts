@@ -3,6 +3,7 @@ import { LoopManager } from "../managers/loop-manager.js";
 import { LOG_TAIL_DEFAULT } from "../../shared/config/constants.js";
 import { tail } from "../../shared/tail.js";
 import { buildLoopOptions } from "../../loop-config.js";
+import { validateContext } from "../../core/context/validate-context.js";
 import { sendOk, sendError, sendNotFound, parseQuery, readBody } from "./helpers.js";
 import type { RouteHandler, RouteEntry } from "./helpers.js";
 
@@ -23,6 +24,15 @@ export function registerLoopRoutes(manager: LoopManager, routes: RouteEntry[], r
   r("POST", "/api/loops", async (req, res) => {
     try {
       const body = await readBody(req) as Record<string, unknown>;
+      let context: Record<string, unknown> | undefined;
+      if (body.context !== undefined) {
+        const result = validateContext(body.context);
+        if (!result.valid) {
+          sendError(res, 400, result.error);
+          return;
+        }
+        context = result.context;
+      }
       const intervalHuman = (body.intervalHuman as string) ?? "5m";
       const { options } = buildLoopOptions(intervalHuman, {
         command: body.command as string | undefined,
@@ -35,6 +45,7 @@ export function registerLoopRoutes(manager: LoopManager, routes: RouteEntry[], r
         description: body.description as string | undefined,
         projectId: body.projectId as string | undefined,
         offset: body.offset as number | null | undefined,
+        context,
       });
       const id = manager.start(options, intervalHuman);
       sendOk(res, { id }, 201);
@@ -46,6 +57,15 @@ export function registerLoopRoutes(manager: LoopManager, routes: RouteEntry[], r
   r("PATCH", "/api/loops/:id", async (req, res, params) => {
     try {
       const body = await readBody(req) as Record<string, unknown>;
+      let context: Record<string, unknown> | undefined;
+      if (body.context !== undefined) {
+        const result = validateContext(body.context);
+        if (!result.valid) {
+          sendError(res, 400, result.error);
+          return;
+        }
+        context = result.context;
+      }
       const intervalHuman = (body.intervalHuman as string) ?? "5m";
       const { options } = buildLoopOptions(intervalHuman, {
         command: body.command as string | undefined,
@@ -58,6 +78,7 @@ export function registerLoopRoutes(manager: LoopManager, routes: RouteEntry[], r
         description: body.description as string | undefined,
         projectId: body.projectId as string | undefined,
         offset: body.offset as number | null | undefined,
+        context,
       });
       const ok = await manager.update(params.id, options, intervalHuman);
       if (!ok) {

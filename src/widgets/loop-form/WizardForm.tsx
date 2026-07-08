@@ -17,6 +17,8 @@ export interface WizardStepConfig {
   defaultValue?: string;
   skip?: (values: Record<string, string>) => boolean;
   onActivate?: () => void;
+  validate?: (value: string) => boolean;
+  validationError?: string;
   renderCustom?: (props: {
     value: string;
     isActive: boolean;
@@ -95,6 +97,9 @@ export function WizardForm(props: WizardFormProps): React.ReactNode {
       if (s.skip && s.skip(resolvedValues)) continue;
       const err = validateField(s.key as CreateField, resolvedValues as Record<CreateField, string>);
       if (err) errors[s.key] = err;
+      if (s.validate && !s.validate(valueFor(s))) {
+        errors[s.key] = s.validationError ?? t("wizard.validationError");
+      }
     }
 
     if (Object.keys(errors).length > 0) {
@@ -141,6 +146,13 @@ export function WizardForm(props: WizardFormProps): React.ReactNode {
         if (err) {
           setError(step.key, err);
           return;
+        }
+        if (step.validate) {
+          const value = valueFor(step);
+          if (!step.validate(value)) {
+            setError(step.key, step.validationError ?? t("wizard.validationError"));
+            return;
+          }
         }
         clearError(step.key);
       }
