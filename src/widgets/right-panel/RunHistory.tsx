@@ -16,6 +16,54 @@ function runIconColor(run: RunRecord): string {
   return run.exitCode === 0 ? theme.semantic.success : theme.semantic.danger;
 }
 
+const CHAIN_LABEL_MAX = 28;
+
+function truncateChainLabel(label: string): string {
+  if (label.length <= CHAIN_LABEL_MAX) return label;
+  const ellipsis = "...";
+  const keep = CHAIN_LABEL_MAX - ellipsis.length;
+  return label.slice(0, keep) + ellipsis;
+}
+
+export function groupRunsByCycle(runs: RunRecord[]): RunRecord[] {
+  const byRun = new Map<number, RunRecord[]>();
+  for (const r of runs) {
+    const group = byRun.get(r.runNumber);
+    if (group) group.push(r);
+    else byRun.set(r.runNumber, [r]);
+  }
+  const result: RunRecord[] = [];
+  for (const group of byRun.values()) {
+    if (group.length === 1) {
+      result.push(group[0]!);
+      continue;
+    }
+    const first = group[0]!;
+    const last = group[group.length - 1]!;
+    const anyRunning = group.some((r) => r.status === "running");
+    const totalDuration = group.reduce((sum, r) => sum + r.duration, 0);
+    const totalLogSize = group.reduce((sum, r) => sum + r.logSize, 0);
+    const chainNames = group
+      .map((r) => r.chainName)
+      .filter((n): n is string => Boolean(n));
+    const chainLabel = chainNames.length > 0
+      ? truncateChainLabel(`\u2192 ${chainNames.join(" \u2192 ")}`)
+      : undefined;
+    result.push({
+      runNumber: first.runNumber,
+      startedAt: first.startedAt,
+      exitCode: anyRunning ? -1 : last.exitCode,
+      duration: totalDuration,
+      logSize: totalLogSize,
+      status: anyRunning ? "running" : "completed",
+      logOffset: first.logOffset,
+      chainGroupId: first.chainGroupId,
+      chainName: chainLabel,
+    });
+  }
+  return result;
+}
+
 const SPARK_CHARS = ["\u2581", "\u2582", "\u2583", "\u2584", "\u2585", "\u2586", "\u2587", "\u2588"];
 
 function sparkline(durations: number[]): string {
@@ -85,7 +133,7 @@ export function RunHistory(props: {
 }): React.ReactNode {
   const { loop, selectedRunIndex, onSelectRun, onOpenRun, isFocused, navActive = true } = props;
 
-  const runs = loop?.runHistory ?? [];
+  const runs = groupRunsByCycle(loop?.runHistory ?? []);
   const reversed = [...runs].reverse();
   const n = reversed.length;
 
