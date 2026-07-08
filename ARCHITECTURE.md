@@ -2,7 +2,7 @@
 
 > Generated architecture reference for **loop-task** (repo: `loop-task`).
 > Rerun `/ob-create-architecture` whenever the architecture changes significantly.
-> Last updated: 2026-06-30.
+> Last updated: 2026-07-08.
 
 ## Architecture Overview
 
@@ -32,6 +32,8 @@ lines over a socket), with a state-machine core per loop.
 
 ## 1. Project Structure
 
+The TUI frontend follows **Feature-Sliced Design (FSD)** with one-way dependency flow: `app → widgets → features → entities → shared`. The daemon and core are organized by subdomain (not FSD).
+
 ```text
 loop-task/
 ├── src/
@@ -43,72 +45,75 @@ loop-task/
 │   ├── logger.ts               # Foreground logger (verbose/info/error)
 │   ├── loop-config.ts          # buildLoopOptions, parseCommandLine, parseMaxRuns (validation)
 │   │
-│   ├── core/                   # Runtime-agnostic loop execution
-│   │   ├── loop-controller.ts  # LoopController: per-loop state machine (EventEmitter)
-│   │   ├── command-runner.ts   # executeCommand / executeCommandForeground (execa)
-│   │   ├── context-parser.ts   # parseStdout: JSON/JSONL/plain-text -> chain context entries
-│   │   ├── template.ts         # interpolate: {{key}} Mustache-style template substitution
-│   │   ├── foreground-loop.ts  # runLoop: blocking foreground loop for `run`
-│   │   ├── log-rotator.ts      # Size-based log rotation (1 MB x 3 generations)
-│   │   ├── scheduling.ts       # computePhase / alignToPhase: spread scheduling via hash
-│   │   └── log-parser.ts       # Log line classification (run headers, chain markers, exit codes)
+│   ├── app/                    # FSD: App-wide composition root
+│   │   ├── App.tsx             # Root component: composition wiring + layout rendering
+│   │   ├── index.tsx           # launchBoard: Ink render(<InversifyProvider><App/></InversifyProvider>)
+│   │   ├── types.ts            # View/Mode/TabName/PanelFocus/Command/CommandContext/ConfirmState
+│   │   ├── providers/          # App-level providers
+│   │   └── router/             # useRouter hook (push/pop/replace navigation stack)
 │   │
-│   ├── daemon/                 # Background server process
-│   │   ├── index.ts            # Daemon entry: bind socket -> init manager -> handle signals
-│   │   ├── server.ts           # IpcServer: net server, JSON-lines protocol, request routing
-│   │   ├── http-server.ts      # HttpApiServer: REST + SSE HTTP server (localhost:8845)
-│   │   ├── manager.ts          # LoopManager: owns LoopControllers, persistence, lifecycle
-│   │   ├── spawner.ts          # ensureDaemon: spawn/restart daemon, code-signature check
-│   │   ├── state.ts            # Loop + daemon state persistence, PID/signature, code signature
-│   │   ├── file-watcher.ts     # Hot-reloading JSON configs (fs.watch + debounce + hash)
-│   │   ├── task-manager.ts     # TaskManager: CRUD for task definitions
-│   │   ├── projects.ts         # ProjectManager: CRUD for projects, default project
+│   ├── widgets/                # FSD: Composed UI blocks (UI + logic, no business rules)
+│   │   ├── header/             # Header + TabBar
+│   │   ├── left-panel/         # LeftPanel, Navigator, TaskBrowser, ProjectsPage
+│   │   ├── right-panel/        # RightPanel, Inspector, RunHistory
+│   │   ├── command-input/      # CommandInput, CommandDropdown, HintBar, InputModes
+│   │   ├── commands-browser/   # CommandsBrowserModal
+│   │   ├── log-modal/          # LogModal
+│   │   ├── loop-form/          # WizardForm, CreateForm, TextField, useCreateSteps
+│   │   ├── task-form/          # TaskForm
+│   │   └── project-form/       # ProjectForm
+│   │
+│   ├── features/               # FSD: User interactions (commands, overlays, forms, editors)
+│   │   ├── commands/           # useCommandHandlers, useGlobalShortcuts, useContextualActions, commands registry
+│   │   ├── overlays/           # useOverlayStack, OverlayStack, ContextHelpModal, ExportModal, WelcomeScreen, etc.
+│   │   ├── forms/              # FormRouter (view-based conditional rendering)
+│   │   ├── code-editor/        # CodeEditorModal, CodeEditorPreview, useEditorKeyboard
+│   │   ├── chain-editor/       # ChainEditor
+│   │   └── state/              # useAppState (centralized state hook)
+│   │
+│   ├── entities/               # FSD: Business domain models (types + filters + sort)
+│   │   ├── loops/              # LoopMeta types, loop filters, loop sort
+│   │   ├── tasks/              # TaskDefinition types, task filters
+│   │   └── projects/           # Project types, project filters
+│   │
+│   ├── shared/                 # FSD: App-agnostic infrastructure (DI, services, UI primitives, hooks, utils)
+│   │   ├── container/          # Inversify DI container (index.ts)
+│   │   ├── providers/          # InversifyProvider.tsx (React context for DI)
+│   │   ├── services/           # Service interfaces + IPC implementations (loop-service, task-service, etc.)
+│   │   ├── hooks/              # useInject, useLoopPolling, useLogStream, useBreakpoint, useLoopFormValidation, useUndoRedo
+│   │   ├── ui/                 # UI primitives: Modal, Toast, DebugPanel, FocusableInput/List/Button, format, state, theme
+│   │   │   └── hooks/          # useHoverState
+│   │   ├── utils/              # paste, syntax, validation
+│   │   ├── config/             # constants.ts, paths.ts (all magic numbers and filesystem paths)
+│   │   ├── i18n/               # en.json (490+ keys) + t(key, params?) interpolation
+│   │   ├── fs-utils.ts         # writeFileAtomic (temp-then-rename), removeIfExists
+│   │   ├── sleep.ts            # sleep(): abortable chunked sleep (SLEEP_CHUNK_MS)
+│   │   ├── tail.ts             # tail(): last N lines of a string
+│   │   └── clipboard.ts        # copyToClipboard / readFromClipboard (cross-platform)
+│   │
+│   ├── core/                   # Runtime-agnostic loop execution (subdomain-organized)
+│   │   ├── loop/               # loop-controller.ts, run-executor.ts, chain-executor.ts, loop-runner.ts, delay-utils.ts, types.ts
+│   │   ├── command/            # command-runner.ts, resolve-cwd.ts
+│   │   ├── context/            # context-parser.ts, template.ts
+│   │   ├── logging/            # log-rotator.ts, log-parser.ts
+│   │   ├── scheduling/         # computePhase / alignToPhase (spread scheduling via hash)
+│   │   └── foreground/         # runLoop: blocking foreground loop for `run`
+│   │
+│   ├── daemon/                 # Background server process (subdomain-organized)
+│   │   ├── index.ts            # Daemon entry: bind socket -> init managers -> handle signals
+│   │   ├── server/             # IpcServer + extracted handler modules (loop-handlers, task-handlers, etc.)
+│   │   ├── http/               # HttpApiServer + route handlers (route-loops, route-tasks, route-projects, SSE, OpenAPI)
+│   │   ├── ipc/                # Shared IPC primitives (send.ts, logs-stream.ts)
+│   │   ├── managers/           # LoopManager, TaskManager, ProjectManager, loop-entry, loop-options, loop-serialization
+│   │   ├── state/              # State persistence, PID/signature, code signature
+│   │   ├── spawner/            # ensureDaemon: spawn/restart daemon, code-signature check
+│   │   ├── watcher/            # Hot-reloading JSON configs (fs.watch + debounce + hash)
 │   │   └── daemon-log.ts       # Daemon-side diagnostic log
 │   │
 │   ├── client/                 # CLI-side IPC consumer
 │   │   ├── ipc.ts              # sendRequest / streamRequest (connect, timeout, framing)
 │   │   └── commands.ts         # CLI output formatters (start/list/status/pause/.../logs/attach)
 │   │
-│   ├── tui/                    # Interactive TUI (Ink 7 + React 19)
-│   │   ├── index.tsx           # launchBoard: Ink render(<App/>)
-│   │   ├── App.tsx             # Top-level board container + state orchestration
-│   │   ├── daemon.ts           # TUI -> daemon bridge (typed IPC calls)
-│   │   ├── state.ts            # Re-exports from shared/ui/state (filters/sort logic)
-│   │   ├── format.ts           # Re-exports from shared/ui/format (display formatters)
-│   │   ├── types.ts            # View/Mode/TabName/PanelFocus/Command/CommandContext/ConfirmState
-│   │   ├── router.ts           # useRouter hook (push/pop/replace navigation stack)
-│   │   ├── commands.ts         # buildCommands/buildTabCommands (command registry, context-aware)
-│   │   ├── theme.ts            # Dark/light theme tokens + statusColor() + tabAccentColor()
-│   │   ├── components/         # CommandInput, LeftPanel, RightPanel, TabBar, Header,
-│   │   │                       #   Navigator, Inspector, RunHistory, WizardForm, PatchEditForm,
-│   │   │                       #   CommandsBrowserModal, DebugPanel, LogModal, Toast,
-│   │   │                       #   CreateForm, TaskForm, TaskBrowser, ProjectsPage, Modal,
-│   │   │                       #   FocusableInput, FocusableButton, FocusableList, etc.
-│   │   └── hooks/              # useLoopPolling, useLogStream, useBreakpoint, useHoverState
-│   │
-│   ├── ipc/                    # Shared IPC primitives (server-side)
-│   │   ├── send.ts             # send(): write a JSON line to a socket
-│   │   └── handlers/
-│   │       └── logs-stream.ts  # streamLogFollow: tail + fs.watch live log streaming
-│   │
-│   ├── shared/                 # Cross-cutting utilities
-│   │   ├── fs-utils.ts         # writeFileAtomic (temp-then-rename), removeIfExists
-│   │   ├── sleep.ts            # sleep(): abortable chunked sleep (SLEEP_CHUNK_MS)
-│   │   ├── tail.ts             # tail(): last N lines of a string
-│   │   ├── clipboard.ts        # copyToClipboard / readFromClipboard (cross-platform)
-│   │   └── ui/                 # Shared UI utilities (format, state, hooks)
-│   │       ├── format.ts           # Display formatters (describeLoop, statusLabel, commandLine, etc.)
-│   │       ├── state.ts            # Filters/sort logic (applyLoopFilters, cycleSortMode, etc.)
-│   │       └── hooks/              # useHoverState (shared UI hooks)
-│   │
-│   ├── config/
-│   │   ├── constants.ts        # All magic numbers (POLL_MS, SLEEP_CHUNK_MS, MAX_LOG_BYTES, etc.)
-│   │   └── paths.ts            # Filesystem paths under ~/.loop-cli/ (data dir, socket, PID, etc.)
-│   │
-│   ├── i18n/
-│   │   ├── en.json             # All user-facing strings (490+ keys)
-│   │   └── index.ts            # t(key, params?) function with Mustache interpolation
-│
 ├── tests/                      # Vitest test files (*.test.ts)
 ├── openspec/                   # OpenSpec change management (proposals, specs, tasks)
 ├── .github/workflows/ci.yml    # GitHub Actions CI (typecheck -> lint -> test -> build, 3-OS matrix)
@@ -123,6 +128,22 @@ loop-task/
 └── ARCHITECTURE.md             # This file
 ```
 
+### FSD Dependency Rule
+
+One-way dependency flow. A layer may only import from layers below it:
+
+```
+app → widgets → features → entities → shared
+```
+
+- `app/` may import from any layer
+- `widgets/` may import from `features/`, `entities/`, `shared/`
+- `features/` may import from `entities/`, `shared/`
+- `entities/` may import from `shared/` only
+- `shared/` has no internal imports from other FSD layers
+
+`core/` and `daemon/` are NOT part of FSD — they are backend subdomains with their own internal organization.
+
 ---
 
 ## 2. High-Level System Diagram
@@ -134,12 +155,11 @@ graph TB
         CMD[client/commands.ts<br/>Output formatters]
     end
 
-    subgraph "TUI Board (Ink 7 + React 19)"
-        APP[App.tsx<br/>State + command dispatch]
-        INPUT[CommandInput<br/>Always-focused input]
-        LEFT[LeftPanel<br/>Loop/Task/Project list]
-        RIGHT[RightPanel<br/>Inspector + RunHistory]
-        TUIDAEMON[tui/daemon.ts<br/>Typed IPC bridge]
+    subgraph "TUI Board (Ink 7 + React 19, FSD)"
+        APP[App.tsx<br/>Composition root]
+        FEAT[features/<br/>Commands, Overlays, Forms]
+        WIDG[widgets/<br/>Header, Panels, Forms, Input]
+        DI[shared/container<br/>Inversify DI]
     end
 
     subgraph "Daemon (long-lived)"
@@ -166,11 +186,10 @@ graph TB
 
     CLI -->|IPC request| SERVER
     CMD -->|IPC request| SERVER
-    APP --> TUIDAEMON
-    TUIDAEMON -->|IPC request| SERVER
-    INPUT -->|onCommand| APP
-    LEFT --> APP
-    RIGHT --> APP
+    APP --> FEAT
+    FEAT --> WIDG
+    WIDG --> DI
+    DI -->|IPC request| SERVER
 
     SERVER --> MANAGER
     SERVER --> TASKMGR
@@ -199,28 +218,40 @@ graph TB
 
 ## 3. Core Components
 
-### 3.1 Frontend / User Interface (TUI)
+### 3.1 Frontend / User Interface (TUI — Feature-Sliced Design)
 
-**Name:** Ink TUI Board (`src/tui/`)
+**Name:** Ink TUI Board (`src/app/`, `src/widgets/`, `src/features/`, `src/entities/`, `src/shared/`)
 
-**Responsibility:** Interactive terminal UI for creating, inspecting, and managing loops, tasks, and projects. Command-first input model with fuzzy autocomplete.
+**Responsibility:** Interactive terminal UI for creating, inspecting, and managing loops, tasks, and projects. Command-first input model with fuzzy autocomplete. Organized in Feature-Sliced Design (FSD) layers with one-way dependency flow.
 
-**Key files:**
-- `src/tui/App.tsx` - Root component: state orchestration, command dictionary dispatch, panel focus, Ctrl+Enter handling
-- `src/tui/components/CommandInput.tsx` - Always-focused bottom input; three modes: command (autocomplete), confirm (yes/cancel), search (filter)
-- `src/tui/components/LeftPanel.tsx` - 60% width; renders active tab's list (Navigator/TaskNavigator/ProjectsPage)
-- `src/tui/components/RightPanel.tsx` - 40% width; renders Inspector + RunHistory
-- `src/tui/components/TabBar.tsx` - Three-tab header (Loops/Tasks/Projects) with tab-specific accent colors
-- `src/tui/components/WizardForm.tsx` - Multi-step create form (one field per screen, breadcrumb, Ctrl+S skip)
-- `src/tui/components/PatchEditForm.tsx` - Inline patch-table edit (read-only values, `change <field>` targets a row)
-- `src/tui/components/CommandsBrowserModal.tsx` - Ctrl+P command browser with search and grouped list
-- `src/tui/commands.ts` - `buildCommands(context)` + `buildTabCommands(context)` - context-aware command registry
-- `src/tui/router.ts` - `useRouter("board")` stack-based navigation (push/pop/replace)
-- `src/tui/theme.ts` - 4 primary colors (brand/loop/task/project) + 4 semantic + grays
+**FSD Layers:**
 
-**Technologies:** Ink 7.1.0, React 19, ink-combobox 0.2.0, ink-scroll-list 0.4.1, ink-spinner 5.0.0, ink-text-input 6.0.0, ink-select-input 6.2.0
+| Layer | Path | Role |
+|---|---|---|
+| App | `src/app/` | Composition root — App.tsx wires hooks + renders layout; providers and router |
+| Widgets | `src/widgets/` | Composed UI blocks — header, panels, forms, command-input, log-modal |
+| Features | `src/features/` | User interactions — commands, overlays, forms routing, code-editor |
+| Entities | `src/entities/` | Business domain — loops/tasks/projects types, filters, sort functions |
+| Shared | `src/shared/` | App-agnostic infrastructure — DI container, services, UI primitives, hooks, utils, config, i18n |
 
-**Inputs:** Keystrokes (keyboard only, no mouse). **Outputs:** Terminal rendering via Ink, IPC requests via `tui/daemon.ts`.
+**Key Files:**
+- `src/app/App.tsx` - Composition root: state wiring via `useAppState`, hook composition, layout rendering
+- `src/features/state/useAppState.ts` - Centralized state hook (all useState declarations extracted from App.tsx)
+- `src/features/commands/useCommandHandlers.ts` - Command handler implementations (extracted from App.tsx)
+- `src/features/commands/useGlobalShortcuts.ts` - Keyboard input + Ctrl+chord state machine (extracted from App.tsx)
+- `src/features/overlays/useOverlayStack.ts` - Overlay dismiss priority + input ownership logic
+- `src/features/overlays/OverlayStack.tsx` - Modal rendering (LogModal, CommandsBrowser, ExportModal, etc.)
+- `src/features/forms/FormRouter.tsx` - View-based conditional form rendering
+- `src/widgets/command-input/CommandInput.tsx` - Always-focused bottom input; three modes: command, confirm, search
+- `src/shared/container/index.ts` - Inversify DI container binding service interfaces to IPC implementations
+- `src/shared/providers/InversifyProvider.tsx` - React context providing DI container to components
+- `src/shared/hooks/useInject.ts` - `useInject<T>(symbol)` hook for type-safe service injection
+
+**Dependency Injection:** Components use `useInject<T>(TYPES.XxxService)` instead of importing daemon functions directly. Service interfaces are defined in `src/shared/services/types.ts`, with IPC implementations in `src/shared/services/`. This decouples UI from transport and enables mock services in tests.
+
+**Technologies:** Ink 7.1.0, React 19, InversifyJS (DI), ink-combobox 0.2.0, ink-scroll-list 0.4.1, ink-spinner 5.0.0, ink-text-input 6.0.0, ink-select-input 6.2.0
+
+**Inputs:** Keystrokes (keyboard only, no mouse). **Outputs:** Terminal rendering via Ink, IPC requests via injected services.
 
 ### 3.2 Backend / Daemon
 
@@ -228,38 +259,43 @@ graph TB
 
 **Responsibility:** Long-lived process that owns all LoopControllers, manages persistence, handles IPC requests, and streams logs to connected clients.
 
-**Key files:**
+**Key modules:**
 - `src/daemon/index.ts` - Entry: bind socket -> init managers -> handle signals -> start file watcher
-- `src/daemon/server.ts` - `IpcServer`: TCP server over Unix socket/named pipe, JSON-lines protocol, request routing, subscriber set for push events
-- `src/daemon/manager.ts` - `LoopManager`: owns `_loops: Map<string, StoredLoop>`, reconciles from disk, handles start/pause/resume/stop/trigger/delete
-- `src/daemon/spawner.ts` - `ensureDaemon()`: spawn daemon as child process, code-signature verification, alive check
-- `src/daemon/state.ts` - Persistence: `loadAllLoops()`, `saveLoop()`, `writeFileAtomic()`, PID/signature files, migration from old directory format
-- `src/daemon/file-watcher.ts` - `FileWatcher`: fs.watch + debounce + SHA-1 hash to detect external changes vs self-writes; mtime polling fallback for Windows
-- `src/daemon/task-manager.ts` - `TaskManager`: in-memory Map, CRUD operations, persists to tasks.json
-- `src/daemon/projects.ts` - `ProjectManager`: CRUD for projects, default project is permanent, 6 available colors
+- `src/daemon/server/` - `IpcServer` + extracted handler modules (loop-handlers, task-handlers, project-handlers, log-handlers)
+- `src/daemon/http/` - `HttpApiServer` + route handlers (route-loops, route-tasks, route-projects) + SSE + OpenAPI spec
+- `src/daemon/managers/` - `LoopManager`, `TaskManager`, `ProjectManager` + support modules (loop-entry, loop-options, loop-serialization)
+- `src/daemon/ipc/` - Shared IPC primitives: send.ts, logs-stream.ts
+- `src/daemon/spawner/` - `ensureDaemon()`: spawn daemon as child process, code-signature verification
+- `src/daemon/state/` - Persistence: load/save loops, PID/signature files, migration from old directory format
+- `src/daemon/watcher/` - `FileWatcher`: fs.watch + debounce + SHA-1 hash; mtime polling fallback for Windows
 
 **Technologies:** Node.js net module (TCP server), fs (file I/O), execa (child process spawning via LoopController)
 
 **Inputs:** IPC requests over socket. **Outputs:** IPC responses, push events to subscribers, filesystem writes.
 
-### 3.3 Shared Libraries / Common Code
+### 3.3 Core runtime + Shared infrastructure
 
 **Name:** Core runtime (`src/core/`) + Shared utilities (`src/shared/`)
 
 **Key files:**
-- `src/core/loop-controller.ts` - `LoopController extends EventEmitter`: per-loop state machine. States: running/waiting/paused/stopped. Chunked abortable sleep. Chain execution with context passing.
-- `src/core/command-runner.ts` - `executeCommand()`: execa subprocess, stdout capture for chain context, log streaming
-- `src/core/context-parser.ts` - `parseStdout()`: JSON/JSONL/plain-text -> key-value context for chain interpolation
-- `src/core/template.ts` - `interpolate()`: `{{key}}` Mustache substitution
-- `src/core/log-rotator.ts` - `rotateLogIfNeeded()`: size-based rotation (1 MB x 3 generations)
-- `src/core/scheduling.ts` - `computePhase()`: deterministic spread via `hash(loopId) % interval`
-- `src/core/foreground-loop.ts` - `runLoop()`: blocking foreground loop for `loop-task run`
+- `src/core/loop/loop-controller.ts` - `LoopController extends EventEmitter`: per-loop state machine. States: running/waiting/paused/stopped. Chain execution with context passing.
+- `src/core/loop/run-executor.ts` - `executeRun()`: single run execution within a loop
+- `src/core/loop/chain-executor.ts` - Chain execution: resolve onSuccess/onFailure task, interpolate context
+- `src/core/loop/loop-runner.ts` - `runLoop()`: blocking foreground loop for `loop-task run`
+- `src/core/loop/delay-utils.ts` - Sleep and delay utilities for loop timing
+- `src/core/command/command-runner.ts` - `executeCommand()`: execa subprocess, stdout capture, log streaming
+- `src/core/context/context-parser.ts` - `parseStdout()`: JSON/JSONL/plain-text -> key-value context for chain interpolation
+- `src/core/context/template.ts` - `interpolate()`: `{{key}}` Mustache substitution
+- `src/core/logging/log-rotator.ts` - `rotateLogIfNeeded()`: size-based rotation (1 MB x 3 generations)
+- `src/core/logging/log-parser.ts` - Log line classification (run headers, chain markers, exit codes)
+- `src/core/scheduling/` - `computePhase()`: deterministic spread via `hash(loopId) % interval`
+- `src/core/foreground/` - `runLoop()`: blocking foreground loop for `loop-task run`
 - `src/shared/fs-utils.ts` - `writeFileAtomic()`: temp-then-rename for crash-safe writes
 - `src/shared/sleep.ts` - `sleep()`: abortable sleep with `SLEEP_CHUNK_MS` (200ms) for responsive pause/resume
 - `src/shared/clipboard.ts` - Cross-platform clipboard (clip/pbcopy/xclip)
 - `src/shared/tail.ts` - `tail()`: last N lines of a string
 
-**Constraint:** `src/core/` must NOT import from `src/daemon/` or `src/tui/` - it is runtime-agnostic.
+**Constraint:** `src/core/` must NOT import from `src/daemon/`, `src/app/`, or any FSD UI layer — it is runtime-agnostic.
 
 ### 3.4 CLI / Scripts / Automation
 
@@ -284,7 +320,7 @@ graph TB
 sequenceDiagram
     participant User
     participant TUI as App.tsx
-    participant CI as tui/daemon.ts
+    participant DI as Inversify container
     participant Srv as IpcServer
     participant Mgr as LoopManager
     participant Ctrl as LoopController
@@ -295,8 +331,8 @@ sequenceDiagram
     TUI->>TUI: Opens WizardForm
     User->>TUI: Fills steps (interval, command, etc.)
     User->>TUI: Ctrl+S to save
-    TUI->>CI: createLoop(options)
-    CI->>Srv: { type: "start", payload: options }
+    TUI->>DI: loopService.create(options)
+    DI->>Srv: { type: "start", payload: options }
     Srv->>Mgr: manager.start(options)
     Mgr->>Ctrl: new LoopController(id, options, logPath)
     Mgr->>FS: saveLoop(meta) to loops.json
@@ -522,7 +558,9 @@ All shell commands must be prefixed with `rtk` in agent contexts (see AGENTS.md)
 
 | Decision | Rationale | Evidence |
 |---|---|---|
-| Ink 7 over OpenTUI | OpenTUI's `useKeyboard` has stale closure bugs; Ink's `useInput` re-registers every render | `src/tui/` replaces `src/board/`; package.json drops `@opentui/*`; board deleted |
+| Ink 7 over OpenTUI | OpenTUI's `useKeyboard` has stale closure bugs; Ink's `useInput` re-registers every render | `src/app/` replaces `src/board/`; package.json drops `@opentui/*`; board deleted |
+| Feature-Sliced Design | FSD layers with one-way dependency flow replace flat `src/tui/` structure; clear separation of concerns | `src/app/`, `src/widgets/`, `src/features/`, `src/entities/`, `src/shared/` replacing `src/tui/` |
+| Inversify DI container | Components depend on service interfaces, not IPC implementations; enables test mocking | `src/shared/container/`, `src/shared/services/types.ts`, `useInject<T>()` hook |
 | Command-first input | Replaces 13+ Tab stops with a single always-focused command palette; all actions discoverable via fuzzy autocomplete | `CommandInput.tsx`, `commands.ts` registry |
 | Dictionary dispatch | `Record<string, () => void>` instead of `switch/case` for command handling | `App.tsx` `commandHandlers` object; project-guardrails rule |
 | Filesystem over database | No database dependency; atomic JSON writes via temp-then-rename; simple backup/inspect | `shared/fs-utils.ts`, `daemon/state.ts` |
@@ -538,7 +576,7 @@ All shell commands must be prefixed with `rtk` in agent contexts (see AGENTS.md)
 
 | Risk/Debt | Impact | Mitigation |
 |---|---|---|
-| `src/board/` stale code | Confusion; 70+ files kept for reference but not compiled/used | **Deleted** in refactor; shared code extracted to `src/shared/ui/` |
+| `src/board/` stale code | Confusion; 70+ files kept for reference but not compiled/used | **Deleted** in FSD refactor; shared code extracted to `src/shared/ui/` |
 | No schema versioning | Future `LoopMeta` shape changes risk breaking persisted JSON | Corrupted files silently skipped; no migration path |
 | Pre-existing test failures | 11 tests fail on `main` before any changes; coverage gate may be unreliable | Confirm failures are pre-existing before touching assertions |
 | `ink-combobox` is young | v0.2.0, 0 stars, single contributor | Headless hooks isolate us from breaking changes; MIT, small package, can fork if needed |
@@ -551,15 +589,15 @@ All shell commands must be prefixed with `rtk` in agent contexts (see AGENTS.md)
 ## 16. Future Considerations
 
 **Documented roadmap:**
-- Merge `feature/v2.0.0` to `main` and publish v2.0.0 to npm
 - Integrate `ContextHelpModal` content into the command system
 - Wire remaining stub commands: `api`, `status`, `export`, `import`
-- Wire `ProjectsPage` into LeftPanel tab content (currently shows placeholder text)
 
 **Recommendations (not yet documented):**
 - ~~Delete `src/board/` directory entirely to eliminate confusion~~ DONE
+- ~~Adopt Feature-Sliced Design layer structure for TUI~~ DONE (gh-38, PR #40)
+- ~~Introduce DI container with inversify-hooks~~ DONE (gh-37, PR #40)
+- ~~Decompose App.tsx god component into FSD feature modules~~ DONE (gh-36, PR #40)
 - Add schema versioning to JSON files for safe migrations
-- Add integration tests for TUI components using `ink-testing-library` (done - `tests/tui-components.test.tsx`)
 - Replace polling with push-event-only updates (reduce `POLL_MS` or eliminate)
 - Consider `error` event handling for push events when subscriber sockets die
 
@@ -576,7 +614,7 @@ All shell commands must be prefixed with `rtk` in agent contexts (see AGENTS.md)
 | Type | CLI tool + TUI + background daemon |
 | Runtime | Node.js >= 20 |
 | Version | 2.0.0 |
-| Date of review | 2026-06-30 |
+| Date of review | 2026-07-08 |
 | Maintainer | Quique Fdez Guerra |
 
 ---
