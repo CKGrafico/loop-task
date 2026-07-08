@@ -83,6 +83,13 @@ export class LoopController extends EventEmitter {
     this.logStream?.end();
     this.abortController = new AbortController();
     this.logStream = fs.createWriteStream(this.logPath, { flags: "a" });
+    if (this.options.interval === 0 && !this._stopAfterRun) {
+      this._status = "idle";
+      this.nextRunAt = null;
+      this._loopActive = false;
+      this.emit("stopped");
+      return;
+    }
     this.loopPromise = this.run().finally(() => { this._loopActive = false; });
     if (this.sessionStartedAt === null) {
       this.sessionStartedAt = new Date().toISOString();
@@ -139,6 +146,7 @@ export class LoopController extends EventEmitter {
       this._maxRunsReached = true;
       return false;
     }
+    if (this.options.interval === 0) return false;
     this.sessionStartedAt = new Date().toISOString();
     this._resetSchedule = true;
     this._paused = false;

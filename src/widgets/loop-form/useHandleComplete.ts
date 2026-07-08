@@ -42,7 +42,8 @@ export function useHandleComplete(params: UseHandleCompleteParams): (values: Rec
         return;
       }
 
-      const intervalHuman = intervalInput.trim();
+      const isManual = interval === 0;
+      const intervalHuman = isManual ? "manual" : intervalInput.trim();
       const isExistingTask = !!values.taskMode?.includes("Existing");
 
       if (isExistingTask && !selectedTaskId && !values.taskId?.trim()) return;
@@ -93,7 +94,7 @@ export function useHandleComplete(params: UseHandleCompleteParams): (values: Rec
         commandArgs: args,
         commandRaw: isExistingTask ? undefined : cmdValue,
         cwd: (values.cwd ?? "").trim() || process.cwd(),
-        immediate: runNowValue,
+        immediate: isManual ? false : runNowValue,
         maxRuns: (values.maxRuns ?? "").trim()
           ? parseInt(values.maxRuns, 10)
           : null,

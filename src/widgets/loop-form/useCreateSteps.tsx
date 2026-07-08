@@ -118,6 +118,10 @@ export function useCreateSteps(params: UseCreateStepsParams): WizardStepConfig[]
         defaultValue: initial.runNow === "true" || initial.runNow === "yes"
           ? t("wizard.runNowNow")
           : t("wizard.runNowWait"),
+        skip: (values) => {
+          const v = (values.interval ?? "").trim().toLowerCase();
+          return v === "manual" || v === "0";
+        },
         onActivate: () => setOpenSelect("runNow"),
         renderCustom: ({ value, isActive, onChange, onAdvance }) => {
           fieldCallbacksRef.current.runNow = { value, onChange, onAdvance };

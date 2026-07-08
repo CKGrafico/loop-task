@@ -174,15 +174,19 @@ export function buildLoopOptions(
     throw new Error(t("errors.descriptionEmpty"));
   }
 
+  const parsedInterval = parseDuration(intervalHuman);
+  const isManual = parsedInterval === 0;
+  const normalizedIntervalHuman = isManual ? "manual" : intervalHuman;
+
   return {
-    intervalHuman,
+    intervalHuman: normalizedIntervalHuman,
     options: {
-      interval: parseDuration(intervalHuman),
+      interval: parsedInterval,
       taskId,
       command,
       commandArgs,
       cwd: input.cwd ?? "",
-      immediate: input.now ?? false,
+      immediate: isManual ? false : (input.now ?? false),
       maxRuns: parseMaxRuns(input.maxRuns),
       verbose: input.verbose ?? false,
       description,

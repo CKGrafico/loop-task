@@ -8,6 +8,10 @@ export function parseDuration(input: string): number {
     throw new Error(t("errors.durationEmpty"));
   }
 
+  if (trimmed === "manual" || trimmed === "0") {
+    return 0;
+  }
+
   const result = ms(trimmed as unknown as Parameters<typeof ms>[0]);
 
   if (typeof result !== "number" || isNaN(result)) {
@@ -22,5 +26,6 @@ export function parseDuration(input: string): number {
 }
 
 export function formatDuration(value: number): string {
+  if (value === 0) return t("format.durationManual");
   return ms(value, { long: true });
 }

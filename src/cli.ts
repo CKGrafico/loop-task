@@ -188,6 +188,11 @@ program
         context,
       });
 
+      if (built.options.interval === 0) {
+        console.error("Manual loops are not supported in foreground mode. Use 'loop-task new manual -- <command>' instead.");
+        process.exit(1);
+      }
+
       const controller = new AbortController();
       process.on("SIGINT", () => controller.abort());
       process.on("SIGTERM", () => controller.abort());
