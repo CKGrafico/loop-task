@@ -31,6 +31,17 @@ None of this is documented. We need to migrate to a modern docs framework (Fumad
 - **Structure** docs using the Diátaxis framework (tutorials, how-to guides, reference, explanation)
 - **Update** GitHub Actions workflow to build Next.js static export and deploy to GitHub Pages
 - **Preserve** CNAME (loop.ckgrafico.com) and demo.gif asset
+- **Show all 3 interfaces** for every feature in docs — most loop-task functionalities can be used from the **CLI** (e.g. `loop-task new 30m -- npm test`), from the **TUI board** (e.g. open `loop-task` → Loops panel → type "new loop"), and from the **HTTP API** (e.g. `POST /api/loops`). When a feature is explained in any docs page, always show all 3 ways to do it when possible, using a consistent visual pattern (Tabs or side-by-side blocks) so users can pick their preferred interface:
+  ```
+  ┌─────────────────────────────────────────────────────┐
+  │  Create a loop                                       │
+  │                                                      │
+  │  CLI          loop-task new 30m -- npm test          │
+  │  TUI          loop-task → type "new loop"             │
+  │  HTTP API     POST /api/loops {interval, command}      │
+  └─────────────────────────────────────────────────────┘
+  ```
+  This applies to: create/stop/pause/resume/trigger loops, create/list/delete tasks, create/list/delete projects, export/import, view status/logs, and more.
 - **Run** all content through `@humanize` to ensure copy sounds natural, not LLM-generated
 - **Leverage** `@fumadocs-component-docs` and `@fumadocs-mdx-structure` skills for proper Fumadocs MDX patterns
 
@@ -72,6 +83,7 @@ None of this is documented. We need to migrate to a modern docs framework (Fumad
 ### Files modified
 - **.github/workflows/pages.yml** — add pnpm setup, Node.js 20, build step, change artifact path from `docs` to `docs/out`
 - **pnpm-workspace.yaml** — add `docs` as workspace member (if not already glob-matching)
+- **.agents/skills/project-guardrails/** — add a docs-sync rule: when changes in `src/` touch user-facing features (CLI commands, HTTP API endpoints, config options, architecture), the project-guardrails skill must flag that docs may need updating. During `/ob-propose` or `/ob-apply` or `/ob-autopilot`, if the change touches `src/**` files that map to documented behavior, the lead must check `docs/` and decide if the new changes need to be documented — if so, spawn a `docs-ui-engineer` task to update the relevant MDX pages.
 
 ### No impact on
 - IPC contract (`src/types.ts`), persisted state shape (`LoopMeta`), cross-platform behavior, application runtime
