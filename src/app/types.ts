@@ -54,6 +54,7 @@ export interface SearchState {
 export interface CommandHandlerContext {
   activeTab: TabName;
   selected: LoopMeta | null;
+  selectedRunIndex: number;
   selectedTask: TaskDefinition | null;
   selectedProjectEntity: Project | null;
   tasks: TaskDefinition[];
@@ -97,6 +98,7 @@ export interface ActionContext {
   activeTab: TabName;
   focusedPanel: PanelFocus;
   selected: LoopMeta | null;
+  selectedRunIndex: number;
   selectedTask: TaskDefinition | null;
   selectedProjectEntity: Project | null;
   tasks: TaskDefinition[];

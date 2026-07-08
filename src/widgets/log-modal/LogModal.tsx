@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { Box, Text, useInput } from "ink";
+import { Box, Text, useInput, useStdout } from "ink";
 import type { RunRecord } from "../../types.js";
 import { darkTheme as theme } from "../../shared/ui/theme.js";
 import { t } from "../../shared/i18n/index.js";
@@ -8,8 +8,6 @@ import { TYPES } from "../../shared/services/types.js";
 import type { LogService } from "../../shared/services/types.js";
 import { formatDate } from "../../shared/ui/format.js";
 import { copyToClipboard } from "../../shared/clipboard.js";
-
-const MAX_VISIBLE_LINES = 20;
 
 function colorForLine(line: string, run: RunRecord): string {
   if (line.includes("[Run #")) return theme.accent.loop;
@@ -39,6 +37,9 @@ export function LogModal(props: {
   const [follow, setFollow] = useState(true);
   const [scrollOffset, setScrollOffset] = useState(0);
   const logService = useInject<LogService>(TYPES.LogService);
+  const { stdout } = useStdout();
+  const terminalHeight = stdout?.rows ?? 24;
+  const MAX_VISIBLE_LINES = Math.max(1, Math.floor(terminalHeight * 0.7) - 7);
 
   useEffect(() => {
     setLines(props.logLines);
@@ -108,6 +109,16 @@ export function LogModal(props: {
     if (key.ctrl && input === "x") {
       copyToClipboard(lines.join("\n"));
       props.onCopy?.();
+      return;
+    }
+    if (key.ctrl && input === "t") {
+      setFollow(false);
+      setScrollOffset(0);
+      return;
+    }
+    if (key.ctrl && input === "b") {
+      setFollow(true);
+      setScrollOffset(0);
       return;
     }
     if (key.downArrow) {
@@ -185,7 +196,7 @@ export function LogModal(props: {
             </Box>
           ) : null}
 
-          <Box flexDirection="column" flexGrow={1}>
+          <Box flexDirection="column" flexGrow={1} overflow="hidden">
             {visible.length === 0 ? (
               <Text color={theme.text.muted}>
                 {isLoading

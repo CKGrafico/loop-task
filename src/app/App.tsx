@@ -53,7 +53,7 @@ export function App(props: { onQuit: () => void }): React.ReactNode {
   useLogStream(s.selectedId, view, (error) => pushToast("error", error.message));
 
   const { handleCommand } = useCommandHandlers({
-    activeTab: s.activeTab, selected: s.selected, selectedTask: s.selectedTask, selectedProjectEntity: s.selectedProjectEntity,
+    activeTab: s.activeTab, selected: s.selected, selectedRunIndex: s.selectedRunIndex, selectedTask: s.selectedTask, selectedProjectEntity: s.selectedProjectEntity,
     tasks: s.tasks, projects: s.projects, currentProjectId: s.currentProjectId, filters: s.filters, projectFilters: s.projectFilters,
     setCloneMode: s.setCloneMode, setEditTarget: s.setEditTarget, setPendingTaskSelection: s.setPendingTaskSelection,
     setEditTask: s.setEditTask, setEditProject: s.setEditProject, setActiveTab: s.setActiveTab,
@@ -67,7 +67,7 @@ export function App(props: { onQuit: () => void }): React.ReactNode {
   });
 
   const { handleContextualCopy, triggerContextualAction } = useContextualActions({
-    activeTab: s.activeTab, focusedPanel: s.focusedPanel, selected: s.selected, selectedTask: s.selectedTask, selectedProjectEntity: s.selectedProjectEntity,
+    activeTab: s.activeTab, focusedPanel: s.focusedPanel, selected: s.selected, selectedRunIndex: s.selectedRunIndex, selectedTask: s.selectedTask, selectedProjectEntity: s.selectedProjectEntity,
     tasks: s.tasks, push, setCloneMode: s.setCloneMode, setEditTarget: s.setEditTarget, setPendingTaskSelection: s.setPendingTaskSelection,
     handleCommand, handleOpenRunLog: s.handleOpenRunLog, pushToast, isBoardView,
     view, logModalRun: s.logModalRun, commandsBrowserOpen: s.commandsBrowserOpen, confirmState: s.confirmState, searchState: s.searchState,

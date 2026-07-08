@@ -193,7 +193,7 @@
   "board.logModalExit": "exit {code}",
   "board.logModalDuration": "duration",
   "board.logModalSearchHint": "type to filter, enter to apply, esc to exit search",
-  "board.logModalFooterHints": "/:search  ctrl+x:copy  up/down:scroll  esc:close",
+  "board.logModalFooterHints": "/:search  ctrl+x:copy  up/down:scroll  ctrl+t:top  ctrl+b:bottom  esc:close",
   "board.logModalEscClose": "esc to close",
   "board.logModalRunning": "running…",
   "board.detailTitle": " Loop Detail ",

@@ -2,7 +2,7 @@ import React from "react";
 import { Box, Text } from "ink";
 import type { LoopMeta, Project } from "../../types.js";
 import { darkTheme as theme, statusColor } from "../../shared/ui/theme.js";
-import { describeLoop, commandLine, timeAgo, timeUntil } from "../../shared/ui/format.js";
+import { describeLoop, commandLine, timeAgo, timeUntil, truncate } from "../../shared/ui/format.js";
 import { t } from "../../shared/i18n/index.js";
 import { resolveEffectiveCwd } from "../../core/command/resolve-cwd.js";
 
@@ -10,9 +10,9 @@ const LABEL_WIDTH = 11;
 
 function Field(props: { label: string; children: React.ReactNode }): React.ReactNode {
   return (
-    <Box>
+    <Box overflow="hidden">
       <Text bold color={theme.text.muted}>{props.label.padEnd(LABEL_WIDTH)}</Text>
-      <Text color={theme.text.primary}>{props.children}</Text>
+      <Text color={theme.text.primary} wrap="truncate">{props.children}</Text>
     </Box>
   );
 }
@@ -21,9 +21,9 @@ const DIVIDER = "\u2500".repeat(40);
 
 function MutedField(props: { label: string; children: React.ReactNode }): React.ReactNode {
   return (
-    <Box>
+    <Box overflow="hidden">
       <Text bold color={theme.text.muted}>{props.label.padEnd(LABEL_WIDTH)}</Text>
-      <Text color={theme.text.muted}>{props.children}</Text>
+      <Text color={theme.text.muted} wrap="truncate">{props.children}</Text>
     </Box>
   );
 }
@@ -52,15 +52,9 @@ export function Inspector(props: { loop: LoopMeta | null; projects?: Project[] }
   const lastRun = loop.lastRunAt ? timeAgo(loop.lastRunAt) : t("format.dash");
   const lastExit = loop.lastExitCode !== null ? String(loop.lastExitCode) : t("format.dash");
   const nextRun = loop.nextRunAt ? t("format.timingNext", { timeAgo: timeUntil(loop.nextRunAt) }) : t("format.dash");
-  const pid = loop.pid ? String(loop.pid) : t("format.dash");
 
-  const projectDirectory = projects?.find((p) => p.id === loop.projectId)?.directory;
-  const effectiveCwd = resolveEffectiveCwd(loop.cwd, projectDirectory);
-  const showEffective = loop.cwd !== effectiveCwd;
-
-  const fullCmd = commandLine(loop.command, loop.commandArgs);
-  const desc = describeLoop(loop);
-  const showCommand = desc !== fullCmd;
+  const fullCmd = truncate(commandLine(loop.command, loop.commandArgs), 38);
+  const desc = truncate(describeLoop(loop), 38);
 
   return (
     <Box flexDirection="column" paddingY={0}>
@@ -75,17 +69,13 @@ export function Inspector(props: { loop: LoopMeta | null; projects?: Project[] }
           <Text bold color={theme.text.muted}>{t("board.fieldStatus").padEnd(LABEL_WIDTH)}</Text>
           <Text color={sColor}>{loop.status}</Text>
         </Box>
+        <Field label={t("board.fieldRuns")}><Text color={theme.text.primary}>{loop.runCount} / {maxRunsLabel}</Text></Field>
+        <Field label={t("board.fieldInterval")}><Text color={theme.text.primary}>{loop.intervalHuman}</Text></Field>
         <Field label={t("board.fieldLastExit")}><Text color={theme.text.primary}>{lastExit}</Text></Field>
         <Field label={t("board.fieldLastRun")}><Text color={theme.text.primary}>{lastRun}</Text></Field>
         <Field label={t("board.fieldNextRun")}><Text color={theme.text.primary}>{nextRun}</Text></Field>
-        <Field label={t("board.fieldRuns")}><Text color={theme.text.primary}>{loop.runCount} / {maxRunsLabel}</Text></Field>
-        <Field label={t("board.fieldInterval")}><Text color={theme.text.primary}>{loop.intervalHuman}</Text></Field>
-        <Field label={t("board.fieldDir")}><Text color={theme.text.primary}>{loop.cwd || t("board.inherit")}{showEffective ? ` → ${effectiveCwd}` : ""}</Text></Field>
-        <MutedField label={t("board.fieldId")}>{loop.id}</MutedField>
         <MutedField label={t("board.fieldDesc")}>{desc}</MutedField>
-        {showCommand && <MutedField label={t("board.fieldCommand")}>{fullCmd}</MutedField>}
-        <MutedField label={t("board.fieldTask")}>{loop.taskId ?? t("format.dash")}</MutedField>
-        <MutedField label={t("board.fieldPid")}>{pid}</MutedField>
+        <MutedField label={t("board.fieldCommand")}>{fullCmd}</MutedField>
       </Box>
       <Box paddingLeft={1}>
         <Text color={theme.text.muted}>{DIVIDER}</Text>

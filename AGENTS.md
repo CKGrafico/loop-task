@@ -187,10 +187,13 @@ Prefix ALL shell commands with `rtk`:
 - `rtk az` NOT `az`
 - `rtk openspec` NOT `openspec`
 - `rtk npx tsc --noEmit` NOT `npx tsc --noEmit`
-- `rtk pnpm build` NOT `pnpm build`
-- `rtk pnpm test` NOT `pnpm test`
-- `rtk pnpm lint` NOT `pnpm lint`
+- `rtk pnpm build` NOT `pnpm build` or `npm run build`
+- `rtk pnpm test` NOT `pnpm test` or `npm test`
+- `rtk pnpm lint` NOT `pnpm lint` or `npm run lint`
+- `rtk pnpm run dev` NOT `npm run dev`
 - `rtk dotnet build` NOT `dotnet build`
+
+**Package manager: `pnpm` ONLY.** Never use `npm` or `yarn` for any command. `pnpm-lock.yaml` is committed. Always use `pnpm` for installs (`rtk pnpm install`), running scripts (`rtk pnpm run <script>`), and adding dependencies (`rtk pnpm add <pkg>`).
 
 Light read-only commands that produce minimal output (e.g. `cat`, `ls`, `Get-Content`, `Select-String`) do not need `rtk`.
 

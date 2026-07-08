@@ -6,7 +6,7 @@ import type { ActionContext } from "../../app/types.js";
 
 export function useContextualActions(context: ActionContext) {
   const {
-    activeTab, focusedPanel, selected, selectedTask, selectedProjectEntity,
+    activeTab, focusedPanel, selected, selectedRunIndex, selectedTask, selectedProjectEntity,
     tasks, push, setCloneMode, setEditTarget, setPendingTaskSelection,
     handleCommand, handleOpenRunLog, pushToast, isBoardView,
     view, logModalRun, commandsBrowserOpen, confirmState, searchState,
@@ -59,8 +59,11 @@ export function useContextualActions(context: ActionContext) {
       "projects:": () => { if (selectedProjectEntity) handleCommand("edit"); },
       "loops:right": () => {
         if (!selected) return;
-        const runs = selected.runHistory;
-        if (runs && runs.length > 0) handleOpenRunLog(runs[runs.length - 1]!);
+        const reversed = [...selected.runHistory].reverse();
+        if (reversed.length > 0) {
+          const run = reversed[Math.min(selectedRunIndex, reversed.length - 1)];
+          handleOpenRunLog(run ?? reversed[0]!);
+        }
         else editSelectedLoop();
       },
       "loops:left": editSelectedLoop,
@@ -69,7 +72,7 @@ export function useContextualActions(context: ActionContext) {
     const handlerKey = activeTab !== "loops" ? `${activeTab}:` : `loops:${focusedPanel}`;
     handlers[handlerKey]?.();
   }, [activeTab, focusedPanel, view, logModalRun, commandsBrowserOpen, confirmState, searchState,
-      chordState, setChordState, selected, selectedTask, selectedProjectEntity, tasks, push,
+      chordState, setChordState, selected, selectedRunIndex, selectedTask, selectedProjectEntity, tasks, push,
       setCloneMode, setEditTarget, setPendingTaskSelection, handleCommand, handleOpenRunLog,
       isBoardView]);
 

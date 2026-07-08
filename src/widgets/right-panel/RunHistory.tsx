@@ -1,5 +1,5 @@
 import React from "react";
-import { Box, Text, useInput } from "ink";
+import { Box, Text, useInput, useStdout } from "ink";
 import { ScrollList } from "ink-scroll-list";
 import type { LoopMeta, RunRecord } from "../../types.js";
 import { darkTheme as theme } from "../../shared/ui/theme.js";
@@ -121,8 +121,6 @@ function computeTrends(runs: RunRecord[]): {
   };
 }
 
-const LIMIT = 15;
-
 export function RunHistory(props: {
   loop: LoopMeta | null;
   selectedRunIndex: number;
@@ -132,6 +130,9 @@ export function RunHistory(props: {
   navActive?: boolean;
 }): React.ReactNode {
   const { loop, selectedRunIndex, onSelectRun, onOpenRun, isFocused, navActive = true } = props;
+  const { stdout } = useStdout();
+  const terminalHeight = stdout?.rows ?? 24;
+  const LIMIT = Math.max(3, terminalHeight - 22);
 
   const runs = groupRunsByCycle(loop?.runHistory ?? []);
   const reversed = [...runs].reverse();

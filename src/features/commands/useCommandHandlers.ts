@@ -5,7 +5,7 @@ import type { CommandHandlerContext } from "../../app/types.js";
 
 export function useCommandHandlers(context: CommandHandlerContext) {
   const {
-    activeTab, selected, selectedTask, selectedProjectEntity,
+    activeTab, selected, selectedRunIndex, selectedTask, selectedProjectEntity,
     tasks, projects, currentProjectId,
     setCloneMode, setEditTarget, setPendingTaskSelection,
     setEditTask, setEditProject, setActiveTab,
@@ -119,9 +119,10 @@ export function useCommandHandlers(context: CommandHandlerContext) {
     debug: () => { setDebugMode((prev) => !prev); },
     logs: () => {
       if (activeTab === "loops" && selected) {
-        const runs = selected.runHistory;
-        if (runs && runs.length > 0) {
-          handleOpenRunLog(runs[runs.length - 1]!);
+        const reversed = [...selected.runHistory].reverse();
+        if (reversed.length > 0) {
+          const run = reversed[Math.min(selectedRunIndex, reversed.length - 1)];
+          handleOpenRunLog(run ?? reversed[0]!);
         }
       }
     },

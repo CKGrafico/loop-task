@@ -1,5 +1,5 @@
 import React from "react";
-import { Box, Text } from "ink";
+import { Box, Text, useStdout } from "ink";
 import type { LoopMeta, RunRecord, Project, TaskDefinition } from "../../types.js";
 import { darkTheme as theme, tabAccentColor } from "../../shared/ui/theme.js";
 import type { TabName } from "../../app/types.js";
@@ -44,11 +44,14 @@ export function RightPanel(props: {
     projects,
   } = props;
   const borderColor = isFocused ? tabAccentColor(activeTab) : theme.border.default;
+  const { stdout } = useStdout();
+  const panelHeight = (stdout?.rows ?? 24) - 8;
 
   return (
     <Box
       flexDirection="column"
       width="40%"
+      height={panelHeight}
       borderStyle="single"
       borderColor={borderColor}
     >
