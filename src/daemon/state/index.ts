@@ -21,6 +21,13 @@ import {
 
 export { getDataDir, getPidFile, getSocketPath } from "../../shared/config/paths.js";
 
+type SelfWriteNotifier = (filePath: string, content: string) => void;
+let selfWriteNotifier: SelfWriteNotifier | null = null;
+
+export function setSelfWriteNotifier(notifier: SelfWriteNotifier | null): void {
+  selfWriteNotifier = notifier;
+}
+
 function ensureDirs(): void {
   fs.mkdirSync(getDataDir(), { recursive: true });
   fs.mkdirSync(getLogsDir(), { recursive: true });
@@ -39,7 +46,9 @@ function readJsonArray<T>(filePath: string): T[] {
 
 function writeJsonArray<T>(filePath: string, items: T[]): void {
   ensureDirs();
-  writeFileAtomic(filePath, JSON.stringify(items, null, 2));
+  const content = JSON.stringify(items, null, 2);
+  writeFileAtomic(filePath, content);
+  if (selfWriteNotifier) selfWriteNotifier(filePath, content);
 }
 
 export function migrateLoopsToJson(): void {

@@ -6,6 +6,13 @@ import crypto from "node:crypto";
 import { getDataDir, projectsJson } from "../../shared/config/paths.js";
 import path from "node:path";
 
+type SelfWriteNotifier = (filePath: string, content: string) => void;
+let selfWriteNotifier: SelfWriteNotifier | null = null;
+
+export function setProjectSelfWriteNotifier(notifier: SelfWriteNotifier | null): void {
+  selfWriteNotifier = notifier;
+}
+
 export class ProjectManager {
   private projects: Map<string, Project> = new Map();
 
@@ -62,7 +69,9 @@ export class ProjectManager {
 
   private saveAllProjects(): void {
     const all = Array.from(this.projects.values());
-    writeFileAtomic(projectsJson(), JSON.stringify(all, null, 2));
+    const content = JSON.stringify(all, null, 2);
+    writeFileAtomic(projectsJson(), content);
+    if (selfWriteNotifier) selfWriteNotifier(projectsJson(), content);
   }
 
   private saveProject(project: Project): void {

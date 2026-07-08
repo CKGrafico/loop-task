@@ -34,6 +34,7 @@ export class LoopController extends EventEmitter {
   private remainingDelayMs: number | null = null;
   private logStream: fs.WriteStream | null = null;
   private loopPromise: Promise<void> | null = null;
+  private _loopActive = false;
   private sessionStartedAt: string | null = null;
   private runHistory: RunRecord[] = [];
   private currentRunStartOffset: number = 0;
@@ -76,12 +77,13 @@ export class LoopController extends EventEmitter {
   }
 
   start(): void {
-    if (this._status === "running") return;
+    if (this._loopActive) return;
+    this._loopActive = true;
     this.skippedCount = 0;
     this.logStream?.end();
     this.abortController = new AbortController();
     this.logStream = fs.createWriteStream(this.logPath, { flags: "a" });
-    this.loopPromise = this.run();
+    this.loopPromise = this.run().finally(() => { this._loopActive = false; });
     if (this.sessionStartedAt === null) {
       this.sessionStartedAt = new Date().toISOString();
     }

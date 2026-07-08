@@ -12,7 +12,9 @@ import {
   computeCodeSignature,
   migrateTasksToJson,
   migrateLoopsToJson,
+  setSelfWriteNotifier,
 } from "./state/index.js";
+import { setProjectSelfWriteNotifier } from "./managers/project-manager.js";
 import { t } from "../shared/i18n/index.js";
 import { daemonLog } from "./daemon-log.js";
 
@@ -49,6 +51,9 @@ async function main(): Promise<void> {
   fileWatcher.setManagers(manager, taskManager, manager["projectManager"]);
   fileWatcher.start();
   daemonLog(`file watcher started for hot-reloading JSON configs`);
+
+  setSelfWriteNotifier((filePath, content) => fileWatcher.registerSelfWrite(filePath, content));
+  setProjectSelfWriteNotifier((filePath, content) => fileWatcher.registerSelfWrite(filePath, content));
 
   let shuttingDown = false;
   const cleanup = async () => {
