@@ -18,6 +18,7 @@ function createInitialValues(editTarget: FormRouterProps["editTarget"], currentP
       runNow: "y",
       maxRuns: "",
       project: currentProjectId,
+      context: "",
     };
   }
   return {
@@ -30,6 +31,7 @@ function createInitialValues(editTarget: FormRouterProps["editTarget"], currentP
     runNow: "y",
     maxRuns: editTarget.maxRuns?.toString() ?? "",
     project: editTarget.projectId ?? "default",
+    context: editTarget.context ? JSON.stringify(editTarget.context) : "",
   };
 }
 

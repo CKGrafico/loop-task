@@ -105,6 +105,7 @@ export interface LoopMeta {
   skippedCount: number;
   projectId: string;
   offset: number | null;
+  context?: Record<string, unknown>;
 }
 
 export type IpcRequest =

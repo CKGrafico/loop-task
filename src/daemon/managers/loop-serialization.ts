@@ -44,6 +44,7 @@ export function toMeta(
     pid: process.pid,
     projectId: options.projectId ?? "default",
     offset: options.offset,
+    context: options.context,
   };
 }
 
