@@ -1,6 +1,6 @@
 import crypto from "node:crypto";
 import fs from "node:fs";
-import type { ExecutionResult, TaskDefinition } from "../../types.js";
+import type { ExecutionResult, TaskCommand, TaskDefinition, TaskStep } from "../../types.js";
 import { executeCommand } from "../command/command-runner.js";
 import { t } from "../../shared/i18n/index.js";
 import { parseStdout } from "../context/context-parser.js";
@@ -67,41 +67,79 @@ export function executeChain(options: ChainExecuteOptions): Promise<ChainExecute
         chainName: chainTask.name,
       });
 
-      const interpolatedCommand = interpolate(chainTask.command, chainContext);
-      const interpolatedArgs = chainTask.commandArgs.map(a => interpolate(a, chainContext));
-      const chainResult = await executeCommand(
-        interpolatedCommand,
-        interpolatedArgs,
-        cwd,
-        logStream!,
-        signal,
-        runCount,
-        true,
-        true,
-      );
+      const singleCommandFallback: TaskCommand = {
+        command: chainTask.command,
+        commandArgs: chainTask.commandArgs,
+        commandRaw: chainTask.commandRaw,
+      };
+      const taskSteps: TaskStep[] = chainTask.steps?.length
+        ? chainTask.steps
+        : [{ commands: [singleCommandFallback] }];
 
-      if (chainResult.stdout) {
-        const parsed = parseStdout(chainResult.stdout);
-        if (parsed !== null) {
-          Object.assign(chainContext, parsed);
+      const chainTaskHasChains = !!(chainTask.onSuccessTaskId || chainTask.onFailureTaskId);
+      const shouldCaptureStdout = chainTaskHasChains || taskSteps.length > 1 || taskSteps[0]!.commands.length > 1;
+
+      let chainExitCode = 0;
+      let chainDuration = 0;
+
+      for (const step of taskSteps) {
+        const stepResults = await Promise.allSettled(
+          step.commands.map((cmd) =>
+            executeCommand(
+              interpolate(cmd.command, chainContext),
+              cmd.commandArgs.map(a => interpolate(a, chainContext)),
+              cwd,
+              logStream!,
+              signal,
+              runCount,
+              shouldCaptureStdout,
+            )
+          )
+        );
+
+        let stepStdout = "";
+        for (const r of stepResults) {
+          if (r.status === "fulfilled") {
+            chainDuration += r.value.duration;
+            if (r.value.stdout) stepStdout += (stepStdout ? "\n" : "") + r.value.stdout;
+          }
+        }
+
+        if (shouldCaptureStdout && stepStdout) {
+          const parsed = parseStdout(stepStdout);
+          if (parsed !== null) {
+            Object.assign(chainContext, parsed);
+          }
+        }
+
+        const stepFailure = stepResults.some(
+          (r) => r.status === "rejected" || (r.status === "fulfilled" && r.value.exitCode !== 0)
+        );
+        if (stepFailure) {
+          const failed = stepResults.find(
+            (r): r is PromiseFulfilledResult<ExecutionResult> =>
+              r.status === "fulfilled" && r.value.exitCode !== 0
+          );
+          chainExitCode = failed ? failed.value.exitCode : 1;
+          break;
         }
       }
 
       const chainLogSize = fs.existsSync(logPath) ? fs.statSync(logPath).size - chainOffset : 0;
       const chainRecord = runHistory.find(r => r.chainGroupId === chainGroupId && r.status === "running" && r.chainName === chainTask.name);
       if (chainRecord) {
-        chainRecord.exitCode = chainResult.exitCode;
-        chainRecord.duration = chainResult.duration;
+        chainRecord.exitCode = chainExitCode;
+        chainRecord.duration = chainDuration;
         chainRecord.logSize = Math.max(0, chainLogSize);
         chainRecord.status = "completed";
       }
 
-      totalExtraDuration += chainResult.duration;
-      finalExitCode = chainResult.exitCode;
+      totalExtraDuration += chainDuration;
+      finalExitCode = chainExitCode;
 
-      currentTargetId = (chainResult.exitCode === 0 ? chainTask.onSuccessTaskId : chainTask.onFailureTaskId) ?? null;
-      prevBranch = chainResult.exitCode === 0 ? "onSuccess" : "onFailure";
-      prevExit = chainResult.exitCode;
+      currentTargetId = (chainExitCode === 0 ? chainTask.onSuccessTaskId : chainTask.onFailureTaskId) ?? null;
+      prevBranch = chainExitCode === 0 ? "onSuccess" : "onFailure";
+      prevExit = chainExitCode;
     }
 
     return { runHistory, lastExitCode: finalExitCode, lastDuration: totalExtraDuration };
