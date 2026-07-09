@@ -5,6 +5,7 @@ pages:
   - "---Guides---"
   - task-chaining
   - agent-workflows
+  - mcp-server
   - docker
   - "---Reference---"
   - cli-reference
