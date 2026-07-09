@@ -5,9 +5,9 @@ import { GithubLogo, Repeat } from '@phosphor-icons/react/dist/ssr';
 const LINKS = [
   { href: '/#loops', label: 'Loop engineering' },
   { href: '/#features', label: 'Features' },
-  { href: '/#compare', label: 'vs cron' },
+  { href: '/#compare', label: 'Crons' },
   { href: '/#examples', label: 'Examples' },
-  { href: '/docs', label: 'Docs' },
+  { href: '/docs', label: 'See Docs' },
 ];
 
 export function Navbar() {
@@ -30,7 +30,7 @@ export function Navbar() {
             <a
               key={l.href}
               href={l.href}
-              className="hidden text-text-sec transition-colors hover:text-text sm:inline"
+              className="text-text-sec transition-colors hover:text-text sm:inline"
             >
               {l.label}
             </a>
