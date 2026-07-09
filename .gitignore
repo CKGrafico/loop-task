@@ -8,3 +8,4 @@ Thumbs.db
 .opencode/.ob-run.json
 .dev-test-data/*
 .dev-test-data /*
+.claude/*
