@@ -5,7 +5,8 @@ import { IpcTaskService } from "../services/task-service.js";
 import { IpcProjectService } from "../services/project-service.js";
 import { IpcLogService } from "../services/log-service.js";
 import { IpcExportService } from "../services/export-service.js";
-import type { LoopService, TaskService, ProjectService } from "../services/types.js";
+import { IpcSettingsService } from "../services/settings-service.js";
+import type { LoopService, TaskService, ProjectService, SettingsService } from "../services/types.js";
 
 export function createContainer(): Container {
   const container = new Container();
@@ -13,6 +14,7 @@ export function createContainer(): Container {
   container.bind<TaskService>(TYPES.TaskService).to(IpcTaskService);
   container.bind<ProjectService>(TYPES.ProjectService).to(IpcProjectService);
   container.bind(TYPES.LogService).to(IpcLogService);
+  container.bind<SettingsService>(TYPES.SettingsService).to(IpcSettingsService);
 
   container.bind(TYPES.ExportService).toDynamicValue(() => {
     const loopService = container.get<LoopService>(TYPES.LoopService);

@@ -1,6 +1,8 @@
 import { SseClientSet, initSseResponse } from "./sse.js";
 import { buildOpenApiSpec, buildSwaggerHtml } from "./openapi.js";
+import { sendOk, sendError, readBody } from "./helpers.js";
 import type { RouteHandler } from "./helpers.js";
+import type { SettingsManager } from "../settings-manager.js";
 
 export function registerMiscRoutes(sseClients: SseClientSet, r: (method: string, path: string, handler: RouteHandler) => void): void {
   r("GET", "/api/openapi.json", (_req, res) => {
@@ -38,5 +40,21 @@ export function registerMiscRoutes(sseClients: SseClientSet, r: (method: string,
     _req.on("close", () => {
       sseClients.delete(res);
     });
+  });
+}
+
+export function registerSettingsRoutes(settingsManager: SettingsManager, r: (method: string, path: string, handler: RouteHandler) => void): void {
+  r("GET", "/api/settings", (_req, res) => {
+    sendOk(res, settingsManager.get());
+  });
+
+  r("PATCH", "/api/settings", async (req, res) => {
+    try {
+      const body = await readBody(req) as Record<string, unknown>;
+      const updated = settingsManager.set(body);
+      sendOk(res, updated);
+    } catch (err) {
+      sendError(res, 400, err instanceof Error ? err.message : String(err));
+    }
   });
 }

@@ -1,5 +1,5 @@
 import type net from "node:net";
-import type { LoopMeta, LoopOptions, TaskDefinition, Project } from "../../types.js";
+import type { LoopMeta, LoopOptions, TaskDefinition, Project, DaemonSettings } from "../../types.js";
 
 export const TYPES = {
   LoopService: Symbol.for("LoopService"),
@@ -7,6 +7,7 @@ export const TYPES = {
   ProjectService: Symbol.for("ProjectService"),
   LogService: Symbol.for("LogService"),
   ExportService: Symbol.for("ExportService"),
+  SettingsService: Symbol.for("SettingsService"),
 };
 
 export interface LoopService {
@@ -53,4 +54,9 @@ export interface LogService {
 
 export interface ExportService {
   exportConfig(): Promise<{ json: string; filePath: string }>;
+}
+
+export interface SettingsService {
+  getHttpApiEnabled(): Promise<boolean>;
+  setHttpApiEnabled(enabled: boolean): Promise<DaemonSettings>;
 }

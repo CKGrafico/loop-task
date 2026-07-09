@@ -2,6 +2,7 @@ import http from "node:http";
 import { LoopManager } from "../managers/loop-manager.js";
 import { TaskManager } from "../managers/task-manager.js";
 import { ProjectManager } from "../managers/project-manager.js";
+import { SettingsManager } from "../settings-manager.js";
 import { HTTP_API_PORT, HTTP_API_HOST } from "../../shared/config/constants.js";
 import { daemonLog } from "../daemon-log.js";
 import { sendError, matchRoute, parsePath } from "./helpers.js";
@@ -13,11 +14,13 @@ export class HttpApiServer {
   private server: http.Server;
   private routes: RouteEntry[] = [];
   private sseClients = new SseClientSet();
+  private isListening = false;
 
   constructor(
     private manager: LoopManager,
     private taskManager: TaskManager,
     private projectManager: ProjectManager,
+    private settingsManager: SettingsManager,
   ) {
     this.server = http.createServer((req, res) => this.handleRequest(req, res));
     this.routes = registerRoutes({
@@ -25,6 +28,7 @@ export class HttpApiServer {
       taskManager: this.taskManager,
       projectManager: this.projectManager,
       sseClients: this.sseClients,
+      settingsManager: this.settingsManager,
     });
   }
 
@@ -39,6 +43,7 @@ export class HttpApiServer {
         }
       });
       this.server.listen(port, host, () => {
+        this.isListening = true;
         daemonLog(`HTTP API server listening on ${host}:${port}`);
         resolve();
       });
@@ -46,10 +51,19 @@ export class HttpApiServer {
   }
 
   async close(): Promise<void> {
+    if (!this.isListening) return;
     this.sseClients.destroyAll();
     return new Promise((resolve) => {
-      this.server.close(() => resolve());
+      this.server.close(() => {
+        this.isListening = false;
+        resolve();
+      });
     });
+  }
+
+  async restart(port: number = HTTP_API_PORT, host: string = HTTP_API_HOST): Promise<void> {
+    await this.close();
+    await this.listen(port, host);
   }
 
   broadcastEvent(event: string, data?: unknown): void {

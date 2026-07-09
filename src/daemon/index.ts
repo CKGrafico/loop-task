@@ -4,6 +4,7 @@ import { ProjectManager } from "./managers/project-manager.js";
 import { IpcServer } from "./server/index.js";
 import { HttpApiServer } from "./http/server.js";
 import { FileWatcher } from "./watcher/index.js";
+import { SettingsManager } from "./settings-manager.js";
 import {
   writeDaemonPid,
   removeDaemonPid,
@@ -24,9 +25,11 @@ async function main(): Promise<void> {
   migrateTasksToJson();
   taskManager.init();
   const manager = new LoopManager(taskManager);
-  const server = new IpcServer(manager, taskManager);
+  const settingsManager = new SettingsManager();
+  settingsManager.load();
+  const server = new IpcServer(manager, taskManager, settingsManager);
   const projectManager = (manager as unknown as { projectManager: ProjectManager }).projectManager;
-  const httpServer = new HttpApiServer(manager, taskManager, projectManager);
+  const httpServer = new HttpApiServer(manager, taskManager, projectManager, settingsManager);
 
   try {
     await server.listen();
@@ -35,12 +38,28 @@ async function main(): Promise<void> {
     process.exit(0);
   }
 
-  try {
-    const httpPort = parseInt(process.env.LOOP_CLI_HTTP_PORT ?? "", 10);
-    await httpServer.listen(Number.isNaN(httpPort) ? undefined : httpPort);
-  } catch (err) {
-    daemonLog(`HTTP API server failed to start: ${String(err)}`);
+  const httpPort = parseInt(process.env.LOOP_CLI_HTTP_PORT ?? "", 10);
+  const resolvedHttpPort = Number.isNaN(httpPort) ? undefined : httpPort;
+
+  if (settingsManager.get().httpApiEnabled) {
+    try {
+      await httpServer.listen(resolvedHttpPort);
+    } catch (err) {
+      daemonLog(`HTTP API server failed to start: ${String(err)}`);
+    }
   }
+
+  settingsManager.onChange((settings) => {
+    if (settings.httpApiEnabled && !httpServer["isListening"]) {
+      httpServer.listen(resolvedHttpPort).catch((err) => {
+        daemonLog(`HTTP API server failed to restart: ${String(err)}`);
+      });
+    } else if (!settings.httpApiEnabled && httpServer["isListening"]) {
+      httpServer.close().catch((err) => {
+        daemonLog(`HTTP API server failed to stop: ${String(err)}`);
+      });
+    }
+  });
 
   manager.init();
   writeDaemonPid(process.pid);

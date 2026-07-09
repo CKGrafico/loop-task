@@ -40,6 +40,10 @@ export function projectsJson(): string {
   return path.join(getDataDir(), "projects.json");
 }
 
+export function settingsJson(): string {
+  return path.join(getDataDir(), "settings.json");
+}
+
 export function logFile(id: string): string {
   return path.join(getLogsDir(), `${id}.log`);
 }

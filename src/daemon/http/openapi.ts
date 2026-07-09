@@ -11,6 +11,16 @@ export function buildOpenApiSpec(): Record<string, unknown> {
     servers: [
       { url: `http://${HTTP_API_HOST}:${HTTP_API_PORT}`, description: "Local daemon" },
     ],
+    tags: [
+      { name: "Loops", description: "Loop management" },
+      { name: "Tasks", description: "Task management" },
+      { name: "Task Chains", description: "Create chained tasks" },
+      { name: "Projects", description: "Project management" },
+      { name: "Logs", description: "Log retrieval" },
+      { name: "Events", description: "Server-sent events" },
+      { name: "Settings", description: "Daemon settings" },
+      { name: "Docs", description: "API documentation" },
+    ],
     paths: {
       "/api/loops": {
         get: { summary: "List all loops", tags: ["Loops"], responses: { "200": { description: "Array of loops", content: { "application/json": { schema: { type: "array" } } } } } },
@@ -23,9 +33,12 @@ export function buildOpenApiSpec(): Record<string, unknown> {
       },
       "/api/loops/{id}/pause": { post: { summary: "Pause a loop", tags: ["Loops"], parameters: [{ name: "id", in: "path", required: true, schema: { type: "string" } }], responses: { "200": { description: "Paused" }, "404": { description: "Not found" } } } },
       "/api/loops/{id}/resume": { post: { summary: "Resume a loop", tags: ["Loops"], parameters: [{ name: "id", in: "path", required: true, schema: { type: "string" } }], responses: { "200": { description: "Resumed" }, "404": { description: "Not found" } } } },
+      "/api/loops/{id}/play": { post: { summary: "Play (start) a loop", tags: ["Loops"], parameters: [{ name: "id", in: "path", required: true, schema: { type: "string" } }], responses: { "200": { description: "Playing", content: { "application/json": { schema: { type: "object" } } } }, "404": { description: "Not found" }, "409": { description: "Already running or max runs blocked" } } } },
       "/api/loops/{id}/trigger": { post: { summary: "Trigger a loop now", tags: ["Loops"], parameters: [{ name: "id", in: "path", required: true, schema: { type: "string" } }], responses: { "200": { description: "Triggered" }, "404": { description: "Not found" }, "400": { description: "Max runs reached" }, "409": { description: "Already running" } } } },
       "/api/loops/{id}/stop": { post: { summary: "Stop a loop", tags: ["Loops"], parameters: [{ name: "id", in: "path", required: true, schema: { type: "string" } }], responses: { "200": { description: "Stopped" }, "404": { description: "Not found" } } } },
       "/api/loops/stop-all": { post: { summary: "Stop all loops", tags: ["Loops"], responses: { "200": { description: "All stopped", content: { "application/json": { schema: { type: "object", properties: { count: { type: "integer" } } } } } } } } },
+      "/api/loops/{id}/runs": { get: { summary: "List run history", tags: ["Loops"], parameters: [{ name: "id", in: "path", required: true, schema: { type: "string" } }, { name: "from", in: "query", schema: { type: "string", description: "ISO 8601 date" } }, { name: "to", in: "query", schema: { type: "string", description: "ISO 8601 date" } }], responses: { "200": { description: "Run records", content: { "application/json": { schema: { type: "array" } } } }, "404": { description: "Not found" } } } },
+      "/api/loops/{id}/logs/date": { get: { summary: "Date-filtered logs", tags: ["Logs"], parameters: [{ name: "id", in: "path", required: true, schema: { type: "string" } }, { name: "from", in: "query", required: true, schema: { type: "string", description: "ISO 8601 start date" } }, { name: "to", in: "query", required: true, schema: { type: "string", description: "ISO 8601 end date" } }], responses: { "200": { description: "Filtered log content" }, "404": { description: "Not found" }, "400": { description: "Missing or invalid date params" } } } },
       "/api/loops/{id}/logs": { get: { summary: "Fetch loop logs", tags: ["Logs"], parameters: [{ name: "id", in: "path", required: true, schema: { type: "string" } }, { name: "tail", in: "query", schema: { type: "integer", default: 50 } }], responses: { "200": { description: "Log content" }, "404": { description: "Not found" } } } },
       "/api/loops/{id}/logs/stream": { get: { summary: "Stream logs via SSE", tags: ["Logs"], parameters: [{ name: "id", in: "path", required: true, schema: { type: "string" } }, { name: "tail", in: "query", schema: { type: "integer" } }], responses: { "200": { description: "SSE stream" }, "404": { description: "Not found" } } } },
       "/api/loops/{id}/runs/{num}": { get: { summary: "Get run-specific log", tags: ["Logs"], parameters: [{ name: "id", in: "path", required: true, schema: { type: "string" } }, { name: "num", in: "path", required: true, schema: { type: "integer" } }], responses: { "200": { description: "Run log content" } } } },
@@ -38,6 +51,7 @@ export function buildOpenApiSpec(): Record<string, unknown> {
         patch: { summary: "Update a task", tags: ["Tasks"], parameters: [{ name: "id", in: "path", required: true, schema: { type: "string" } }], requestBody: { content: { "application/json": { schema: { type: "object" } } } }, responses: { "200": { description: "Updated" }, "404": { description: "Not found" } } },
         delete: { summary: "Delete a task", tags: ["Tasks"], parameters: [{ name: "id", in: "path", required: true, schema: { type: "string" } }], responses: { "200": { description: "Deleted" }, "404": { description: "Not found" } } },
       },
+      "/api/task-chains": { post: { summary: "Create a chain of tasks", tags: ["Task Chains"], requestBody: { content: { "application/json": { schema: { type: "object", required: ["tasks"], properties: { tasks: { type: "array", items: { type: "object", properties: { id: { type: "string" }, name: { type: "string" }, command: { type: "string" }, commandArgs: { type: "array", items: { type: "string" } }, onSuccessTaskId: { type: "string" }, onFailureTaskId: { type: "string" } } } }, chain: { type: "string", enum: ["sequential-success", "sequential-failure", "none"], description: "How to wire tasks together" } } } } } }, responses: { "201": { description: "Chain created", content: { "application/json": { schema: { type: "object", properties: { taskIds: { type: "array", items: { type: "string" } } } } } } }, "400": { description: "Validation error or rollback" } } } },
       "/api/projects": {
         get: { summary: "List all projects", tags: ["Projects"], responses: { "200": { description: "Array of projects" } } },
         post: { summary: "Create a project", tags: ["Projects"], requestBody: { content: { "application/json": { schema: { type: "object", properties: { name: { type: "string" }, color: { type: "string" }, directory: { type: "string", description: "Optional local working directory for loops" }, githubSource: { type: "string", description: "Optional GitHub repository in owner/repo format (e.g. CKGrafico/loop-task)" } } } } } }, responses: { "201": { description: "Project created" }, "400": { description: "Validation error" } } },
@@ -46,9 +60,20 @@ export function buildOpenApiSpec(): Record<string, unknown> {
         patch: { summary: "Update a project", tags: ["Projects"], parameters: [{ name: "id", in: "path", required: true, schema: { type: "string" } }], requestBody: { content: { "application/json": { schema: { type: "object", properties: { name: { type: "string" }, color: { type: "string" }, directory: { type: "string", description: "Optional local working directory for loops" }, githubSource: { type: "string", description: "Optional GitHub repository in owner/repo format (e.g. CKGrafico/loop-task)" } } } } } }, responses: { "200": { description: "Updated" }, "404": { description: "Not found" }, "400": { description: "Validation error" } } },
         delete: { summary: "Delete a project", tags: ["Projects"], parameters: [{ name: "id", in: "path", required: true, schema: { type: "string" } }], responses: { "200": { description: "Deleted" }, "400": { description: "Cannot delete system project" } } },
       },
+      "/api/settings": { get: { summary: "Get daemon settings", tags: ["Settings"], responses: { "200": { description: "Current settings", content: { "application/json": { schema: { type: "object", properties: { httpApiEnabled: { type: "boolean" } } } } } } } }, patch: { summary: "Update daemon settings", tags: ["Settings"], requestBody: { content: { "application/json": { schema: { type: "object", properties: { httpApiEnabled: { type: "boolean" } } } } } }, responses: { "200": { description: "Updated settings", content: { "application/json": { schema: { type: "object", properties: { httpApiEnabled: { type: "boolean" } } } } } }, "400": { description: "Validation error" } } } },
       "/api/events": { get: { summary: "Subscribe to daemon events via SSE", tags: ["Events"], responses: { "200": { description: "SSE event stream" } } } },
       "/api/openapi.json": { get: { summary: "OpenAPI 3.0 spec", tags: ["Docs"], responses: { "200": { description: "OpenAPI JSON spec" } } } },
       "/api/docs": { get: { summary: "Swagger UI", tags: ["Docs"], responses: { "200": { description: "HTML page" } } } },
+    },
+    components: {
+      schemas: {
+        DaemonSettings: {
+          type: "object",
+          properties: {
+            httpApiEnabled: { type: "boolean", description: "Whether the HTTP API server is enabled" },
+          },
+        },
+      },
     },
   };
 }

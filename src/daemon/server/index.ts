@@ -2,6 +2,7 @@ import net from "node:net";
 import type { IpcRequest } from "../../types.js";
 import { LoopManager } from "../managers/loop-manager.js";
 import { TaskManager } from "../managers/task-manager.js";
+import { SettingsManager } from "../settings-manager.js";
 import { getSocketPath, removeSocketFile } from "../state/index.js";
 import { t } from "../../shared/i18n/index.js";
 import { send } from "../ipc/send.js";
@@ -12,13 +13,15 @@ export class IpcServer {
   private server: net.Server;
   private manager: LoopManager;
   private taskManager: TaskManager;
+  private settingsManager: SettingsManager;
   private socketPath: string;
   private clients = new Set<net.Socket>();
   private subscribers = new Set<net.Socket>();
 
-  constructor(manager: LoopManager, taskManager: TaskManager) {
+  constructor(manager: LoopManager, taskManager: TaskManager, settingsManager: SettingsManager) {
     this.manager = manager;
     this.taskManager = taskManager;
+    this.settingsManager = settingsManager;
     this.socketPath = getSocketPath();
     this.server = net.createServer((socket) => this.handleConnection(socket));
   }
@@ -115,6 +118,7 @@ export class IpcServer {
     const handled = await dispatch(request, socket, {
       manager: this.manager,
       taskManager: this.taskManager,
+      settingsManager: this.settingsManager,
       respondOk: (s: import("node:net").Socket, ok: boolean, id: string, data?: unknown) => this.respondOk(s, ok, id, data),
     });
 
