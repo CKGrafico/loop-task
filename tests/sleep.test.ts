@@ -66,7 +66,7 @@ describe("sleep", () => {
 
   it("rejects with AbortError when aborted without explicit reason", async () => {
     const controller = new AbortController();
-    // Abort without passing a reason — signal.reason is a DOMException
+    // Abort without passing a reason  signal.reason is a DOMException
     controller.abort();
 
     await expect(sleep(1000, controller.signal)).rejects.toThrow("aborted");
@@ -79,7 +79,7 @@ describe("sleep", () => {
     // Abort immediately (timers not advanced)
     controller.abort("early");
 
-    // Advance past the timer now — should still reject
+    // Advance past the timer now  should still reject
     vi.advanceTimersByTime(2000);
 
     await expect(promise).rejects.toBe("early");

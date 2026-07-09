@@ -3,7 +3,7 @@ function shellEscape(value: string): string {
   // If the value is purely safe characters, pass it through unmodified
   if (/^[A-Za-z0-9_\-=:./,@]+$/.test(value)) return value;
   // Escape characters that are dangerous inside double quotes, then wrap
-  // the whole value in single quotes — the strongest shell quoting.
+  // the whole value in single quotes  the strongest shell quoting.
   // Single quotes preserve everything literally (newlines, backticks,
   // $, ", \, parens) except single quotes themselves.
   return "'" + value.replace(/'/g, "'\\''") + "'";

@@ -38,7 +38,7 @@ function compare(left: TaskDefinition, right: TaskDefinition, sort: TaskSortMode
     return left.name.localeCompare(right.name, undefined, { sensitivity: "base" });
   }
 
-  // "created" — newest first
+  // "created"  newest first
   return right.createdAt.localeCompare(left.createdAt);
 }
 

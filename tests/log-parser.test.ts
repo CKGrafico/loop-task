@@ -85,7 +85,7 @@ describe("splitLogByRuns", () => {
   });
 
   it("handles open run followed by a new run header", () => {
-    // First run has no exit marker, second run starts — should push the first
+    // First run has no exit marker, second run starts  should push the first
     const content = "[Run #1] start\noutput a\n[Run #2] start\noutput b\n[exit 0]";
     const runs = splitLogByRuns(content);
 

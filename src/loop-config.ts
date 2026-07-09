@@ -132,7 +132,7 @@ export function joinCommandLines(text: string): string {
   // - Segment ending with \: backslash consumed, joins to next with NO added space
   // - Segment NOT ending with \: joins to next with a single space
   // Leading whitespace on each line is trimmed (indentation); trailing whitespace
-  // before \ is preserved (it's part of the content — e.g. separates tokens).
+  // before \ is preserved (it's part of the content  e.g. separates tokens).
   let result = "";
   let prevContinued = false; // true if previous segment ended with \
 

@@ -11,7 +11,7 @@ import { t } from "../src/shared/i18n/index.js";
 // We test the pure functions it depends on, plus verify the component
 // module can be imported without error.
 
-describe("board CodeEditorModal — tokenizeCommand", () => {
+describe("board CodeEditorModal  tokenizeCommand", () => {
   it("tokenizes a simple command", () => {
     const tokens = tokenizeCommand('opencode run "search missing"');
     expect(tokens.length).toBeGreaterThan(0);
@@ -44,7 +44,7 @@ describe("board CodeEditorModal — tokenizeCommand", () => {
   });
 });
 
-describe("board CodeEditorModal — joinCommandLines", () => {
+describe("board CodeEditorModal  joinCommandLines", () => {
   it("joins simple multi-line command", () => {
     expect(joinCommandLines("echo hello\nworld")).toBe("echo hello world");
   });
@@ -62,7 +62,7 @@ describe("board CodeEditorModal — joinCommandLines", () => {
   });
 });
 
-describe("board CodeEditorModal — UndoRedoStack", () => {
+describe("board CodeEditorModal  UndoRedoStack", () => {
   it("tracks value and supports undo", () => {
     const stack = new UndoRedoStack("abc", CODE_EDITOR_UNDO_LIMIT);
     stack.setValue("abcd");
@@ -111,7 +111,7 @@ describe("board CodeEditorModal — UndoRedoStack", () => {
   });
 });
 
-describe("board CodeEditorModal — constants", () => {
+describe("board CodeEditorModal  constants", () => {
   it("syntax colors cover all token types", () => {
     const types: Array<"flag" | "string" | "operator" | "word"> = ["flag", "string", "operator", "word"];
     for (const type of types) {
@@ -129,7 +129,7 @@ describe("board CodeEditorModal — constants", () => {
   });
 });
 
-describe("board CodeEditorModal — i18n keys", () => {
+describe("board CodeEditorModal  i18n keys", () => {
   it("all codeEditor i18n keys resolve to non-empty strings", () => {
     const keys = [
       "codeEditor.title",

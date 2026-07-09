@@ -38,7 +38,7 @@ export function FocusableInput(props: FocusableInputProps): React.ReactNode {
 
       if (key.ctrl || key.escape) return;
 
-      // Multi-char containing CR/LF with no bracketed markers — ignore
+      // Multi-char containing CR/LF with no bracketed markers  ignore
       if (input.length > 1 && (input.includes("\r") || input.includes("\n"))) return;
 
       if (key.return) {

@@ -27,14 +27,14 @@ describe("WizardForm Ctrl+S with defaultValue-sourced custom field", () => {
     // This is the negative case that documents the bug: when taskId has
     // NO defaultValue and renderCustom never calls onChange, submit()
     // refocuses taskId instead of calling onComplete. With the fix in
-    // CreateForm (defaultValue = selectedTaskId), this never happens —
+    // CreateForm (defaultValue = selectedTaskId), this never happens 
     // but WizardForm itself has no defaultValue, so the bug is at the
     // CreateForm layer. This test just documents WizardForm's behavior.
     const onComplete = vi.fn();
 
     const captured: { onChange: (v: string) => void; onAdvance: () => void } = {
-      onChange: () => {},
-      onAdvance: () => {},
+      onChange: () => { },
+      onAdvance: () => { },
     };
 
     const steps: WizardStepConfig[] = [
@@ -51,7 +51,7 @@ describe("WizardForm Ctrl+S with defaultValue-sourced custom field", () => {
         prompt: "Inline or existing?",
         hint: "choose",
         required: true,
-        onActivate: () => {},
+        onActivate: () => { },
         renderCustom: ({ isActive, onChange, onAdvance }) => {
           if (isActive) {
             captured.onChange = onChange;
@@ -66,7 +66,7 @@ describe("WizardForm Ctrl+S with defaultValue-sourced custom field", () => {
         hint: "pick",
         required: true,
         skip: (values) => !values.taskMode?.includes("Existing"),
-        // NO defaultValue — simulates the bug
+        // NO defaultValue  simulates the bug
         renderCustom: () => null as unknown as React.ReactNode,
       },
       {
@@ -81,7 +81,7 @@ describe("WizardForm Ctrl+S with defaultValue-sourced custom field", () => {
 
     const { stdin } = render(
       <Box height={30} width={80}>
-        <WizardForm title="Test" steps={steps} onComplete={onComplete} onCancel={() => {}} />
+        <WizardForm title="Test" steps={steps} onComplete={onComplete} onCancel={() => { }} />
       </Box>,
     );
 
@@ -107,8 +107,8 @@ describe("WizardForm Ctrl+S with defaultValue-sourced custom field", () => {
     const onComplete = vi.fn();
 
     const captured: { onChange: (v: string) => void; onAdvance: () => void } = {
-      onChange: () => {},
-      onAdvance: () => {},
+      onChange: () => { },
+      onAdvance: () => { },
     };
     let activeKey = "interval";
 
@@ -126,7 +126,7 @@ describe("WizardForm Ctrl+S with defaultValue-sourced custom field", () => {
         prompt: "Inline or existing?",
         hint: "choose",
         required: true,
-        onActivate: () => {},
+        onActivate: () => { },
         renderCustom: ({ isActive, onChange, onAdvance }) => {
           if (isActive) {
             captured.onChange = onChange;
@@ -143,7 +143,7 @@ describe("WizardForm Ctrl+S with defaultValue-sourced custom field", () => {
         skip: (values) => !values.taskMode?.includes("Existing"),
         // THE FIX: defaultValue carries the picked task ID
         defaultValue: "abc12345",
-        // Display-only renderCustom — does NOT call onChange
+        // Display-only renderCustom  does NOT call onChange
         renderCustom: () => null as unknown as React.ReactNode,
       },
       {
@@ -158,7 +158,7 @@ describe("WizardForm Ctrl+S with defaultValue-sourced custom field", () => {
 
     const { stdin, lastFrame } = render(
       <Box height={30} width={80}>
-        <WizardForm title="Test" steps={steps} onComplete={onComplete} onCancel={() => {}} />
+        <WizardForm title="Test" steps={steps} onComplete={onComplete} onCancel={() => { }} />
       </Box>,
     );
 

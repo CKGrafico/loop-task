@@ -13,7 +13,7 @@ export interface SelectOption {
 /**
  * Filterable modal picker: type to narrow, up/down to navigate, enter to
  * select, esc to cancel. The single interaction pattern for every enumerated
- * field in the board — a fixed set of two options and a list of dozens both
+ * field in the board  a fixed set of two options and a list of dozens both
  * use this, so users only ever learn one gesture for "change this value".
  */
 export function SelectModal(props: {

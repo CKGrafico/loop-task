@@ -11,7 +11,7 @@ import { WizardForm, type WizardStepConfig } from "../src/widgets/loop-form/Wiza
 // Regression test for "Existing task" wizard freeze:
 //
 // After the user picked "Existing task" in the taskMode SelectModal, the form
-// advanced to the WRONG next field (command) and froze up — taskId was
+// advanced to the WRONG next field (command) and froze up  taskId was
 // skipped and command was shown even though it should be hidden when an
 // existing task is selected. Tab then jumped to runNow, so the user could
 // never actually pick a task.
@@ -31,14 +31,14 @@ import { WizardForm, type WizardStepConfig } from "../src/widgets/loop-form/Wiza
 describe("WizardForm skip-after-onChange regression", () => {
   it("selecting 'Existing task' then onAdvance lands on taskId, not command", async () => {
     // Callbacks captured from taskMode's renderCustom (only meaningful while
-    // taskMode is the active field — renderCustom re-runs each render with
+    // taskMode is the active field  renderCustom re-runs each render with
     // fresh onChange/onAdvance closures).
     const captured: {
       onChange: (v: string) => void;
       onAdvance: () => void;
     } = {
-      onChange: () => {},
-      onAdvance: () => {},
+      onChange: () => { },
+      onAdvance: () => { },
     };
 
     // Tracks whether taskId's renderCustom was ever called with isActive=true
@@ -61,9 +61,9 @@ describe("WizardForm skip-after-onChange regression", () => {
         prompt: "Inline or existing task?",
         hint: "choose",
         required: true,
-        // A real select field opens a modal on Enter — we just need onActivate to
+        // A real select field opens a modal on Enter  we just need onActivate to
         // be present so the step's interaction shape matches the real one.
-        onActivate: () => {},
+        onActivate: () => { },
         renderCustom: ({ isActive, onChange, onAdvance }) => {
           if (isActive) {
             captured.onChange = onChange;
@@ -96,7 +96,7 @@ describe("WizardForm skip-after-onChange regression", () => {
     ];
 
     const onComplete = () => {
-      // Should not fire — we never saved (no Ctrl+S in this test).
+      // Should not fire  we never saved (no Ctrl+S in this test).
     };
 
     const { stdin, lastFrame } = render(
@@ -105,7 +105,7 @@ describe("WizardForm skip-after-onChange regression", () => {
           title="Test"
           steps={steps}
           onComplete={onComplete}
-          onCancel={() => {}}
+          onCancel={() => { }}
         />
       </Box>,
     );
@@ -114,7 +114,7 @@ describe("WizardForm skip-after-onChange regression", () => {
     stdin.write("\t");
     await delay();
 
-    // taskMode should now be active — renderCustom populated the callbacks.
+    // taskMode should now be active  renderCustom populated the callbacks.
     // Simulate the SelectModal onSelect handler: onChange + onAdvance in the
     // same synchronous tick (exactly what CreateForm does).
     captured.onChange("Existing task");

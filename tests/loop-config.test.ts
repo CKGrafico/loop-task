@@ -186,7 +186,7 @@ describe("joinCommandLines", () => {
     expect(joinCommandLines("echo hello")).toBe("echo hello");
   });
 
-  it("handles lines that are only a backslash — consumed to empty join", () => {
+  it("handles lines that are only a backslash  consumed to empty join", () => {
     expect(joinCommandLines("\\\n\\")).toBe("");
   });
 

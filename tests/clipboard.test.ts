@@ -20,7 +20,7 @@ describe("clipboard", () => {
     vi.resetModules();
   });
 
-  it("copyToClipboard never throws on Linux without xclip/xsel — falls back to OSC 52", async () => {
+  it("copyToClipboard never throws on Linux without xclip/xsel  falls back to OSC 52", async () => {
     vi.resetModules();
     vi.doMock("node:os", () => ({ platform: () => "linux" }));
     vi.doMock("node:child_process", () => ({
@@ -42,7 +42,7 @@ describe("clipboard", () => {
     } catch {
       threw = true;
     }
-    // Must never throw — this is the regression that crashed modals over SSH.
+    // Must never throw  this is the regression that crashed modals over SSH.
     expect(threw).toBe(false);
     expect(result).toBe(true);
     // OSC 52 fallback should have written a \x1b]52;c;<base64>\x07 escape.

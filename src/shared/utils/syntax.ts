@@ -19,7 +19,7 @@ function scanTokens(line: string): Token[] {
   const len = line.length;
 
   while (i < len) {
-    // Whitespace run — preserve it as a token
+    // Whitespace run  preserve it as a token
     if (line[i] === " " || line[i] === "\t") {
       let j = i;
       while (j < len && (line[j] === " " || line[j] === "\t")) j++;
@@ -68,7 +68,7 @@ function scanTokens(line: string): Token[] {
       continue;
     }
 
-    // Unquoted word — consume until whitespace or operator
+    // Unquoted word  consume until whitespace or operator
     let j = i;
     while (j < len) {
       if (line[j] === " " || line[j] === "\t") break;
@@ -104,7 +104,7 @@ function scanTokens(line: string): Token[] {
 
 /**
  * Tokenize a command line for syntax highlighting purposes.
- * This is a cosmetic tokenizer — the real parsing for execution
+ * This is a cosmetic tokenizer  the real parsing for execution
  * lives in src/loop-config.ts parseCommandLine.
  *
  * Whitespace is not returned (use highlightSegments for rendering

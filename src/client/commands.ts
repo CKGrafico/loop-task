@@ -38,7 +38,7 @@ export async function startLoop(
   console.log(t("cli.startedInterval", { interval: intervalHuman }));
   console.log(t("cli.startedStatus"));
   if (options.interval === 0) {
-    console.log("  Note: manual loop — use 'trigger' to run on demand");
+    console.log("  Note: manual loop  use 'trigger' to run on demand");
   }
   console.log();
   console.log(t("cli.startedHint"));

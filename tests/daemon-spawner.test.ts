@@ -3,7 +3,7 @@ import { mkdtempSync, rmSync, mkdirSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
-// Mock state functions that spawner depends on — use vi.hoisted for factory refs
+// Mock state functions that spawner depends on  use vi.hoisted for factory refs
 const { mockReadDaemonPid, mockIsDaemonAlive, mockRemoveDaemonPid, mockRemoveDaemonSignature, mockReadDaemonSignature, mockComputeCodeSignature, mockGetSocketPath } = vi.hoisted(() => ({
   mockReadDaemonPid: vi.fn().mockReturnValue(null),
   mockIsDaemonAlive: vi.fn().mockReturnValue(false),
@@ -81,7 +81,7 @@ describe("stopDaemon()", () => {
   });
 });
 
-describe("ensureDaemon() — early return paths", () => {
+describe("ensureDaemon()  early return paths", () => {
   it("returns early when daemon pid exists, is alive, and signature matches", () => {
     mockReadDaemonPid.mockReturnValue(1234);
     mockIsDaemonAlive.mockReturnValue(true);

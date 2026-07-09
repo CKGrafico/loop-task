@@ -150,7 +150,7 @@ function readBody(res: http.IncomingMessage): Promise<string> {
 
 
 
-describe("HttpApiServer — route matching & JSON envelope", () => {
+describe("HttpApiServer  route matching & JSON envelope", () => {
   let httpServer: HttpApiServer;
   let port: number;
 
@@ -173,7 +173,7 @@ describe("HttpApiServer — route matching & JSON envelope", () => {
     vi.clearAllMocks();
 
     // Re-establish default return values (safe even though clearAllMocks
-    // doesn't reset mockReturnValue — ensures no stale override leaks).
+    // doesn't reset mockReturnValue  ensures no stale override leaks).
     mockManager.list.mockReturnValue([fakeLoopMeta]);
     mockManager.status.mockReturnValue(fakeLoopMeta);
     mockManager.start.mockReturnValue("new-id");
@@ -405,7 +405,7 @@ describe("HttpApiServer — route matching & JSON envelope", () => {
     expect(res.headers["content-type"]).toContain("text/event-stream");
     expect(res.headers["cache-control"]).toContain("no-cache");
 
-    // SSE streams never end — destroy to clean up the connection.
+    // SSE streams never end  destroy to clean up the connection.
     res.destroy();
   });
 
@@ -456,7 +456,7 @@ describe("HttpApiServer — route matching & JSON envelope", () => {
   });
 
   it("unsupported method on known path returns 404", async () => {
-    // PUT /api/loops is not registered — matchRoute requires exact method.
+    // PUT /api/loops is not registered  matchRoute requires exact method.
     const res = await httpRequest(port, "PUT", "/api/loops");
     const body = JSON.parse(await readBody(res));
 

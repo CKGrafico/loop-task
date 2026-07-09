@@ -60,7 +60,7 @@ export function WizardForm(props: WizardFormProps): React.ReactNode {
     return result;
   }, [steps, values]);
 
-  // Synchronous mirror of resolvedValues — updated inside setValue so
+  // Synchronous mirror of resolvedValues  updated inside setValue so
   // findNextField sees the new value immediately, before React re-renders.
   // Without this, onChange("Existing task") + onAdvance() run in the same
   // tick: setValues queues a state update, but findNextField reads stale
@@ -212,7 +212,7 @@ export function WizardForm(props: WizardFormProps): React.ReactNode {
       setValue(step.key, valueFor(step) + sanitizePaste(input));
       return;
     }
-    // Multi-char containing CR/LF with no bracketed markers — ignore
+    // Multi-char containing CR/LF with no bracketed markers  ignore
     if (input.length > 1 && (input.includes("\r") || input.includes("\n"))) return;
     // Multi-char printable input = unbracketed single-line paste (e.g. right-click)
     if (input.length > 1 && !key.meta) {

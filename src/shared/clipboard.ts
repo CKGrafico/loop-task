@@ -2,7 +2,7 @@ import { execFileSync } from "node:child_process";
 import { platform } from "node:os";
 
 /**
- * Write text to the system clipboard. Never throws — returns false if no
+ * Write text to the system clipboard. Never throws  returns false if no
  * clipboard tool is available (e.g. a headless SSH box without xclip/xsel).
  *
  * Linux toolchain tried in order: xclip → xsel → wl-copy (Wayland) →
@@ -27,7 +27,7 @@ export function copyToClipboard(text: string): boolean {
       return false;
     }
   }
-  // Linux / BSD: try each clipboard tool in order. All calls are guarded —
+  // Linux / BSD: try each clipboard tool in order. All calls are guarded 
   // a missing binary must never throw, since callers invoke this from
   // synchronous keypress handlers (an uncaught throw here kills the app).
   const tries: Array<() => void> = [

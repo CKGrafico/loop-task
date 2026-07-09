@@ -10,7 +10,7 @@ export interface UseUndoRedoResult {
 }
 
 /**
- * Pure undo/redo stack logic — exported for direct unit testing
+ * Pure undo/redo stack logic  exported for direct unit testing
  * without needing React DOM or renderHook.
  */
 export class UndoRedoStack {
@@ -20,7 +20,7 @@ export class UndoRedoStack {
   constructor(
     public value: string,
     private limit: number = 50,
-  ) {}
+  ) { }
 
   get canUndo(): boolean {
     return this.history.length > 0;

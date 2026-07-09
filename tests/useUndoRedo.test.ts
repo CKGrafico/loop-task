@@ -60,9 +60,9 @@ describe("UndoRedoStack", () => {
     s.setValue("1");
     s.setValue("2");
     s.setValue("3");
-    // history: ["0","1","2"], value: "3" — at cap
+    // history: ["0","1","2"], value: "3"  at cap
     s.setValue("4");
-    // history: ["1","2","3"], value: "4" — oldest "0" dropped
+    // history: ["1","2","3"], value: "4"  oldest "0" dropped
     expect(s.value).toBe("4");
     expect(s.undo()).toBe(true);
     expect(s.value).toBe("3");

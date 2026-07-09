@@ -304,7 +304,7 @@ describe("CommandInput", () => {
 
 
   it("renders confirm prompt on the same line as the input cursor", () => {
-    // ConfirmMode shows: "│ <prompt> <cursor>" — one row, no separate input row.
+    // ConfirmMode shows: "│ <prompt> <cursor>"  one row, no separate input row.
     const confirm: ConfirmState = {
       prompt: 'Type yes to delete "test-loop"',
       onConfirm: () => { },
@@ -694,7 +694,7 @@ describe("rankCommands", () => {
 
   it("keeps fuzzy matches stable when no exact/prefix", () => {
     const result = rankCommands("dit", options);
-    // Neither exact nor prefix for either "Edit" or "Delete" — both land in fuzzy,
+    // Neither exact nor prefix for either "Edit" or "Delete"  both land in fuzzy,
     // existing order preserved
     expect(result.length).toBeGreaterThan(0);
   });
@@ -864,7 +864,7 @@ const TASK_MODE_INLINE = "inline";
 const TASK_MODE_EXISTING = "existing";
 
 /**
- * Reimplemented from the former src/board/components/CreateForm.tsx — the module had a
+ * Reimplemented from the former src/board/components/CreateForm.tsx  the module had a
  * duplicate `validateAll` declaration that breaks esbuild during vitest
  * transforms, so we duplicate the tiny pure function here.
  */
@@ -1155,7 +1155,7 @@ describe("SelectValueField", () => {
 
 
 describe("CodeEditorModal", () => {
-  it("renders with initial value — lines visible", () => {
+  it("renders with initial value  lines visible", () => {
     const { lastFrame } = render(
       <Box height={25} width={70}>
         <CodeEditorModal
@@ -1281,7 +1281,7 @@ describe("CodeEditorModal", () => {
     // Ctrl+Z to undo
     stdin.write("\u001A"); // Ctrl+Z
     await delay();
-    // Ctrl+S to save — should have the original value
+    // Ctrl+S to save  should have the original value
     stdin.write("\u0013"); // Ctrl+S
     await delay();
     expect(onSave).toHaveBeenCalledWith("abc");
@@ -1304,7 +1304,7 @@ describe("CodeEditorModal", () => {
     // Undo
     stdin.write("\u001A"); // Ctrl+Z
     await delay();
-    // Redo — Ctrl+Shift+Z is hard to emit via stdin; we rely on the save-after-undo test above
+    // Redo  Ctrl+Shift+Z is hard to emit via stdin; we rely on the save-after-undo test above
     // and verify the structural path by ensuring the hook is present.
     // Instead: type another char, undo it, then save to verify undo worked
     stdin.write("\u0013"); // Ctrl+S
@@ -1412,7 +1412,7 @@ describe("CodeEditorModal", () => {
       </Box>,
     );
     // Send raw \x16 (Ctrl+V / SYN). On this test host, readFromClipboard()
-    // will return either real clipboard contents or "" — either way the
+    // will return either real clipboard contents or ""  either way the
     // modal must not crash. If clipboard is empty, the hint should flash.
     stdin.write("\x16");
     await delay();

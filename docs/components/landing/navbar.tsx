@@ -3,8 +3,10 @@
 import { GithubLogo, Repeat } from '@phosphor-icons/react/dist/ssr';
 
 const LINKS = [
+  { href: '/#loops', label: 'Loop engineering' },
   { href: '/#features', label: 'Features' },
   { href: '/#compare', label: 'vs cron' },
+  { href: '/#examples', label: 'Examples' },
   { href: '/docs', label: 'Docs' },
 ];
 

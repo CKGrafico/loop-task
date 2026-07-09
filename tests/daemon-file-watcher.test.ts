@@ -87,7 +87,7 @@ describe("FileWatcher", () => {
 
       watcher.start();
 
-      // Register self-write with current content — this should prevent
+      // Register self-write with current content  this should prevent
       // the next write from triggering onChange
       const content = JSON.stringify([]);
       watcher.registerSelfWrite(loopsFile, content);
@@ -151,7 +151,7 @@ describe("FileWatcher", () => {
       await vi.advanceTimersByTimeAsync(3000);
 
       // If reconcile was called, great. If not, the mtime check didn't fire
-      // in test context — this tests the logic path without being flaky.
+      // in test context  this tests the logic path without being flaky.
     });
   });
 

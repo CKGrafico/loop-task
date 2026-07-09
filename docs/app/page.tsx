@@ -30,6 +30,10 @@ const rubric = [
     word: 'Chainable.',
     text: 'Tasks react to exit codes and chain into pipelines, on success or on failure, without glue scripts.',
   },
+  {
+    word: 'Controllable.',
+    text: 'Every loop is live on the board: watch logs, check status, pause, stop, and chain, all from the keyboard.',
+  },
 ];
 
 const features = [
@@ -107,6 +111,12 @@ const comparison: { label: string; loopTask: Cell; cron: Cell; os: Cell }[] = [
     os: { ok: false },
   },
   {
+    label: 'Live control dashboard',
+    loopTask: { ok: true, note: 'watch, pause, stop' },
+    cron: { ok: false },
+    os: { ok: false },
+  },
+  {
     label: 'Task chaining on exit codes',
     loopTask: { ok: true },
     cron: { ok: false },
@@ -159,6 +169,29 @@ const examples = [
   },
 ];
 
+const references = [
+  {
+    title: 'Loop Engineering',
+    source: 'Addy Osmani',
+    href: 'https://addyosmani.com/blog/loop-engineering/',
+  },
+  {
+    title: 'The Art of Loop Engineering',
+    source: 'LangChain',
+    href: 'https://www.langchain.com/blog/the-art-of-loop-engineering',
+  },
+  {
+    title: 'What is Loop Engineering for AI Coding Agents?',
+    source: 'MindStudio',
+    href: 'https://www.mindstudio.ai/blog/what-is-loop-engineering-ai-coding-agents',
+  },
+  {
+    title: 'The Rise of Loop Engineering',
+    source: 'Quique Fdez Guerra',
+    href: 'https://www.linkedin.com/pulse/we-stopped-working-alone-rise-loop-engineering-quique-fdez-guerra-a8qxe/',
+  },
+];
+
 const commands = [
   { cmd: 'loop-task', desc: 'Open the interactive board' },
   { cmd: 'loop-task start', desc: 'Start the daemon, restore persisted loops' },
@@ -203,24 +236,25 @@ export default function LandingPage() {
           {/* Copy */}
           <div className="flex flex-col items-start lg:col-span-5">
             <div className="animate-fade-up mb-6 inline-flex items-center rounded-full border border-border-dim bg-surface/80 px-3.5 py-1.5 font-mono text-xs text-text-sec">
-              cron, for humans and their agents
+              loop engineering, from your terminal
             </div>
 
             <h1
               className="animate-fade-up text-4xl font-bold tracking-tight sm:text-5xl lg:text-6xl"
               style={{ animationDelay: '60ms' }}
             >
-              Run anything
+              Run async loops.
               <br />
-              <span className="text-brand">on a cadence</span>
+              <span className="text-brand">Control them all.</span>
             </h1>
 
             <p
               className="animate-fade-up mt-6 max-w-md text-lg leading-relaxed text-text-sec"
               style={{ animationDelay: '120ms' }}
             >
-              Shell commands at human-readable intervals: in the background, on
-              a keyboard-driven board, on macOS, Linux, and Windows.
+              Give any command, or an AI agent, a cadence. Then watch, pause,
+              and chain every loop from one keyboard-driven terminal dashboard,
+              on macOS, Linux, and Windows.
             </p>
 
             {/* Install + CTAs */}
@@ -263,6 +297,10 @@ export default function LandingPage() {
                 className="w-full"
               />
             </div>
+            <p className="mt-3 font-mono text-xs text-text-muted">
+              The board: your control center. Create, monitor live logs, pause,
+              and stop every loop.
+            </p>
           </div>
         </div>
       </section>
@@ -278,6 +316,66 @@ export default function LandingPage() {
               </p>
             </Reveal>
           ))}
+        </div>
+      </section>
+
+      {/* ── What is loop engineering? ── */}
+      <section id="loops" className="border-t border-border scroll-mt-14">
+        <div className="mx-auto max-w-6xl px-4 py-20 sm:px-6">
+          <SectionKicker>$ what is loop engineering?</SectionKicker>
+          <h2 className="mb-3 max-w-2xl text-2xl font-semibold tracking-tight sm:text-3xl">
+            Design work that runs on a cadence, not on your attention
+          </h2>
+          <p className="mb-8 max-w-2xl text-text-sec">
+            A <span className="text-text">loop</span> is a recurring goal: you
+            define a purpose, give it an interval, and let it iterate. It scales
+            from a 10-second health check to an AI agent chewing through a
+            backlog, and you supervise every one of them from the same board.
+          </p>
+
+          <div className="mb-10">
+            <p className="mb-3 font-mono text-xs uppercase tracking-[0.2em] text-text-muted">
+              Further reading
+            </p>
+            <ul className="flex flex-col gap-2">
+              {references.map((ref) => (
+                <li key={ref.href}>
+                  <a
+                    href={ref.href}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="group inline-flex items-center gap-2 text-sm text-text-sec transition-colors hover:text-brand"
+                  >
+                    <ArrowRight
+                      size={13}
+                      weight="bold"
+                      className="shrink-0 text-text-muted transition-colors group-hover:text-brand"
+                    />
+                    <span className="underline underline-offset-4">
+                      {ref.title}
+                    </span>
+                    <span className="text-text-muted"> {ref.source}</span>
+                  </a>
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          <Reveal className="overflow-hidden rounded-xl border border-border-dim bg-input">
+            <div className="divide-y divide-border-dim">
+              {examples.slice(0, 5).map((ex) => (
+                <div key={ex.label} className="flex items-center gap-4 px-5 py-3">
+                  <code className="w-28 shrink-0 rounded-md bg-elevated px-2 py-0.5 text-center font-mono text-xs text-text-muted">
+                    {ex.label}
+                  </code>
+                  <code className="truncate font-mono text-sm text-text-sec">
+                    <span className="select-none text-text-muted">$ </span>
+                    {ex.cmd}
+                  </code>
+                </div>
+              ))}
+            </div>
+          </Reveal>
         </div>
       </section>
 
@@ -367,9 +465,8 @@ export default function LandingPage() {
                           )}
                           {cell.note && (
                             <span
-                              className={`font-mono text-xs ${
-                                cell.ok ? 'text-text-sec' : 'text-text-muted'
-                              }`}
+                              className={`font-mono text-xs ${cell.ok ? 'text-text-sec' : 'text-text-muted'
+                                }`}
                             >
                               {cell.note}
                             </span>
@@ -386,7 +483,7 @@ export default function LandingPage() {
       </section>
 
       {/* ── Examples ── */}
-      <section className="border-t border-border">
+      <section id="examples" className="border-t border-border scroll-mt-14">
         <div className="mx-auto max-w-6xl px-4 py-20 sm:px-6">
           <h2 className="mb-10 text-2xl font-semibold tracking-tight sm:text-3xl">
             Practical loops for everyday work
