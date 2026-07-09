@@ -257,6 +257,7 @@ program
   .command("status")
   .description("Show status of all loops")
   .option("--json", "Output as JSON")
+  .option("--verbose", "Show extra details (skipped, silent-chain counts)")
   .action(async (opts) => {
     const { sendRequest } = await import("./client/ipc.js");
     const response = await sendRequest({ type: "list" });
@@ -270,7 +271,14 @@ program
     } else {
       for (const loop of loops) {
         const { describeLoop, statusLabel } = await import("./shared/ui/format.js");
-        console.log(`${loop.id}  ${statusLabel(loop.status)}  ${describeLoop(loop)}`);
+        let line = `${loop.id}  ${statusLabel(loop.status)}  ${describeLoop(loop)}`;
+        if (opts.verbose) {
+          const extra: string[] = [];
+          if (loop.skippedCount > 0) extra.push(`skipped=${loop.skippedCount}`);
+          if ((loop.silentChainCount ?? 0) > 0) extra.push(`silent=${loop.silentChainCount}`);
+          if (extra.length) line += `  [${extra.join(", ")}]`;
+        }
+        console.log(line);
       }
     }
   });

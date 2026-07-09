@@ -74,6 +74,9 @@ export function Inspector(props: { loop: LoopMeta | null; projects?: Project[] }
         <Field label={t("board.fieldLastExit")}><Text color={theme.text.primary}>{lastExit}</Text></Field>
         <Field label={t("board.fieldLastRun")}><Text color={theme.text.primary}>{lastRun}</Text></Field>
         <Field label={t("board.fieldNextRun")}><Text color={theme.text.primary}>{nextRun}</Text></Field>
+        {(loop.silentChainCount ?? 0) > 0 ? (
+          <Field label={t("board.fieldSilentChains")}><Text color={theme.text.muted}>{t("board.silentChainCount", { count: (loop.silentChainCount ?? 0).toLocaleString() })}</Text></Field>
+        ) : null}
         <MutedField label={t("board.fieldDesc")}>{desc}</MutedField>
         <MutedField label={t("board.fieldCommand")}>{fullCmd}</MutedField>
       </Box>

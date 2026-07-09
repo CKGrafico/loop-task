@@ -15,4 +15,5 @@ export interface LoopControllerState {
   remainingDelayMs?: number | null;
   runHistory?: RunRecord[];
   skippedCount?: number;
+  silentChainCount?: number;
 }

@@ -74,7 +74,11 @@ export function TaskForm(props: TaskFormProps): React.ReactNode {
   const [contextValue, setContextValue] = useState(
     editTask?.context ? JSON.stringify(editTask.context) : "",
   );
+  const [silentChainValue, setSilentChainValue] = useState(
+    editTask?.silentChain ? t("board.silentChainYes") : "",
+  );
   const [openChainField, setOpenChainField] = useState<"onSuccess" | "onFailure" | null>(null);
+  const [openSilentChain, setOpenSilentChain] = useState(false);
   const chainFieldsRef = useRef<Record<string, { value: string; onChange: (v: string) => void; onAdvance: () => void }>>({});
 
   const resolveChainId = useCallback(
@@ -159,6 +163,21 @@ export function TaskForm(props: TaskFormProps): React.ReactNode {
         },
       },
       {
+        key: "silentChain",
+        prompt: t("wizard.silentChainPrompt"),
+        hint: t("wizard.silentChainHint"),
+        required: false,
+        defaultValue: silentChainValue || undefined,
+        onActivate: () => setOpenSilentChain(true),
+        renderCustom: ({ value, isActive }) => (
+          <SelectValueField
+            label={value || null}
+            placeholder={t("wizard.silentChainPrompt")}
+            isActive={isActive}
+          />
+        ),
+      },
+      {
         key: "context",
         prompt: t("wizard.contextPrompt"),
         hint: t("wizard.contextHint"),
@@ -188,7 +207,7 @@ export function TaskForm(props: TaskFormProps): React.ReactNode {
       },
     ];
     return list;
-  }, [commandValue, chainOptions, editTask, resolveChainName, contextValue]);
+  }, [commandValue, chainOptions, editTask, resolveChainName, contextValue, silentChainValue]);
 
   const handleComplete = useCallback(
     (values: Record<string, string>) => {
@@ -198,6 +217,7 @@ export function TaskForm(props: TaskFormProps): React.ReactNode {
 
       const onSuccessTaskId = resolveChainId(values.onSuccess ?? "");
       const onFailureTaskId = resolveChainId(values.onFailure ?? "");
+      const silentChain = values.silentChain === t("board.silentChainYes");
 
       let context: Record<string, unknown> | undefined;
       const contextStr = contextValue?.trim();
@@ -247,6 +267,7 @@ export function TaskForm(props: TaskFormProps): React.ReactNode {
           steps,
           onSuccessTaskId,
           onFailureTaskId,
+          silentChain: silentChain || undefined,
           context,
         };
       } else {
@@ -257,6 +278,7 @@ export function TaskForm(props: TaskFormProps): React.ReactNode {
           commandRaw: commandValue,
           onSuccessTaskId,
           onFailureTaskId,
+          silentChain: silentChain || undefined,
           context,
         };
       }
@@ -272,7 +294,7 @@ export function TaskForm(props: TaskFormProps): React.ReactNode {
           .catch(() => { /* error handled silently */ });
       }
     },
-    [commandValue, resolveChainId, mode, editTask, onDone, contextValue],
+    [commandValue, resolveChainId, mode, editTask, onDone, contextValue, silentChainValue],
   );
 
   const title = mode === "edit"
@@ -286,7 +308,7 @@ export function TaskForm(props: TaskFormProps): React.ReactNode {
         steps={steps}
         onComplete={handleComplete}
         onCancel={onCancel}
-        disabled={openChainField !== null || commandEditorOpen || contextEditorOpen}
+        disabled={openChainField !== null || commandEditorOpen || contextEditorOpen || openSilentChain}
       />
       {openChainField ? (
         <SelectModal
@@ -319,6 +341,21 @@ export function TaskForm(props: TaskFormProps): React.ReactNode {
             setContextEditorOpen(false);
           }}
           onCancel={() => setContextEditorOpen(false)}
+        />
+      ) : null}
+      {openSilentChain ? (
+        <SelectModal
+          title={t("wizard.silentChainPrompt")}
+          options={[
+            { value: t("board.silentChainNo"), label: t("board.silentChainNo") },
+            { value: t("board.silentChainYes"), label: t("board.silentChainYes") },
+          ]}
+          initialValue={silentChainValue || t("board.silentChainNo")}
+          onSelect={(option) => {
+            setSilentChainValue(option.value === t("board.silentChainNo") ? "" : option.value);
+            setOpenSilentChain(false);
+          }}
+          onClose={() => setOpenSilentChain(false)}
         />
       ) : null}
     </>

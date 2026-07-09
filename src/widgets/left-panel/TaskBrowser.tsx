@@ -69,12 +69,13 @@ export function TaskNavigator(props: {
       ? cmd.slice(0, COMMAND_WIDTH - 3) + "..."
       : cmd.padEnd(COMMAND_WIDTH);
     const chains = chainsLabel(task);
+    const silent = task.silentChain ? " [s]" : "";
     const fg = isSelected ? theme.text.inverse : theme.text.primary;
     return (
       <Box backgroundColor={isSelected ? (isFocused && navActive ? theme.bg.activeTask : isFocused ? theme.bg.hover : undefined) : undefined}>
         <Text color={fg}>{name}</Text>
         <Text color={fg}>{cmdDisplay}</Text>
-        <Text color={fg}>{chains}</Text>
+        <Text color={fg}>{chains}{silent}</Text>
       </Box>
     );
   }
@@ -170,6 +171,11 @@ export function TaskInspector(props: { task: TaskDefinition | null; allTasks: Ta
         </InspectorField>
         <InspectorField label={t("board.taskLabelOnFailure") + ": "}>
           <Text color={theme.text.primary}>{onFailure}</Text>
+        </InspectorField>
+        <InspectorField label={t("board.taskFieldSilent") + ": "}>
+          <Text color={task.silentChain ? theme.semantic.warning : theme.text.muted}>
+            {task.silentChain ? t("board.silentChainYes") : t("board.silentChainNo")}
+          </Text>
         </InspectorField>
       </Box>
     </Box>

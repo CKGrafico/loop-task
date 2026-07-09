@@ -39,6 +39,7 @@ export class LoopController extends EventEmitter {
   private runHistory: RunRecord[] = [];
   private currentRunStartOffset: number = 0;
   private skippedCount = 0;
+  private _silentChainCount = 0;
 
   constructor(
     id: string,
@@ -70,10 +71,19 @@ export class LoopController extends EventEmitter {
       r.status === "running" ? { ...r, status: "completed" as const } : r
     ).map((r) => ({ ...r, logOffset: r.logOffset ?? 0 }));
     this.skippedCount = state?.skippedCount ?? 0;
+    this._silentChainCount = state?.silentChainCount ?? 0;
   }
 
   get status(): LoopStatus {
     return this._status;
+  }
+
+  get silentChainCount(): number {
+    return this._silentChainCount;
+  }
+
+  incrementSilentChainCount(): void {
+    this._silentChainCount += 1;
   }
 
   start(): void {
@@ -209,6 +219,7 @@ export class LoopController extends EventEmitter {
       remainingDelayMs: this.remainingDelayMs,
       runHistory: this.runHistory,
       skippedCount: this.skippedCount,
+      silentChainCount: this._silentChainCount,
     };
   }
 
