@@ -216,8 +216,10 @@ projectCmd
   .description(t("cli.projectNewDescription"))
   .argument("<name>", t("cli.projectArgName"))
   .option("--color <color>", t("cli.optProjectColor"))
-  .action(async (name: string, opts: { color?: string }) => {
-    await createProjectCli(name, opts.color);
+  .option("--directory <path>", t("cli.optProjectDirectory"))
+  .option("--github-source <owner/repo>", t("cli.optProjectGithubSource"))
+  .action(async (name: string, opts: { color?: string; directory?: string; githubSource?: string }) => {
+    await createProjectCli(name, opts.color, opts.directory, opts.githubSource);
   });
 
 projectCmd

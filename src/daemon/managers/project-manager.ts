@@ -13,6 +13,14 @@ export function setProjectSelfWriteNotifier(notifier: SelfWriteNotifier | null):
   selfWriteNotifier = notifier;
 }
 
+const GITHUB_SOURCE_REGEX = /^[a-zA-Z0-9_.\-]+\/[a-zA-Z0-9_.\-]+$/;
+
+function validateGithubSource(githubSource: string): void {
+  if (!GITHUB_SOURCE_REGEX.test(githubSource)) {
+    throw new Error(`Invalid githubSource format: "${githubSource}". Expected owner/repo (e.g. CKGrafico/loop-task)`);
+  }
+}
+
 export class ProjectManager {
   private projects: Map<string, Project> = new Map();
 
@@ -100,13 +108,15 @@ export class ProjectManager {
     return this.projects.get(id);
   }
 
-  create(name: string, color: string, directory?: string): Project {
+  create(name: string, color: string, directory?: string, githubSource?: string): Project {
+    if (githubSource !== undefined && githubSource !== "") validateGithubSource(githubSource);
     const id = crypto.randomBytes(4).toString("hex");
     const project: Project = {
       id,
       name,
       color,
       directory: directory ?? "",
+      githubSource: githubSource || undefined,
       createdAt: new Date().toISOString(),
       isSystem: false,
       isDefault: false,
@@ -115,13 +125,17 @@ export class ProjectManager {
     return project;
   }
 
-  update(id: string, name: string, color?: string, directory?: string): void {
+  update(id: string, name: string, color?: string, directory?: string, githubSource?: string): void {
     const project = this.projects.get(id);
     if (!project) throw new Error(`Project ${id} not found`);
     if (project.isSystem) throw new Error("Cannot rename system project");
     project.name = name;
     if (color) project.color = color;
     if (directory !== undefined) project.directory = directory;
+    if (githubSource !== undefined) {
+      if (githubSource !== "") validateGithubSource(githubSource);
+      project.githubSource = githubSource || undefined;
+    }
     this.saveProject(project);
   }
 

@@ -125,12 +125,12 @@ export class LoopManager {
     return this.projectManager.getAll();
   }
 
-  createProject(name: string, color: string, directory?: string): Project {
-    return this.projectManager.create(name, color, directory);
+  createProject(name: string, color: string, directory?: string, githubSource?: string): Project {
+    return this.projectManager.create(name, color, directory, githubSource);
   }
 
-  updateProject(id: string, name: string, color?: string, directory?: string): void {
-    this.projectManager.update(id, name, color, directory);
+  updateProject(id: string, name: string, color?: string, directory?: string, githubSource?: string): void {
+    this.projectManager.update(id, name, color, directory, githubSource);
   }
 
   deleteProject(id: string): void {

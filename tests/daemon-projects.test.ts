@@ -40,6 +40,7 @@ describe("ProjectManager", () => {
       expect(def!.isDefault).toBe(true);
       expect(def!.isSystem).toBe(true);
       expect(def!.color).toBe("#ffffff");
+      expect(def!.githubSource).toBeUndefined();
     });
 
     it("does not duplicate Default when called twice", () => {
@@ -84,6 +85,43 @@ describe("ProjectManager", () => {
       const p2 = manager.create("Beta", "#00ff00");
       expect(p1.id).not.toBe(p2.id);
       expect(manager.getAll()).toHaveLength(3); // default + alpha + beta
+    });
+
+    it("creates project with directory and githubSource", () => {
+      manager.init();
+      const project = manager.create("Work", "#06b6d4", "/home/user/project", "CKGrafico/loop-task");
+      expect(project.directory).toBe("/home/user/project");
+      expect(project.githubSource).toBe("CKGrafico/loop-task");
+    });
+
+    it("creates project without githubSource when not provided", () => {
+      manager.init();
+      const project = manager.create("Work", "#06b6d4");
+      expect(project.githubSource).toBeUndefined();
+    });
+
+    it("throws on invalid githubSource format", () => {
+      manager.init();
+      expect(() => manager.create("Bad", "#fff", undefined, "no-slash")).toThrow(/Invalid githubSource/i);
+      expect(() => manager.create("Bad2", "#fff", undefined, "has spaces/repo")).toThrow(/Invalid githubSource/i);
+      expect(() => manager.create("Bad3", "#fff", undefined, "a/b/c")).toThrow(/Invalid githubSource/i);
+    });
+
+    it("accepts valid githubSource formats", () => {
+      manager.init();
+      expect(() => manager.create("Ok1", "#fff", undefined, "owner/repo")).not.toThrow();
+      expect(() => manager.create("Ok2", "#fff", undefined, "CKGrafico/loop-task")).not.toThrow();
+      expect(() => manager.create("Ok3", "#fff", undefined, "my-org.my-team/my.repo")).not.toThrow();
+    });
+
+    it("persists githubSource to disk", () => {
+      manager.init();
+      const project = manager.create("Work", "#06b6d4", "/dir", "owner/repo");
+
+      const fresh = new ProjectManager();
+      fresh.init();
+      const found = fresh.get(project.id);
+      expect(found!.githubSource).toBe("owner/repo");
     });
   });
 
@@ -163,6 +201,50 @@ describe("ProjectManager", () => {
       fresh.init();
       const loaded = fresh.get(project.id);
       expect(loaded!.name).toBe("NewName");
+    });
+
+    it("sets githubSource on existing project", () => {
+      manager.init();
+      const project = manager.create("Test", "#111");
+      manager.update(project.id, "Test", undefined, undefined, "owner/repo");
+
+      const updated = manager.get(project.id);
+      expect(updated!.githubSource).toBe("owner/repo");
+    });
+
+    it("clears githubSource when empty string passed", () => {
+      manager.init();
+      const project = manager.create("Test", "#111", undefined, "owner/repo");
+      manager.update(project.id, "Test", undefined, undefined, "");
+
+      const updated = manager.get(project.id);
+      expect(updated!.githubSource).toBeUndefined();
+    });
+
+    it("does not change githubSource when undefined passed", () => {
+      manager.init();
+      const project = manager.create("Test", "#111", undefined, "owner/repo");
+      manager.update(project.id, "Test");
+
+      const updated = manager.get(project.id);
+      expect(updated!.githubSource).toBe("owner/repo");
+    });
+
+    it("throws on invalid githubSource in update", () => {
+      manager.init();
+      const project = manager.create("Test", "#111");
+      expect(() => manager.update(project.id, "Test", undefined, undefined, "no-slash")).toThrow(/Invalid githubSource/i);
+    });
+
+    it("persists githubSource update to disk", () => {
+      manager.init();
+      const project = manager.create("Test", "#111");
+      manager.update(project.id, "Test", undefined, undefined, "owner/repo");
+
+      const fresh = new ProjectManager();
+      fresh.init();
+      const found = fresh.get(project.id);
+      expect(found!.githubSource).toBe("owner/repo");
     });
   });
 
