@@ -16,7 +16,7 @@ An MCP client connecting to loop-task receives a list of tools that map directly
 | Variable | Description | Default |
 |----------|-------------|---------|
 | `LOOP_CLI_MCP_ENABLED` | Enable/disable MCP server | `true` |
-| `LOOP_CLI_MCP_TRANSPORT` | Transport: `stdio` or `sse` | `stdio` |
+| `LOOP_CLI_MCP_TRANSPORT` | Transport: `sse` or `stdio` | `sse` |
 | `LOOP_CLI_MCP_PORT` | Port for SSE transport | `8846` |
 
 To disable MCP at startup:
@@ -39,31 +39,95 @@ Use the command palette (`Ctrl+P`) and select **"Toggle MCP server on/off"** to 
 curl -X PATCH http://127.0.0.1:8845/api/settings -d '{"mcpApiEnabled": true}'
 ```
 
-## Transports
+## Connecting to your tool
 
-### stdio (default)
+loop-task's MCP server uses **SSE transport** so any tool on your network can connect to the running daemon. Just start the daemon normally:
 
-The stdio transport is the most common pattern for local MCP servers. The MCP client launches the daemon as a child process and communicates over stdin/stdout.
+```bash
+loop-task start
+```
 
-Example configuration for Claude Code / OpenCode:
+Then pick your tool below and add the config, replacing `<host>` with the IP address of the machine running the daemon (e.g. `192.168.1.50`, or `127.0.0.1` if it's the same machine).
+
+### Claude Code
+
+Add to `~/.claude/mcp.json` (global) or `.claude/mcp.json` (project):
 
 ```json
 {
   "mcpServers": {
     "loop-task": {
-      "command": "loop-task",
-      "args": ["mcp"],
-      "transport": "stdio"
+      "type": "sse",
+      "url": "http://<host>:8846/sse"
     }
   }
 }
 ```
 
-### SSE
+### GitHub Copilot (VS Code)
 
-The SSE transport runs on a dedicated HTTP port (default `8846`). The client connects to `http://127.0.0.1:8846/sse` for the event stream and sends messages via POST to `http://127.0.0.1:8846/message`.
+Create `.vscode/mcp.json` in your workspace:
 
-> **Note:** The SSE transport requires the daemon to already be running before an MCP client can connect. The user is responsible for managing the port.
+```json
+{
+  "servers": {
+    "loop-task": {
+      "type": "sse",
+      "url": "http://<host>:8846/sse"
+    }
+  }
+}
+```
+
+Then open the Copilot Chat panel, click the **Tools** icon, and enable **loop-task**.
+
+### OpenCode
+
+Add to `opencode.json` (or `.opencode/opencode.json`) under the `mcp` key:
+
+```json
+{
+  "mcp": {
+    "loop-task": {
+      "type": "remote",
+      "url": "http://<host>:8846/sse"
+    }
+  }
+}
+```
+
+### Cursor
+
+Add to `.cursor/mcp.json` in your project root:
+
+```json
+{
+  "mcpServers": {
+    "loop-task": {
+      "type": "sse",
+      "url": "http://<host>:8846/sse"
+    }
+  }
+}
+```
+
+### Other SSE clients
+
+Point any SSE-capable MCP client at:
+
+```
+http://<host>:8846/sse
+```
+
+> **Note:** The SSE transport requires the daemon to already be running before an MCP client can connect.
+
+## Transports
+
+### SSE (default)
+
+SSE is the default transport. The daemon exposes an HTTP endpoint that any MCP client on the network can reach. Just start the daemon and point your client at `http://<host>:8846/sse`.
+
+### stdio
 
 ## Available Tools
 

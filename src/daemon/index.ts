@@ -22,7 +22,7 @@ import { daemonLog } from "./daemon-log.js";
 
 async function main(): Promise<void> {
   const mcpEnabled = (process.env.LOOP_CLI_MCP_ENABLED ?? "true") !== "false";
-  const mcpTransport = process.env.LOOP_CLI_MCP_TRANSPORT === "sse" ? "sse" : "stdio";
+  const mcpTransport = process.env.LOOP_CLI_MCP_TRANSPORT === "stdio" ? "stdio" : "sse";
 
   const taskManager = new TaskManager();
   migrateLoopsToJson();

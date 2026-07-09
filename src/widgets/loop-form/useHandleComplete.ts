@@ -85,6 +85,8 @@ export function useHandleComplete(params: UseHandleCompleteParams): (values: Rec
         }
       }
 
+      const cwdInput = (values.cwd ?? "").trim();
+
       const options: LoopOptions = {
         interval,
         taskId: isExistingTask
@@ -93,7 +95,9 @@ export function useHandleComplete(params: UseHandleCompleteParams): (values: Rec
         command: cmdOnly,
         commandArgs: args,
         commandRaw: isExistingTask ? undefined : cmdValue,
-        cwd: (values.cwd ?? "").trim() || process.cwd(),
+        // On create, default an empty cwd to the current directory. On edit,
+        // preserve an empty cwd, the user deliberately cleared/kept it empty.
+        cwd: cwdInput || (mode === "edit" ? "" : process.cwd()),
         immediate: isManual ? false : runNowValue,
         maxRuns: (values.maxRuns ?? "").trim()
           ? parseInt(values.maxRuns, 10)
