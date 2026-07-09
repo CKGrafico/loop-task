@@ -1,0 +1,28 @@
+@import "tailwindcss";
+@import "fumadocs-ui/style.css";
+
+@theme {
+  --color-base: #0a0e14;
+  --color-surface: #111827;
+  --color-elevated: #1e293b;
+  --color-input: #0f172a;
+  --color-brand: #fbbf24;
+  --color-brand-soft: #fde68a;
+  --color-loop: #38bdf8;
+  --color-task: #a78bfa;
+  --color-project: #34d399;
+  --color-success: #4ade80;
+  --color-warning: #facc15;
+  --color-danger: #f87171;
+  --color-idle: #fb923c;
+  --color-border: #1e293b;
+  --color-border-dim: #374151;
+  --color-text: #e5e7eb;
+  --color-text-sec: #9ca3af;
+  --color-text-muted: #6b7280;
+}
+
+body {
+  background: var(--color-base);
+  color: var(--color-text);
+}
