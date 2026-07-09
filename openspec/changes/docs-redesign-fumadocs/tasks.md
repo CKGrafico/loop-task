@@ -40,4 +40,4 @@
 
 ## 9. Build verification
 
-- [ ] 9.1 Verify the full docs site builds locally: run `rtk pnpm install` at root, `rtk pnpm --filter docs build`, confirm static export output in docs/out/, verify CNAME is in docs/public/ and copied to docs/out/, verify all 9 MDX pages render as HTML, verify landing page has no typewriter animation and no uniform card grid, verify dark theme tokens applied. Fix any build errors. <!-- agent: docs-ui-engineer.build, depends_on: [2.1, 7.1, 8.1], touches: [] -->
+- [x] 9.1 Verify the full docs site builds locally: run `rtk pnpm install` at root, `rtk pnpm --filter docs build`, confirm static export output in docs/out/, verify CNAME is in docs/public/ and copied to docs/out/, verify all 9 MDX pages render as HTML, verify landing page has no typewriter animation and no uniform card grid, verify dark theme tokens applied. Fix any build errors. <!-- agent: docs-ui-engineer.build, depends_on: [2.1, 7.1, 8.1], touches: [] -->
