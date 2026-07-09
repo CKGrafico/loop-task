@@ -151,6 +151,22 @@ export function useCommandHandlers(context: CommandHandlerContext) {
         pushToast("error", t("board.toastApiToggleError", { message: (e as Error).message }));
       }
     },
+    mcp: () => {
+      const transport = process.env.LOOP_CLI_MCP_TRANSPORT ?? "stdio";
+      const port = process.env.LOOP_CLI_MCP_PORT ?? "8846";
+      const info = transport === "sse" ? `MCP SSE: http://127.0.0.1:${port}/sse` : `MCP stdio transport (enabled)`;
+      pushToast("info", info);
+    },
+    "toggle-mcp": async () => {
+      try {
+        const settingsService = container.get<SettingsService>(TYPES.SettingsService);
+        const current = await settingsService.getMcpApiEnabled();
+        await settingsService.setMcpApiEnabled(!current);
+        pushToast("success", t(!current ? "board.toastMcpEnabled" : "board.toastMcpDisabled"));
+      } catch (e) {
+        pushToast("error", t("board.toastMcpToggleError", { message: (e as Error).message }));
+      }
+    },
     status: () => { pushToast("info", `Command "status" coming soon`); },
     export: () => {
       exportService.exportConfig()

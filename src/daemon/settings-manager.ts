@@ -3,7 +3,7 @@ import type { DaemonSettings } from "../types.js";
 import { settingsJson } from "../shared/config/paths.js";
 import { daemonLog } from "./daemon-log.js";
 
-const DEFAULTS: DaemonSettings = { httpApiEnabled: true };
+const DEFAULTS: DaemonSettings = { httpApiEnabled: true, mcpApiEnabled: true };
 
 export class SettingsManager {
   private settings: DaemonSettings = { ...DEFAULTS };

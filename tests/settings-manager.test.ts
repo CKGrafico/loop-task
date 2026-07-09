@@ -27,7 +27,7 @@ describe("SettingsManager", () => {
   it("loads defaults when settings.json does not exist", () => {
     const sm = new SettingsManager();
     sm.load();
-    expect(sm.get()).toEqual({ httpApiEnabled: true });
+    expect(sm.get()).toEqual({ httpApiEnabled: true, mcpApiEnabled: true });
   });
 
   it("saves and loads settings", () => {
@@ -36,21 +36,21 @@ describe("SettingsManager", () => {
     sm.set({ httpApiEnabled: false });
     const sm2 = new SettingsManager();
     sm2.load();
-    expect(sm2.get()).toEqual({ httpApiEnabled: false });
+    expect(sm2.get()).toEqual({ httpApiEnabled: false, mcpApiEnabled: true });
   });
 
   it("falls back to defaults on corruption", () => {
     fs.writeFileSync(path.join(tmpDir, "settings.json"), "not valid json{{{");
     const sm = new SettingsManager();
     sm.load();
-    expect(sm.get()).toEqual({ httpApiEnabled: true });
+    expect(sm.get()).toEqual({ httpApiEnabled: true, mcpApiEnabled: true });
   });
 
   it("falls back to defaults on non-object JSON", () => {
     fs.writeFileSync(path.join(tmpDir, "settings.json"), "42");
     const sm = new SettingsManager();
     sm.load();
-    expect(sm.get()).toEqual({ httpApiEnabled: true });
+    expect(sm.get()).toEqual({ httpApiEnabled: true, mcpApiEnabled: true });
   });
 
   it("onChange callback fires on set", () => {
@@ -59,7 +59,7 @@ describe("SettingsManager", () => {
     const cb = vi.fn();
     sm.onChange(cb);
     sm.set({ httpApiEnabled: false });
-    expect(cb).toHaveBeenCalledWith({ httpApiEnabled: false });
+    expect(cb).toHaveBeenCalledWith({ httpApiEnabled: false, mcpApiEnabled: true });
   });
 
   it("set merges partial updates", () => {
