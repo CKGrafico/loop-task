@@ -8,10 +8,12 @@
     "start": "next start"
   },
   "dependencies": {
+    "@phosphor-icons/react": "^2.1.10",
     "@types/mdx": "^2.0.14",
     "fumadocs-core": "^15.8.5",
     "fumadocs-mdx": "^14.0.0",
     "fumadocs-ui": "^15.8.5",
+    "motion": "^12.42.2",
     "next": "^15.0.0",
     "picocolors": "1.1.0",
     "react": "^19.0.0",

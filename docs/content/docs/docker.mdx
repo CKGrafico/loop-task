@@ -3,11 +3,9 @@ title: Docker
 description: Run loop-task in a Docker container with persistent state.
 ---
 
-# Docker
-
 ## Why Docker?
 
-Running loop-task in Docker keeps your host clean, makes state portable, and works great in CI. The official image is `node:20-slim` based — minimal, secure, and well-maintained.
+Running loop-task in Docker keeps your host clean, makes state portable, and works great in CI. The official image is `node:20-slim` based - minimal, secure, and well-maintained.
 
 ## Basic usage
 
@@ -21,8 +19,8 @@ docker run -it --rm \
 
 | Flag | Purpose |
 |------|---------|
-| `-it` | Allocates a pseudo-TTY — required for the interactive board UI |
-| `--rm` | Removes the container when it exits — no cleanup needed |
+| `-it` | Allocates a pseudo-TTY - required for the interactive board UI |
+| `--rm` | Removes the container when it exits - no cleanup needed |
 | `-v loop-task-data:/root/.loop-cli` | Mounts a named Docker volume so your loops and state survive restarts |
 
 ## Create loops in a container
@@ -37,7 +35,7 @@ docker run -d --name loop-daemon \
 docker exec loop-daemon npx loop-task new 30m -- npm test
 ```
 
-The first command starts the daemon in detached mode (`-d`). The second sends a `new` command directly inside the running container — the daemon picks it up immediately.
+The first command starts the daemon in detached mode (`-d`). The second sends a `new` command directly inside the running container - the daemon picks it up immediately.
 
 ## Using the HTTP API from the host
 
@@ -112,6 +110,6 @@ Once the container is running, you have full access to all three loop-task inter
 | **TUI (board)** | `docker exec -it loop-daemon loop-task` |
 | **HTTP API** | `curl http://localhost:8845/api/...` (when port is mapped) |
 
-- CLI commands are non-interactive — perfect for scripts and health checks.
+- CLI commands are non-interactive - perfect for scripts and health checks.
 - The TUI requires `-it` for an interactive terminal.
 - The HTTP API needs `-p 8845:8845` at container start and is accessible from any HTTP client on the host.

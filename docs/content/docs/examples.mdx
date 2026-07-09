@@ -1,0 +1,27 @@
+---
+title: Examples
+description: Real-world loops you can copy, paste, and adapt.
+---
+
+Copy-paste loops for common workflows. Each example is a single command; adapt the interval and the inner command to your setup.
+
+## GitHub issue autopilot
+
+Let a coding agent work through your issue backlog, one issue at a time, every 30 minutes:
+
+```bash
+loop-task new 30m -- opencode run "take the next github issue, add the tag implementing and implement it, then create a pr and remove the tag"
+```
+
+What happens on each run:
+
+1. The agent picks the next open issue from the repository.
+2. It tags the issue `implementing` so parallel runs (or humans) skip it.
+3. It implements the change and opens a pull request.
+4. It removes the tag, leaving the PR ready for review.
+
+The tag acts as a simple lock: if a run is interrupted, the tag shows which issue was in flight. Requirements: [opencode](https://opencode.ai) installed and authenticated, and `gh` (or the agent's GitHub access) set up in the repository.
+
+<Callout type="info" title="More examples coming">
+  This page is growing. If you have a loop worth sharing, [open an issue on GitHub](https://github.com/CKGrafico/loop-task/issues).
+</Callout>

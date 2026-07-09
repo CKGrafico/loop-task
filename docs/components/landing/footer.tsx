@@ -1,13 +1,15 @@
+import { Repeat } from '@phosphor-icons/react/dist/ssr';
+
 export function Footer() {
   return (
     <footer className="border-t border-border bg-base">
       <div className="mx-auto flex max-w-6xl flex-col items-center gap-4 px-4 py-8 sm:flex-row sm:justify-between sm:px-6">
         {/* Brand */}
         <div className="flex items-center gap-2">
-          <span className="flex h-6 w-6 items-center justify-center rounded-md bg-brand/15 text-xs">
-            🧵
+          <span className="flex h-6 w-6 items-center justify-center rounded-md border border-brand/30 bg-brand/10 text-brand">
+            <Repeat size={12} weight="bold" />
           </span>
-          <span className="font-medium text-text text-sm">loop-task</span>
+          <span className="font-mono text-sm font-medium text-text">loop-task</span>
         </div>
 
         {/* Copyright */}
@@ -26,12 +28,10 @@ export function Footer() {
         {/* Links */}
         <div className="flex items-center gap-4 text-xs text-text-sec">
           <a
-            href="https://ckgrafico.com"
-            target="_blank"
-            rel="noopener noreferrer"
+            href="/docs"
             className="hover:text-text transition-colors"
           >
-            Author
+            Docs
           </a>
           <a
             href="https://github.com/ckgrafico/loop-task"

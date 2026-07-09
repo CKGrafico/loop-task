@@ -1,98 +1,74 @@
 'use client';
 
+import { GithubLogo, Repeat } from '@phosphor-icons/react/dist/ssr';
+
+const LINKS = [
+  { href: '/#features', label: 'Features' },
+  { href: '/#compare', label: 'vs cron' },
+  { href: '/docs', label: 'Docs' },
+];
+
 export function Navbar() {
   return (
     <header className="sticky top-0 z-50 w-full border-b border-border bg-base/85 backdrop-blur-xl">
       <nav className="mx-auto flex h-14 max-w-6xl items-center justify-between px-4 sm:px-6">
         {/* Brand */}
-        <a href="/" className="flex items-center gap-2 group">
-          <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-brand/15 text-lg">
-            🧵
+        <a href="/" className="group flex items-center gap-2.5">
+          <span className="flex h-7 w-7 items-center justify-center rounded-lg border border-brand/30 bg-brand/10 text-brand transition-colors group-hover:bg-brand/20">
+            <Repeat size={15} weight="bold" />
           </span>
-          <span className="font-semibold text-text tracking-tight text-sm">
+          <span className="font-mono text-sm font-semibold tracking-tight text-text">
             loop-task
           </span>
         </a>
 
         {/* Desktop nav links */}
-        <div className="hidden md:flex items-center gap-6 text-sm">
+        <div className="hidden items-center gap-6 text-sm md:flex">
+          {LINKS.map((l) => (
+            <a
+              key={l.href}
+              href={l.href}
+              className="text-text-sec transition-colors hover:text-text"
+            >
+              {l.label}
+            </a>
+          ))}
+          <span className="h-4 w-px bg-border-dim" aria-hidden />
           <a
-            href="#board"
-            className="text-text-sec hover:text-text transition-colors"
+            href="https://github.com/ckgrafico/loop-task"
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-label="GitHub repository"
+            className="text-text-sec transition-colors hover:text-text"
           >
-            Board
+            <GithubLogo size={18} />
           </a>
           <a
-            href="#features"
-            className="text-text-sec hover:text-text transition-colors"
+            href="https://www.npmjs.com/package/loop-task"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="font-mono text-xs text-text-sec transition-colors hover:text-text"
           >
-            Features
+            npm
           </a>
-          <a
-            href="/getting-started"
-            className="text-text-sec hover:text-text transition-colors"
-          >
+        </div>
+
+        {/* Mobile: docs + GitHub only */}
+        <div className="flex items-center gap-4 md:hidden">
+          <a href="/docs" className="text-sm text-text-sec transition-colors hover:text-text">
             Docs
           </a>
           <a
             href="https://github.com/ckgrafico/loop-task"
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center gap-1.5 text-text-sec hover:text-text transition-colors"
+            aria-label="GitHub repository"
+            className="text-text-sec transition-colors hover:text-text"
           >
-            GitHub
-            <ExternalLinkIcon />
-          </a>
-          <a
-            href="https://www.npmjs.com/package/loop-task"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-center gap-1.5 text-text-sec hover:text-text transition-colors"
-          >
-            npm
-            <ExternalLinkIcon />
+            <GithubLogo size={18} />
           </a>
         </div>
-
-        {/* Mobile: brand + GitHub only */}
-        <a
-          href="https://github.com/ckgrafico/loop-task"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="md:hidden inline-flex items-center gap-1.5 text-text-sec hover:text-text transition-colors text-sm"
-        >
-          GitHub
-          <ExternalLinkIcon />
-        </a>
       </nav>
     </header>
-  );
-}
-
-function ExternalLinkIcon() {
-  return (
-    <svg
-      width="12"
-      height="12"
-      viewBox="0 0 12 12"
-      fill="none"
-      xmlns="http://www.w3.org/2000/svg"
-      className="shrink-0"
-    >
-      <path
-        d="M9.5 2.5L4.5 7.5M9.5 2.5H6M9.5 2.5V6"
-        stroke="currentColor"
-        strokeWidth="1.25"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-      <path
-        d="M9 9H3V3"
-        stroke="currentColor"
-        strokeWidth="1.25"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>
   );
 }

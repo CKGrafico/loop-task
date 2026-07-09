@@ -3,13 +3,11 @@ title: Agent Workflows
 description: Automate AI coding agents on a cadence with loop-task.
 ---
 
-# Agent Workflows
-
-This guide covers how to use loop-task to schedule and run AI coding agents on a recurring cadence. You'll learn how to set up agent loops, chain tasks, and monitor results — all without keeping a terminal open.
+This guide covers how to use loop-task to schedule and run AI coding agents on a recurring cadence. You'll learn how to set up agent loops, chain tasks, and monitor results - all without keeping a terminal open.
 
 ## Why loop-task for agents?
 
-AI coding agents — Claude Code, Codex, OpenCode — work best in small, focused bursts. A single massive session burns through context windows, loses steam after 20 minutes, and costs more than it's worth.
+AI coding agents - Claude Code, Codex, OpenCode - work best in small, focused bursts. A single massive session burns through context windows, loses steam after 20 minutes, and costs more than it's worth.
 
 Loop-task solves this by running agents on a schedule. Instead of one marathon session, you run a sprint every 30 minutes. The agent picks up a small piece of work, completes it, and exits. Loop-task handles the scheduling, persistence, crash recovery, and monitoring.
 
@@ -89,7 +87,7 @@ loop-task new 2h -- opencode run "review open PRs, comment on any that need chan
 
 ### Test runner
 
-Every 15 minutes, run the test suite and get notified on failures. This is a shell command — no agent needed.
+Every 15 minutes, run the test suite and get notified on failures. This is a shell command - no agent needed.
 
 ```bash
 loop-task new 15m -- npm test && echo "Tests passed" || echo "Tests failed"
@@ -101,11 +99,11 @@ Combine loop-task's task chaining (see [task-chaining.mdx](/docs/task-chaining))
 
 Here's a three-stage pipeline:
 
-**Stage 1 — Find issues:** An agent scans the codebase and writes a JSON report of all issues found.
+**Stage 1 - Find issues:** An agent scans the codebase and writes a JSON report of all issues found.
 
-**Stage 2 — Fix issues:** A second loop picks up the report and fixes each issue, using `{{key}}` templates to pass file paths and descriptions from the JSON output.
+**Stage 2 - Fix issues:** A second loop picks up the report and fixes each issue, using `{{key}}` templates to pass file paths and descriptions from the JSON output.
 
-**Stage 3 — Create PR:** A final loop collects all fixes, creates a branch, opens a pull request with a summary of changes.
+**Stage 3 - Create PR:** A final loop collects all fixes, creates a branch, opens a pull request with a summary of changes.
 
 Each stage runs on its own cadence and passes its output to the next stage via the task result cache.
 
@@ -128,7 +126,7 @@ loop_def456   1h         1           15:00:00          opencode run "backlog"
 loop_ghi789   2h         -           16:00:00          opencode run "review PRs"
 ```
 
-Exit code `0` means success. A non-zero exit means the command failed — check the logs.
+Exit code `0` means success. A non-zero exit means the command failed - check the logs.
 
 ### TUI
 
@@ -164,6 +162,6 @@ GET /api/loops/loop_abc123/logs?tail=50
 
 - **Use projects to group loops.** Assign agent loops to the same project to organize related automation. View all loops in a project with `loop-task status --project translation-pipeline`.
 
-- **Check logs on failure.** Run `loop-task status` to see the last exit code. If it's non-zero, inspect the logs via `GET /api/loops/:id/logs` or the TUI run history. Most agent failures are transient — the loop retries on its next tick.
+- **Check logs on failure.** Run `loop-task status` to see the last exit code. If it's non-zero, inspect the logs via `GET /api/loops/:id/logs` or the TUI run history. Most agent failures are transient - the loop retries on its next tick.
 
 - **Keep agent commands short.** A focused agent task runs faster, costs less, and is easier to debug than a monolithic prompt. Prefer the pattern of many small loops over one big one.

@@ -3,9 +3,7 @@ title: HTTP API Reference
 description: Complete REST and SSE API reference for the loop-task daemon.
 ---
 
-# HTTP API Reference
-
-The loop-task daemon exposes a local HTTP API on **`127.0.0.1:8845`** for managing loops, tasks, projects, logs, and streaming events. All endpoints are **localhost-only** — the daemon never listens on external interfaces.
+The loop-task daemon exposes a local HTTP API on **`127.0.0.1:8845`** for managing loops, tasks, projects, logs, and streaming events. All endpoints are **localhost-only** - the daemon never listens on external interfaces.
 
 Port can be changed via the `LOOP_CLI_HTTP_PORT` environment variable. The daemon prints the API base URL and links to Swagger UI on startup.
 
@@ -37,12 +35,12 @@ Every JSON response follows a consistent envelope:
 }
 ```
 
-- `200` — OK, data present
-- `201` — Created (returned by POST endpoints)
-- `400` — Validation error or bad request (invalid JSON, missing fields, max runs reached, etc.)
-- `404` — Resource not found
-- `409` — Conflict (e.g. loop is already running on trigger)
-- `500` — Internal server error
+- `200` - OK, data present
+- `201` - Created (returned by POST endpoints)
+- `400` - Validation error or bad request (invalid JSON, missing fields, max runs reached, etc.)
+- `404` - Resource not found
+- `409` - Conflict (e.g. loop is already running on trigger)
+- `500` - Internal server error
 
 Some endpoints return `data: null` or an empty string for no-content responses.
 
@@ -80,18 +78,18 @@ Create and start a new loop.
 
 | Field | Type | Default | Description |
 |-------|------|---------|-------------|
-| `command` | `string` | — | Shell command to execute (required) |
+| `command` | `string` | - | Shell command to execute (required) |
 | `commandArgs` | `string[]` | `[]` | Arguments passed to the command |
 | `intervalHuman` | `string` | `"5m"` | Interval string: `30s`, `5m`, `1h`, `1d`, or `"manual"` for trigger-only loops |
 | `cwd` | `string` | `process.cwd()` | Working directory for the command |
 | `description` | `string` | `""` | Human-readable description |
 | `taskId` | `string` \| `null` | `null` | ID of a saved task to execute instead of `command` |
-| `now` | `boolean` | — | Run immediately on start |
+| `now` | `boolean` | - | Run immediately on start |
 | `maxRuns` | `number` \| `null` | `null` | Maximum number of runs before auto-stopping (`null` = unlimited) |
 | `verbose` | `boolean` | `false` | Capture full stdout/stderr in logs |
-| `projectId` | `string` | — | Project ID for grouping |
+| `projectId` | `string` | - | Project ID for grouping |
 | `offset` | `number` \| `null` | `null` | Initial delay offset in milliseconds before first run |
-| `context` | `object` | — | Initial key-value context for chain interpolation |
+| `context` | `object` | - | Initial key-value context for chain interpolation |
 
 **Response `data`:** `{ "id": "<8-char hex>" }` (status 201)
 
@@ -115,7 +113,7 @@ Permanently delete a loop and its persisted state. The loop is stopped first if 
 
 ### POST /api/loops/:id/pause
 
-Pause a running loop. The loop keeps its schedule position — `resume` continues where it left off.
+Pause a running loop. The loop keeps its schedule position - `resume` continues where it left off.
 
 **Response:** `data: null` (200)
 
@@ -130,8 +128,8 @@ Resume a paused loop. Has no effect if the loop is already running or idle.
 Force an immediate run, ignoring the scheduled interval.
 
 **Errors:**
-- `400` — Max runs reached
-- `409` — Loop is already running
+- `400` - Max runs reached
+- `409` - Loop is already running
 
 **Response:** `data: null` (200)
 
@@ -152,7 +150,7 @@ Stop every running loop.
 Fetch log output for a loop. Defaults to the last 50 lines. Returns an empty string if no log file exists.
 
 **Query parameters:**
-- `tail` — number of lines to return (default: `50`)
+- `tail` - number of lines to return (default: `50`)
 
 **Response `data`:** `string` (log content as a single string with newlines)
 
@@ -383,7 +381,7 @@ Serves the Swagger UI HTML page, loaded from `cdn.jsdelivr.net`. The UI reads `/
 
 The daemon exposes two Server-Sent Events (SSE) endpoints.
 
-### GET /api/events — Daemon Event Stream
+### GET /api/events - Daemon Event Stream
 
 Opens a persistent SSE connection that receives daemon-broadcast events. On connection the server sends an initial `: connected` comment to confirm the stream is alive.
 
@@ -397,19 +395,19 @@ data: { ... }
 
 **Currently no events are dispatched** by the daemon in production. The broadcast infrastructure (`HttpApiServer.broadcastEvent`) exists and is ready for future use (planned event names include `loop:started`, `loop:stopped`, `loop:completed`).
 
-### GET /api/loops/:id/logs/stream — Loop Log Stream
+### GET /api/loops/:id/logs/stream - Loop Log Stream
 
 Opens a persistent SSE connection that streams a loop's log output in real-time. On connection it first sends any existing log lines (controlled by the `?tail=` query parameter), then streams new lines as they are written.
 
 **Query parameters:**
-- `tail` — number of existing lines to replay before streaming (default: `0`)
+- `tail` - number of existing lines to replay before streaming (default: `0`)
 
 **Events emitted:**
 
 | Event | Data | Description |
 |-------|------|-------------|
-| _(none — `data:` only)_ | `string` | A log line (each `data:` is one line of output) |
-| `end` | `{}` | The loop's log file was deleted — stream is closing |
+| _(none - `data:` only)_ | `string` | A log line (each `data:` is one line of output) |
+| `end` | `{}` | The loop's log file was deleted - stream is closing |
 
 **Format:**
 ```
@@ -420,7 +418,7 @@ event: end
 data: {}
 ```
 
-Clients should reconnect when the stream ends — the loop may have been recreated or its logs rotated.
+Clients should reconnect when the stream ends - the loop may have been recreated or its logs rotated.
 
 ---
 

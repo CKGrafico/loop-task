@@ -3,8 +3,6 @@ title: CLI Reference
 description: Complete reference for all loop-task CLI commands and flags.
 ---
 
-# CLI Reference
-
 Complete reference for all `loop-task` CLI commands, flags, interval syntax, exit codes, and practical examples.
 
 ---
@@ -97,7 +95,7 @@ loop-task export ./backup-loops.json
 
 ### `loop-task import <file>`
 
-Import loop configurations from a JSON file. The imported configs are merged into the daemon's state and trigger a hot-reload — no restart required.
+Import loop configurations from a JSON file. The imported configs are merged into the daemon's state and trigger a hot-reload - no restart required.
 
 ```bash
 loop-task import ./backup-loops.json
@@ -109,7 +107,7 @@ loop-task import ./backup-loops.json
 
 ### `loop-task api`
 
-Show HTTP API information — base URL, Swagger UI endpoint, and OpenAPI specification path.
+Show HTTP API information - base URL, Swagger UI endpoint, and OpenAPI specification path.
 
 ```bash
 loop-task api
@@ -193,8 +191,8 @@ loop-task project delete abc123
 | `--description <desc>` | string | Human-readable description of the loop |
 | `-C, --context <json>` | JSON string | Initial context JSON (e.g. `{"env":"staging"}`) |
 | `--verbose` | boolean | Show execution details |
-| `-h, --help` | — | Show help for the command |
-| `-V, --version` | — | Show version number |
+| `-h, --help` | - | Show help for the command |
+| `-V, --version` | - | Show version number |
 
 ### Flag for `status`
 
@@ -229,7 +227,7 @@ loop-task project delete abc123
 | `6h` | 6 hours |
 | `1d` | 1 day |
 | `1w` | 1 week |
-| `manual` or `0` | No automatic scheduling — trigger on demand only |
+| `manual` or `0` | No automatic scheduling - trigger on demand only |
 
 ---
 

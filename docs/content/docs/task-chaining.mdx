@@ -5,7 +5,7 @@ description: Chain tasks together with context sharing to build multi-step pipel
 
 ## What is task chaining?
 
-Tasks can declare successor tasks via `onSuccessTaskId` and `onFailureTaskId`. When a loop's task finishes, it automatically triggers the next task — no manual intervention needed. The stdout from each task is captured, parsed, and passed as context to the next step.
+Tasks can declare successor tasks via `onSuccessTaskId` and `onFailureTaskId`. When a loop's task finishes, it automatically triggers the next task - no manual intervention needed. The stdout from each task is captured, parsed, and passed as context to the next step.
 
 This lets you build multi-step pipelines that react to success or failure, share data between steps, and run complex workflows autonomously.
 
@@ -36,7 +36,7 @@ Task linking via the CLI uses the `--on-success` and `--on-failure` flags. To up
 3. Create a new task or select an existing one.
 4. Set **onSuccessTaskId** or **onFailureTaskId** to the ID of another task.
 
-The board shows the chain as a directed graph — you can visually trace the flow from one task to the next.
+The board shows the chain as a directed graph - you can visually trace the flow from one task to the next.
 
 ### HTTP API
 
@@ -69,17 +69,17 @@ When a task completes, its stdout is captured (up to 1 MB) and automatically par
 | Format | Example | Notes |
 |---|---|---|
 | JSON object | `{"issue": "#42", "priority": "high"}` | Single top-level object |
-| JSONL | `{"issue": "#42"}\n{"issue": "#43"}` | One JSON per line — merged into an array per key |
+| JSONL | `{"issue": "#42"}\n{"issue": "#43"}` | One JSON per line - merged into an array per key |
 | Key:value pairs | `issue: #42` | Plain text, one pair per line |
 
 The parsed values are merged into a context object that travels downstream. If a later task outputs a value with the same key, it overwrites the previous value.
 
 ### What gets shared
 
-- **stdout** — parsed automatically as above
-- **exit code** — available as `{{exitCode}}`
-- **task ID** — available as `{{taskId}}`
-- **duration** — available as `{{duration}}`
+- **stdout** - parsed automatically as above
+- **exit code** - available as `{{exitCode}}`
+- **task ID** - available as `{{taskId}}`
+- **duration** - available as `{{duration}}`
 
 ## Template interpolation
 
@@ -105,15 +105,15 @@ gh issue edit #42 --add-label "in-progress" --repo my-org/my-repo
 
 ### How it works
 
-- Shell escaping is handled automatically — special characters in values are properly escaped before the command is executed.
+- Shell escaping is handled automatically - special characters in values are properly escaped before the command is executed.
 - Missing keys produce a clear error at runtime: `Unknown context key: {{missingKey}}`.
-- Nested JSON paths are not supported — flatten your output to top-level keys.
+- Nested JSON paths are not supported - flatten your output to top-level keys.
 
 ## Multi-step pipeline example
 
 Here is a complete pipeline that finds stale issues, marks them, fixes them, and closes them.
 
-**Task 1** — Find stale issues:
+**Task 1** - Find stale issues:
 
 ```json
 {
@@ -128,7 +128,7 @@ Expected stdout:
 {"issue": "#123"}
 ```
 
-**Task 2** — Mark as in-progress (runs on success of task 1):
+**Task 2** - Mark as in-progress (runs on success of task 1):
 
 ```json
 {
@@ -140,7 +140,7 @@ Expected stdout:
 
 Set `onSuccessTaskId` to the ID of task 1 so this runs after task 1 succeeds.
 
-**Task 3** — Run the fix (runs on success of task 2):
+**Task 3** - Run the fix (runs on success of task 2):
 
 ```json
 {
@@ -152,7 +152,7 @@ Set `onSuccessTaskId` to the ID of task 1 so this runs after task 1 succeeds.
 
 Link this task to task 2's `onSuccessTaskId`.
 
-**Task 4** — Mark as fixed (runs on success of task 3):
+**Task 4** - Mark as fixed (runs on success of task 3):
 
 ```json
 {
@@ -173,7 +173,7 @@ Task 1 (find stale issues)
                                           └── onSuccess → Task 4 (mark fixed)
 ```
 
-If any task fails, the chain stops — no downstream task runs unless you configure `onFailureTaskId` for error recovery.
+If any task fails, the chain stops - no downstream task runs unless you configure `onFailureTaskId` for error recovery.
 
 ## Three interfaces
 
@@ -184,5 +184,5 @@ Every chain management operation is available through all three interfaces.
 | **List tasks** | `loop-task status` | Tasks tab on the board | `GET /api/tasks` |
 | **Create task** | `loop-task new <duration> -- <command>` | Create form in Tasks tab | `POST /api/tasks` |
 | **Update chain links** | `loop-task update <id> --on-success <id>` | Edit task properties | `PATCH /api/tasks/:id` |
-| **View chain graph** | — | Visual graph in Tasks tab | `GET /api/tasks/:id/chain` |
+| **View chain graph** | - | Visual graph in Tasks tab | `GET /api/tasks/:id/chain` |
 | **Delete task** | `loop-task rm <id>` | Delete button in task detail | `DELETE /api/tasks/:id` |

@@ -7,12 +7,12 @@ import { Callout } from '@/components/docs'
 
 ## What is loop-task?
 
-**loop-task** is a CLI tool for **loop engineering** — running any shell command on a cadence in the background. You tell it to run something _every 30 minutes_, _every hour_, _every day_ — and it does, quietly, until you tell it to stop. A background daemon manages all your loops, and you control them from an interactive terminal board. No cron files, no systemd services, no config syntax to learn.
+**loop-task** is a CLI tool for **loop engineering** - running any shell command on a cadence in the background. You tell it to run something _every 30 minutes_, _every hour_, _every day_ - and it does, quietly, until you tell it to stop. A background daemon manages all your loops, and you control them from an interactive terminal board. No cron files, no systemd services, no config syntax to learn.
 
 ## Requirements
 
-- **Node.js 20+** — earlier versions are not supported.
-- **macOS**, **Linux**, or **Windows** — fully cross-platform.
+- **Node.js 20+** - earlier versions are not supported.
+- **macOS**, **Linux**, or **Windows** - fully cross-platform.
 
 ## Installation
 
@@ -49,10 +49,10 @@ That's the whole command. Break it down:
 
 ### What just happened?
 
-The daemon started automatically in the background. Your loop is now running — it will execute `npm test` every 30 minutes, capture the output, and log it. You can close the terminal, come back later, and it's still running.
+The daemon started automatically in the background. Your loop is now running - it will execute `npm test` every 30 minutes, capture the output, and log it. You can close the terminal, come back later, and it's still running.
 
-<Callout type="success" title="That's it — you're looping">
-  The daemon keeps running after you close your terminal. Loops survive reboots. State is persisted to disk as JSON — no database, no config files.
+<Callout type="success" title="That's it - you're looping">
+  The daemon keeps running after you close your terminal. Loops survive reboots. State is persisted to disk as JSON - no database, no config files.
 </Callout>
 
 ### Check status
@@ -73,7 +73,7 @@ You'll see output like this:
 └──────────────────────────────────────────────────────────┘
 ```
 
-Note the **ID** — you'll need it to control this loop.
+Note the **ID** - you'll need it to control this loop.
 
 ### Stop it
 
@@ -91,7 +91,7 @@ Run `loop-task` with no arguments:
 loop-task
 ```
 
-This opens the interactive **TUI board** — a full terminal interface for managing everything. You'll see:
+This opens the interactive **TUI board** - a full terminal interface for managing everything. You'll see:
 
 - A **header** with daemon status and loop count
 - A **left panel** listing all your loops
@@ -101,14 +101,14 @@ This opens the interactive **TUI board** — a full terminal interface for manag
 From the board you can navigate with arrow keys, type commands in the bottom input, inspect run history and logs, edit loop intervals, and switch between Loops, Tasks, and Projects tabs.
 
 <Callout type="info" title="Everything available from the board">
-  The TUI board is not a read-only view — it's a full command-first interface. Everything you can do from the CLI, you can do from the board, plus live monitoring, code editing, and chain visualization.
+  The TUI board is not a read-only view - it's a full command-first interface. Everything you can do from the CLI, you can do from the board, plus live monitoring, code editing, and chain visualization.
 </Callout>
 
 ## Three ways to do everything
 
 loop-task gives you three ways to control your loops. Use whichever fits your workflow:
 
-### Create a loop — three ways
+### Create a loop - three ways
 
 **CLI**
 
@@ -132,12 +132,12 @@ curl -X POST http://127.0.0.1:8845/api/loops \
 ```
 
 <Callout type="info" title="Why three interfaces?">
-  **CLI** is fast and scriptable — perfect for CI/CD, shell scripts, and one-shot commands.
-  **TUI board** is interactive — great for managing loops, monitoring status, and exploring history.
-  **HTTP API** is for integrations — wire loops into dashboards, webhooks, or remote control systems.
+  **CLI** is fast and scriptable - perfect for CI/CD, shell scripts, and one-shot commands.
+  **TUI board** is interactive - great for managing loops, monitoring status, and exploring history.
+  **HTTP API** is for integrations - wire loops into dashboards, webhooks, or remote control systems.
 </Callout>
 
-### Check status — three ways
+### Check status - three ways
 
 ```bash
 # CLI
@@ -151,13 +151,13 @@ loop-task
 curl http://127.0.0.1:8845/api/loops
 ```
 
-### Stop a loop — three ways
+### Stop a loop - three ways
 
 ```bash
 # CLI
 loop-task stop abc123
 
-# TUI board — select the loop, press `s` to stop
+# TUI board - select the loop, press `s` to stop
 
 # HTTP API
 curl -X POST http://127.0.0.1:8845/api/loops/abc123/stop
@@ -165,7 +165,7 @@ curl -X POST http://127.0.0.1:8845/api/loops/abc123/stop
 
 ## Where to go next
 
-- **[CLI Reference](/docs/cli-reference)** — full list of commands and options
-- **[Architecture](/docs/architecture)** — how the daemon, CLI, and TUI fit together
-- **[Task Chaining](/docs/task-chaining)** — chain multiple tasks together with context passing
-- **[Agent Workflows](/docs/agent-workflows)** — automate AI coding agents on a cadence
+- **[CLI Reference](/docs/cli-reference)** - full list of commands and options
+- **[Architecture](/docs/architecture)** - how the daemon, CLI, and TUI fit together
+- **[Task Chaining](/docs/task-chaining)** - chain multiple tasks together with context passing
+- **[Agent Workflows](/docs/agent-workflows)** - automate AI coding agents on a cadence
