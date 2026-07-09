@@ -19,6 +19,7 @@ export function buildOpenApiSpec(): Record<string, unknown> {
       { name: "Logs", description: "Log retrieval" },
       { name: "Events", description: "Server-sent events" },
       { name: "Settings", description: "Daemon settings" },
+      { name: "MCP", description: "Model Context Protocol server" },
       { name: "Docs", description: "API documentation" },
     ],
     paths: {
@@ -60,7 +61,7 @@ export function buildOpenApiSpec(): Record<string, unknown> {
         patch: { summary: "Update a project", tags: ["Projects"], parameters: [{ name: "id", in: "path", required: true, schema: { type: "string" } }], requestBody: { content: { "application/json": { schema: { type: "object", properties: { name: { type: "string" }, color: { type: "string" }, directory: { type: "string", description: "Optional local working directory for loops" }, githubSource: { type: "string", description: "Optional GitHub repository in owner/repo format (e.g. CKGrafico/loop-task)" } } } } } }, responses: { "200": { description: "Updated" }, "404": { description: "Not found" }, "400": { description: "Validation error" } } },
         delete: { summary: "Delete a project", tags: ["Projects"], parameters: [{ name: "id", in: "path", required: true, schema: { type: "string" } }], responses: { "200": { description: "Deleted" }, "400": { description: "Cannot delete system project" } } },
       },
-      "/api/settings": { get: { summary: "Get daemon settings", tags: ["Settings"], responses: { "200": { description: "Current settings", content: { "application/json": { schema: { type: "object", properties: { httpApiEnabled: { type: "boolean" } } } } } } } }, patch: { summary: "Update daemon settings", tags: ["Settings"], requestBody: { content: { "application/json": { schema: { type: "object", properties: { httpApiEnabled: { type: "boolean" } } } } } }, responses: { "200": { description: "Updated settings", content: { "application/json": { schema: { type: "object", properties: { httpApiEnabled: { type: "boolean" } } } } } }, "400": { description: "Validation error" } } } },
+      "/api/settings": { get: { summary: "Get daemon settings", tags: ["Settings"], responses: { "200": { description: "Current settings", content: { "application/json": { schema: { type: "object", properties: { httpApiEnabled: { type: "boolean" }, mcpApiEnabled: { type: "boolean" } } } } } } } }, patch: { summary: "Update daemon settings", tags: ["Settings"], requestBody: { content: { "application/json": { schema: { type: "object", properties: { httpApiEnabled: { type: "boolean" }, mcpApiEnabled: { type: "boolean" } } } } } }, responses: { "200": { description: "Updated settings", content: { "application/json": { schema: { type: "object", properties: { httpApiEnabled: { type: "boolean" }, mcpApiEnabled: { type: "boolean" } } } } } }, "400": { description: "Validation error" } } } },
       "/api/events": { get: { summary: "Subscribe to daemon events via SSE", tags: ["Events"], responses: { "200": { description: "SSE event stream" } } } },
       "/api/openapi.json": { get: { summary: "OpenAPI 3.0 spec", tags: ["Docs"], responses: { "200": { description: "OpenAPI JSON spec" } } } },
       "/api/docs": { get: { summary: "Swagger UI", tags: ["Docs"], responses: { "200": { description: "HTML page" } } } },
@@ -71,6 +72,7 @@ export function buildOpenApiSpec(): Record<string, unknown> {
           type: "object",
           properties: {
             httpApiEnabled: { type: "boolean", description: "Whether the HTTP API server is enabled" },
+            mcpApiEnabled: { type: "boolean", description: "Whether the MCP server is enabled" },
           },
         },
       },

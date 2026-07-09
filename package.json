@@ -64,6 +64,7 @@
     "node": ">=20.0.0"
   },
   "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.29.0",
     "commander": "^13.1.0",
     "execa": "^9.6.0",
     "ink": "^7.1.0",
@@ -75,7 +76,8 @@
     "inversify": "^8.1.1",
     "inversify-hooks": "^4.0.0",
     "ms": "^2.1.3",
-    "react": "^19.2.7"
+    "react": "^19.2.7",
+    "zod": "^4.4.3"
   },
   "devDependencies": {
     "@types/ms": "^2.1.0",

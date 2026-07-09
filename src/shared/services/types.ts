@@ -59,4 +59,6 @@ export interface ExportService {
 export interface SettingsService {
   getHttpApiEnabled(): Promise<boolean>;
   setHttpApiEnabled(enabled: boolean): Promise<DaemonSettings>;
+  getMcpApiEnabled(): Promise<boolean>;
+  setMcpApiEnabled(enabled: boolean): Promise<DaemonSettings>;
 }
