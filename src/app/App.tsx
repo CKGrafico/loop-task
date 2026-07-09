@@ -3,6 +3,7 @@ import { Box, useApp } from "ink";
 import type { LoopMeta, TaskDefinition } from "../types.js";
 import type { View } from "./types.js";
 import { useLoopPolling } from "../shared/hooks/useLoopPolling.js";
+import { useDaemonSettings } from "../shared/hooks/useDaemonSettings.js";
 import { useLogStream } from "../shared/hooks/useLogStream.js";
 import { useBreakpoint } from "../shared/hooks/useBreakpoint.js";
 import { useToasts } from "../shared/ui/Toast.js";
@@ -45,6 +46,7 @@ export function App(props: { onQuit: () => void }): React.ReactNode {
   const logService = useInject<LogService>(TYPES.LogService);
   const exportService = useInject<ExportService>(TYPES.ExportService);
   const { loops, daemonStatus, refresh } = useLoopPolling();
+  const daemonSettings = useDaemonSettings();
   const { view, push, pop } = useRouter("board");
   const { toasts, push: pushToast } = useToasts();
   const breakpoint = useBreakpoint();
@@ -120,7 +122,7 @@ export function App(props: { onQuit: () => void }): React.ReactNode {
 
   return (
     <Box flexDirection="column" width="100%" height={process.stdout.rows || 24} backgroundColor={theme.bg.base}>
-      <Header daemonStatus={daemonStatus} counts={s.counts} activeTab={s.activeTab} onTabChange={s.setActiveTab} tabCounts={s.tabCounts} />
+      <Header daemonStatus={daemonStatus} httpApiEnabled={daemonSettings.reachable ? daemonSettings.httpApiEnabled : undefined} mcpApiEnabled={daemonSettings.reachable ? daemonSettings.mcpApiEnabled : undefined} counts={s.counts} activeTab={s.activeTab} onTabChange={s.setActiveTab} tabCounts={s.tabCounts} />
       <Box key={viewKey(view, s.editTarget, s.editTask)} flexGrow={1}>
         {isBoardView(view) ? (
           <Box flexDirection={breakpoint === "narrow" ? "column" : "row"} flexGrow={1}>

@@ -367,4 +367,35 @@ program
     console.log(`  Events:     ${baseUrl}/api/events (SSE)`);
   });
 
+program
+  .command("mcp")
+  .description("Show MCP server info and how to connect an MCP client")
+  .action(() => {
+    const transport = process.env.LOOP_CLI_MCP_TRANSPORT === "sse" ? "sse" : "stdio";
+    const port = process.env.LOOP_CLI_MCP_PORT ?? "8846";
+    const sseUrl = `http://${HTTP_API_HOST}:${port}/sse`;
+    console.log(`MCP Server`);
+    console.log(`  Transport:  ${transport}`);
+    if (transport === "sse") {
+      console.log(`  SSE URL:    ${sseUrl}`);
+      console.log("");
+      console.log(`  Connect an SSE-capable MCP client to the URL above.`);
+    } else {
+      console.log("");
+      console.log(`  Default transport is stdio. To expose a network endpoint an`);
+      console.log(`  MCP client can connect to, start the daemon with SSE:`);
+      console.log("");
+      console.log(`    LOOP_CLI_MCP_TRANSPORT=sse loop-task start`);
+      console.log("");
+      console.log(`  Then point your MCP client at: ${sseUrl}`);
+    }
+    console.log("");
+    console.log(`  Example MCP client config (SSE):`);
+    console.log(`    {`);
+    console.log(`      "mcpServers": {`);
+    console.log(`        "loop-task": { "url": "${sseUrl}" }`);
+    console.log(`      }`);
+    console.log(`    }`);
+  });
+
 await program.parseAsync(process.argv);

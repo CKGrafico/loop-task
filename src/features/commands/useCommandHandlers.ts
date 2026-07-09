@@ -154,7 +154,9 @@ export function useCommandHandlers(context: CommandHandlerContext) {
     mcp: () => {
       const transport = process.env.LOOP_CLI_MCP_TRANSPORT ?? "stdio";
       const port = process.env.LOOP_CLI_MCP_PORT ?? "8846";
-      const info = transport === "sse" ? `MCP SSE: http://127.0.0.1:${port}/sse` : `MCP stdio transport (enabled)`;
+      const info = transport === "sse"
+        ? `MCP: connect your client to http://127.0.0.1:${port}/sse`
+        : `MCP enabled (stdio). To connect a client: restart with LOOP_CLI_MCP_TRANSPORT=sse, then use http://127.0.0.1:${port}/sse — run 'loop-task mcp' for the full config`;
       pushToast("info", info);
     },
     "toggle-mcp": async () => {

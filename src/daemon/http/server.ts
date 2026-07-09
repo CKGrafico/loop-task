@@ -52,12 +52,17 @@ export class HttpApiServer {
 
   async close(): Promise<void> {
     if (!this.isListening) return;
+    this.isListening = false;
     this.sseClients.destroyAll();
     return new Promise((resolve) => {
       this.server.close(() => {
-        this.isListening = false;
         resolve();
       });
+      // Node's server.close() stops accepting new connections but leaves
+      // existing keep-alive sockets open, so a browser tab (e.g. Swagger UI)
+      // keeps being served on its persistent connection. Force them closed so
+      // the port is actually released when the API is toggled off.
+      this.server.closeAllConnections?.();
     });
   }
 

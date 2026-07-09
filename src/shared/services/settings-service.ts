@@ -5,6 +5,14 @@ import type { SettingsService } from "./types.js";
 
 @injectable()
 export class IpcSettingsService implements SettingsService {
+  async getSettings(): Promise<DaemonSettings> {
+    const response = await sendRequest({ type: "settings-get" });
+    if (response.type !== "ok") {
+      throw new Error((response as { message?: string }).message ?? "Failed to get settings");
+    }
+    return response.data as DaemonSettings;
+  }
+
   async getHttpApiEnabled(): Promise<boolean> {
     const response = await sendRequest({ type: "settings-get" });
     if (response.type !== "ok") {
