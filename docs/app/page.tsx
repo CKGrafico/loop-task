@@ -339,6 +339,18 @@ export default function LandingPage() {
             keyboard-driven. No mouse required.
           </p>
 
+          {/* Live demo GIF */}
+          <div className="mb-8 overflow-hidden rounded-xl border border-border-dim">
+            <img
+              src="/demo.gif"
+              alt="loop-task terminal board demo"
+              className="w-full"
+              loading="lazy"
+            />
+          </div>
+
+          <p className="mb-2 text-sm text-text-muted">Or here's a static recreation of the board layout:</p>
+
           <BoardMockup />
         </div>
       </section>
