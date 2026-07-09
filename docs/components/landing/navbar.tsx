@@ -24,18 +24,18 @@ export function Navbar() {
           </span>
         </a>
 
-        {/* Desktop nav links */}
-        <div className="hidden items-center gap-6 text-sm md:flex">
+        {/* Nav links */}
+        <div className="flex items-center gap-6 text-sm">
           {LINKS.map((l) => (
             <a
               key={l.href}
               href={l.href}
-              className="text-text-sec transition-colors hover:text-text"
+              className="hidden text-text-sec transition-colors hover:text-text sm:inline"
             >
               {l.label}
             </a>
           ))}
-          <span className="h-4 w-px bg-border-dim" aria-hidden />
+          <span className="hidden h-4 w-px bg-border-dim sm:inline" aria-hidden />
           <a
             href="https://github.com/ckgrafico/loop-task"
             target="_blank"
@@ -52,22 +52,6 @@ export function Navbar() {
             className="font-mono text-xs text-text-sec transition-colors hover:text-text"
           >
             npm
-          </a>
-        </div>
-
-        {/* Mobile: docs + GitHub only */}
-        <div className="flex items-center gap-4 md:hidden">
-          <a href="/docs" className="text-sm text-text-sec transition-colors hover:text-text">
-            Docs
-          </a>
-          <a
-            href="https://github.com/ckgrafico/loop-task"
-            target="_blank"
-            rel="noopener noreferrer"
-            aria-label="GitHub repository"
-            className="text-text-sec transition-colors hover:text-text"
-          >
-            <GithubLogo size={18} />
           </a>
         </div>
       </nav>
