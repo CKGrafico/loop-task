@@ -39,5 +39,7 @@ export function metaToState(meta: LoopMeta): LoopControllerState {
     nextRunAt: meta.nextRunAt,
     remainingDelayMs: meta.remainingDelayMs,
     runHistory: meta.runHistory,
+    skippedCount: meta.skippedCount,
+    silentChainCount: meta.silentChainCount,
   };
 }

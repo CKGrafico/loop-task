@@ -109,6 +109,9 @@ export async function showStatus(id: string): Promise<void> {
   console.log(t("cli.statusInterval", { interval: loop.intervalHuman, duration: intervalDisplay }));
   console.log(t("cli.statusStatus", { status: loop.status }));
   console.log(t("cli.statusRuns", { runs: loop.runCount, maxRuns }));
+  if ((loop.silentChainCount ?? 0) > 0) {
+    console.log(t("cli.statusSilentChains", { count: loop.silentChainCount!.toLocaleString() }));
+  }
   console.log(t("cli.statusCreated", { created: loop.createdAt }));
 
   if (loop.lastRunAt) {

@@ -28,6 +28,7 @@ export interface TaskDefinition {
   steps?: TaskStep[];
   onSuccessTaskId: string | null;
   onFailureTaskId: string | null;
+  silentChain?: boolean;
   context?: Record<string, unknown>;
   createdAt: string;
 }
@@ -104,6 +105,7 @@ export interface LoopMeta {
   maxRunsReached: boolean;
   runHistory: RunRecord[];
   skippedCount: number;
+  silentChainCount?: number;
   projectId: string;
   offset: number | null;
   context?: Record<string, unknown>;

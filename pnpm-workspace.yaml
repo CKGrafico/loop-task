@@ -2,5 +2,6 @@ packages:
   - "docs"
 allowBuilds:
   esbuild: true
+  sharp: set this to true or false
 onlyBuiltDependencies:
   - esbuild

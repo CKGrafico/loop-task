@@ -130,6 +130,11 @@ function TaskInspector(props: { task: TaskDefinition | null; allTasks: TaskDefin
             <Text color={theme.text.muted}>{t("board.taskNone")}</Text>
           ) : null}
         </Field>
+        <Field label={t("board.taskFieldSilent")}>
+          <Text color={task.silentChain ? theme.semantic.warning : theme.text.muted}>
+            {task.silentChain ? t("board.silentChainYes") : t("board.silentChainNo")}
+          </Text>
+        </Field>
       </Box>
       <Box paddingLeft={1}>
         <Text color={theme.text.muted}>{DIVIDER}</Text>

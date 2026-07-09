@@ -1,5 +1,6 @@
 import crypto from "node:crypto";
 import fs from "node:fs";
+import { Writable } from "node:stream";
 import type { ExecutionResult, TaskCommand, TaskDefinition, TaskStep } from "../../types.js";
 import { executeCommand } from "../command/command-runner.js";
 import { t } from "../../shared/i18n/index.js";
@@ -30,6 +31,8 @@ export interface ChainExecuteResult {
 export function executeChain(options: ChainExecuteOptions): Promise<ChainExecuteResult> {
   const { chainTargetId, exitCode, task, chainContext, cwd, signal, runCount, logPath, runHistory, logStream, controller } = options;
 
+  const nullStream = new Writable({ write(_chunk, _enc, cb) { cb(); } }) as unknown as fs.WriteStream;
+
   if (!chainTargetId) {
     return Promise.resolve({ runHistory, lastExitCode: exitCode, lastDuration: 0 });
   }
@@ -49,12 +52,17 @@ export function executeChain(options: ChainExecuteOptions): Promise<ChainExecute
       const chainTask = controller.taskResolver(currentTargetId);
       if (!chainTask) break;
 
-      if (logStream) {
+      const isSilent = chainTask.silentChain === true;
+      if (isSilent) {
+        controller.incrementSilentChainCount();
+      }
+
+      if (logStream && !isSilent) {
         logStream.write(t("loop.chainHeader", { name: chainTask.name, branch: prevBranch, prevExit }));
       }
 
       const chainStartedAt = new Date().toISOString();
-      const chainOffset = fs.existsSync(logPath) ? fs.statSync(logPath).size : 0;
+      const chainOffset = !isSilent && fs.existsSync(logPath) ? fs.statSync(logPath).size : 0;
       runHistory.push({
         runNumber: runCount,
         startedAt: chainStartedAt,
@@ -82,6 +90,8 @@ export function executeChain(options: ChainExecuteOptions): Promise<ChainExecute
       let chainExitCode = 0;
       let chainDuration = 0;
 
+      const effectiveStream: fs.WriteStream = isSilent ? nullStream : (logStream ?? nullStream);
+
       for (const step of taskSteps) {
         const stepResults = await Promise.allSettled(
           step.commands.map((cmd) =>
@@ -89,7 +99,7 @@ export function executeChain(options: ChainExecuteOptions): Promise<ChainExecute
               interpolate(cmd.command, chainContext),
               cmd.commandArgs.map(a => interpolate(a, chainContext)),
               cwd,
-              logStream!,
+              effectiveStream,
               signal,
               runCount,
               shouldCaptureStdout,
@@ -125,7 +135,7 @@ export function executeChain(options: ChainExecuteOptions): Promise<ChainExecute
         }
       }
 
-      const chainLogSize = fs.existsSync(logPath) ? fs.statSync(logPath).size - chainOffset : 0;
+      const chainLogSize = !isSilent && fs.existsSync(logPath) ? fs.statSync(logPath).size - chainOffset : 0;
       const chainRecord = runHistory.find(r => r.chainGroupId === chainGroupId && r.status === "running" && r.chainName === chainTask.name);
       if (chainRecord) {
         chainRecord.exitCode = chainExitCode;
