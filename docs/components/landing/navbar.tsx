@@ -25,14 +25,14 @@ export function Navbar() {
         </a>
 
         {/* Nav links */}
-        <div className="flex items-center gap-6 text-sm">
+        <div className="flex items-center gap-4 text-sm sm:gap-6">
           {LINKS.map((l) => (
             <a
               key={l.href}
               href={l.href}
-              className="text-text-sec transition-colors hover:text-text sm:inline"
+              className={`text-text-sec transition-colors hover:text-text ${l.href === '/docs' ? '' : 'hidden sm:inline'}`}
             >
-              {l.label}
+              {l.href === '/docs' ? 'Docs' : l.label}
             </a>
           ))}
           <span className="hidden h-4 w-px bg-border-dim sm:inline" aria-hidden />
@@ -44,14 +44,6 @@ export function Navbar() {
             className="text-text-sec transition-colors hover:text-text"
           >
             <GithubLogoIcon size={18} />
-          </a>
-          <a
-            href="https://www.npmjs.com/package/loop-task"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="font-mono text-xs text-text-sec transition-colors hover:text-text"
-          >
-            npm
           </a>
         </div>
       </nav>
