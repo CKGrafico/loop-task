@@ -1,0 +1,150 @@
+---
+title: Getting Started
+description: Install loop-task and create your first loop in under 5 minutes.
+---
+
+# Getting Started
+
+## What is loop-task?
+
+**loop-task** is a CLI tool for **loop engineering** — running any shell command on a cadence in the background. You tell it to run something _every 30 minutes_, _every hour_, _every day_ — and it does, quietly, until you tell it to stop. A background daemon manages all your loops, and you control them from an interactive terminal board. No cron files, no systemd services, no config syntax to learn. Just install, type a command, and you're looping.
+
+## Requirements
+
+- **Node.js 20+** — earlier versions are not supported.
+- **macOS**, **Linux**, or **Windows** — fully cross-platform.
+
+## Installation
+
+Install globally via npm:
+
+```bash
+npm install -g loop-task
+```
+
+That's it. The `loop-task` binary is now on your PATH.
+
+To verify it's installed:
+
+```bash
+loop-task --version
+```
+
+## Your first loop
+
+Let's create a loop that runs your test suite every 30 minutes.
+
+```bash
+loop-task new 30m -- npm test
+```
+
+That's the whole command. Break it down:
+
+| Part | Meaning |
+|------|---------|
+| `loop-task new` | Create a new loop |
+| `30m` | Run every 30 minutes |
+| `--` | Separator: everything after this is the command to run |
+| `npm test` | The command itself |
+
+### What just happened?
+
+The daemon started automatically in the background. Your loop is now running — it will execute `npm test` every 30 minutes, capture the output, and log it. You can close the terminal, come back later, and it's still running.
+
+### Check status
+
+To see all your loops:
+
+```bash
+loop-task status
+```
+
+You'll see output like this:
+
+```
+┌──────────────────────────────────────────────────────────┐
+│ ID        │ Command    │ Interval │ Status  │ Next Run   │
+├──────────────────────────────────────────────────────────┤
+│ abc123    │ npm test   │ 30m      │ running │ in 24m     │
+└──────────────────────────────────────────────────────────┘
+```
+
+Note the **ID** — you'll need it to control this loop.
+
+### Stop it
+
+To stop a running loop, use its ID:
+
+```bash
+loop-task stop abc123
+```
+
+The loop stops. The daemon keeps running in the background, ready for your next command.
+
+## Opening the board
+
+Run `loop-task` with no arguments:
+
+```bash
+loop-task
+```
+
+This opens the interactive **TUI board** — a full terminal interface for managing everything. You'll see:
+
+- A **header** with daemon status and loop count
+- A **left panel** listing all your loops
+- A **right panel** showing details for the selected loop
+- A **command input** at the bottom where you type actions
+
+From the board you can:
+
+- **Navigate** with arrow keys to browse loops
+- **Type commands** in the bottom input (try `new loop`, `stop`, `status`)
+- **Inspect** a loop's run history and logs
+- **Edit** a loop's interval or command
+- **Switch tabs** with `Ctrl+Left`/`Ctrl+Right` to view Tasks and Projects
+
+Everything you can do from the CLI, you can do from the board — and more, since the board gives you live views of output and history.
+
+## Three ways to do everything
+
+loop-task gives you three ways to control your loops. Use whichever fits your workflow:
+
+| Surface | How | Best for |
+|---------|-----|----------|
+| **CLI** | `loop-task new 30m -- npm test` | Scripts, one-shot commands, CI |
+| **TUI Board** | Open `loop-task`, type commands in the input | Interactive management, monitoring |
+| **HTTP API** | `POST /api/loops` with JSON body | Remote control, integrations |
+
+### CLI
+
+The command line is fast and scriptable. All operations have a CLI equivalent:
+
+```bash
+loop-task new 1h -- pnpm build
+loop-task status --json
+loop-task stop <id>
+loop-task start <id>
+```
+
+### TUI Board
+
+Launch the board with `loop-task`, then type commands directly. The command input has fuzzy autocomplete — start typing and it suggests what's available.
+
+### HTTP API
+
+The daemon runs an optional HTTP server on `127.0.0.1:8845`. You can control loops programmatically:
+
+```bash
+curl -X POST http://127.0.0.1:8845/api/loops \
+  -H "Content-Type: application/json" \
+  -d '{"command": "npm test", "interval": "30m"}'
+```
+
+The HTTP API also supports Server-Sent Events (SSE) for real-time updates. An OpenAPI spec is available at `/api/openapi.json`.
+
+## Where to go next
+
+- **[CLI Reference](/docs/cli-reference)** — full list of commands and options
+- **[Architecture](/docs/architecture)** — how the daemon, CLI, and TUI fit together
+- **[Task Chaining](/docs/task-chaining)** — chain multiple tasks together with context passing
