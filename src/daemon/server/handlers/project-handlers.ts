@@ -16,13 +16,17 @@ export function handleProjectCreate(
   socket: import("node:net").Socket,
   ctx: HandlerContext
 ): void {
-  const { name, color, directory } = request.payload;
+  const { name, color, directory, githubSource } = request.payload;
   if (!name || !name.trim()) {
     send(socket, { type: "error", message: t("project.error.nameRequired") });
     return;
   }
-  const project = ctx.manager.createProject(name.trim(), color, directory);
-  send(socket, { type: "ok", data: project });
+  try {
+    const project = ctx.manager.createProject(name.trim(), color, directory, githubSource);
+    send(socket, { type: "ok", data: project });
+  } catch (err) {
+    send(socket, { type: "error", message: err instanceof Error ? err.message : String(err) });
+  }
 }
 
 export function handleProjectUpdate(
@@ -30,13 +34,13 @@ export function handleProjectUpdate(
   socket: import("node:net").Socket,
   ctx: HandlerContext
 ): void {
-  const { id, name, color, directory } = request.payload;
+  const { id, name, color, directory, githubSource } = request.payload;
   if (!name || !name.trim()) {
     send(socket, { type: "error", message: t("project.error.nameEmpty") });
     return;
   }
   try {
-    ctx.manager.updateProject(id, name.trim(), color, directory);
+    ctx.manager.updateProject(id, name.trim(), color, directory, githubSource);
     send(socket, { type: "ok" });
   } catch (err) {
     send(socket, { type: "error", message: err instanceof Error ? err.message : String(err) });

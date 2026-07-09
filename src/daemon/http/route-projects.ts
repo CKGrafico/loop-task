@@ -9,12 +9,12 @@ export function registerProjectRoutes(projectManager: ProjectManager, r: (method
 
   r("POST", "/api/projects", async (req, res) => {
     try {
-      const body = await readBody(req) as { name?: string; color?: string };
+      const body = await readBody(req) as { name?: string; color?: string; directory?: string; githubSource?: string };
       if (!body.name?.trim()) {
         sendError(res, 400, "Project name is required");
         return;
       }
-      const project = projectManager.create(body.name.trim(), body.color ?? "#ffffff");
+      const project = projectManager.create(body.name.trim(), body.color ?? "#ffffff", body.directory, body.githubSource);
       sendOk(res, project, 201);
     } catch (err) {
       sendError(res, 400, err instanceof Error ? err.message : String(err));
@@ -23,12 +23,12 @@ export function registerProjectRoutes(projectManager: ProjectManager, r: (method
 
   r("PATCH", "/api/projects/:id", async (req, res, params) => {
     try {
-      const body = await readBody(req) as { name?: string; color?: string };
+      const body = await readBody(req) as { name?: string; color?: string; directory?: string; githubSource?: string };
       if (!body.name?.trim()) {
         sendError(res, 400, "Project name is required");
         return;
       }
-      projectManager.update(params.id, body.name.trim(), body.color);
+      projectManager.update(params.id, body.name.trim(), body.color, body.directory, body.githubSource);
       sendOk(res);
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);

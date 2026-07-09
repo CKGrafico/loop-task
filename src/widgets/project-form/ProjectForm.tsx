@@ -69,6 +69,14 @@ export function ProjectFormView(props: ProjectFormViewProps): React.ReactNode {
       inputType: "text",
       defaultValue: mode === "create" ? process.cwd() : (editProject?.directory || undefined),
     },
+    {
+      key: "githubSource",
+      prompt: t("project.wizard.githubSourcePrompt"),
+      hint: t("project.wizard.githubSourceHint"),
+      required: false,
+      inputType: "text",
+      defaultValue: editProject?.githubSource || undefined,
+    },
   ], [editProject, mode]);
 
   const handleComplete = useCallback(
@@ -78,13 +86,14 @@ export function ProjectFormView(props: ProjectFormViewProps): React.ReactNode {
 
       const colorKey = values.color ?? "cyan";
       const color = PROJECT_COLORS[colorKey] ?? PROJECT_COLORS.cyan;
+      const githubSource = values.githubSource?.trim() || undefined;
 
       if (mode === "edit" && editProject) {
-        projectService.update(editProject.id, name, color, values.directory?.trim() || undefined)
+        projectService.update(editProject.id, name, color, values.directory?.trim() || undefined, githubSource)
           .then(() => onDone(true, name))
           .catch(() => { /* error handled silently */ });
       } else {
-        projectService.create(name, color, values.directory?.trim() || undefined)
+        projectService.create(name, color, values.directory?.trim() || undefined, githubSource)
           .then(() => onDone(false, name))
           .catch(() => { /* error handled silently */ });
       }

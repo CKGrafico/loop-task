@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import http from "node:http";
 import { HttpApiServer } from "../src/daemon/http/server.js";
-import type { LoopMeta } from "../src/types.js";
+import type { LoopMeta, Project } from "../src/types.js";
 import type { TaskDefinition } from "../src/types.js";
 
 
@@ -62,10 +62,12 @@ function createMocks() {
   };
   const mockProjectManager = {
     getAll: vi.fn(() => []),
-    create: vi.fn((name: string, color: string) => ({
+    create: vi.fn((name: string, color: string, directory?: string, githubSource?: string) => ({
       id: "p1",
       name,
       color,
+      directory: directory ?? "",
+      githubSource,
       createdAt: new Date().toISOString(),
       isSystem: false,
       isDefault: false,
@@ -676,7 +678,51 @@ describe("HttpApiServer integration", () => {
       expect(res.json.ok).toBe(true);
       expect(res.json.data.name).toBe("MyProj");
       expect(res.json.data.color).toBe("#123456");
-      expect(mocks.mockProjectManager.create).toHaveBeenCalledWith("MyProj", "#123456");
+      expect(mocks.mockProjectManager.create).toHaveBeenCalledWith("MyProj", "#123456", undefined, undefined);
+    });
+
+    it("POST /api/projects with directory and githubSource returns 201", async () => {
+      const res = await request(port, "POST", "/api/projects", {
+        name: "MyProj",
+        color: "#123456",
+        directory: "/home/user/project",
+        githubSource: "CKGrafico/loop-task",
+      });
+
+      expect(res.status).toBe(201);
+      expect(res.json.ok).toBe(true);
+      expect(res.json.data.name).toBe("MyProj");
+      expect(res.json.data.directory).toBe("/home/user/project");
+      expect(res.json.data.githubSource).toBe("CKGrafico/loop-task");
+      expect(mocks.mockProjectManager.create).toHaveBeenCalledWith("MyProj", "#123456", "/home/user/project", "CKGrafico/loop-task");
+    });
+
+    it("POST /api/projects with invalid githubSource returns 400", async () => {
+      mocks.mockProjectManager.create.mockImplementationOnce(() => {
+        throw new Error('Invalid githubSource format: "invalid". Expected owner/repo (e.g. CKGrafico/loop-task)');
+      });
+      const res = await request(port, "POST", "/api/projects", {
+        name: "MyProj",
+        color: "#123456",
+        githubSource: "invalid",
+      });
+
+      expect(res.status).toBe(400);
+      expect(res.json.ok).toBe(false);
+      expect(res.json.error.message).toContain("githubSource");
+    });
+
+    it("PATCH /api/projects/:id with directory and githubSource forwards them", async () => {
+      const res = await request(port, "PATCH", "/api/projects/p1", {
+        name: "Updated",
+        color: "#abcdef",
+        directory: "/new/dir",
+        githubSource: "owner/repo",
+      });
+
+      expect(res.status).toBe(200);
+      expect(res.json.ok).toBe(true);
+      expect(mocks.mockProjectManager.update).toHaveBeenCalledWith("p1", "Updated", "#abcdef", "/new/dir", "owner/repo");
     });
 
     it("POST /api/projects with empty name returns 400", async () => {
@@ -707,7 +753,7 @@ describe("HttpApiServer integration", () => {
       });
 
       expect(res.status).toBe(201);
-      expect(mocks.mockProjectManager.create).toHaveBeenCalledWith("NoColor", "#ffffff");
+      expect(mocks.mockProjectManager.create).toHaveBeenCalledWith("NoColor", "#ffffff", undefined, undefined);
     });
 
     it("DELETE /api/projects/:id returns 200 when project can be deleted", async () => {
