@@ -1,6 +1,6 @@
 'use client';
 
-import { GithubLogo, Repeat } from '@phosphor-icons/react/dist/ssr';
+import { GithubLogoIcon, RepeatIcon } from '@phosphor-icons/react/dist/ssr';
 
 const LINKS = [
   { href: '/#loops', label: 'Loop engineering' },
@@ -17,7 +17,7 @@ export function Navbar() {
         {/* Brand */}
         <a href="/" className="group flex items-center gap-2.5">
           <span className="flex h-7 w-7 items-center justify-center rounded-lg border border-brand/30 bg-brand/10 text-brand transition-colors group-hover:bg-brand/20">
-            <Repeat size={15} weight="bold" />
+            <RepeatIcon size={15} weight="bold" />
           </span>
           <span className="font-mono text-sm font-semibold tracking-tight text-text">
             loop-task
@@ -43,7 +43,7 @@ export function Navbar() {
             aria-label="GitHub repository"
             className="text-text-sec transition-colors hover:text-text"
           >
-            <GithubLogo size={18} />
+            <GithubLogoIcon size={18} />
           </a>
           <a
             href="https://www.npmjs.com/package/loop-task"

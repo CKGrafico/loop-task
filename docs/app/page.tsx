@@ -1,14 +1,14 @@
 import Link from 'next/link';
 import {
-  ArrowRight,
-  Check,
-  FolderOpen,
-  GithubLogo,
-  Globe,
-  HardDrives,
-  Robot,
-  Timer,
-  TreeStructure,
+  ArrowRightIcon,
+  CheckIcon,
+  FolderOpenIcon,
+  GithubLogoIcon,
+  GlobeIcon,
+  HardDrivesIcon,
+  RobotIcon,
+  TimerIcon,
+  TreeStructureIcon,
   X,
 } from '@phosphor-icons/react/dist/ssr';
 import { Navbar, Footer, InstallTabs, Reveal } from '@/components/landing';
@@ -32,7 +32,7 @@ const rubric = [
   },
   {
     word: 'Controllable.',
-    text: 'Every loop is live on the board: watch logs, check status, pause, stop, and chain, all from the keyboard.',
+    text: 'Every loop is live on the board: watch logs, CheckIcon status, pause, stop, and chain, all from the keyboard.',
   },
 ];
 
@@ -41,7 +41,7 @@ const features = [
     title: 'Background daemon',
     description:
       'Loops run in a background process that survives terminal exits. Start it once, close your laptop, come back tomorrow: your loops are still running.',
-    icon: HardDrives,
+    icon: HardDrivesIcon,
     span: 'sm:col-span-2',
     accent: 'text-brand',
     badge: 'survives reboots',
@@ -50,7 +50,7 @@ const features = [
     title: 'Task chaining',
     description:
       'Tasks can chain to other tasks on success or failure. Build pipelines that react to exit codes without wrapping everything in shell scripts.',
-    icon: TreeStructure,
+    icon: TreeStructureIcon,
     span: '',
     accent: 'text-task',
   },
@@ -58,7 +58,7 @@ const features = [
     title: 'Projects',
     description:
       'Organize loops into projects with colored labels. Switch context on the board with a single keypress.',
-    icon: FolderOpen,
+    icon: FolderOpenIcon,
     span: '',
     accent: 'text-project',
   },
@@ -66,7 +66,7 @@ const features = [
     title: 'Human intervals',
     description:
       'Write 30s, 5m, 1h, 1d, 1w. No cron expressions, no mental math. Intervals are just that: how long between runs.',
-    icon: Timer,
+    icon: TimerIcon,
     span: '',
     accent: 'text-loop',
     badge: 'replaces crontab -e',
@@ -75,7 +75,7 @@ const features = [
     title: 'HTTP API',
     description:
       'Every loop is queryable and controllable over HTTP. Build dashboards, wire up webhooks, or just curl the status endpoint.',
-    icon: Globe,
+    icon: GlobeIcon,
     span: '',
     accent: 'text-warning',
   },
@@ -83,7 +83,7 @@ const features = [
     title: 'Agent-ready',
     description:
       'AI agents can create and manage loops through the CLI or API. Give an agent a cadence and let it iterate on a backlog, review PRs, or chase down flaky tests, all without babysitting.',
-    icon: Robot,
+    icon: RobotIcon,
     span: 'sm:col-span-2',
     accent: 'text-idle',
   },
@@ -125,7 +125,7 @@ const comparison: { label: string; loopTask: Cell; cron: Cell; os: Cell }[] = [
   {
     label: 'Run history & live logs',
     loopTask: { ok: true },
-    cron: { ok: false, note: 'check your mail' },
+    cron: { ok: false, note: 'CheckIcon your mail' },
     os: { ok: false, note: 'event viewer' },
   },
   {
@@ -144,7 +144,7 @@ const comparison: { label: string; loopTask: Cell; cron: Cell; os: Cell }[] = [
 
 const examples = [
   {
-    label: 'Health check',
+    label: 'Health CheckIcon',
     cmd: 'loop-task new 10s -- curl -sf https://api.example.com/health',
   },
   {
@@ -270,7 +270,7 @@ export default function LandingPage() {
                   className="inline-flex items-center gap-2 rounded-lg bg-brand px-5 py-2.5 text-sm font-semibold text-[#0a0e14] transition hover:bg-brand-soft active:translate-y-px"
                 >
                   Get started
-                  <ArrowRight size={15} weight="bold" />
+                  <ArrowRightIcon size={15} weight="bold" />
                 </Link>
                 <a
                   href="https://github.com/ckgrafico/loop-task"
@@ -278,7 +278,7 @@ export default function LandingPage() {
                   rel="noopener noreferrer"
                   className="inline-flex items-center gap-2 rounded-lg border border-border-dim bg-surface px-5 py-2.5 text-sm font-medium text-text-sec transition hover:text-text active:translate-y-px"
                 >
-                  <GithubLogo size={15} />
+                  <GithubLogoIcon size={15} />
                   Star on GitHub
                 </a>
               </div>
@@ -329,7 +329,7 @@ export default function LandingPage() {
           <p className="mb-8 max-w-2xl text-text-sec">
             A <span className="text-text">loop</span> is a recurring goal: you
             define a purpose, give it an interval, and let it iterate. It scales
-            from a 10-second health check to an AI agent chewing through a
+            from a 10-second health CheckIcon to an AI agent chewing through a
             backlog, and you supervise every one of them from the same board.
           </p>
 
@@ -346,7 +346,7 @@ export default function LandingPage() {
                     rel="noopener noreferrer"
                     className="group inline-flex items-center gap-2 text-sm text-text-sec transition-colors hover:text-brand"
                   >
-                    <ArrowRight
+                    <ArrowRightIcon
                       size={13}
                       weight="bold"
                       className="shrink-0 text-text-muted transition-colors group-hover:text-brand"
@@ -459,7 +459,7 @@ export default function LandingPage() {
                       <td key={i} className="px-5 py-3.5">
                         <span className="inline-flex items-center gap-2">
                           {cell.ok ? (
-                            <Check size={15} weight="bold" className="shrink-0 text-success" />
+                            <CheckIcon size={15} weight="bold" className="shrink-0 text-success" />
                           ) : (
                             <X size={15} className="shrink-0 text-text-muted" />
                           )}
@@ -575,7 +575,7 @@ export default function LandingPage() {
                 className="inline-flex items-center gap-2 rounded-lg bg-brand px-5 py-2.5 text-sm font-semibold text-[#0a0e14] transition hover:bg-brand-soft active:translate-y-px"
               >
                 Get started
-                <ArrowRight size={15} weight="bold" />
+                <ArrowRightIcon size={15} weight="bold" />
               </Link>
               <a
                 href="https://github.com/ckgrafico/loop-task"
@@ -583,7 +583,7 @@ export default function LandingPage() {
                 rel="noopener noreferrer"
                 className="inline-flex items-center gap-2 rounded-lg border border-border-dim bg-surface px-5 py-2.5 text-sm font-medium text-text-sec transition hover:text-text active:translate-y-px"
               >
-                <GithubLogo size={15} />
+                <GithubLogoIcon size={15} />
                 Star on GitHub
               </a>
             </div>

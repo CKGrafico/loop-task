@@ -1,4 +1,4 @@
-import { Repeat } from '@phosphor-icons/react/dist/ssr';
+import { RepeatIcon } from '@phosphor-icons/react/dist/ssr';
 
 export function Footer() {
   return (
@@ -7,7 +7,7 @@ export function Footer() {
         {/* Brand */}
         <div className="flex items-center gap-2">
           <span className="flex h-6 w-6 items-center justify-center rounded-md border border-brand/30 bg-brand/10 text-brand">
-            <Repeat size={12} weight="bold" />
+            <RepeatIcon size={12} weight="bold" />
           </span>
           <span className="font-mono text-sm font-medium text-text">loop-task</span>
         </div>

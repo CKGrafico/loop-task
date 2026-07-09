@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useCallback } from 'react';
-import { Check, Copy } from '@phosphor-icons/react/dist/ssr';
+import { CheckIcon, CopyIcon } from '@phosphor-icons/react/dist/ssr';
 
 interface CopyButtonProps {
   text: string;
@@ -21,10 +21,10 @@ export function CopyButton({ text, className }: CopyButtonProps) {
     <button
       type="button"
       onClick={handleCopy}
-      aria-label={copied ? 'Copied' : 'Copy to clipboard'}
+      aria-label={copied ? 'Copied' : 'CopyIcon to clipboard'}
       className={`inline-flex items-center justify-center rounded-md p-1.5 transition-colors border border-border-dim hover:border-brand hover:text-brand text-text-muted ${className ?? ''}`}
     >
-      {copied ? <Check size={16} weight="bold" /> : <Copy size={16} />}
+      {copied ? <CheckIcon size={16} weight="bold" /> : <CopyIcon size={16} />}
     </button>
   );
 }
