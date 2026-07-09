@@ -13,7 +13,6 @@ export default function DocsLayoutWrapper({
         title: 'loop-task',
         enabled: true,
       }}
-      disableThemeSwitch
     >
       {children}
     </DocsLayout>

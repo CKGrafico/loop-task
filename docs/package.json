@@ -8,10 +8,12 @@
     "start": "next start"
   },
   "dependencies": {
-    "fumadocs-core": "^14.0.0",
-    "fumadocs-mdx": "^11.0.0",
-    "fumadocs-ui": "^14.0.0",
+    "@types/mdx": "^2.0.14",
+    "fumadocs-core": "^15.8.5",
+    "fumadocs-mdx": "^14.0.0",
+    "fumadocs-ui": "^15.8.5",
     "next": "^15.0.0",
+    "picocolors": "1.1.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0"
   },

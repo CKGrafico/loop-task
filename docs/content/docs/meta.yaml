@@ -1,0 +1,14 @@
+title: Documentation
+pages:
+  - getting-started
+  - "---Guides---"
+  - task-chaining
+  - agent-workflows
+  - docker
+  - "---Reference---"
+  - cli-reference
+  - http-api
+  - configuration
+  - "---Explanation---"
+  - architecture
+  - troubleshooting

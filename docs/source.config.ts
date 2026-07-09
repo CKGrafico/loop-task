@@ -1,3 +1,7 @@
-import { defineMDX } from 'fumadocs-mdx'
+import { defineDocs, defineConfig } from 'fumadocs-mdx/config'
 
-export default defineMDX()
+export default defineConfig({})
+
+export const docs = defineDocs({
+  dir: 'content/docs',
+})

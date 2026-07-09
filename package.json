@@ -88,5 +88,10 @@
     "typescript": "^5.8.0",
     "typescript-eslint": "^8.30.0",
     "vitest": "^3.1.0"
+  },
+  "pnpm": {
+    "overrides": {
+      "picocolors": "1.1.0"
+    }
   }
 }

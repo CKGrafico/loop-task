@@ -1,7 +1,7 @@
 import { source } from '@/app/source'
 import { DocsPage, DocsBody, DocsDescription, DocsTitle } from 'fumadocs-ui/page'
 import { notFound } from 'next/navigation'
-import defaultMdxComponents from 'fumadocs-ui/mdx'
+import { useMDXComponents } from '@/mdx-components'
 
 export default async function Page({
   params,
@@ -15,16 +15,20 @@ export default async function Page({
     notFound()
   }
 
-  const MDX = page.data.body
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const MDX = (page.data as any).body
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const toc = (page.data as any).toc as undefined | any[]
+  const components = useMDXComponents({})
 
   return (
-    <DocsPage toc={page.data.toc}>
+    <DocsPage toc={toc}>
       <DocsTitle>{page.data.title}</DocsTitle>
       {page.data.description && (
         <DocsDescription>{page.data.description}</DocsDescription>
       )}
       <DocsBody>
-        <MDX components={{ ...defaultMdxComponents }} />
+        <MDX components={components} />
       </DocsBody>
     </DocsPage>
   )

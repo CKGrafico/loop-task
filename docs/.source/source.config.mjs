@@ -1,8 +1,6 @@
 // source.config.ts
 import { defineDocs, defineConfig } from "fumadocs-mdx/config";
-var source_config_default = defineConfig({
-  lastModifiedTime: "none"
-});
+var source_config_default = defineConfig({});
 var docs = defineDocs({
   dir: "content/docs"
 });
