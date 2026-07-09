@@ -3,6 +3,9 @@ import { cycleSortMode, cycleStatusFilter } from "../../entities/loops/filters.j
 import { cycleProjectSortMode, cycleProjectHasLoopsFilter, cycleProjectIsSystemFilter } from "../../entities/projects/filters.js";
 import type { CommandHandlerContext } from "../../app/types.js";
 import { groupRunsByCycle } from "../../widgets/right-panel/RunHistory.js";
+import { container } from "../../shared/container/index.js";
+import { TYPES } from "../../shared/services/types.js";
+import type { SettingsService } from "../../shared/services/types.js";
 
 export function useCommandHandlers(context: CommandHandlerContext) {
   const {
@@ -137,6 +140,16 @@ export function useCommandHandlers(context: CommandHandlerContext) {
       const port = process.env.LOOP_CLI_HTTP_PORT ?? "8845";
       const baseUrl = `http://127.0.0.1:${port}`;
       pushToast("info", `API: ${baseUrl} | Swagger: ${baseUrl}/api/docs | OpenAPI: ${baseUrl}/api/openapi.json`);
+    },
+    "toggle-api": async () => {
+      try {
+        const settingsService = container.get<SettingsService>(TYPES.SettingsService);
+        const current = await settingsService.getHttpApiEnabled();
+        await settingsService.setHttpApiEnabled(!current);
+        pushToast("success", t(!current ? "board.toastApiEnabled" : "board.toastApiDisabled"));
+      } catch (e) {
+        pushToast("error", t("board.toastApiToggleError", { message: (e as Error).message }));
+      }
     },
     status: () => { pushToast("info", `Command "status" coming soon`); },
     export: () => {

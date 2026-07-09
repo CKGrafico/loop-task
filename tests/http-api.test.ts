@@ -49,6 +49,7 @@ function createMocks() {
     stopLoop: vi.fn((_id: string) => true),
     stopAllLoops: vi.fn(() => 3),
     trigger: vi.fn((_id: string) => true),
+    playLoop: vi.fn((_id: string) => true),
     isMaxRunsBlocked: vi.fn(() => false),
     isRunning: vi.fn(() => false),
     getLogPath: vi.fn((_id: string) => null),
@@ -75,7 +76,14 @@ function createMocks() {
     update: vi.fn(),
     delete: vi.fn(),
   };
-  return { mockManager, mockTaskManager, mockProjectManager };
+  const mockSettingsManager = {
+    get: vi.fn(() => ({ httpApiEnabled: true })),
+    set: vi.fn((partial: Partial<{ httpApiEnabled: boolean }>) => ({ httpApiEnabled: true, ...partial })),
+    load: vi.fn(),
+    save: vi.fn(),
+    onChange: vi.fn(),
+  };
+  return { mockManager, mockTaskManager, mockProjectManager, mockSettingsManager };
 }
 
 
@@ -255,7 +263,8 @@ describe("HttpApiServer integration", () => {
     server = new HttpApiServer(
       mocks.mockManager as unknown as import("../src/daemon/managers/loop-manager.js").LoopManager,
       mocks.mockTaskManager as unknown as import("../src/daemon/managers/task-manager.js").TaskManager,
-      mocks.mockProjectManager as unknown as import("../src/daemon/managers/project-manager.js").ProjectManager
+      mocks.mockProjectManager as unknown as import("../src/daemon/managers/project-manager.js").ProjectManager,
+      mocks.mockSettingsManager as unknown as import("../src/daemon/settings-manager.js").SettingsManager
     );
     await server.listen(0, "127.0.0.1");
     // Retrieve the actual assigned port
@@ -927,6 +936,192 @@ describe("HttpApiServer integration", () => {
       const res = await request(port, "GET", "/api/loops");
 
       expect(res.headers["content-type"]).toBe("application/json");
+    });
+  });
+
+  describe("POST /api/loops/:id/play", () => {
+    it("returns 200 with loop meta when found and not blocked", async () => {
+      const meta = makeMockMeta("abc");
+      mocks.mockManager.isMaxRunsBlocked.mockReturnValueOnce(false);
+      mocks.mockManager.isRunning.mockReturnValueOnce(false);
+      mocks.mockManager.playLoop.mockReturnValueOnce(true);
+      mocks.mockManager.status.mockReturnValueOnce(meta);
+      const res = await request(port, "POST", "/api/loops/abc/play");
+
+      expect(res.status).toBe(200);
+      expect(res.json.ok).toBe(true);
+      expect(res.json.data.id).toBe("abc");
+      expect(mocks.mockManager.playLoop).toHaveBeenCalledWith("abc");
+    });
+
+    it("returns 409 when max runs blocked", async () => {
+      mocks.mockManager.isMaxRunsBlocked.mockReturnValueOnce(true);
+      const res = await request(port, "POST", "/api/loops/abc/play");
+
+      expect(res.status).toBe(409);
+      expect(res.json.ok).toBe(false);
+      expect(res.json.error.message).toContain("Max runs");
+    });
+
+    it("returns 409 when loop is already running", async () => {
+      mocks.mockManager.isMaxRunsBlocked.mockReturnValueOnce(false);
+      mocks.mockManager.isRunning.mockReturnValueOnce(true);
+      const res = await request(port, "POST", "/api/loops/abc/play");
+
+      expect(res.status).toBe(409);
+      expect(res.json.ok).toBe(false);
+      expect(res.json.error.message).toContain("already running");
+    });
+
+    it("returns 404 when loop not found", async () => {
+      mocks.mockManager.isMaxRunsBlocked.mockReturnValueOnce(false);
+      mocks.mockManager.isRunning.mockReturnValueOnce(false);
+      mocks.mockManager.playLoop.mockReturnValueOnce(false);
+      const res = await request(port, "POST", "/api/loops/nonexistent/play");
+
+      expect(res.status).toBe(404);
+      expect(res.json.ok).toBe(false);
+    });
+  });
+
+  describe("POST /api/task-chains", () => {
+    it("returns 201 with taskIds for sequential-success chain", async () => {
+      mocks.mockTaskManager.create
+        .mockReturnValueOnce({ id: "t1", name: "A", command: "echo", commandArgs: [], onSuccessTaskId: null, onFailureTaskId: null, createdAt: new Date().toISOString() })
+        .mockReturnValueOnce({ id: "t2", name: "B", command: "echo", commandArgs: [], onSuccessTaskId: null, onFailureTaskId: null, createdAt: new Date().toISOString() })
+        .mockReturnValueOnce({ id: "t3", name: "C", command: "echo", commandArgs: [], onSuccessTaskId: null, onFailureTaskId: null, createdAt: new Date().toISOString() });
+      mocks.mockTaskManager.update
+        .mockReturnValueOnce({ id: "t1", name: "A", command: "echo", commandArgs: [], onSuccessTaskId: "t2", onFailureTaskId: null, createdAt: new Date().toISOString() })
+        .mockReturnValueOnce({ id: "t2", name: "B", command: "echo", commandArgs: [], onSuccessTaskId: "t3", onFailureTaskId: null, createdAt: new Date().toISOString() });
+
+      const res = await request(port, "POST", "/api/task-chains", {
+        tasks: [
+          { id: "t1", name: "A", command: "echo", commandArgs: [], onSuccessTaskId: null, onFailureTaskId: null },
+          { id: "t2", name: "B", command: "echo", commandArgs: [], onSuccessTaskId: null, onFailureTaskId: null },
+          { id: "t3", name: "C", command: "echo", commandArgs: [], onSuccessTaskId: null, onFailureTaskId: null },
+        ],
+        chain: "sequential-success",
+      });
+
+      expect(res.status).toBe(201);
+      expect(res.json.ok).toBe(true);
+      expect(res.json.data.taskIds).toEqual(["t1", "t2", "t3"]);
+    });
+
+    it("returns 400 when tasks array is empty", async () => {
+      const res = await request(port, "POST", "/api/task-chains", {
+        tasks: [],
+        chain: "none",
+      });
+
+      expect(res.status).toBe(400);
+      expect(res.json.ok).toBe(false);
+    });
+
+    it("returns 400 for invalid chain mode", async () => {
+      const res = await request(port, "POST", "/api/task-chains", {
+        tasks: [{ id: "t1", name: "A", command: "echo", commandArgs: [], onSuccessTaskId: null, onFailureTaskId: null }],
+        chain: "invalid",
+      });
+
+      expect(res.status).toBe(400);
+      expect(res.json.ok).toBe(false);
+    });
+
+    it("returns 400 when task name is missing", async () => {
+      const res = await request(port, "POST", "/api/task-chains", {
+        tasks: [{ id: "t1", name: "", command: "echo", commandArgs: [], onSuccessTaskId: null, onFailureTaskId: null }],
+        chain: "none",
+      });
+
+      expect(res.status).toBe(400);
+      expect(res.json.ok).toBe(false);
+    });
+  });
+
+  describe("GET /api/loops/:id/runs", () => {
+    it("returns 200 with run history when loop found", async () => {
+      const meta = makeMockMeta("abc");
+      meta.runHistory = [
+        { runNumber: 1, startedAt: "2025-01-01T00:00:00Z", exitCode: 0, duration: 100, logSize: 50, status: "completed" as const, logOffset: 0 },
+        { runNumber: 2, startedAt: "2025-01-02T00:00:00Z", exitCode: 1, duration: 200, logSize: 50, status: "completed" as const, logOffset: 50 },
+      ];
+      mocks.mockManager.status.mockReturnValueOnce(meta);
+      const res = await request(port, "GET", "/api/loops/abc/runs");
+
+      expect(res.status).toBe(200);
+      expect(res.json.ok).toBe(true);
+      expect(res.json.data).toHaveLength(2);
+    });
+
+    it("filters by from date", async () => {
+      const meta = makeMockMeta("abc");
+      meta.runHistory = [
+        { runNumber: 1, startedAt: "2025-01-01T00:00:00Z", exitCode: 0, duration: 100, logSize: 50, status: "completed" as const, logOffset: 0 },
+        { runNumber: 2, startedAt: "2025-01-02T00:00:00Z", exitCode: 1, duration: 200, logSize: 50, status: "completed" as const, logOffset: 50 },
+      ];
+      mocks.mockManager.status.mockReturnValueOnce(meta);
+      const res = await request(port, "GET", "/api/loops/abc/runs?from=2025-01-02T00:00:00Z");
+
+      expect(res.status).toBe(200);
+      expect(res.json.ok).toBe(true);
+      expect(res.json.data).toHaveLength(1);
+      expect(res.json.data[0].runNumber).toBe(2);
+    });
+
+    it("returns 404 when loop not found", async () => {
+      const res = await request(port, "GET", "/api/loops/nonexistent/runs");
+
+      expect(res.status).toBe(404);
+      expect(res.json.ok).toBe(false);
+    });
+  });
+
+  describe("GET /api/loops/:id/logs/date", () => {
+    it("returns 400 when from is missing", async () => {
+      const meta = makeMockMeta("abc");
+      mocks.mockManager.status.mockReturnValueOnce(meta);
+      const res = await request(port, "GET", "/api/loops/abc/logs/date?to=2025-01-02T00:00:00Z");
+
+      expect(res.status).toBe(400);
+      expect(res.json.ok).toBe(false);
+    });
+
+    it("returns 400 when to is missing", async () => {
+      const meta = makeMockMeta("abc");
+      mocks.mockManager.status.mockReturnValueOnce(meta);
+      const res = await request(port, "GET", "/api/loops/abc/logs/date?from=2025-01-01T00:00:00Z");
+
+      expect(res.status).toBe(400);
+      expect(res.json.ok).toBe(false);
+    });
+
+    it("returns 404 when loop not found", async () => {
+      const res = await request(port, "GET", "/api/loops/nonexistent/logs/date?from=2025-01-01T00:00:00Z&to=2025-01-02T00:00:00Z");
+
+      expect(res.status).toBe(404);
+      expect(res.json.ok).toBe(false);
+    });
+  });
+
+  describe("GET/PATCH /api/settings", () => {
+    it("GET /api/settings returns 200 with settings", async () => {
+      mocks.mockSettingsManager.get.mockReturnValueOnce({ httpApiEnabled: true });
+      const res = await request(port, "GET", "/api/settings");
+
+      expect(res.status).toBe(200);
+      expect(res.json.ok).toBe(true);
+      expect(res.json.data.httpApiEnabled).toBe(true);
+    });
+
+    it("PATCH /api/settings returns 200 with updated settings", async () => {
+      mocks.mockSettingsManager.set.mockReturnValueOnce({ httpApiEnabled: false });
+      const res = await request(port, "PATCH", "/api/settings", { httpApiEnabled: false });
+
+      expect(res.status).toBe(200);
+      expect(res.json.ok).toBe(true);
+      expect(res.json.data.httpApiEnabled).toBe(false);
+      expect(mocks.mockSettingsManager.set).toHaveBeenCalledWith({ httpApiEnabled: false });
     });
   });
 });

@@ -65,7 +65,7 @@ export function useGlobalShortcuts(context: ShortcutContext) {
       const globalShortcuts: Record<string, () => void> = {
         p: () => { setCommandsBrowserOpen(true); },
         b: () => handleCommand("debug"),
-        g: () => handleCommand("api"),
+        g: () => handleCommand("toggle-api"),
         x: () => handleCommand("export"),
         i: () => handleCommand("import"),
         y: () => handleCommand("status"),

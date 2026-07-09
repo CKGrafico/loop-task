@@ -116,6 +116,23 @@ export function registerLoopRoutes(manager: LoopManager, routes: RouteEntry[], r
     sendOk(res);
   });
 
+  r("POST", "/api/loops/:id/play", (_req, res, params) => {
+    if (manager.isMaxRunsBlocked(params.id)) {
+      sendError(res, 409, "Max runs reached");
+      return;
+    }
+    if (manager.isRunning(params.id)) {
+      sendError(res, 409, "Loop is already running");
+      return;
+    }
+    if (!manager.playLoop(params.id)) {
+      sendNotFound(res, params.id);
+      return;
+    }
+    const meta = manager.status(params.id);
+    sendOk(res, meta);
+  });
+
   r("POST", "/api/loops/:id/trigger", (_req, res, params) => {
     if (manager.isMaxRunsBlocked(params.id)) {
       sendError(res, 400, "Max runs reached");
@@ -143,6 +160,79 @@ export function registerLoopRoutes(manager: LoopManager, routes: RouteEntry[], r
   r("POST", "/api/loops/stop-all", (_req, res) => {
     const count = manager.stopAllLoops();
     sendOk(res, { count });
+  });
+
+  // --- Run History ---
+
+  r("GET", "/api/loops/:id/runs", (_req, res, params) => {
+    const meta = manager.status(params.id);
+    if (!meta) {
+      sendNotFound(res, params.id);
+      return;
+    }
+    const query = parseQuery(_req.url);
+    const fromStr = query.get("from");
+    const toStr = query.get("to");
+    let runs = meta.runHistory;
+    if (fromStr) {
+      const fromMs = new Date(fromStr).getTime();
+      if (!Number.isNaN(fromMs)) {
+        runs = runs.filter((r) => new Date(r.startedAt).getTime() >= fromMs);
+      }
+    }
+    if (toStr) {
+      const toMs = new Date(toStr).getTime();
+      if (!Number.isNaN(toMs)) {
+        runs = runs.filter((r) => new Date(r.startedAt).getTime() <= toMs);
+      }
+    }
+    sendOk(res, runs);
+  });
+
+  // --- Date-Filtered Logs ---
+
+  r("GET", "/api/loops/:id/logs/date", (_req, res, params) => {
+    const meta = manager.status(params.id);
+    if (!meta) {
+      sendNotFound(res, params.id);
+      return;
+    }
+    const query = parseQuery(_req.url);
+    const fromStr = query.get("from");
+    const toStr = query.get("to");
+    if (!fromStr || !toStr) {
+      sendError(res, 400, "Both 'from' and 'to' query parameters are required (ISO 8601)");
+      return;
+    }
+    const fromMs = new Date(fromStr).getTime();
+    const toMs = new Date(toStr).getTime();
+    if (Number.isNaN(fromMs) || Number.isNaN(toMs)) {
+      sendError(res, 400, "Invalid date format for 'from' or 'to' (use ISO 8601)");
+      return;
+    }
+    const logPath = manager.getLogPath(params.id);
+    if (!logPath || !fs.existsSync(logPath)) {
+      sendOk(res, "");
+      return;
+    }
+    const matching = meta.runHistory.filter((r) => {
+      const t = new Date(r.startedAt).getTime();
+      return t >= fromMs && t <= toMs;
+    });
+    if (matching.length === 0) {
+      sendOk(res, "");
+      return;
+    }
+    matching.sort((a, b) => a.logOffset - b.logOffset);
+    const buffer = fs.readFileSync(logPath);
+    const allSorted = meta.runHistory.slice().sort((a, b) => a.logOffset - b.logOffset);
+    const parts = matching.map((record) => {
+      const start = record.logOffset;
+      const idx = allSorted.indexOf(record);
+      const end = idx < allSorted.length - 1 ? allSorted[idx + 1].logOffset : buffer.length;
+      return buffer.toString("utf-8", start, end);
+    });
+    sendOk(res, parts.join(""));
   });
 
   // --- Logs ---

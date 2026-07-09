@@ -1,6 +1,7 @@
 import type net from "node:net";
 import type { IpcRequest } from "../../../types.js";
 import type { TaskManager } from "../../managers/task-manager.js";
+import type { SettingsManager } from "../../settings-manager.js";
 import type { HandlerContext } from "./loop-handlers.js";
 
 export type { HandlerContext } from "./loop-handlers.js";
@@ -41,6 +42,11 @@ import {
   handleProjectDelete,
 } from "./project-handlers.js";
 
+import {
+  handleSettingsGet,
+  handleSettingsSet,
+} from "./settings-handlers.js";
+
 export {
   handleStart,
   handleUpdate,
@@ -65,6 +71,8 @@ export {
   handleProjectCreate,
   handleProjectUpdate,
   handleProjectDelete,
+  handleSettingsGet,
+  handleSettingsSet,
 };
 
 /**
@@ -74,7 +82,7 @@ export {
 export async function dispatch(
   request: IpcRequest,
   socket: net.Socket,
-  ctx: HandlerContext & { taskManager: TaskManager }
+  ctx: HandlerContext & { taskManager: TaskManager; settingsManager: SettingsManager }
 ): Promise<boolean> {
   switch (request.type) {
     case "start":
@@ -168,6 +176,14 @@ export async function dispatch(
 
     case "project-delete":
       handleProjectDelete(request, socket, ctx);
+      break;
+
+    case "settings-get":
+      await handleSettingsGet(request, socket, ctx.settingsManager);
+      break;
+
+    case "settings-set":
+      await handleSettingsSet(request, socket, ctx.settingsManager);
       break;
 
     default:

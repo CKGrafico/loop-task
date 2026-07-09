@@ -111,6 +111,10 @@ export interface LoopMeta {
   context?: Record<string, unknown>;
 }
 
+export interface DaemonSettings {
+  httpApiEnabled: boolean;
+}
+
 export type IpcRequest =
   | { type: "start"; payload: LoopOptions & { intervalHuman: string } }
   | { type: "update"; payload: { id: string } & LoopOptions & { intervalHuman: string } }
@@ -136,6 +140,8 @@ export type IpcRequest =
   | { type: "project-create"; payload: { name: string; color: string; directory?: string; githubSource?: string } }
   | { type: "project-update"; payload: { id: string; name: string; color?: string; directory?: string; githubSource?: string } }
   | { type: "project-delete"; payload: { id: string } }
+  | { type: "settings-get" }
+  | { type: "settings-set"; settings: Partial<DaemonSettings> }
   | { type: "subscribe" }
   | { type: "shutdown" };
 
