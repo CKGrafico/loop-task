@@ -3,6 +3,7 @@ export interface Project {
   name: string;
   color: string;
   directory?: string;
+  githubSource?: string;
   createdAt: string;
   isSystem: boolean;
   isDefault: boolean;
@@ -130,8 +131,8 @@ export type IpcRequest =
   | { type: "task-get"; payload: { id: string } }
   | { type: "task-delete"; payload: { id: string } }
   | { type: "project-list" }
-  | { type: "project-create"; payload: { name: string; color: string; directory?: string } }
-  | { type: "project-update"; payload: { id: string; name: string; color?: string; directory?: string } }
+  | { type: "project-create"; payload: { name: string; color: string; directory?: string; githubSource?: string } }
+  | { type: "project-update"; payload: { id: string; name: string; color?: string; directory?: string; githubSource?: string } }
   | { type: "project-delete"; payload: { id: string } }
   | { type: "subscribe" }
   | { type: "shutdown" };

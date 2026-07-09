@@ -30,8 +30,8 @@ export interface TaskService {
 
 export interface ProjectService {
   list(): Promise<Project[]>;
-  create(name: string, color: string, directory?: string): Promise<Project>;
-  update(id: string, name: string, color?: string, directory?: string): Promise<void>;
+  create(name: string, color: string, directory?: string, githubSource?: string): Promise<Project>;
+  update(id: string, name: string, color?: string, directory?: string, githubSource?: string): Promise<void>;
   delete(id: string): Promise<void>;
 }
 
