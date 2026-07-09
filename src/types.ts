@@ -113,6 +113,7 @@ export interface LoopMeta {
 
 export interface DaemonSettings {
   httpApiEnabled: boolean;
+  mcpApiEnabled: boolean;
 }
 
 export type IpcRequest =

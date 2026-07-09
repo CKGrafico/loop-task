@@ -3,6 +3,7 @@ import { TaskManager } from "./managers/task-manager.js";
 import { ProjectManager } from "./managers/project-manager.js";
 import { IpcServer } from "./server/index.js";
 import { HttpApiServer } from "./http/server.js";
+import { McpApiServer } from "./mcp/index.js";
 import { FileWatcher } from "./watcher/index.js";
 import { SettingsManager } from "./settings-manager.js";
 import {
@@ -20,6 +21,9 @@ import { t } from "../shared/i18n/index.js";
 import { daemonLog } from "./daemon-log.js";
 
 async function main(): Promise<void> {
+  const mcpEnabled = (process.env.LOOP_CLI_MCP_ENABLED ?? "true") !== "false";
+  const mcpTransport = process.env.LOOP_CLI_MCP_TRANSPORT === "sse" ? "sse" : "stdio";
+
   const taskManager = new TaskManager();
   migrateLoopsToJson();
   migrateTasksToJson();
@@ -30,6 +34,7 @@ async function main(): Promise<void> {
   const server = new IpcServer(manager, taskManager, settingsManager);
   const projectManager = (manager as unknown as { projectManager: ProjectManager }).projectManager;
   const httpServer = new HttpApiServer(manager, taskManager, projectManager, settingsManager);
+  const mcpServer = new McpApiServer(manager, taskManager, projectManager, mcpTransport);
 
   try {
     await server.listen();
@@ -49,6 +54,14 @@ async function main(): Promise<void> {
     }
   }
 
+  if (mcpEnabled) {
+    try {
+      await mcpServer.start();
+    } catch (err) {
+      daemonLog(`MCP server failed to start: ${String(err)}`);
+    }
+  }
+
   settingsManager.onChange((settings) => {
     if (settings.httpApiEnabled && !httpServer["isListening"]) {
       httpServer.listen(resolvedHttpPort).catch((err) => {
@@ -57,6 +70,16 @@ async function main(): Promise<void> {
     } else if (!settings.httpApiEnabled && httpServer["isListening"]) {
       httpServer.close().catch((err) => {
         daemonLog(`HTTP API server failed to stop: ${String(err)}`);
+      });
+    }
+
+    if (settings.mcpApiEnabled && !mcpServer.isListening) {
+      mcpServer.start().catch((err) => {
+        daemonLog(`MCP server failed to restart: ${String(err)}`);
+      });
+    } else if (!settings.mcpApiEnabled && mcpServer.isListening) {
+      mcpServer.close().catch((err) => {
+        daemonLog(`MCP server failed to stop: ${String(err)}`);
       });
     }
   });
@@ -86,6 +109,7 @@ async function main(): Promise<void> {
       await manager.shutdown();
       await server.close();
       await httpServer.close();
+      await mcpServer.close();
     } catch (err) {
       daemonLog(`error during shutdown: ${String(err)}`);
     } finally {
