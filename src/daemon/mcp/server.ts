@@ -11,8 +11,8 @@ import { registerMcpTools } from "./tools.js";
 const MCP_DEFAULT_PORT = 8846;
 
 export class McpApiServer {
-  private mcpServer: McpServer;
-  private transport: StdioServerTransport | SSEServerTransport | null = null;
+  private mcpServer: McpServer | null = null;
+  private activeTransport: StdioServerTransport | SSEServerTransport | null = null;
   private httpServer: http.Server | null = null;
   private _isListening = false;
   private transportType: "stdio" | "sse";
@@ -23,12 +23,16 @@ export class McpApiServer {
     private projectManager: ProjectManager,
     transport?: "stdio" | "sse",
   ) {
-    this.transportType = transport ?? "stdio";
-    this.mcpServer = new McpServer(
+    this.transportType = transport ?? "sse";
+  }
+
+  private createServer(): McpServer {
+    const server = new McpServer(
       { name: "loop-task", version: "1.0.0" },
       { capabilities: { tools: {} } },
     );
-    registerMcpTools(this.mcpServer, { manager, taskManager, projectManager });
+    registerMcpTools(server, { manager: this.manager, taskManager: this.taskManager, projectManager: this.projectManager });
+    return server;
   }
 
   get isListening(): boolean {
@@ -53,10 +57,13 @@ export class McpApiServer {
     if (!this._isListening) return;
     this._isListening = false;
 
-    try {
-      await this.mcpServer.close();
-    } catch {
-      // ignore close errors
+    if (this.mcpServer) {
+      try {
+        await this.mcpServer.close();
+      } catch {
+        // ignore close errors
+      }
+      this.mcpServer = null;
     }
 
     if (this.httpServer) {
@@ -67,7 +74,7 @@ export class McpApiServer {
       this.httpServer = null;
     }
 
-    this.transport = null;
+    this.activeTransport = null;
     daemonLog("MCP server stopped");
   }
 
@@ -77,9 +84,11 @@ export class McpApiServer {
       return;
     }
 
+    const server = this.createServer();
     const transport = new StdioServerTransport();
-    this.transport = transport;
-    await this.mcpServer.connect(transport);
+    this.mcpServer = server;
+    this.activeTransport = transport;
+    await server.connect(transport);
     this._isListening = true;
     daemonLog("MCP server listening on stdio");
 
@@ -92,24 +101,36 @@ export class McpApiServer {
   private async startSse(): Promise<void> {
     const port = parseInt(process.env.LOOP_CLI_MCP_PORT ?? "", 10) || MCP_DEFAULT_PORT;
 
+    // Map session ID → transport for POST routing
+    const sessions = new Map<string, SSEServerTransport>();
+
     this.httpServer = http.createServer(async (req, res) => {
       try {
         const url = new URL(req.url ?? "/", `http://127.0.0.1:${port}`);
 
         if (req.method === "GET" && url.pathname === "/sse") {
+          // Create a fresh McpServer per SSE connection — the SDK only allows
+          // one transport per McpServer instance, so reusing one would cause
+          // "Already connected to a transport" errors on reconnect.
+          const server = this.createServer();
           const transport = new SSEServerTransport("/message", res);
-          this.transport = transport;
-          await this.mcpServer.connect(transport);
+          sessions.set(transport.sessionId, transport);
+          await server.connect(transport);
+          if (!this.mcpServer) this.mcpServer = server;
           this._isListening = true;
           daemonLog(`MCP SSE client connected (session: ${transport.sessionId})`);
 
           transport.onclose = () => {
+            sessions.delete(transport.sessionId);
             daemonLog(`MCP SSE client disconnected (session: ${transport.sessionId})`);
           };
         } else if (req.method === "POST" && url.pathname === "/message") {
           const body = await this.readBody(req);
-          if (this.transport && this.transport instanceof SSEServerTransport) {
-            await (this.transport as SSEServerTransport).handlePostMessage(req, res, body);
+          // Route the POST to the correct transport by session ID
+          const sessionId = url.searchParams.get("sessionId");
+          const transport = sessionId ? sessions.get(sessionId) : sessions.values().next().value;
+          if (transport) {
+            await transport.handlePostMessage(req, res, body);
           } else {
             res.writeHead(400).end("No active SSE connection");
           }
