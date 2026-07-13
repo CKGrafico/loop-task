@@ -115,11 +115,11 @@ export interface DaemonSettings {
   httpApiEnabled: boolean;
   mcpApiEnabled: boolean;
   /**
-   * Network interface the HTTP API binds to. Defaults to "127.0.0.1"
-   * (local-only). Set to a specific IP (e.g. a Tailscale address) to reach
-   * the daemon from another machine, or "0.0.0.0" for all interfaces.
-   * The API is unauthenticated, so binding beyond loopback exposes
-   * command-execution to whoever can reach that interface.
+   * Network interface the HTTP API binds to. Defaults to "0.0.0.0" (all
+   * interfaces) so the daemon is reachable remotely (SSH/Tailscale/LAN).
+   * The API is unauthenticated — securing access is the operator's job at
+   * the network layer. Set to "127.0.0.1" (or `loop-task http-host local`)
+   * for loopback-only, or a specific IP to bind a single interface.
    */
   httpApiHost: string;
 }

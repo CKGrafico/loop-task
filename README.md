@@ -145,7 +145,7 @@ Colors can be a name (`white`, `cyan`, `green`, `yellow`, `orange`, `pink`) or a
 | `loop-task export [file]` | Export all configs to JSON file (or stdout) |
 | `loop-task import <file>` | Import configs from file (triggers hot-reload) |
 | `loop-task api` | Show HTTP API endpoints (base URL, Swagger UI, OpenAPI spec) |
-| `loop-task http-host [address]` | Show or set the HTTP API bind host (default `127.0.0.1`; for remote access) |
+| `loop-task http-host [address]` | Show or set the HTTP API bind host (default `0.0.0.0`; `local` to lock to loopback) |
 | `loop-task project list` | List all projects |
 | `loop-task project new <name> [--color <color>]` | Create a project |
 | `loop-task project rename <id\|name> <new-name>` | Rename a project |
@@ -456,24 +456,20 @@ If the port is already in use, the daemon skips the HTTP server and continues wi
 
 ### Network access (remote / VMs)
 
-The API binds to **`127.0.0.1` by default** — local-only, not reachable from the network. To reach a daemon running on another machine (a VM, a homelab box), change the bind host:
+The API binds to **`0.0.0.0` (all interfaces) by default**, so a daemon on a VM or homelab box is reachable from other machines out of the box — connect over SSH, [Tailscale](https://tailscale.com), or your LAN.
+
+> **The HTTP API is unauthenticated.** Anything that can reach the bound port can create and trigger loops — i.e. run commands on the host. Because the default is `0.0.0.0`, **securing access is your responsibility at the network layer**: run the box behind a VPN (Tailscale), reach it only via an SSH tunnel, and/or block the port at the cloud firewall so it isn't exposed to the public internet.
+
+Change the bind host at any time (persisted in daemon settings — not an env var — and the daemon **rebinds live**, no restart):
 
 ```bash
 loop-task http-host                 # show the current bind host + reachable URL
-loop-task http-host 100.99.155.102  # bind to a specific IP (e.g. a Tailscale address)
-loop-task http-host all             # 0.0.0.0 — all interfaces
-loop-task http-host local           # back to 127.0.0.1
+loop-task http-host local           # 127.0.0.1 — loopback only (lock it down)
+loop-task http-host 100.99.155.102  # bind a single interface (e.g. a Tailscale IP)
+loop-task http-host all             # 0.0.0.0 — all interfaces (the default)
 ```
 
-The setting is persisted (daemon settings, not an env var) and the daemon **rebinds live** — no restart.
-
-> **⚠ The HTTP API is unauthenticated.** Anything that can reach the bound interface can create and trigger loops — i.e. run arbitrary commands on the host. Binding beyond `127.0.0.1` exposes that. **Never bind `0.0.0.0` on a machine with a public IP.** Bind to a private/VPN address instead.
-
-**Recommended for remote access — [Tailscale](https://tailscale.com):**
-
-- **Best (no bind change, encrypted, tailnet-only):** keep the default `127.0.0.1` bind and let Tailscale proxy it — `tailscale serve --bg 8845`. The API is then reachable at `https://<node>.<tailnet>.ts.net` over your tailnet only; the daemon never listens on a routable interface itself.
-- **Alternative:** `loop-task http-host <your-tailnet-ip>` binds directly to the Tailscale interface (plaintext HTTP, tailnet-routable).
-- Either way, restrict access with Tailscale ACLs. Do **not** use `tailscale funnel` (that publishes to the public internet).
+**Locking it down:** if the box isn't behind a firewall/VPN you trust, either set `loop-task http-host local` and reach it through an SSH tunnel (`ssh -L 8845:127.0.0.1:8845 <host>`), or expose it tailnet-only with `tailscale serve --bg 8845` (HTTPS at `https://<node>.<tailnet>.ts.net`, restrict further with Tailscale ACLs; never `tailscale funnel`).
 
 ## Development
 

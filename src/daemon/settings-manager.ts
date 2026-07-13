@@ -6,7 +6,11 @@ import { daemonLog } from "./daemon-log.js";
 const DEFAULTS: DaemonSettings = {
   httpApiEnabled: true,
   mcpApiEnabled: true,
-  httpApiHost: "127.0.0.1",
+  // Binds to all interfaces by default: the daemon is meant to be reachable
+  // (e.g. over SSH/Tailscale/LAN). The API is unauthenticated, so securing
+  // access is the operator's job at the network layer; restrict the bind with
+  // `loop-task http-host <ip|local>` when you want loopback-only.
+  httpApiHost: "0.0.0.0",
 };
 
 export class SettingsManager {

@@ -370,7 +370,7 @@ program
 
 program
   .command("http-host")
-  .description("Show or set the network interface the HTTP API binds to (default 127.0.0.1)")
+  .description("Show or set the network interface the HTTP API binds to (default 0.0.0.0)")
   .argument("[address]", "IP to bind — or 'local' (127.0.0.1) / 'all' (0.0.0.0)")
   .action(async (address?: string) => {
     const { ensureDaemon } = await import("./daemon/spawner/index.js");
@@ -405,12 +405,10 @@ program
       console.log(`HTTP API now binding to ${normalized}:${port}`);
       if (normalized !== "127.0.0.1") {
         console.log("");
-        console.log("!  The HTTP API is UNAUTHENTICATED. Anything that can reach this");
-        console.log("   interface can create and trigger loops (arbitrary command execution).");
-        if (normalized === "0.0.0.0") {
-          console.log("   0.0.0.0 exposes it on ALL interfaces, including any public IP —");
-          console.log("   prefer binding to a private/VPN address (e.g. your Tailscale IP).");
-        }
+        console.log("Note: the API is unauthenticated — anything that can reach this");
+        console.log("interface can create and trigger loops. Secure access at the network");
+        console.log("layer (SSH/Tailscale/firewall). Use `loop-task http-host local` for");
+        console.log("loopback-only.");
       }
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : String(error);
