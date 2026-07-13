@@ -370,7 +370,7 @@ program
 
 program
   .command("http-host")
-  .description("Show or set the network interface the HTTP API binds to (default 0.0.0.0)")
+  .description("Show or set the network interface the HTTP API + MCP server bind to (default 0.0.0.0)")
   .argument("[address]", "IP to bind — or 'local' (127.0.0.1) / 'all' (0.0.0.0)")
   .action(async (address?: string) => {
     const { ensureDaemon } = await import("./daemon/spawner/index.js");
@@ -384,8 +384,10 @@ program
         const res = await sendRequest({ type: "settings-get" });
         const host = res.type === "ok" ? (res.data as DaemonSettings).httpApiHost : HTTP_API_HOST;
         const shown = host === "0.0.0.0" ? "<this-machine-ip>" : host;
-        console.log(`HTTP API bind host: ${host}`);
-        console.log(`  Reachable at: http://${shown}:${port}`);
+        const mcpPort = process.env.LOOP_CLI_MCP_PORT ?? "8846";
+        console.log(`API bind host: ${host}`);
+        console.log(`  HTTP API: http://${shown}:${port}`);
+        console.log(`  MCP SSE:  http://${shown}:${mcpPort}/sse`);
         return;
       }
 
@@ -402,7 +404,7 @@ program
         process.exit(1);
       }
 
-      console.log(`HTTP API now binding to ${normalized}:${port}`);
+      console.log(`HTTP API + MCP server now binding to ${normalized}`);
       if (normalized !== "127.0.0.1") {
         console.log("");
         console.log("Note: the API is unauthenticated — anything that can reach this");

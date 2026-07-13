@@ -16,6 +16,7 @@ export class McpApiServer {
   private httpServer: http.Server | null = null;
   private _isListening = false;
   private transportType: "stdio" | "sse";
+  private host = "127.0.0.1";
 
   constructor(
     private manager: LoopManager,
@@ -24,6 +25,11 @@ export class McpApiServer {
     transport?: "stdio" | "sse",
   ) {
     this.transportType = transport ?? "sse";
+  }
+
+  /** Set the bind host for the SSE transport (takes effect on next start). */
+  setHost(host: string): void {
+    this.host = host;
   }
 
   private createServer(): McpServer {
@@ -155,8 +161,8 @@ export class McpApiServer {
         resolve();
       });
 
-      this.httpServer!.listen(port, "127.0.0.1", () => {
-        daemonLog(`MCP SSE server listening on 127.0.0.1:${port}`);
+      this.httpServer!.listen(port, this.host, () => {
+        daemonLog(`MCP SSE server listening on ${this.host}:${port}`);
         this._isListening = true;
         resolve();
       });

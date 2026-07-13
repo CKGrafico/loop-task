@@ -55,6 +55,7 @@ async function main(): Promise<void> {
     }
   }
 
+  mcpServer.setHost(currentHttpHost);
   if (mcpEnabled) {
     try {
       await mcpServer.start();
@@ -64,16 +65,17 @@ async function main(): Promise<void> {
   }
 
   settingsManager.onChange((settings) => {
+    const newHost = settings.httpApiHost;
+    const hostChanged = newHost !== currentHttpHost;
+
+    // HTTP API (8845)
     if (settings.httpApiEnabled && !httpServer["isListening"]) {
-      currentHttpHost = settings.httpApiHost;
-      httpServer.listen(resolvedHttpPort, currentHttpHost).catch((err) => {
+      httpServer.listen(resolvedHttpPort, newHost).catch((err) => {
         daemonLog(`HTTP API server failed to restart: ${String(err)}`);
       });
-    } else if (settings.httpApiEnabled && httpServer["isListening"] && settings.httpApiHost !== currentHttpHost) {
-      // Host changed while running — rebind to the new interface.
-      currentHttpHost = settings.httpApiHost;
-      httpServer.restart(resolvedHttpPort, currentHttpHost).catch((err) => {
-        daemonLog(`HTTP API server failed to rebind to ${currentHttpHost}: ${String(err)}`);
+    } else if (settings.httpApiEnabled && httpServer["isListening"] && hostChanged) {
+      httpServer.restart(resolvedHttpPort, newHost).catch((err) => {
+        daemonLog(`HTTP API server failed to rebind to ${newHost}: ${String(err)}`);
       });
     } else if (!settings.httpApiEnabled && httpServer["isListening"]) {
       httpServer.close().catch((err) => {
@@ -81,15 +83,26 @@ async function main(): Promise<void> {
       });
     }
 
+    // MCP SSE (8846) — shares the same bind host as the HTTP API.
+    mcpServer.setHost(newHost);
     if (settings.mcpApiEnabled && !mcpServer.isListening) {
       mcpServer.start().catch((err) => {
         daemonLog(`MCP server failed to restart: ${String(err)}`);
       });
+    } else if (settings.mcpApiEnabled && mcpServer.isListening && hostChanged) {
+      mcpServer
+        .close()
+        .then(() => mcpServer.start())
+        .catch((err) => {
+          daemonLog(`MCP server failed to rebind to ${newHost}: ${String(err)}`);
+        });
     } else if (!settings.mcpApiEnabled && mcpServer.isListening) {
       mcpServer.close().catch((err) => {
         daemonLog(`MCP server failed to stop: ${String(err)}`);
       });
     }
+
+    currentHttpHost = newHost;
   });
 
   manager.init();

@@ -456,7 +456,7 @@ If the port is already in use, the daemon skips the HTTP server and continues wi
 
 ### Network access (remote / VMs)
 
-The API binds to **`0.0.0.0` (all interfaces) by default**, so a daemon on a VM or homelab box is reachable from other machines out of the box — connect over SSH, [Tailscale](https://tailscale.com), or your LAN.
+The HTTP API (8845) and MCP server (8846) bind to **`0.0.0.0` (all interfaces) by default**, so a daemon on a VM or homelab box is reachable from other machines out of the box — connect over SSH, [Tailscale](https://tailscale.com), or your LAN. `loop-task http-host` governs the bind for both.
 
 > **The HTTP API is unauthenticated.** Anything that can reach the bound port can create and trigger loops — i.e. run commands on the host. Because the default is `0.0.0.0`, **securing access is your responsibility at the network layer**: run the box behind a VPN (Tailscale), reach it only via an SSH tunnel, and/or block the port at the cloud firewall so it isn't exposed to the public internet.
 
