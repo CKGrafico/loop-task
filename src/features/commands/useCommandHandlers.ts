@@ -169,7 +169,6 @@ export function useCommandHandlers(context: CommandHandlerContext) {
         pushToast("error", t("board.toastMcpToggleError", { message: (e as Error).message }));
       }
     },
-    status: () => { pushToast("info", `Command "status" coming soon`); },
     export: () => {
       exportService.exportConfig()
         .then(({ json, filePath }) => setExportModal({ json, filePath, error: null }))

@@ -531,7 +531,6 @@
   "board.toastMcpEnabled": "MCP server enabled",
   "board.toastMcpDisabled": "MCP server disabled",
   "board.toastMcpToggleError": "Failed to toggle MCP: {message}",
-  "cmd.status": "Daemon status info (Soon...)",
   "cmd.filterStatus": "Filter by status",
   "cmd.sort": "Order sort by field",
   "cmd.project": "Filter by project",

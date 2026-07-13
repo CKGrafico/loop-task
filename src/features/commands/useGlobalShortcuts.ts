@@ -67,7 +67,6 @@ export function useGlobalShortcuts(context: ShortcutContext) {
         b: () => handleCommand("debug"),
         x: () => handleCommand("export"),
         i: () => handleCommand("import"),
-        y: () => handleCommand("status"),
       };
       const filterShortcuts: Record<string, () => void> = {
         s: () => handleCommand("search"),

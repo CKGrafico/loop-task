@@ -45,10 +45,11 @@ async function main(): Promise<void> {
 
   const httpPort = parseInt(process.env.LOOP_CLI_HTTP_PORT ?? "", 10);
   const resolvedHttpPort = Number.isNaN(httpPort) ? undefined : httpPort;
+  let currentHttpHost = settingsManager.get().httpApiHost;
 
   if (settingsManager.get().httpApiEnabled) {
     try {
-      await httpServer.listen(resolvedHttpPort);
+      await httpServer.listen(resolvedHttpPort, currentHttpHost);
     } catch (err) {
       daemonLog(`HTTP API server failed to start: ${String(err)}`);
     }
@@ -64,8 +65,15 @@ async function main(): Promise<void> {
 
   settingsManager.onChange((settings) => {
     if (settings.httpApiEnabled && !httpServer["isListening"]) {
-      httpServer.listen(resolvedHttpPort).catch((err) => {
+      currentHttpHost = settings.httpApiHost;
+      httpServer.listen(resolvedHttpPort, currentHttpHost).catch((err) => {
         daemonLog(`HTTP API server failed to restart: ${String(err)}`);
+      });
+    } else if (settings.httpApiEnabled && httpServer["isListening"] && settings.httpApiHost !== currentHttpHost) {
+      // Host changed while running — rebind to the new interface.
+      currentHttpHost = settings.httpApiHost;
+      httpServer.restart(resolvedHttpPort, currentHttpHost).catch((err) => {
+        daemonLog(`HTTP API server failed to rebind to ${currentHttpHost}: ${String(err)}`);
       });
     } else if (!settings.httpApiEnabled && httpServer["isListening"]) {
       httpServer.close().catch((err) => {
