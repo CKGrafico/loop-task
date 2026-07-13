@@ -70,7 +70,7 @@ async function main(): Promise<void> {
 
     // HTTP API (8845)
     if (settings.httpApiEnabled && !httpServer["isListening"]) {
-      httpServer.listen(resolvedHtt, rt, newHost).catch((err) => {
+      httpServer.listen(resolvedHttpPort, newHost).catch((err) => {
         daemonLog(`HTTP API server failed to restart: ${String(err)}`);
       });
     } else if (settings.httpApiEnabled && httpServer["isListening"] && hostChanged) {

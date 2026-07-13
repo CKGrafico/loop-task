@@ -109,7 +109,7 @@ export class McpApiServer {
 
     // Map session ID → transport for POST routing
     const sessions = new Map<string, SSEServerTransport>();
-,
+
     this.httpServer = http.createServer(async (req, res) => {
       try {
         const url = new URL(req.url ?? "/", `http://127.0.0.1:${port}`);

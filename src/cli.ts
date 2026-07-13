@@ -371,7 +371,7 @@ program
 program
   .command("http-host")
   .description("Show or set the network interface the HTTP API + MCP server bind to (default 0.0.0.0)")
-  .argument("[address]", "IP to bind, or 'local' (127.0.0.1) / 'all' (0.0.0.0)")
+  .argument("[address]", "IP to bind — or 'local' (127.0.0.1) / 'all' (0.0.0.0)")
   .action(async (address?: string) => {
     const { ensureDaemon } = await import("./daemon/spawner/index.js");
     const { sendRequest } = await import("./client/ipc.js");
@@ -405,7 +405,7 @@ program
       }
 
       console.log(`HTTP API + MCP server now binding to ${normalized}`);
-      if (normalized !== "127.0.0.1") {,
+      if (normalized !== "127.0.0.1") {
         console.log("");
         console.log("Note: the API is unauthenticated — anything that can reach this");
         console.log("interface can create and trigger loops. Secure access at the network");
