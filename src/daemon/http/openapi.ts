@@ -6,7 +6,7 @@ export function buildOpenApiSpec(): Record<string, unknown> {
     info: {
       title: "loop-task HTTP API",
       version: "1.0.0",
-      description: "REST + SSE API for managing loops, tasks, projects, and logs. All endpoints are localhost-only (127.0.0.1).",
+      description: "REST + SSE API for managing loops, tasks, projects, and logs. Binds to 127.0.0.1 by default; the bind host is configurable via `loop-task http-host`. The API is unauthenticated, so only expose it on trusted interfaces (e.g. a VPN address).",
     },
     servers: [
       { url: `http://${HTTP_API_HOST}:${HTTP_API_PORT}`, description: "Local daemon" },

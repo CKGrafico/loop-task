@@ -17,6 +17,7 @@ import {
 } from "./client/project-commands.js";
 import { t } from "./shared/i18n/index.js";
 import { HTTP_API_PORT, HTTP_API_HOST } from "./shared/config/constants.js";
+import type { DaemonSettings } from "./types.js";
 
 const require = createRequire(import.meta.url);
 const packageJson = require("../package.json") as { version: string };
@@ -365,6 +366,57 @@ program
     console.log(`  Swagger UI: ${baseUrl}/api/docs`);
     console.log(`  OpenAPI:    ${baseUrl}/api/openapi.json`);
     console.log(`  Events:     ${baseUrl}/api/events (SSE)`);
+  });
+
+program
+  .command("http-host")
+  .description("Show or set the network interface the HTTP API binds to (default 127.0.0.1)")
+  .argument("[address]", "IP to bind — or 'local' (127.0.0.1) / 'all' (0.0.0.0)")
+  .action(async (address?: string) => {
+    const { ensureDaemon } = await import("./daemon/spawner/index.js");
+    const { sendRequest } = await import("./client/ipc.js");
+    const port = process.env.LOOP_CLI_HTTP_PORT ?? String(HTTP_API_PORT);
+
+    try {
+      ensureDaemon();
+
+      if (!address) {
+        const res = await sendRequest({ type: "settings-get" });
+        const host = res.type === "ok" ? (res.data as DaemonSettings).httpApiHost : HTTP_API_HOST;
+        const shown = host === "0.0.0.0" ? "<this-machine-ip>" : host;
+        console.log(`HTTP API bind host: ${host}`);
+        console.log(`  Reachable at: http://${shown}:${port}`);
+        return;
+      }
+
+      const normalized =
+        address === "local" || address === "localhost"
+          ? "127.0.0.1"
+          : address === "all" || address === "any"
+            ? "0.0.0.0"
+            : address;
+
+      const res = await sendRequest({ type: "settings-set", settings: { httpApiHost: normalized } });
+      if (res.type !== "ok") {
+        console.error(res.type === "error" ? res.message : "Failed to update setting");
+        process.exit(1);
+      }
+
+      console.log(`HTTP API now binding to ${normalized}:${port}`);
+      if (normalized !== "127.0.0.1") {
+        console.log("");
+        console.log("!  The HTTP API is UNAUTHENTICATED. Anything that can reach this");
+        console.log("   interface can create and trigger loops (arbitrary command execution).");
+        if (normalized === "0.0.0.0") {
+          console.log("   0.0.0.0 exposes it on ALL interfaces, including any public IP —");
+          console.log("   prefer binding to a private/VPN address (e.g. your Tailscale IP).");
+        }
+      }
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : String(error);
+      console.error(t("cli.error", { message }));
+      process.exit(1);
+    }
   });
 
 program
