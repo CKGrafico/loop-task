@@ -11,7 +11,7 @@
 //   3. unset → variant not created (the template inherits the lead's model)
 //
 // The variant files are gitignored (*-engineer.*.md in .opencode/.gitignore)
-// and regenerated on every startup — so /ob-set-model + restart picks up
+// and regenerated on every startup, so /ob-set-model + restart picks up
 // new models without touching the template files.
 
 import fs from "node:fs/promises"
@@ -90,7 +90,7 @@ export const ObSubagentTiers = async ({ directory }) => {
           await fs.unlink(path.join(agentsDir, f))
         }
       }
-    } catch {}
+    } catch { }
   }
 
   return {
@@ -118,17 +118,17 @@ export const ObSubagentTiers = async ({ directory }) => {
 
             // Also inject in-memory for immediate availability. If the base
             // agent isn't merged into cfg.agent yet (hook ordering), build a
-            // minimal safe definition from the template — never inject a
+            // minimal safe definition from the template, never inject a
             // bare `{ model }` that could surface as a primary agent.
             if (cfg?.agent) {
               const base = cfg.agent[name]
               cfg.agent[`${name}.${tier}`] = base
                 ? { ...base, model: models[tier] }
                 : {
-                    mode: "subagent",
-                    description: templateDescription(templateContent) ?? `${name} (${tier} tier)`,
-                    model: models[tier],
-                  }
+                  mode: "subagent",
+                  description: templateDescription(templateContent) ?? `${name} (${tier} tier)`,
+                  model: models[tier],
+                }
             }
           }
         }

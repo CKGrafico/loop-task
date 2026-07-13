@@ -9,21 +9,21 @@
 ## 2. Daemon Persistence & State Management
 
 - [x] 2.1 Create src/daemon/projects.ts with ProjectManager class <!-- agent: development-engineer, modeltype: build -->
-- [x] 2.2 Implement loadProjects() — read all projects from ~/.loop-cli/projects/ into memory <!-- agent: development-engineer, modeltype: build -->
-- [x] 2.3 Implement saveProject(project) — atomic write to ~/.loop-cli/projects/<id>.json <!-- agent: development-engineer, modeltype: build -->
-- [x] 2.4 Implement deleteProject(id) — remove project file from disk <!-- agent: development-engineer, modeltype: build -->
-- [x] 2.5 Implement cascadeLoopsToDefault(projectId) — move all loops with deleted projectId to "default" <!-- agent: development-engineer, modeltype: build -->
+- [x] 2.2 Implement loadProjects(), read all projects from ~/.loop-cli/projects/ into memory <!-- agent: development-engineer, modeltype: build -->
+- [x] 2.3 Implement saveProject(project), atomic write to ~/.loop-cli/projects/<id>.json <!-- agent: development-engineer, modeltype: build -->
+- [x] 2.4 Implement deleteProject(id), remove project file from disk <!-- agent: development-engineer, modeltype: build -->
+- [x] 2.5 Implement cascadeLoopsToDefault(projectId), move all loops with deleted projectId to "default" <!-- agent: development-engineer, modeltype: build -->
 - [x] 2.6 Implement auto-migration: on first load, add projectId="default" to loops without one <!-- agent: development-engineer, modeltype: build -->
 - [x] 2.7 Implement auto-recovery: if projects/ is corrupted, recreate Default and reassign orphaned loops <!-- agent: development-engineer, modeltype: build -->
-- [x] 2.8 Add createDefaultProject() — create Default project (isSystem=true, isDefault=true, white, immutable) <!-- agent: development-engineer, modeltype: build -->
+- [x] 2.8 Add createDefaultProject(), create Default project (isSystem=true, isDefault=true, white, immutable) <!-- agent: development-engineer, modeltype: build -->
 - [x] 2.9 Integrate ProjectManager into src/daemon/manager.ts (initialize on daemon startup) <!-- agent: development-engineer, modeltype: build -->
 
 ## 3. Daemon IPC Handlers
 
-- [x] 3.1 Add project-list handler to src/daemon/server.ts — return all projects <!-- agent: development-engineer, modeltype: build -->
-- [x] 3.2 Add project-create handler — validate name, create, persist, return {id, name, color, createdAt} <!-- agent: development-engineer, modeltype: build -->
-- [x] 3.3 Add project-update handler — validate not Default, rename, persist, return ok <!-- agent: development-engineer, modeltype: build -->
-- [x] 3.4 Add project-delete handler — call cascadeLoopsToDefault, delete project file, return ok <!-- agent: development-engineer, modeltype: build -->
+- [x] 3.1 Add project-list handler to src/daemon/server.ts, return all projects <!-- agent: development-engineer, modeltype: build -->
+- [x] 3.2 Add project-create handler, validate name, create, persist, return {id, name, color, createdAt} <!-- agent: development-engineer, modeltype: build -->
+- [x] 3.3 Add project-update handler, validate not Default, rename, persist, return ok <!-- agent: development-engineer, modeltype: build -->
+- [x] 3.4 Add project-delete handler, call cascadeLoopsToDefault, delete project file, return ok <!-- agent: development-engineer, modeltype: build -->
 - [x] 3.5 Test all four handlers with unit tests (tests/projects.test.ts) <!-- agent: development-engineer, modeltype: build -->
 
 ## 4. Board State & Filtering
@@ -128,9 +128,9 @@
 
 ## 15. Quality Gates
 
-- [x] 15.1 Run typecheck: `rtk bun run typecheck` — zero errors <!-- agent: development-engineer, modeltype: fast -->
-- [x] 15.2 Run lint: `rtk bun run lint` — 8 pre-existing errors, no new ones <!-- agent: development-engineer, modeltype: fast -->
-- [x] 15.3 Run tests: `rtk bun run test` — 67/68 pass (1 pre-existing version assertion failure) <!-- agent: development-engineer, modeltype: build -->
+- [x] 15.1 Run typecheck: `rtk bun run typecheck`, zero errors <!-- agent: development-engineer, modeltype: fast -->
+- [x] 15.2 Run lint: `rtk bun run lint`, 8 pre-existing errors, no new ones <!-- agent: development-engineer, modeltype: fast -->
+- [x] 15.3 Run tests: `rtk bun run test`, 67/68 pass (1 pre-existing version assertion failure) <!-- agent: development-engineer, modeltype: build -->
 
 ## 16. Documentation & Changelog
 

@@ -24,10 +24,10 @@ App.tsx is an 832-line god component holding 7 distinct responsibilities (37 sta
 
 ## Non-goals
 
-- Does not move existing components (LeftPanel, RightPanel, Header, CommandInput, etc.) into `widgets/` — they stay in `components/` for this change
-- Does not refactor state management into Zustand/Jotai — state remains in React hooks, just composed differently
-- Does not change any user-facing behavior — purely structural refactor
-- Does not extract entity data hooks (loops/tasks/projects) into `entities/` — future work
+- Does not move existing components (LeftPanel, RightPanel, Header, CommandInput, etc.) into `widgets/`, they stay in `components/` for this change
+- Does not refactor state management into Zustand/Jotai, state remains in React hooks, just composed differently
+- Does not change any user-facing behavior, purely structural refactor
+- Does not extract entity data hooks (loops/tasks/projects) into `entities/`, future work
 - Does not affect the IPC contract (`src/types.ts`) or persisted state shape
 
 ## Impact

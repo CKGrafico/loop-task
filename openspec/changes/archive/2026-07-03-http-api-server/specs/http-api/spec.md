@@ -1,7 +1,7 @@
 ## ADDED Requirements
 
 ### Requirement: HTTP server starts alongside the daemon
-The daemon SHALL start an HTTP server bound to `127.0.0.1` on port `8845` (configurable via `LOOP_CLI_HTTP_PORT` env var) when it starts. If the port is already in use, the daemon SHALL log a warning and continue without the HTTP server — IPC transport remains functional.
+The daemon SHALL start an HTTP server bound to `127.0.0.1` on port `8845` (configurable via `LOOP_CLI_HTTP_PORT` env var) when it starts. If the port is already in use, the daemon SHALL log a warning and continue without the HTTP server, IPC transport remains functional.
 
 #### Scenario: HTTP server starts successfully
 - **WHEN** the daemon starts and port 8845 is free

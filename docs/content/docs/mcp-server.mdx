@@ -7,7 +7,7 @@ loop-task exposes an **MCP (Model Context Protocol) server** alongside the daemo
 
 ## Overview
 
-When the daemon starts (`loop-task start` or `loop-task new`), the MCP server initializes alongside the existing HTTP and IPC servers. No separate command or entry point is needed — the MCP server runs inside the daemon process.
+When the daemon starts (`loop-task start` or `loop-task new`), the MCP server initializes alongside the existing HTTP and IPC servers. No separate command or entry point is needed, the MCP server runs inside the daemon process.
 
 An MCP client connecting to loop-task receives a list of tools that map directly to the HTTP API surface. The agent simply asks "what tools are available?" and gets back `list_loops`, `create_loop`, `trigger_loop`, etc.
 
@@ -225,8 +225,8 @@ All tool responses follow the same envelope as the HTTP API:
 
 ## Graceful Degradation
 
-If MCP initialization fails, the daemon continues with IPC + HTTP only — the same graceful degradation pattern as the HTTP API's `EADDRINUSE` handling. No functionality is lost.
+If MCP initialization fails, the daemon continues with IPC + HTTP only, the same graceful degradation pattern as the HTTP API's `EADDRINUSE` handling. No functionality is lost.
 
 ## Architecture
 
-The MCP server module lives under `src/daemon/mcp/` (alongside `http/`, `server/`, `managers/`). It follows the same dependency injection pattern as `HttpApiServer` — it receives `LoopManager`, `TaskManager`, and `ProjectManager` instances and calls their methods directly. The `src/core/` layer remains runtime-agnostic and does not import MCP code.
+The MCP server module lives under `src/daemon/mcp/` (alongside `http/`, `server/`, `managers/`). It follows the same dependency injection pattern as `HttpApiServer`, it receives `LoopManager`, `TaskManager`, and `ProjectManager` instances and calls their methods directly. The `src/core/` layer remains runtime-agnostic and does not import MCP code.

@@ -1,4 +1,4 @@
-# Project History — loop-task
+# Project History, loop-task
 
 ## What this project is
 
@@ -20,8 +20,8 @@ Published on npm as `loop-task`. MIT license. Maintainer: Quique Fdez Guerra.
 - The board auto-delegates to Bun when the user opens it from Node.
 
 ### Loop + Task model (v1.3+)
-- A **loop** is a schedule — interval, run policy, max runs, description.
-- A **task** is an executable unit — command, args, cwd, optional success/failure chain.
+- A **loop** is a schedule, interval, run policy, max runs, description.
+- A **task** is an executable unit, command, args, cwd, optional success/failure chain.
 - Inline loops store `command`/`commandArgs`/`cwd` directly on `LoopOptions` (`taskId: null`).
 - Existing-task loops reference a `TaskDefinition` by ID (`taskId: string`).
 - Pre-v1.3 loops are migrated on daemon init by creating an inline task entity.
@@ -29,7 +29,7 @@ Published on npm as `loop-task`. MIT license. Maintainer: Quique Fdez Guerra.
 ### State machine: LoopController
 - Statuses: `running` → `waiting` → `paused` → `idle` (stopped).
 - `playLoop()` and `triggerNow()` are the two "start" entry points.
-- Force-run (`triggerNow`) is blocked when status is `"running"` — no concurrent execution.
+- Force-run (`triggerNow`) is blocked when status is `"running"`, no concurrent execution.
 - Max-runs reached → loop **pauses** (not stops); user must edit maxRuns to unblock.
 - Schedule-aware timing: after each run, the scheduler tracks `runStartedAt + interval` and counts missed slots as `skippedCount` if execution overruns.
 - Force-run preserves the original countdown: `_savedRemainingMs` is saved before the forced run and restored after.
@@ -42,8 +42,8 @@ Published on npm as `loop-task`. MIT license. Maintainer: Quique Fdez Guerra.
 
 ### Terminal UI: OpenTUI + React 19
 - Board built with `@opentui/core` + `@opentui/react`. JSX via `jsxImportSource: @opentui/react`.
-- No CSS/Tailwind — all styling via component props (`fg`, `bg`, `border`, etc.).
-- Keybinding hook pattern (`useBoardKeybindings`, `useTaskKeybindings`) — no inline key handlers in JSX (causes Bun native FFI segfault).
+- No CSS/Tailwind, all styling via component props (`fg`, `bg`, `border`, etc.).
+- Keybinding hook pattern (`useBoardKeybindings`, `useTaskKeybindings`), no inline key handlers in JSX (causes Bun native FFI segfault).
 - Two-panel layout: Navigator (55%) + Inspector+Actions (45%). Task browser mirrors the same layout.
 - All user-facing strings in `src/i18n/en.json`; typed key union enforced at compile time.
 
@@ -60,7 +60,7 @@ Published on npm as `loop-task`. MIT license. Maintainer: Quique Fdez Guerra.
 - `tests/cli.test.ts` version assertion lags `package.json`; must be updated manually on each version bump.
 - `tests/background-cli.test.ts` can time out on Windows (daemon IPC timing).
 - DESIGN.md not yet generated (TUI uses no CSS/Tailwind; design tokens are implicit in component props).
-- The `log-parser.ts` (`splitLogByRuns`) is no longer used in the main server path — kept for potential future use.
+- The `log-parser.ts` (`splitLogByRuns`) is no longer used in the main server path, kept for potential future use.
 - Old `interruptedForForceRun` interrupt-while-running path removed; `pause(true)` is the only remaining way to abort a running command.
 
 ## Current state of the project

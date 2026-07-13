@@ -12,7 +12,7 @@ permission:
 
 ## Abilities
 - Guardrails: @ob-generic-guardrails, @project-guardrails, @ob-default
-- Development: @ob-default
+- Development: @ob-default, @humanize
 - Testing: @ob-default
 - Infrastructure: @ob-default
 

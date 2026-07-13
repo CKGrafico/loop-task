@@ -2,7 +2,7 @@
 
 ### Requirement: Edit navigates directly to populated form
 
-When the user selects "Edit" on an existing loop, the app SHALL navigate directly to the populated edit form — not through a read-only detail view first.
+When the user selects "Edit" on an existing loop, the app SHALL navigate directly to the populated edit form, not through a read-only detail view first.
 
 #### Scenario: Board edit bypasses DetailView
 

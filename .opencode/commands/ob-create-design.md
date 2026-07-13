@@ -27,23 +27,23 @@ Examples from the spec repo:
    - **Exists with content** and has a `<!-- Last updated:` footer → **Update mode**: incrementally update (see step 2b).
    - **Exists with content** but no timestamp → warn the user, then proceed in **Generate mode** (full regeneration).
 
-2a. **Generate mode — analyze the codebase**
+2a. **Generate mode, analyze the codebase**
 
    Read `.opencode/source-roots.json` when present. Only analyze those roots.
 
    Use file tools to discover the design system: `glob` for CSS files, Tailwind config, PostCSS config, component files, design token definitions (JS/TS/JSON/YAML), theme files, UI framework config (shadcn, MUI, Chakra, etc.).
 
 <!-- OB-CMD-CODEGRAPH-START -->
-Use codegraph MCP tools (NOT CLI commands). Do NOT run `codegraph` in bash — use the MCP tools directly: `codegraph_search`, `codegraph_impact`, `codegraph_callers`, `codegraph_callees`, `codegraph_node`.
+Use codegraph MCP tools (NOT CLI commands). Do NOT run `codegraph` in bash, use the MCP tools directly: `codegraph_search`, `codegraph_impact`, `codegraph_callers`, `codegraph_callees`, `codegraph_node`.
 <!-- OB-CMD-CODEGRAPH-END -->
 
 <!-- OB-CMD-MEMORY-START -->
-Use basic-memory MCP tools (NOT CLI commands). Do NOT run `basic-memory` in bash — use the MCP tools directly: `write_note`, `edit_note`, `search`, `build_context`, `recent_activity`.
+Use basic-memory MCP tools (NOT CLI commands). Do NOT run `basic-memory` in bash, use the MCP tools directly: `write_note`, `edit_note`, `search`, `build_context`, `recent_activity`.
 <!-- OB-CMD-MEMORY-END -->
 
    If access to a running local server or screenshots is available, use them to validate visual identity.
 
-2b. **Update mode — incremental analysis**
+2b. **Update mode, incremental analysis**
 
    Extract the `<!-- Last updated: <ISO date> -->` timestamp from the existing file. Then:
    - Run `git log --oneline --since="<date>" -- <source roots}` to find what changed since the last analysis.
@@ -63,7 +63,7 @@ Use basic-memory MCP tools (NOT CLI commands). Do NOT run `basic-memory` in bash
    Write (or update) `DESIGN.md`. The output must:
    - Begin with YAML frontmatter containing all structured design tokens (colors, typography, spacing, elevation, motion, radii, shadows, etc.)
    - Follow with free-form Markdown describing the look & feel and capturing design intent that token values alone cannot convey
-   - Be entirely self-contained — do not reference any files, variables, or paths from the codebase
+   - Be entirely self-contained, do not reference any files, variables, or paths from the codebase
    - Use valid YAML design token format for all token values
 
    Append at the very end of the file:

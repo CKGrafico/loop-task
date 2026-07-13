@@ -26,7 +26,7 @@ The tag acts as a simple lock: if a run is interrupted, the tag shows which issu
 
 The examples below are the actual loops that keep **this project** moving. Two chained agent pipelines run every 30 minutes, unattended, and the whole thing is monitored and paused from the board. This is loop engineering in production: async AI agents that refine and implement the GitHub backlog on a cadence, while a human just watches the board.
 
-### Pipeline 1 — Refinement
+### Pipeline 1, Refinement
 
 Every 30 minutes, pick the next raw issue, then let an agent refine it and ask clarifying questions. The steps are chained on exit code, so the agent only runs when there is something to refine.
 
@@ -47,9 +47,9 @@ loop-task new 30m --on-failure <step-1-id> -- echo "No issues to refine"
 
 A second short pipeline re-checks refined issues: it verifies the open questions were answered and reviews the owner's comments before the issue is allowed into implementation.
 
-### Pipeline 2 — Implementation
+### Pipeline 2, Implementation
 
-Once an issue is labelled ready, a separate loop picks it up, implements it in a feature branch with an agent, commits the work, and opens the pull request — each step chained to the next.
+Once an issue is labelled ready, a separate loop picks it up, implements it in a feature branch with an agent, commits the work, and opens the pull request, each step chained to the next.
 
 ```bash
 # Step 1: grab the next ready-to-build issue

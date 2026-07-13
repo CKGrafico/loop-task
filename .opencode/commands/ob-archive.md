@@ -12,11 +12,11 @@ Prefix all bash commands with `rtk` when RTK is enabled.
 Find the oldest unarchived OpenSpec change that has a completed PR, archive it, update docs, and open an archive PR. No input required.
 
 <!-- OB-CMD-CODEGRAPH-START -->
-Use codegraph MCP tools (NOT CLI commands). Do NOT run `codegraph` in bash — use the MCP tools directly: `codegraph_search`, `codegraph_impact`, `codegraph_callers`, `codegraph_callees`, `codegraph_node`.
+Use codegraph MCP tools (NOT CLI commands). Do NOT run `codegraph` in bash, use the MCP tools directly: `codegraph_search`, `codegraph_impact`, `codegraph_callers`, `codegraph_callees`, `codegraph_node`.
 <!-- OB-CMD-CODEGRAPH-END -->
 
 <!-- OB-CMD-MEMORY-START -->
-Use basic-memory MCP tools (NOT CLI commands). Do NOT run `basic-memory` in bash — use the MCP tools directly: `write_note`, `edit_note`, `search`, `build_context`, `recent_activity`.
+Use basic-memory MCP tools (NOT CLI commands). Do NOT run `basic-memory` in bash, use the MCP tools directly: `write_note`, `edit_note`, `search`, `build_context`, `recent_activity`.
 <!-- OB-CMD-MEMORY-END -->
 
 **Steps**
@@ -127,7 +127,7 @@ Use basic-memory MCP tools (NOT CLI commands). Do NOT run `basic-memory` in bash
 - All OpenSpec paths resolve from `git rev-parse --show-toplevel`. Never use `/openspec/...`.
 - Only process top-level directories in `$REPO_ROOT/openspec/changes/`; exclude `archive/`.
 - Use change ID and slug only as search hints; do not assume the source branch name.
-- The oldest eligible merged change is the only candidate — never ask the user which change to archive (but do ask which PR if multiple match one change).
+- The oldest eligible merged change is the only candidate, never ask the user which change to archive (but do ask which PR if multiple match one change).
 - Never proceed if the selected PR is not completed.
 - Never use browser tools or direct web requests for GitHub. Use `gh` CLI only.
 - Never invent or guess PR, branch, or merge metadata.

@@ -47,5 +47,5 @@
       "patchedFiles": 0
     }
   },
-  "note": "Snapshot of onboarding choices. Runtime config — wizard.models and wizard.maxConcurrentAgents — is read by /ob-apply and the agent generator and is preserved across `opencode-onboard metadata` refreshes. Other fields are informational."
+  "note": "Snapshot of onboarding choices. Runtime config, wizard.models and wizard.maxConcurrentAgents, is read by /ob-apply and the agent generator and is preserved across `opencode-onboard metadata` refreshes. Other fields are informational."
 }

@@ -31,7 +31,7 @@ Loop-cli has two parallel UI surfaces: an Ink-based TUI (`src/tui/`) and an Open
 
 **Decision**: Create `src/tui/components/ProjectForm.tsx` and `src/board/components/ProjectForm.tsx` as standalone components, following the exact pattern of `CreateForm.tsx` (which handles both create and edit for loops).
 
-**Rationale**: The loop pattern already proves this works — `CreateForm.tsx` is a standalone component, not embedded in the loops page. The project wizard should follow the same separation. This keeps each component focused and testable.
+**Rationale**: The loop pattern already proves this works, `CreateForm.tsx` is a standalone component, not embedded in the loops page. The project wizard should follow the same separation. This keeps each component focused and testable.
 
 **Alternative considered**: Extending `ProjectsPage.tsx` with wizard sub-views. Rejected because the loop pattern doesn't do this, and it would make ProjectsPage too large.
 
@@ -45,15 +45,15 @@ Loop-cli has two parallel UI surfaces: an Ink-based TUI (`src/tui/`) and an Open
 
 ### 3. Board: Two-column form layout with SearchSelect for color
 
-**Decision**: Follow the Board `CreateForm.tsx` pattern — two-column `FormRow` grid with `useTabNav`, `useKeyboard`, and `useInputShortcuts`. Color field uses `SearchSelect` component (already used in the loop form for project selection).
+**Decision**: Follow the Board `CreateForm.tsx` pattern, two-column `FormRow` grid with `useTabNav`, `useKeyboard`, and `useInputShortcuts`. Color field uses `SearchSelect` component (already used in the loop form for project selection).
 
-**Rationale**: `SearchSelect` already exists and is the established pattern for selection fields in Board forms. It provides search, arrow navigation, and visual feedback — better UX than the simple color button row for users who might have many colors in the future.
+**Rationale**: `SearchSelect` already exists and is the established pattern for selection fields in Board forms. It provides search, arrow navigation, and visual feedback, better UX than the simple color button row for users who might have many colors in the future.
 
 ### 4. Routing: Add `project-create` and `project-edit` to View types
 
 **Decision**: Add `"project-create"` and `"project-edit"` to both `src/tui/types.ts` and `src/board/types.ts` View union types. Both App.tsx routers branch on these views to render the new ProjectForm.
 
-**Rationale**: Same pattern as `"create"` and `"task-create"` / `"task-edit"` views. The edit view needs the project ID passed — the router state or a navigation payload can carry it (both routers already support `push(view)` and the existing pattern uses component state/props).
+**Rationale**: Same pattern as `"create"` and `"task-create"` / `"task-edit"` views. The edit view needs the project ID passed, the router state or a navigation payload can carry it (both routers already support `push(view)` and the existing pattern uses component state/props).
 
 ### 5. ProjectsPage triggers navigation instead of rendering modals
 

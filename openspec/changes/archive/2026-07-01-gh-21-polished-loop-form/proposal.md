@@ -1,6 +1,6 @@
 ## Why
 
-The loop create/edit forms in both the board and TUI lack polish — missing validation feedback, no inline command editing, no smart defaults, and an unnecessary detail-page detour when editing. These gaps cause confusion, lost time, and data-entry errors when configuring loops.
+The loop create/edit forms in both the board and TUI lack polish, missing validation feedback, no inline command editing, no smart defaults, and an unnecessary detail-page detour when editing. These gaps cause confusion, lost time, and data-entry errors when configuring loops.
 
 ## What Changes
 
@@ -19,11 +19,11 @@ The loop create/edit forms in both the board and TUI lack polish — missing val
 - `loop-form-polish`: Professional form layout, direct edit navigation, smart defaults, copy support, and per-field validation for board and TUI loop forms.
 
 ### Modified Capabilities
-- *(none — no existing spec requires behavioral changes)*
+- *(none, no existing spec requires behavioral changes)*
 
 ## Impact
 
-- **Board**: `src/board/components/CreateForm.tsx` — edit navigation, per-field validation, copy buttons
-- **TUI**: `src/tui/components/CreateForm.tsx`, `WizardForm.tsx`, `PatchEditForm.tsx` — per-field error display, validation unification
-- **Validation**: Both UIs use shared `parseDuration()` (`src/duration.ts`) and `buildLoopOptions()` (`src/loop-config.ts`) — no redundant regex validators
+- **Board**: `src/board/components/CreateForm.tsx`, edit navigation, per-field validation, copy buttons
+- **TUI**: `src/tui/components/CreateForm.tsx`, `WizardForm.tsx`, `PatchEditForm.tsx`, per-field error display, validation unification
+- **Validation**: Both UIs use shared `parseDuration()` (`src/duration.ts`) and `buildLoopOptions()` (`src/loop-config.ts`), no redundant regex validators
 - **Non-goals**: Redesigning `LoopOptions` data model, changing IPC protocol, removing Inspector/DetailView, task definition CRUD

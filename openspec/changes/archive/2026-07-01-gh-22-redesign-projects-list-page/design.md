@@ -1,6 +1,6 @@
 ## Context
 
-The Loops list page has a mature two-panel layout with FilterBar, Navigator, Inspector, and keyboard commands — in both Board (Ink) and TUI (OpenTUI) variants. The Projects page is substantially behind: the Board variant has a simple flat list with basic Inspector and CRUD actions, while the TUI variant is a standalone page that isn't even wired into the LeftPanel/RightPanel architecture (LeftPanel renders placeholder text "Projects tab").
+The Loops list page has a mature two-panel layout with FilterBar, Navigator, Inspector, and keyboard commands, in both Board (Ink) and TUI (OpenTUI) variants. The Projects page is substantially behind: the Board variant has a simple flat list with basic Inspector and CRUD actions, while the TUI variant is a standalone page that isn't even wired into the LeftPanel/RightPanel architecture (LeftPanel renders placeholder text "Projects tab").
 
 Both Board and TUI share the same state module pattern (`src/board/state.ts`, `src/tui/state.ts`) with loop-specific filter types (`StatusFilter`, `IntervalFilter`, `ActivityFilter`). No project-specific filter state exists.
 
@@ -45,7 +45,7 @@ Rather than keeping ProjectsPage as a standalone component, extract its list ren
 
 **Rationale:** Consistency with how loops and tasks are rendered. LeftPanel provides filter labels + Navigator; RightPanel provides Inspector. The placeholder text must go.
 
-### D5: Project sort modes — name, loopCount, createdDate
+### D5: Project sort modes, name, loopCount, createdDate
 
 Three sort modes specific to projects: alphabetical by name, by loop count (descending), by created date (newest first). Default: name.
 
@@ -54,5 +54,5 @@ Three sort modes specific to projects: alphabetical by name, by loop count (desc
 ## Risks / Trade-offs
 
 - **[Complexity of dual-panel refactor in TUI]** → Mitigate by keeping the existing ProjectsPage component as the source of CRUD logic and only moving the visual rendering into LeftPanel/RightPanel. The component stays as the controller; the panels are views.
-- **[FilterBar reuse might need abstraction]** → If FilterBar's props are too loop-specific, we may need to generalize. Mitigate by checking FilterBar's prop interface first — it likely accepts generic badge configs.
+- **[FilterBar reuse might need abstraction]** → If FilterBar's props are too loop-specific, we may need to generalize. Mitigate by checking FilterBar's prop interface first, it likely accepts generic badge configs.
 - **[TUI RightPanel doesn't currently handle projects]** → Adding a projects branch to RightPanel increases its complexity. Mitigate by following the same conditional pattern already used for loops/tasks tabs.

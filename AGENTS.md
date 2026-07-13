@@ -28,7 +28,7 @@ Trigger patterns, I recognize ALL of these, exact wording does not matter:
 - `I've added comments to the PR` → read PR comments → fix → update PR
 - Any GitHub PR URL in a feedback/fix request (e.g. "check comments", "fix PR feedback") → run PR Feedback Loop
 
-**A GitHub URL in the user's message is a strong trigger — follow the pipeline unless the user explicitly asks for analysis or context only.**
+**A GitHub URL in the user's message is a strong trigger, follow the pipeline unless the user explicitly asks for analysis or context only.**
 <!-- OB-PLATFORM-WORKFLOW-END -->
 
 **Never delegate without a plan. Default to specialists for implementation. If a subagent wave repeatedly fails (a group errors after one retry, or a full wave makes zero progress), stop forcing it: report the failure, then continue in the main session or ask the user whether to retry later.**
@@ -44,21 +44,21 @@ Before spawning implementation workers:
 
 ## Multi-Agent Execution, native subagent waves
 
-Parallel execution uses OpenCode's native `task` tool — no external plugin, no worktrees. The lead spawns subagents in **waves**: a set of foreground `task()` calls in a single turn that run concurrently and return their results to the lead. Subagents are navigable (`ctrl+x ↓`, `←`/`→`) and ephemeral (one batch, then they exit).
+Parallel execution uses OpenCode's native `task` tool, no external plugin, no worktrees. The lead spawns subagents in **waves**: a set of foreground `task()` calls in a single turn that run concurrently and return their results to the lead. Subagents are navigable (`ctrl+x ↓`, `←`/`→`) and ephemeral (one batch, then they exit).
 
-**The full wave protocol is defined in `/ob-apply` — that command is authoritative during implementation.** Key mechanics:
-- **Push assignment.** Each subagent's task IDs + text go in its spawn prompt — there is no claim step, so a worker can never sit idle waiting for work.
+**The full wave protocol is defined in `/ob-apply`, that command is authoritative during implementation.** Key mechanics:
+- **Push assignment.** Each subagent's task IDs + text go in its spawn prompt, there is no claim step, so a worker can never sit idle waiting for work.
 - **Per-agent model.** Tasks name a tier-suffixed agent (e.g. `backend-engineer.build`); the `ob-subagent-tiers` plugin injects those variants at startup with models from `wizard.models`. If a variant is missing, fall back to the plain template agent (strip the `.<tier>` suffix).
 
 **Hard limits (always apply):**
-- **Max 4 concurrent subagents per wave.** The authoritative value is `wizard.maxConcurrentAgents` in `.opencode/opencode-onboard.json` — re-read it before each run. The lead enforces the cap; overflow queues to the next wave.
+- **Max 4 concurrent subagents per wave.** The authoritative value is `wizard.maxConcurrentAgents` in `.opencode/opencode-onboard.json`, re-read it before each run. The lead enforces the cap; overflow queues to the next wave.
 - **Non-overlapping file domains.** Two concurrent subagents must NEVER touch the same file. Same-file tasks are packed into one worker and run sequentially.
-- **Explicit stalls.** If tasks remain but none are eligible (a dependency failed), or a full wave makes zero progress, STOP and report — never spin.
+- **Explicit stalls.** If tasks remain but none are eligible (a dependency failed), or a full wave makes zero progress, STOP and report, never spin.
 - **Retry limit.** One retry per failed group, then surface to the user. Never retry indefinitely.
 
 **Live view:** the lead's native Todo list is the board; a **Subagents** panel (TUI plugin) also renders each subagent's agent · model · status live in the session sidebar, backed by `.opencode/.ob-run.json` (written by the `ob-subagent-monitor` server plugin). Navigate into any running subagent with `ctrl+x ↓` then `←`/`→`.
 
-**Recovery:** re-run `/ob-apply` — it rebuilds state from `tasks.md` + git + basic-memory + `.opencode/.ob-run.json` and continues. State is on disk, not in the session.
+**Recovery:** re-run `/ob-apply`, it rebuilds state from `tasks.md` + git + basic-memory + `.opencode/.ob-run.json` and continues. State is on disk, not in the session.
 
 **MCP degradation:** if codegraph or basic-memory is unavailable, fall back to `touches` + `git diff` for disjointness and inline result-passing, and tell the user.
 
@@ -105,14 +105,14 @@ lead runs /ob-pullrequest → commit + push + create PR
 
 ```
 1. Run /ob-pullrequest to create the PR.
-2. Done — report PR URL to user.
+2. Done, report PR URL to user.
 ```
 
 ### Handling PR Feedback
 
 ```
 When user says "I've added comments to the PR" or shares a PR URL:
-1. Run /ob-pullrequest — loads @ob-pullrequest skill in feedback mode — reads and classifies comments.
+1. Run /ob-pullrequest, loads @ob-pullrequest skill in feedback mode, reads and classifies comments.
 2. Fix items by running /ob-apply for the required tasks.
 3. Run /ob-pullrequest again to push updates and reply to PR threads.
 ```
@@ -122,29 +122,29 @@ When user says "I've added comments to the PR" or shares a PR URL:
 
 ## Tools
 
-**OpenSpec** manages the change lifecycle. Each work item becomes a change with a `proposal.md`, specs, and a `tasks.md` task board. Commands: `openspec new change`, `openspec status`, `openspec instructions apply`. Agents never implement without an active change — OpenSpec is the single source of truth for what is planned and what is done.
+**OpenSpec** manages the change lifecycle. Each work item becomes a change with a `proposal.md`, specs, and a `tasks.md` task board. Commands: `openspec new change`, `openspec status`, `openspec instructions apply`. Agents never implement without an active change, OpenSpec is the single source of truth for what is planned and what is done.
 
-**Native subagent waves** handle parallel execution via the OpenCode `task` tool — no external plugin or worktrees. The lead spawns concurrent foreground subagents per wave; each implements its assigned tasks and returns its result, and the lead commits per group. Live board in the Todo pane; subagent state mirrored to `.opencode/.ob-run.json` by the `ob-subagent-monitor` plugin.
+**Native subagent waves** handle parallel execution via the OpenCode `task` tool, no external plugin or worktrees. The lead spawns concurrent foreground subagents per wave; each implements its assigned tasks and returns its result, and the lead commits per group. Live board in the Todo pane; subagent state mirrored to `.opencode/.ob-run.json` by the `ob-subagent-monitor` plugin.
 
 ---
 
 ## Agents
 
-Agent files live in `.opencode/agents/`. The set is dynamic — users add specialists over time via `/ob-create-engineer`.
+Agent files live in `.opencode/agents/`. The set is dynamic, users add specialists over time via `/ob-create-engineer`.
 
 | Agent | File | Role |
 |-------|------|------|
 | `basic-engineer` | `.opencode/agents/basic-engineer.md` | Fallback implementation worker. Used when no custom engineer matches the task domain. |
-| `docs-ui-engineer` | `.opencode/agents/docs-ui-engineer.md` | Docs website specialist — HTML/CSS/JS landing page in `docs/`, design taste, web design guidelines. |
+| `docs-ui-engineer` | `.opencode/agents/docs-ui-engineer.md` | Docs website specialist, HTML/CSS/JS landing page in `docs/`, design taste, web design guidelines. |
 | `*-engineer` | `.opencode/agents/*-engineer.md` | User-created specialists. Preferred over `basic-engineer` when their domain matches the task. |
 
-Before spawning, inspect `.opencode/agents/` to build the actual list — never assume which custom engineers exist.
+Before spawning, inspect `.opencode/agents/` to build the actual list, never assume which custom engineers exist.
 
 ---
 
 ## Abilities
 
-Every agent file declares an `## Abilities` section that maps roles to `@skill-name` references. This is how agents know what to load — skills deliver the rules, guardrails, and platform knowledge for each domain.
+Every agent file declares an `## Abilities` section that maps roles to `@skill-name` references. This is how agents know what to load, skills deliver the rules, guardrails, and platform knowledge for each domain.
 
 ```markdown
 ## Abilities
@@ -162,12 +162,12 @@ Every agent file declares an `## Abilities` section that maps roles to `@skill-n
 
 Skills live in `.agents/skills/`. Agents load them via `@skill-name` in their `## Abilities` section.
 
-Always installed: `@ob-default`, `@ob-generic-guardrails`, `@browser-automation`.
+Always installed: `@ob-default`, `@ob-generic-guardrails`, `@browser-automation`, `@humanize` (from [blader/humanizer](https://github.com/blader/humanizer) — used by all engineers for writing natural, human-like texts).
 
 <!-- OB-PLATFORM-SKILLS-GUIDE-START -->
 Platform skills (GitHub):
-- `@ob-userstory` — load when a GitHub Issue URL is detected. Fetches the issue via `gh` CLI and creates an OpenSpec change. NEVER use webfetch to access GitHub URLs.
-- `@ob-pullrequest` — load in ship mode to create a PR with screenshots, or in feedback mode to read and classify PR review comments.
+- `@ob-userstory`, load when a GitHub Issue URL is detected. Fetches the issue via `gh` CLI and creates an OpenSpec change. NEVER use webfetch to access GitHub URLs.
+- `@ob-pullrequest`, load in ship mode to create a PR with screenshots, or in feedback mode to read and classify PR review comments.
 <!-- OB-PLATFORM-SKILLS-GUIDE-END -->
 
 ---
@@ -215,25 +215,25 @@ The `@caveman` skill is installed at `.agents/skills/caveman/`. Load it for full
 This project has CodeGraph initialized (`.codegraph/` exists). Use it for all code exploration.
 
 **IMPORTANT: CodeGraph is an MCP server, NOT a CLI tool.** Do NOT run `codegraph` as a bash command. Use the MCP tools directly:
-- `codegraph_search` — find symbols by name
-- `codegraph_callers` / `codegraph_callees` — trace call flow
-- `codegraph_impact` — check what's affected before editing
-- `codegraph_node` — get a single symbol's details
-- `codegraph_explore` — broader codebase exploration (heavier, prefer spawning an Explore sub-agent for this)
+- `codegraph_search`, find symbols by name
+- `codegraph_callers` / `codegraph_callees`, trace call flow
+- `codegraph_impact`, check what's affected before editing
+- `codegraph_node`, get a single symbol's details
+- `codegraph_explore`, broader codebase exploration (heavier, prefer spawning an Explore sub-agent for this)
 
-**NEVER call `codegraph_explore` or `codegraph_context` directly in the main session** — these return large source payloads that fill context. Instead, ALWAYS spawn an Explore sub-agent for exploration questions ("how does X work?", "where is Y implemented?").
+**NEVER call `codegraph_explore` or `codegraph_context` directly in the main session**, these return large source payloads that fill context. Instead, ALWAYS spawn an Explore sub-agent for exploration questions ("how does X work?", "where is Y implemented?").
 
 **MANDATORY: When spawning ANY Explore sub-agent, you MUST include this exact text in the spawn prompt:**
 
-> This project has CodeGraph MCP tools available. Use `codegraph_explore` as your PRIMARY exploration tool — it is faster and more accurate than grep/glob/read. Call `codegraph_explore` with a descriptive query about what you're looking for. Do NOT re-read files that codegraph_explore already returned. Only fall back to grep/glob/read for files listed under "Additional relevant files" in the codegraph output, or if codegraph returns no results.
+> This project has CodeGraph MCP tools available. Use `codegraph_explore` as your PRIMARY exploration tool, it is faster and more accurate than grep/glob/read. Call `codegraph_explore` with a descriptive query about what you're looking for. Do NOT re-read files that codegraph_explore already returned. Only fall back to grep/glob/read for files listed under "Additional relevant files" in the codegraph output, or if codegraph returns no results.
 
 Without this instruction, the Explore sub-agent will not know codegraph exists and will waste time with slow grep/glob/read calls.
 
 **The main session may only use these lightweight tools directly** (targeted lookups before edits):
-- `codegraph_search` — find symbols by name
-- `codegraph_callers` / `codegraph_callees` — trace call flow
-- `codegraph_impact` — check what's affected before editing
-- `codegraph_node` — get a single symbol's details
+- `codegraph_search`, find symbols by name
+- `codegraph_callers` / `codegraph_callees`, trace call flow
+- `codegraph_impact`, check what's affected before editing
+- `codegraph_node`, get a single symbol's details
 <!-- OB-CODEGRAPH-END -->
 
 <!-- OB-MEMORY-START -->
@@ -242,12 +242,12 @@ Without this instruction, the Explore sub-agent will not know codegraph exists a
 Persistent knowledge graph active (`basic-memory mcp`, stdio MCP server).
 
 **IMPORTANT: basic-memory is an MCP server, NOT a CLI tool.** Do NOT run `basic-memory` as a bash command. Use the MCP tools directly:
-- `write_note` / `edit_note` — store a decision, architectural note, or finding
-- `search` — find relevant notes by semantic search
-- `build_context` — navigate related notes via wikilinks
-- `recent_activity` — see what was written recently in this session
+- `write_note` / `edit_note`, store a decision, architectural note, or finding
+- `search`, find relevant notes by semantic search
+- `build_context`, navigate related notes via wikilinks
+- `recent_activity`, see what was written recently in this session
 
-Notes stored as plain Markdown files — readable by both agents and humans.
+Notes stored as plain Markdown files, readable by both agents and humans.
 
 Store: architecture decisions, resolved ambiguities, cross-agent context, discovered constraints.
 Query before implementing unfamiliar areas or picking up a long-running task.

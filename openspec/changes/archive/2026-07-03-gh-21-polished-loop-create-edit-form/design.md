@@ -22,18 +22,18 @@ The board (`src/board/`) and TUI (`src/tui/`) each have their own loop form. Bot
 
 ## Decisions
 
-1. **Validation hook (`useLoopFormValidation`)** — shared `src/hooks/` composable that wraps `buildLoopOptions()` with per-field error extraction. Board and TUI both use it, eliminating duplicate regex validators. Duration validation delegates to `parseDuration()` from `src/duration.ts`.
+1. **Validation hook (`useLoopFormValidation`)**, shared `src/hooks/` composable that wraps `buildLoopOptions()` with per-field error extraction. Board and TUI both use it, eliminating duplicate regex validators. Duration validation delegates to `parseDuration()` from `src/duration.ts`.
 
-2. **Edit navigation** — Board list action dispatches `onEdit(loop)` which sets `editingLoop` state in the parent; `CreateForm` checks this prop and renders in edit mode with pre-populated `createInitialValues(loop)`. No `DetailView` route in the edit flow.
+2. **Edit navigation**, Board list action dispatches `onEdit(loop)` which sets `editingLoop` state in the parent; `CreateForm` checks this prop and renders in edit mode with pre-populated `createInitialValues(loop)`. No `DetailView` route in the edit flow.
 
-3. **Task mode toggle** — Board `CreateForm` gets a local `mode` state (`'inline' | 'task'`). Switching clears the other field. The same pattern applies to TUI `WizardForm`.
+3. **Task mode toggle**, Board `CreateForm` gets a local `mode` state (`'inline' | 'task'`). Switching clears the other field. The same pattern applies to TUI `WizardForm`.
 
-4. **Clipboard copy** — Board uses the existing `copyToClipboard()` from `src/shared/clipboard.ts`. Both surfaces display brief "Copied!" feedback via toast.
+4. **Clipboard copy**, Board uses the existing `copyToClipboard()` from `src/shared/clipboard.ts`. Both surfaces display brief "Copied!" feedback via toast.
 
-5. **Error display pattern** — Board: each field renders an error text below the input on blur or when `touched && errors[name]`. TUI WizardForm: each step's fields show errors inline in the form body. Both use the same error map shape `Record<string, string>`.
+5. **Error display pattern**, Board: each field renders an error text below the input on blur or when `touched && errors[name]`. TUI WizardForm: each step's fields show errors inline in the form body. Both use the same error map shape `Record<string, string>`.
 
 ## Risks / Trade-offs
 
-- **TUI clipboard integration** — Ink terminal apps have limited clipboard support; fall back to existing `copyToClipboard()` utility which handles platform differences via `clip`/`pbcopy`/`xclip`.
-- **parseDuration coverage** — The TUI's local regex may accept formats `parseDuration()` rejects. Mitigation: audit `parseDuration()` and extend if needed; test edge cases.
-- **Blur vs live validation** — Blur-only validation avoids jarring UX of live validation as user types.
+- **TUI clipboard integration**, Ink terminal apps have limited clipboard support; fall back to existing `copyToClipboard()` utility which handles platform differences via `clip`/`pbcopy`/`xclip`.
+- **parseDuration coverage**, The TUI's local regex may accept formats `parseDuration()` rejects. Mitigation: audit `parseDuration()` and extend if needed; test edge cases.
+- **Blur vs live validation**, Blur-only validation avoids jarring UX of live validation as user types.

@@ -1,6 +1,6 @@
 ## Why
 
-`src/board/` is excluded from both `tsconfig.json` and `tsconfig.build.json`, yet it is NOT dead code — `cli.ts:227` imports `./board/format.js` at runtime. 43 files (5,677 lines) are maintained in parallel without type-checking, and ~425 lines are 100% identical copies between `src/tui/` and `src/board/`. This duplication has already caused wasted effort (dual fixes for CodeEditorModal, LogModal, etc.) and will continue to diverge.
+`src/board/` is excluded from both `tsconfig.json` and `tsconfig.build.json`, yet it is NOT dead code, `cli.ts:227` imports `./board/format.js` at runtime. 43 files (5,677 lines) are maintained in parallel without type-checking, and ~425 lines are 100% identical copies between `src/tui/` and `src/board/`. This duplication has already caused wasted effort (dual fixes for CodeEditorModal, LogModal, etc.) and will continue to diverge.
 
 ## What Changes
 

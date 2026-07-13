@@ -22,9 +22,9 @@ The existing `loop-task import <file>` command works but is not production-ready
 
 ## Impact
 
-- **src/cli.ts** — `import` command action rewritten with validation and atomic write logic
-- **src/types.ts** — No IPC contract changes; existing types (`LoopMeta`, `TaskDefinition`, `Project`) used as validation schema
-- **src/shared/fs-utils.ts** — `writeFileAtomic` already exists; may add a backup/restore helper
-- **src/daemon/file-watcher.ts** — No changes; existing hot-reload path handles the new writes
-- **src/i18n/en.json** — New error message strings for validation failures
-- **No new dependencies** — runtime type check helpers use existing language features
+- **src/cli.ts**, `import` command action rewritten with validation and atomic write logic
+- **src/types.ts**, No IPC contract changes; existing types (`LoopMeta`, `TaskDefinition`, `Project`) used as validation schema
+- **src/shared/fs-utils.ts**, `writeFileAtomic` already exists; may add a backup/restore helper
+- **src/daemon/file-watcher.ts**, No changes; existing hot-reload path handles the new writes
+- **src/i18n/en.json**, New error message strings for validation failures
+- **No new dependencies**, runtime type check helpers use existing language features

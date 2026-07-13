@@ -18,4 +18,4 @@
 - [x] 4.1 Manual ttyd pass: edit `sds`-like loop → task shown; paste a full command into a field; toggle a select with arrows. <!-- agent: basic-engineer.fast, depends_on: [1.3, 2.2, 3.1], touches: [] -->
 - [x] 4.2 Run `npx tsc --noEmit` -> `pnpm lint` -> `pnpm test`. <!-- agent: basic-engineer.fast, depends_on: [4.1], touches: [] -->
 
-> Coordination note: rebase/schedule after the in-flight `gh-21-polished-loop-form` change archives — it owns these files.
+> Coordination note: rebase/schedule after the in-flight `gh-21-polished-loop-form` change archives, it owns these files.

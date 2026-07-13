@@ -1,6 +1,6 @@
 ## Why
 
-The loop create/edit form across both board (React TUI) and TUI (Ink) lacks polish — no per-field validation feedback, no smart defaults, no clipboard copy, and edit mode routes through a read-only detail view first. Users need an efficient, professional form to configure and refine loops without confusion or data-entry errors.
+The loop create/edit form across both board (React TUI) and TUI (Ink) lacks polish, no per-field validation feedback, no smart defaults, no clipboard copy, and edit mode routes through a read-only detail view first. Users need an efficient, professional form to configure and refine loops without confusion or data-entry errors.
 
 ## What Changes
 
@@ -9,12 +9,12 @@ The loop create/edit form across both board (React TUI) and TUI (Ink) lacks poli
 3. **Inline command editing with copy**: Merge `command` + `commandArgs` into a single editable string; re-parse on save via `parseCommandLine()`; clipboard copy for command and cwd fields
 4. **Smart CWD default**: Pre-fill `cwd` with `process.cwd()` on create; show stored value on edit; validate directory exists
 5. **Direct edit navigation**: Edit action goes directly to edit form (skips DetailView/Inspector)
-6. **Per-field inline validation**: Validate duration, command, description, cwd, maxRuns — errors appear on blur/submit with red inline text; both UIs use shared `parseDuration()`/`buildLoopOptions()` from core modules
+6. **Per-field inline validation**: Validate duration, command, description, cwd, maxRuns, errors appear on blur/submit with red inline text; both UIs use shared `parseDuration()`/`buildLoopOptions()` from core modules
 
 ## Capabilities
 
 ### New Capabilities
-- (none — all capabilities already have specs from prior archived change)
+- (none, all capabilities already have specs from prior archived change)
 
 ### Modified Capabilities
 - `loop-form-polish`: Update Purpose metadata; professional layout, form title mode distinction
@@ -26,7 +26,7 @@ The loop create/edit form across both board (React TUI) and TUI (Ink) lacks poli
 
 ## Impact
 
-- Board: `src/board/components/CreateForm.tsx` — edit mode navigation, validation errors, copy support
-- TUI: `src/tui/components/CreateForm.tsx`, `WizardForm.tsx`, `PatchEditForm.tsx` — validation errors, CWD default, task mode toggle, clipboard copy
-- Core: `src/loop-config.ts` (`parseCommandLine`, `parseMaxRuns`, `buildLoopOptions`) and `src/duration.ts` (`parseDuration`) — unified validation path
-- Navigation: Board action handlers and TUI command dispatch — edit bypasses DetailView/Inspector
+- Board: `src/board/components/CreateForm.tsx`, edit mode navigation, validation errors, copy support
+- TUI: `src/tui/components/CreateForm.tsx`, `WizardForm.tsx`, `PatchEditForm.tsx`, validation errors, CWD default, task mode toggle, clipboard copy
+- Core: `src/loop-config.ts` (`parseCommandLine`, `parseMaxRuns`, `buildLoopOptions`) and `src/duration.ts` (`parseDuration`), unified validation path
+- Navigation: Board action handlers and TUI command dispatch, edit bypasses DetailView/Inspector

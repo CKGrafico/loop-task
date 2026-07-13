@@ -3,10 +3,10 @@
 ## Completed
 
 - [x] T1: Add `@modelcontextprotocol/sdk` and `zod` dependencies
-- [x] T2: Create `src/daemon/mcp/server.ts` — McpApiServer class with stdio and SSE transports
-- [x] T3: Create `src/daemon/mcp/tools.ts` — Register all MCP tools with Zod schemas
-- [x] T4: Create `src/daemon/mcp/openapi-sync.ts` — Auto-generate tool defs from OpenAPI spec
-- [x] T5: Create `src/daemon/mcp/index.ts` — Public exports
+- [x] T2: Create `src/daemon/mcp/server.ts`, McpApiServer class with stdio and SSE transports
+- [x] T3: Create `src/daemon/mcp/tools.ts`, Register all MCP tools with Zod schemas
+- [x] T4: Create `src/daemon/mcp/openapi-sync.ts`, Auto-generate tool defs from OpenAPI spec
+- [x] T5: Create `src/daemon/mcp/index.ts`, Public exports
 - [x] T6: Add `mcpApiEnabled` to `DaemonSettings` interface and defaults
 - [x] T7: Integrate MCP server into daemon lifecycle (`src/daemon/index.ts`)
 - [x] T8: Add `LOOP_CLI_MCP_ENABLED`, `LOOP_CLI_MCP_TRANSPORT`, `LOOP_CLI_MCP_PORT` env vars

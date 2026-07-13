@@ -142,7 +142,7 @@ app → widgets → features → entities → shared
 - `entities/` may import from `shared/` only
 - `shared/` has no internal imports from other FSD layers
 
-`core/` and `daemon/` are NOT part of FSD — they are backend subdomains with their own internal organization.
+`core/` and `daemon/` are NOT part of FSD, they are backend subdomains with their own internal organization.
 
 ---
 
@@ -218,7 +218,7 @@ graph TB
 
 ## 3. Core Components
 
-### 3.1 Frontend / User Interface (TUI — Feature-Sliced Design)
+### 3.1 Frontend / User Interface (TUI, Feature-Sliced Design)
 
 **Name:** Ink TUI Board (`src/app/`, `src/widgets/`, `src/features/`, `src/entities/`, `src/shared/`)
 
@@ -228,11 +228,11 @@ graph TB
 
 | Layer | Path | Role |
 |---|---|---|
-| App | `src/app/` | Composition root — App.tsx wires hooks + renders layout; providers and router |
-| Widgets | `src/widgets/` | Composed UI blocks — header, panels, forms, command-input, log-modal |
-| Features | `src/features/` | User interactions — commands, overlays, forms routing, code-editor |
-| Entities | `src/entities/` | Business domain — loops/tasks/projects types, filters, sort functions |
-| Shared | `src/shared/` | App-agnostic infrastructure — DI container, services, UI primitives, hooks, utils, config, i18n |
+| App | `src/app/` | Composition root, App.tsx wires hooks + renders layout; providers and router |
+| Widgets | `src/widgets/` | Composed UI blocks, header, panels, forms, command-input, log-modal |
+| Features | `src/features/` | User interactions, commands, overlays, forms routing, code-editor |
+| Entities | `src/entities/` | Business domain, loops/tasks/projects types, filters, sort functions |
+| Shared | `src/shared/` | App-agnostic infrastructure, DI container, services, UI primitives, hooks, utils, config, i18n |
 
 **Key Files:**
 - `src/app/App.tsx` - Composition root: state wiring via `useAppState`, hook composition, layout rendering
@@ -295,7 +295,7 @@ graph TB
 - `src/shared/clipboard.ts` - Cross-platform clipboard (clip/pbcopy/xclip)
 - `src/shared/tail.ts` - `tail()`: last N lines of a string
 
-**Constraint:** `src/core/` must NOT import from `src/daemon/`, `src/app/`, or any FSD UI layer — it is runtime-agnostic.
+**Constraint:** `src/core/` must NOT import from `src/daemon/`, `src/app/`, or any FSD UI layer, it is runtime-agnostic.
 
 ### 3.4 CLI / Scripts / Automation
 
@@ -397,10 +397,10 @@ All persistence is filesystem-based under `~/.loop-cli/` (overridable via `LOOP_
 |---|---|---|---|---|
 | Child processes (loops) | `execa` spawn with `shell: true` | `cwd` per loop | Inherits daemon's process env | Exit code captured, logged, chain may branch to onFailure |
 | Clipboard | `execFileSync` (clip/pbcopy/xclip) | None | None | Silently catches errors |
-| HTTP API | `node:http` server on `127.0.0.1:8845` | `LOOP_CLI_HTTP_PORT` env var | None (localhost-only) | If port in use, HTTP API skipped — IPC still works |
+| HTTP API | `node:http` server on `127.0.0.1:8845` | `LOOP_CLI_HTTP_PORT` env var | None (localhost-only) | If port in use, HTTP API skipped, IPC still works |
 | Locale/i18n | `src/i18n/en.json` (single file) | Hard-coded `en` | N/A | `t(key)` returns key if missing |
 
-The daemon listens on a local socket (IPC) and optionally on an HTTP port (`127.0.0.1:8845`) for REST/SSE API access. The HTTP server shares the same manager instances as IPC — it is a transport adapter, not a separate system. Swagger UI is available at `/api/docs`, OpenAPI spec at `/api/openapi.json`.
+The daemon listens on a local socket (IPC) and optionally on an HTTP port (`127.0.0.1:8845`) for REST/SSE API access. The HTTP server shares the same manager instances as IPC, it is a transport adapter, not a separate system. Swagger UI is available at `/api/docs`, OpenAPI spec at `/api/openapi.json`.
 
 ---
 

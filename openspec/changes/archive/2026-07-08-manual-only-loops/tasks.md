@@ -6,7 +6,7 @@
 - [x] T4: Update `LoopController.start()` to skip scheduling for interval 0, set status to idle
 - [x] T5: Update `LoopController.playLoop()` to return false for manual loops
 - [x] T6: Update `LoopController.triggerNow()` to directly launch run for manual/idle loops
-- [x] T7: Update `loop-runner.ts` — check `_forceRun` to bypass initial delay; `_stopAfterRun` before maxRuns post-run
+- [x] T7: Update `loop-runner.ts`, check `_forceRun` to bypass initial delay; `_stopAfterRun` before maxRuns post-run
 - [x] T8: Update `loop-runner.ts` RunAccess interface to include `_forceRun`
 - [x] T9: Update foreground `runLoop()` to reject interval 0
 - [x] T10: Update `timingLabel()` in `shared/ui/format.ts` to show "manual" for interval === 0

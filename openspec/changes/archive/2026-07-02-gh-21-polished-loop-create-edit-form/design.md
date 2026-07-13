@@ -27,7 +27,7 @@ The loop create/edit experience is split between the board (React 19 / OpenTUI) 
 3. **Edit navigation bypasses DetailView**: Board edit action directly renders `CreateForm` in edit mode with `createInitialValues(loop)`. TUI `edit` command directly opens `PatchEditForm`.
 4. **Task mode as a toggle state**: Store `taskMode: 'inline' | 'task'` in form state. Switching clears the opposite field. PatchEditForm displays only the relevant field based on whether the loop has a command or taskId.
 5. **Clipboard via `navigator.clipboard.writeText()`**: Board uses a hover/click copy button; TUI uses Ctrl+Y keyboard shortcut on focused field rows, with toast confirmation.
-6. **CWD default as pre-filled editable value**: Pre-fill input with `process.cwd()` on create, stored value on edit. Not a placeholder — user sees and can edit it.
+6. **CWD default as pre-filled editable value**: Pre-fill input with `process.cwd()` on create, stored value on edit. Not a placeholder, user sees and can edit it.
 
 ## Risks / Trade-offs
 

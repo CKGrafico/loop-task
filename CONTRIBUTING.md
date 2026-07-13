@@ -4,8 +4,8 @@ Thanks for your interest in contributing!
 
 ## Requirements
 
-- **Node.js >= 20** — CLI and daemon runtime
-- **Bun >= 1.2** — package manager and board runtime (OpenTUI requires Bun's native FFI)
+- **Node.js >= 20**, CLI and daemon runtime
+- **Bun >= 1.2**, package manager and board runtime (OpenTUI requires Bun's native FFI)
 
 Install Bun: `npm install -g bun`
 

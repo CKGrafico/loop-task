@@ -12,7 +12,7 @@ Mouse selection in terminals is unreliable across environments (VS Code integrat
    - **Tasks tab**: copies the full command (`commandArgs` joined)
    - **Projects tab**: copies the project name
    - **LogModal**: already has `c` for copy (unchanged)
-3. Remove the clipboard watcher polling (`useClipboardWatcher` — already deleted).
+3. Remove the clipboard watcher polling (`useClipboardWatcher`, already deleted).
 4. Remove the `Shift+C` handler and replace with `c` key contextual copy.
 5. Show a "Text Copied" toast on every successful copy.
 6. Remove the `copy` command from global commands (replaced by the `c` key which is context-aware).
@@ -20,5 +20,5 @@ Mouse selection in terminals is unreliable across environments (VS Code integrat
 ## Non-goals
 
 - Mouse selection detection (impossible in Ink 7).
-- Clipboard polling (removed — too unreliable and causes false positives).
+- Clipboard polling (removed, too unreliable and causes false positives).
 - Detecting which text is selected in the terminal.

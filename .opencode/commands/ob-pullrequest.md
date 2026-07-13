@@ -8,15 +8,15 @@ Prefix all bash commands with `rtk` when RTK is enabled.
 <!-- OB-CMD-RTK-END -->
 
 <!-- OB-CMD-CODEGRAPH-START -->
-Use codegraph MCP tools (NOT CLI commands). Do NOT run `codegraph` in bash — use the MCP tools directly: `codegraph_search`, `codegraph_impact`, `codegraph_callers`, `codegraph_callees`, `codegraph_node`.
+Use codegraph MCP tools (NOT CLI commands). Do NOT run `codegraph` in bash, use the MCP tools directly: `codegraph_search`, `codegraph_impact`, `codegraph_callers`, `codegraph_callees`, `codegraph_node`.
 <!-- OB-CMD-CODEGRAPH-END -->
 
 <!-- OB-CMD-MEMORY-START -->
-Use basic-memory MCP tools (NOT CLI commands). Do NOT run `basic-memory` in bash — use the MCP tools directly: `write_note`, `edit_note`, `search`, `build_context`, `recent_activity`.
+Use basic-memory MCP tools (NOT CLI commands). Do NOT run `basic-memory` in bash, use the MCP tools directly: `write_note`, `edit_note`, `search`, `build_context`, `recent_activity`.
 <!-- OB-CMD-MEMORY-END -->
 
 The `@ob-pullrequest` skill is platform-specific. Repo platform is set in `.opencode/opencode-onboard.json` → `wizard.repoPlatform` (falls back to `wizard.platform` for older configs). Load the skill matching the repo platform and follow its instructions.
 
 **Create mode** (default): creates a PR for the current feature branch with screenshots if UI changed.
 
-**Feedback mode** (when user mentions PR comments or review feedback): reads and classifies PR review comments. Reports what needs fixing — does not implement fixes directly. Fixing is done via `/ob-apply`.
+**Feedback mode** (when user mentions PR comments or review feedback): reads and classifies PR review comments. Reports what needs fixing, does not implement fixes directly. Fixing is done via `/ob-apply`.

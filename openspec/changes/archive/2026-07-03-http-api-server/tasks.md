@@ -5,9 +5,9 @@
 ## 2. HttpApiServer Core
 
 - [x] 2.1 Create `src/daemon/http-server.ts` with `HttpApiServer` class: `listen()`, `close()`, `broadcastEvent()` methods, route matcher (path segments), JSON response envelope helpers (`sendOk`, `sendError`, `sendNotFound`, `sendMethodNotAllowed`) <!-- agent: basic-engineer.build, depends_on: 1.1, touches: src/daemon/http-server.ts -->
-- [x] 2.2 Implement loop REST endpoints in `HttpApiServer`: `GET /api/loops`, `GET /api/loops/:id`, `POST /api/loops`, `PATCH /api/loops/:id`, `DELETE /api/loops/:id`, `POST /api/loops/:id/pause`, `POST /api/loops/:id/resume`, `POST /api/loops/:id/trigger`, `POST /api/loops/:id/stop`, `POST /api/loops/stop-all` — delegating to `LoopManager` <!-- agent: basic-engineer.build, depends_on: 2.1, touches: src/daemon/http-server.ts -->
-- [x] 2.3 Implement task REST endpoints: `GET /api/tasks`, `GET /api/tasks/:id`, `POST /api/tasks`, `PATCH /api/tasks/:id`, `DELETE /api/tasks/:id` — delegating to `TaskManager` <!-- agent: basic-engineer.build, depends_on: 2.1, touches: src/daemon/http-server.ts -->
-- [x] 2.4 Implement project REST endpoints: `GET /api/projects`, `POST /api/projects`, `PATCH /api/projects/:id`, `DELETE /api/projects/:id` — delegating to `ProjectManager` <!-- agent: basic-engineer.build, depends_on: 2.1, touches: src/daemon/http-server.ts -->
+- [x] 2.2 Implement loop REST endpoints in `HttpApiServer`: `GET /api/loops`, `GET /api/loops/:id`, `POST /api/loops`, `PATCH /api/loops/:id`, `DELETE /api/loops/:id`, `POST /api/loops/:id/pause`, `POST /api/loops/:id/resume`, `POST /api/loops/:id/trigger`, `POST /api/loops/:id/stop`, `POST /api/loops/stop-all`, delegating to `LoopManager` <!-- agent: basic-engineer.build, depends_on: 2.1, touches: src/daemon/http-server.ts -->
+- [x] 2.3 Implement task REST endpoints: `GET /api/tasks`, `GET /api/tasks/:id`, `POST /api/tasks`, `PATCH /api/tasks/:id`, `DELETE /api/tasks/:id`, delegating to `TaskManager` <!-- agent: basic-engineer.build, depends_on: 2.1, touches: src/daemon/http-server.ts -->
+- [x] 2.4 Implement project REST endpoints: `GET /api/projects`, `POST /api/projects`, `PATCH /api/projects/:id`, `DELETE /api/projects/:id`, delegating to `ProjectManager` <!-- agent: basic-engineer.build, depends_on: 2.1, touches: src/daemon/http-server.ts -->
 - [x] 2.5 Implement log endpoints: `GET /api/loops/:id/logs?tail=N` and `GET /api/loops/:id/runs/:num` <!-- agent: basic-engineer.build, depends_on: 2.1, touches: src/daemon/http-server.ts -->
 - [x] 2.6 Implement SSE endpoints: `GET /api/loops/:id/logs/stream` (live log tail via `streamLogFollow` pattern) and `GET /api/events` (daemon event push via `broadcastEvent`) <!-- agent: basic-engineer.build, depends_on: 2.1, touches: src/daemon/http-server.ts -->
 
@@ -21,8 +21,8 @@
 
 ## 5. TUI Board Command
 
-- [x] 5.1 Add `api` command to TUI: `src/tui/commands.ts` — shows a toast/modal with API base URL, port, Swagger UI URL, and endpoint count <!-- agent: frontend-engineer.build, depends_on: 4.1, touches: src/tui/commands.ts,src/tui/App.tsx -->
-- [x] 5.2 Add `api` CLI subcommand to `src/cli.ts` — prints API info (base URL, Swagger URL, OpenAPI JSON URL) to stdout <!-- agent: basic-engineer.build, depends_on: 4.1, touches: src/cli.ts -->
+- [x] 5.1 Add `api` command to TUI: `src/tui/commands.ts`, shows a toast/modal with API base URL, port, Swagger UI URL, and endpoint count <!-- agent: frontend-engineer.build, depends_on: 4.1, touches: src/tui/commands.ts,src/tui/App.tsx -->
+- [x] 5.2 Add `api` CLI subcommand to `src/cli.ts`, prints API info (base URL, Swagger URL, OpenAPI JSON URL) to stdout <!-- agent: basic-engineer.build, depends_on: 4.1, touches: src/cli.ts -->
 
 ## 6. Tests
 
@@ -31,4 +31,4 @@
 
 ## 7. Verification
 
-- [x] 7.1 Run `rtk npx tsc --noEmit`, `rtk pnpm lint`, and `rtk pnpm test` — all must pass <!-- agent: basic-engineer.build, depends_on: 4.1,6.2, touches: none -->
+- [x] 7.1 Run `rtk npx tsc --noEmit`, `rtk pnpm lint`, and `rtk pnpm test`, all must pass <!-- agent: basic-engineer.build, depends_on: 4.1,6.2, touches: none -->

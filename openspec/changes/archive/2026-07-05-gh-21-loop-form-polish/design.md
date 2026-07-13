@@ -32,4 +32,4 @@ The board and TUI each have their own loop form implementations. `CreateForm.tsx
 
 - **Inline command string**: Merging args into a single string may lose shell tokenization subtleties. Mitigation: `parseCommandLine()` handles quoting and escaping consistent with CLI behavior.
 - **TUI clipboard**: Terminal clipboard access is platform-dependent. Fallback: display the text and inform the user to copy manually.
-- **Direct edit navigation**: Changes existing UX flow — users accustomed to DetailView first may need adjustment. Non-goal preserved: DetailView remains for read-only browsing.
+- **Direct edit navigation**: Changes existing UX flow, users accustomed to DetailView first may need adjustment. Non-goal preserved: DetailView remains for read-only browsing.

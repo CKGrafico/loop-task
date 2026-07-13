@@ -10,8 +10,8 @@ Developers will have confidence that regressions are caught by a comprehensive, 
 
 ## Non-goals
 
-- TUI component tests (`src/tui/**`) — remains manual
-- `src/board/` — stale, excluded from build
+- TUI component tests (`src/tui/**`), remains manual
+- `src/board/`, stale, excluded from build
 - Performance / load testing
 - Integration tests involving a real daemon process
 

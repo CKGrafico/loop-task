@@ -2,10 +2,10 @@
 
 ## Key Decisions
 
-1. **`interval: 0` is the canonical representation** — no new type field needed. `intervalHuman: "manual"` is the display string.
-2. **No new `LoopStatus`** — `idle` suffices for a manual-only loop at rest. It transitions to `running` during a trigger, then back to `idle`.
-3. **`triggerNow()` reuses existing one-shot pattern** — `_stopAfterRun` flag causes the loop to return to `idle` after one execution.
-4. **`playLoop()` is disabled for manual loops** — there is no schedule to start.
+1. **`interval: 0` is the canonical representation**, no new type field needed. `intervalHuman: "manual"` is the display string.
+2. **No new `LoopStatus`**, `idle` suffices for a manual-only loop at rest. It transitions to `running` during a trigger, then back to `idle`.
+3. **`triggerNow()` reuses existing one-shot pattern**, `_stopAfterRun` flag causes the loop to return to `idle` after one execution.
+4. **`playLoop()` is disabled for manual loops**, there is no schedule to start.
 5. **`immediate` and `--now` are silently ignored** for manual loops (set to `false`/`null` regardless of input).
 
 ## Affected Files

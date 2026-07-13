@@ -1,16 +1,16 @@
 ## Why
 
-The loop create/edit form lacks polish — missing inline command editing, smart directory defaults, direct edit navigation, per-field validation errors, and clipboard copy support. These gaps cause confusion and silent data-entry errors.
+The loop create/edit form lacks polish, missing inline command editing, smart directory defaults, direct edit navigation, per-field validation errors, and clipboard copy support. These gaps cause confusion and silent data-entry errors.
 
 ## What Changes
 
-- **Professional form layout & polish** — clean two-column grid, clear create vs edit title, focused field visual distinction
-- **Task mode toggle** — switch between "Inline command" and "Existing task" selection; switching clears the irrelevant field
-- **Inline command editing** — pre-populate command with args in edit mode; merge/re-parse on save; clipboard copy for command and cwd
-- **Smart CWD default** — pre-fill `process.cwd()` on create; show as editable value; validate directory exists on submit
-- **Direct edit navigation** — bypass DetailView/Inspector when user selects Edit; go straight to populated edit form
-- **Per-field real-time validation** — duration (delegate to `parseDuration`), command non-empty, description non-empty, cwd exists, maxRuns positive integer; errors on blur+submit; shared validation path via `buildLoopOptions`/`parseDuration`
-- **TUI error display** — wire validation errors into TUI WizardForm and PatchEditForm (currently only board shows errors)
+- **Professional form layout & polish**, clean two-column grid, clear create vs edit title, focused field visual distinction
+- **Task mode toggle**, switch between "Inline command" and "Existing task" selection; switching clears the irrelevant field
+- **Inline command editing**, pre-populate command with args in edit mode; merge/re-parse on save; clipboard copy for command and cwd
+- **Smart CWD default**, pre-fill `process.cwd()` on create; show as editable value; validate directory exists on submit
+- **Direct edit navigation**, bypass DetailView/Inspector when user selects Edit; go straight to populated edit form
+- **Per-field real-time validation**, duration (delegate to `parseDuration`), command non-empty, description non-empty, cwd exists, maxRuns positive integer; errors on blur+submit; shared validation path via `buildLoopOptions`/`parseDuration`
+- **TUI error display**, wire validation errors into TUI WizardForm and PatchEditForm (currently only board shows errors)
 
 ### Non-goals
 
@@ -35,9 +35,9 @@ The loop create/edit form lacks polish — missing inline command editing, smart
 
 ## Impact
 
-- `src/board/components/CreateForm.tsx` — per-field validation, edit-first navigation, mode toggle, copy buttons
-- `src/tui/components/WizardForm.tsx` — error display, unified validation
-- `src/tui/components/CreateForm.tsx` — mode toggle, smart cwd default
-- `src/tui/components/PatchEditForm.tsx` — error display, unified validation (if exists)
-- `src/duration.ts` — ensure `parseDuration` covers all formats used by both UIs
-- New `src/hooks/useLoopFormValidation.ts` — shared validation composable
+- `src/board/components/CreateForm.tsx`, per-field validation, edit-first navigation, mode toggle, copy buttons
+- `src/tui/components/WizardForm.tsx`, error display, unified validation
+- `src/tui/components/CreateForm.tsx`, mode toggle, smart cwd default
+- `src/tui/components/PatchEditForm.tsx`, error display, unified validation (if exists)
+- `src/duration.ts`, ensure `parseDuration` covers all formats used by both UIs
+- New `src/hooks/useLoopFormValidation.ts`, shared validation composable

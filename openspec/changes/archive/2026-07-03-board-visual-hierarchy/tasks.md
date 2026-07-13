@@ -7,7 +7,7 @@
 ## 2. Failure visibility + focus-aware selection
 
 - [x] 2.1 Navigator row: when `lastExitCode` is non-zero, render a red `✗` indicator and danger-colored status label. <!-- agent: frontend-engineer.build, depends_on: [1.3], touches: [src/tui/components/Navigator.tsx] -->
-- [x] 2.2 Selection background derives from panel focus: `bg.active` focused, `bg.hover` unfocused — Navigator, RunHistory, FocusableList, TaskBrowser. <!-- agent: frontend-engineer.build, depends_on: [2.1], touches: [src/tui/components/Navigator.tsx, src/tui/components/RunHistory.tsx, src/tui/components/FocusableList.tsx, src/tui/components/TaskBrowser.tsx] -->
+- [x] 2.2 Selection background derives from panel focus: `bg.active` focused, `bg.hover` unfocused, Navigator, RunHistory, FocusableList, TaskBrowser. <!-- agent: frontend-engineer.build, depends_on: [2.1], touches: [src/tui/components/Navigator.tsx, src/tui/components/RunHistory.tsx, src/tui/components/FocusableList.tsx, src/tui/components/TaskBrowser.tsx] -->
 
 ## 3. Header + filter consolidation
 

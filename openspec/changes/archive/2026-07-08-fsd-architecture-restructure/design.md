@@ -3,10 +3,10 @@
 The project has completed DI container setup (#37), App.tsx decomposition (#36), and board cleanup (#35). The internal code is cleaner, but the directory layout remains flat and ad-hoc. The FSD skill was installed specifically to guide this restructuring.
 
 Current flat structure:
-- `src/tui/components/` — 34 files, no grouping
-- `src/tui/utils/`, `src/hooks/`, `src/shared/` — overlapping utility locations
-- `src/daemon/` — HTTP server (672 lines), IPC server, state, managers, file watcher, spawner all flat
-- `src/core/` — loop-controller (599 lines), command-runner, scheduling, logging, context, foreground all flat
+- `src/tui/components/`, 34 files, no grouping
+- `src/tui/utils/`, `src/hooks/`, `src/shared/`, overlapping utility locations
+- `src/daemon/`, HTTP server (672 lines), IPC server, state, managers, file watcher, spawner all flat
+- `src/core/`, loop-controller (599 lines), command-runner, scheduling, logging, context, foreground all flat
 
 No dependency direction is enforced. Business logic leaks into UI and vice-versa.
 
@@ -23,7 +23,7 @@ No dependency direction is enforced. Business logic leaks into UI and vice-versa
 
 **Non-Goals:**
 - Adding new features or changing behavior
-- Applying FSD to `daemon/`, `core/`, or `client/` — those follow their own internal grouping
+- Applying FSD to `daemon/`, `core/`, or `client/`, those follow their own internal grouping
 - Changing the IPC contract (`src/types.ts`)
 - Changing persisted state shapes
 - Introducing barrel exports or index files beyond what already exists
@@ -37,8 +37,8 @@ No dependency direction is enforced. Business logic leaks into UI and vice-versa
 **Rationale**: FSD is a frontend architecture methodology. The daemon and core are Node.js backend modules where domain grouping (by concern) is more natural than UI layering.
 
 **Alternatives considered**:
-- Apply FSD to everything — rejected: daemon/core have no UI widgets, features, or entities in the FSD sense
-- Keep flat — rejected: files are already too large and finding things is difficult
+- Apply FSD to everything, rejected: daemon/core have no UI widgets, features, or entities in the FSD sense
+- Keep flat, rejected: files are already too large and finding things is difficult
 
 ### 2. Batch migration with git mv, then fix imports
 
@@ -47,8 +47,8 @@ No dependency direction is enforced. Business logic leaks into UI and vice-versa
 **Rationale**: Trying to move and fix imports one file at a time creates an ever-shifting target. Batch moves give a clean snapshot of what needs fixing.
 
 **Alternatives considered**:
-- Move one widget at a time — rejected: too many small commits, each with broken intermediate states
-- Use codemods for import rewriting — rejected: the import paths are diverse enough that manual/careful rewrite is more reliable
+- Move one widget at a time, rejected: too many small commits, each with broken intermediate states
+- Use codemods for import rewriting, rejected: the import paths are diverse enough that manual/careful rewrite is more reliable
 
 ### 3. Splitting http-server.ts by HTTP method groups
 

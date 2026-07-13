@@ -90,7 +90,7 @@ The `command-bar.spec.ts` suite SHALL exercise the command bar across all tabs: 
 
 #### Scenario: Every command dispatches
 - **WHEN** the user types each command key and presses Enter
-- **THEN** the matching handler runs (verified by resulting toast, modal, or navigator state) — no command returns "Unknown command"
+- **THEN** the matching handler runs (verified by resulting toast, modal, or navigator state), no command returns "Unknown command"
 
 #### Scenario: Unknown command shows toast
 - **WHEN** the user types `xyz` and presses Enter

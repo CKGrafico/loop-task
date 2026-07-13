@@ -1,12 +1,12 @@
 ## 1. Create shared layer structure
 
 - [ ] 1.1 Create `src/shared/format.ts` with format functions extracted from `src/tui/format.ts` (or `src/board/format.ts`): `describeLoop`, `statusLabel`, `commandLine`, `formatCmd`, `truncate`, `quoteArg`, `unescapeCommand`
-- [ ] 1.2 Create `src/shared/ui/state.ts` — move `src/tui/state.ts` content (identical to board)
-- [ ] 1.3 Create `src/shared/ui/router.ts` — move `src/tui/router.ts` content
-- [ ] 1.4 Create `src/shared/ui/hooks/useBreakpoint.ts` — move from `src/tui/hooks/useBreakpoint.ts`
-- [ ] 1.5 Create `src/shared/ui/hooks/useHoverState.ts` — move from `src/tui/hooks/useHoverState.ts`
-- [ ] 1.6 Create `src/shared/ui/hooks/useLogStream.ts` — move from `src/tui/hooks/useLogStream.ts`
-- [ ] 1.7 Create `src/shared/ui/hooks/useLoopPolling.ts` — move from `src/tui/hooks/useLoopPolling.ts`
+- [ ] 1.2 Create `src/shared/ui/state.ts`, move `src/tui/state.ts` content (identical to board)
+- [ ] 1.3 Create `src/shared/ui/router.ts`, move `src/tui/router.ts` content
+- [ ] 1.4 Create `src/shared/ui/hooks/useBreakpoint.ts`, move from `src/tui/hooks/useBreakpoint.ts`
+- [ ] 1.5 Create `src/shared/ui/hooks/useHoverState.ts`, move from `src/tui/hooks/useHoverState.ts`
+- [ ] 1.6 Create `src/shared/ui/hooks/useLogStream.ts`, move from `src/tui/hooks/useLogStream.ts`
+- [ ] 1.7 Create `src/shared/ui/hooks/useLoopPolling.ts`, move from `src/tui/hooks/useLoopPolling.ts`
 
 ## 2. Update TUI imports to shared layer
 
@@ -32,7 +32,7 @@
 
 ## 5. Verify
 
-- [ ] 5.1 Run `rtk npx tsc --noEmit` — must pass
-- [ ] 5.2 Run `rtk pnpm lint` — must pass
-- [ ] 5.3 Run `rtk pnpm test` — must pass
-- [ ] 5.4 Run `rtk pnpm build` — must pass
+- [ ] 5.1 Run `rtk npx tsc --noEmit`, must pass
+- [ ] 5.2 Run `rtk pnpm lint`, must pass
+- [ ] 5.3 Run `rtk pnpm test`, must pass
+- [ ] 5.4 Run `rtk pnpm build`, must pass

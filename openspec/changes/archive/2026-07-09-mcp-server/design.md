@@ -5,8 +5,8 @@
 ```
 src/daemon/mcp/
   server.ts       → McpApiServer class (transport adapter)
-  tools.ts        → registerMcpTools() — Zod schemas + handler callbacks
-  openapi-sync.ts → buildMcpToolDefsFromOpenApi() — auto-generate from OpenAPI
+  tools.ts        → registerMcpTools(), Zod schemas + handler callbacks
+  openapi-sync.ts → buildMcpToolDefsFromOpenApi(), auto-generate from OpenAPI
   index.ts        → Public exports
 ```
 
@@ -38,6 +38,6 @@ The MCP server is a **transport adapter** (like `HttpApiServer`):
 ## Tool Schema Alignment
 
 MCP tool schemas mirror the HTTP API exactly:
-- `create_loop` takes `command`, `intervalHuman`, `description`, `taskId`, `now`, `maxRuns`, `projectId`, `offset`, `context` — same as `POST /api/loops`
-- Output follows `{ ok: true, data: ... }` envelope — same as HTTP API
+- `create_loop` takes `command`, `intervalHuman`, `description`, `taskId`, `now`, `maxRuns`, `projectId`, `offset`, `context`, same as `POST /api/loops`
+- Output follows `{ ok: true, data: ... }` envelope, same as HTTP API
 - `buildMcpToolDefsFromOpenApi()` in `openapi-sync.ts` reads the OpenAPI spec and validates tool coverage

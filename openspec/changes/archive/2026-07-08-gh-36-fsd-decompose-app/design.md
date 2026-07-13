@@ -10,7 +10,7 @@ Current file structure is flat: all components in `src/tui/components/`, hooks i
 - Reduce App.tsx to under 200 lines as a pure composition root
 - Extract each major responsibility into its own hook or component
 - Introduce FSD feature directory scaffold under `src/tui/features/`
-- Maintain exact keyboard/command behavior — zero user-facing regression
+- Maintain exact keyboard/command behavior, zero user-facing regression
 - Keep all extracted files under 300 lines
 
 **Non-Goals:**
@@ -28,7 +28,7 @@ Each extracted responsibility becomes a custom hook that receives its dependenci
 
 ### D2: Shared AppContext type
 
-All extracted hooks receive a common `AppContext` type (defined in `src/tui/types.ts`) that contains the state and setters they need. This avoids each hook depending on individual props and keeps the contract explicit. The context is a plain object — not a React Context — so it's just a type-level grouping.
+All extracted hooks receive a common `AppContext` type (defined in `src/tui/types.ts`) that contains the state and setters they need. This avoids each hook depending on individual props and keeps the contract explicit. The context is a plain object, not a React Context, so it's just a type-level grouping.
 
 ### D3: Feature directory structure
 
@@ -44,7 +44,7 @@ src/tui/features/
     └── FormRouter.tsx           ← ~90 lines
 ```
 
-No `entities/`, `widgets/`, `shared/`, or `app/` scaffolding yet — those remain in existing `components/`, `hooks/`, `utils/` locations. The issue's full FSD tree is a future target; this change only carves out `features/`.
+No `entities/`, `widgets/`, `shared/`, or `app/` scaffolding yet, those remain in existing `components/`, `hooks/`, `utils/` locations. The issue's full FSD tree is a future target; this change only carves out `features/`.
 
 ### D4: Overlay stack as a simple object
 
@@ -61,5 +61,5 @@ Form routing maps a `view` string to a React component tree. This is inherently 
 ## Risks / Trade-offs
 
 - **[Stale closures]**: Hooks receiving context objects must use refs or stable references to avoid stale closure bugs. Mitigation: pass the context object through a ref that's updated each render, or use `useMemo` on setter callbacks (React guarantees `setState` is stable).
-- **[Type coupling]**: A shared `AppContext` type creates coupling between all feature hooks. Mitigation: make the context type narrow — only include what each hook actually needs. Use separate parameter types if needed.
+- **[Type coupling]**: A shared `AppContext` type creates coupling between all feature hooks. Mitigation: make the context type narrow, only include what each hook actually needs. Use separate parameter types if needed.
 - **[No behavior change]**: Any subtle difference in keyboard handling would be hard to catch. Mitigation: existing tests must pass unchanged; manual verification of Ctrl+Enter, Ctrl+chords, Tab, Escape.

@@ -26,7 +26,7 @@ Keyboard navigation across the TUI is broken and inconsistent. Up/down arrows do
 ### Fix copy/paste in inputs
 
 - Add `key.preventDefault()` calls in all `useKeyboard` handlers for keys they handle, so the native input doesn't double-act.
-- Do NOT intercept Ctrl+C / Ctrl+V / Ctrl+X / Ctrl+A anywhere — let them fall through to the native `<input>` which handles them natively.
+- Do NOT intercept Ctrl+C / Ctrl+V / Ctrl+X / Ctrl+A anywhere, let them fall through to the native `<input>` which handles them natively.
 
 ### Board navigation: add Tab support
 

@@ -1,16 +1,16 @@
 ## Why
 
-The Projects list page lacks the search, filter, sort, and interactive features that the Loops page already has — creating an inconsistent user experience. The TUI variant is a minimal placeholder ("Projects tab" text) while the Board variant has no FilterBar, no multi-column Navigator, and no sort controls. Users managing projects deserve the same polished, feature-rich experience they get with loops.
+The Projects list page lacks the search, filter, sort, and interactive features that the Loops page already has, creating an inconsistent user experience. The TUI variant is a minimal placeholder ("Projects tab" text) while the Board variant has no FilterBar, no multi-column Navigator, and no sort controls. Users managing projects deserve the same polished, feature-rich experience they get with loops.
 
 ## What Changes
 
-- Add `ProjectFilters` type to board and TUI state modules (query, hasLoops, isSystem, sort) — distinct from loop-specific `StatusFilter`/`IntervalFilter`/`ActivityFilter`
+- Add `ProjectFilters` type to board and TUI state modules (query, hasLoops, isSystem, sort), distinct from loop-specific `StatusFilter`/`IntervalFilter`/`ActivityFilter`
 - Add `FilterBar` to Board ProjectsPage with search box, loop count badge ("with loops"/"empty"), system/default badge, and sort badge (by name, loop count, created date)
 - Replace Board ProjectsPage's simple inline list with a Navigator-style multi-column scrollable table (color bullet, project name, loop count, created date)
 - Wire TUI `ProjectsPage` into `LeftPanel.tsx` replacing the placeholder text with a proper scrollable project Navigator (j/k navigation, selectable rows)
 - Add Projects section to TUI `RightPanel.tsx` showing a project Inspector matching loops' Inspector pattern
 - Add project filter state labels in TUI LeftPanel (matching loops' "status: running" pattern)
-- Use `ENTITY_COLORS.project` (`#34d399`) as the project accent throughout — unfocused border `#1e3a2a`, focused border `#34d399`, footer badge, tab accent
+- Use `ENTITY_COLORS.project` (`#34d399`) as the project accent throughout, unfocused border `#1e3a2a`, focused border `#34d399`, footer badge, tab accent
 - Add keyboard commands: `/` (search focus), sort cycling, matching existing loops keybindings where applicable
 - Verify project commands appear in TUI `CommandsBrowserModal` when projects tab is active
 
@@ -28,14 +28,14 @@ The Projects list page lacks the search, filter, sort, and interactive features 
 
 ## Impact
 
-- `src/board/state.ts` — New `ProjectFilters` type and `applyProjectFilters` function
-- `src/tui/state.ts` — New `ProjectFilters` type and `applyProjectFilters` function
-- `src/board/components/ProjectsPage.tsx` — Major restructure: add FilterBar, Navigator-style list, keyboard commands
-- `src/tui/components/ProjectsPage.tsx` — Refactor from standalone page to LeftPanel/RightPanel integration
-- `src/tui/components/LeftPanel.tsx` — Replace placeholder with project Navigator
-- `src/tui/components/RightPanel.tsx` — Add projects Inspector section
-- `src/board/components/Footer.tsx` — Ensure project mode badge uses `ENTITY_COLORS.project`
-- `src/tui/commands.ts` — Verify/add project filter commands
+- `src/board/state.ts`, New `ProjectFilters` type and `applyProjectFilters` function
+- `src/tui/state.ts`, New `ProjectFilters` type and `applyProjectFilters` function
+- `src/board/components/ProjectsPage.tsx`, Major restructure: add FilterBar, Navigator-style list, keyboard commands
+- `src/tui/components/ProjectsPage.tsx`, Refactor from standalone page to LeftPanel/RightPanel integration
+- `src/tui/components/LeftPanel.tsx`, Replace placeholder with project Navigator
+- `src/tui/components/RightPanel.tsx`, Add projects Inspector section
+- `src/board/components/Footer.tsx`, Ensure project mode badge uses `ENTITY_COLORS.project`
+- `src/tui/commands.ts`, Verify/add project filter commands
 - No IPC contract changes (`src/types.ts` unaffected)
 - No persisted state shape changes (`LoopMeta` unaffected)
 - No cross-platform behavior changes

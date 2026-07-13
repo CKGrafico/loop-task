@@ -21,11 +21,11 @@ The loop create/edit form has separate implementations for board (`src/board/com
 
 ## Decisions
 
-1. **Shared validation via existing utilities**: Rather than creating a new validation layer, extend `buildLoopOptions()` (which already validates on save) to support a `partial` mode that returns per-field errors without throwing. This avoids duplicating validation logic. Board already delegates to `parseDuration()` — TUI's local regex will be replaced by the same utility.
+1. **Shared validation via existing utilities**: Rather than creating a new validation layer, extend `buildLoopOptions()` (which already validates on save) to support a `partial` mode that returns per-field errors without throwing. This avoids duplicating validation logic. Board already delegates to `parseDuration()`, TUI's local regex will be replaced by the same utility.
 
 2. **Per-field error state in form components**: Both board and TUI forms will maintain a `fieldErrors` record (keyed by field name) in local state. Errors are set on blur (via field-level `onBlur` handlers) and cleared on change. On submit, all fields are validated and errors are shown.
 
-3. **Direct edit via callback/state**: The board's action handler will pass `editingLoopId` directly to `CreateForm` mode instead of routing through `DetailView`. TUI's `PatchEditForm` will be merged into a unified edit flow — the TUI create form will support an edit mode flag.
+3. **Direct edit via callback/state**: The board's action handler will pass `editingLoopId` directly to `CreateForm` mode instead of routing through `DetailView`. TUI's `PatchEditForm` will be merged into a unified edit flow, the TUI create form will support an edit mode flag.
 
 4. **Copy-to-clipboard via `navigator.clipboard.writeText`** (board, runs in browser/Bun) and **`child_process.exec('clip')`** (TUI, Windows) or a cross-platform clipboard utility. The TUI side will use a simple `yank`-style binding.
 

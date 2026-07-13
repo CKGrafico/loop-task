@@ -13,7 +13,7 @@ Current import is fragile: no version check, no per-item type validation, non-at
 - All error strings externalized to `src/i18n/en.json`
 
 **Non-Goals:**
-- Merge/rebase with existing data — import replaces, matching current behavior
+- Merge/rebase with existing data, import replaces, matching current behavior
 - Migration from `version: 1` export format
 - Interactive confirmation or dry-run mode
 - New external dependencies (no zod, ajv, etc.)
@@ -24,13 +24,13 @@ Current import is fragile: no version check, no per-item type validation, non-at
 
 Create `src/cli/import-validator.ts` with pure functions that validate each type using simple `typeof` / `in` checks. No external validation library. Exports `validateExportFile()` which returns a structured result with per-item errors.
 
-**Alternative considered:** Use JSON Schema + ajv — rejected because it adds a dependency and the types are simple enough for runtime checks.
+**Alternative considered:** Use JSON Schema + ajv, rejected because it adds a dependency and the types are simple enough for runtime checks.
 
 ### D2: Backup-and-restore for atomic writes
 
 Before writing, copy the three existing store files to `<name>.bak`. Write each file via `writeFileAtomic`. On any write failure, restore the `.bak` files. On success, delete the `.bak` files.
 
-**Alternative considered:** Two-phase commit with temp directory — rejected because `writeFileAtomic` already handles per-file atomicity; backup-restore is simpler and sufficient for three files.
+**Alternative considered:** Two-phase commit with temp directory, rejected because `writeFileAtomic` already handles per-file atomicity; backup-restore is simpler and sufficient for three files.
 
 ### D3: Extend the existing import command in-place
 
@@ -46,7 +46,7 @@ Exit code is non-zero (1) for any validation failure.
 
 ### D5: Use writeJsonArray-style formatting
 
-Write stores with `JSON.stringify(data, null, 2)` — same formatting as `writeJsonArray` in `state.ts`. Do not call the private `writeJsonArray` directly; use `writeFileAtomic` from `fs-utils.ts`, which is the same primitive.
+Write stores with `JSON.stringify(data, null, 2)`, same formatting as `writeJsonArray` in `state.ts`. Do not call the private `writeJsonArray` directly; use `writeFileAtomic` from `fs-utils.ts`, which is the same primitive.
 
 ## Risks / Trade-offs
 

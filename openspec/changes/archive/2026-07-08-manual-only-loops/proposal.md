@@ -2,11 +2,11 @@
 
 ## Summary
 
-Add support for loops with zero/manual interval that never execute on a schedule — they only run when explicitly triggered.
+Add support for loops with zero/manual interval that never execute on a schedule, they only run when explicitly triggered.
 
 ## Motivation
 
-Currently every loop requires a positive interval and begins scheduling automatically. There is no way to create a loop that sits dormant and only fires on demand. The closest workaround is to create a loop and immediately stop it, then rely on trigger — but a stopped loop cannot be distinguished from a temporarily-paused loop.
+Currently every loop requires a positive interval and begins scheduling automatically. There is no way to create a loop that sits dormant and only fires on demand. The closest workaround is to create a loop and immediately stop it, then rely on trigger, but a stopped loop cannot be distinguished from a temporarily-paused loop.
 
 ## Scope
 

@@ -1,6 +1,6 @@
 ## Why
 
-Loops have a dedicated wizard experience (WizardForm for create, PatchEditForm for edit) with step-by-step guided input, validation, and keyboard navigation. Projects still use simple inline modals with basic text inputs and color pickers. Users need the same guided wizard experience for creating and editing projects — especially since every project requires a color, which benefits from the richer selection UX the wizard pattern provides.
+Loops have a dedicated wizard experience (WizardForm for create, PatchEditForm for edit) with step-by-step guided input, validation, and keyboard navigation. Projects still use simple inline modals with basic text inputs and color pickers. Users need the same guided wizard experience for creating and editing projects, especially since every project requires a color, which benefits from the richer selection UX the wizard pattern provides.
 
 ## What Changes
 

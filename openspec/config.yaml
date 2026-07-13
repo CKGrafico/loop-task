@@ -6,12 +6,12 @@ context: |
   Build system: npm/pnpm; `tsc -p tsconfig.build.json` compiles to dist/ for Node;
   Bun >= 1.2 runs board .ts/.tsx directly. Vitest 3 + v8 coverage (90% threshold).
   Architecture: client-daemon over local IPC (Unix socket / Windows named pipe).
-  Filesystem persistence (~/.loop-cli/) — no database, no network listener.
+  Filesystem persistence (~/.loop-cli/), no database, no network listener.
   Conventions: trunk-based on main, conventional commits (feat:/fix:/docs:/chore:/archive:),
   all magic numbers in src/config/constants.ts, all strings in src/i18n/en.json,
   IPC contract as single source of truth in src/types.ts, dictionary/strategy pattern
   over nested if/else, prefix shell commands with `rtk`.
-  Domain: Loop engineering toolkit — run any shell command on a cadence, in the
+  Domain: Loop engineering toolkit, run any shell command on a cadence, in the
   background, managed from a terminal board.
 
 rules:

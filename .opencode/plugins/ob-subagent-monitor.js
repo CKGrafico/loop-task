@@ -4,13 +4,13 @@
 //   { updatedAt, agents: { <sessionId>: { agent, model, tasks, title, status, startedAt, endedAt } } }
 //
 // Two jobs from one file:
-//   1. Live monitor — the lead reflects this into its native Todo list; you can
+//   1. Live monitor, the lead reflects this into its native Todo list; you can
 //      also navigate the subagents directly with ctrl+x ↓ and ←/→.
-//   2. Crash-recovery fallback — /ob-apply reads it on resume when basic-memory
+//   2. Crash-recovery fallback, /ob-apply reads it on resume when basic-memory
 //      is unavailable, to rebuild which tasks were in flight.
 //
 // This plugin only OBSERVES session lifecycle. Subagents are a black box mid-run
-// (no streaming), so status is coarse: running -> done. It never throws — a
+// (no streaming), so status is coarse: running -> done. It never throws, a
 // monitor failure must not break a session.
 
 import fs from "node:fs/promises"
@@ -24,7 +24,7 @@ export const ObSubagentMonitor = async ({ directory, client }) => {
 
   // Crash recovery: hydrate from the previous run's file so a restart never
   // erases in-flight history. Entries left "running" by a dead process are
-  // marked stale — /ob-apply resume treats them as unknown, not running.
+  // marked stale, /ob-apply resume treats them as unknown, not running.
   try {
     const prev = JSON.parse(await fs.readFile(statePath, "utf-8"))
     if (prev && typeof prev.agents === "object") {
@@ -34,7 +34,7 @@ export const ObSubagentMonitor = async ({ directory, client }) => {
       }
     }
   } catch {
-    // no previous state — fresh start
+    // no previous state, fresh start
   }
 
   // Resolve the model for a tier-suffixed agent name (e.g. "backend-engineer.build").
@@ -62,12 +62,12 @@ export const ObSubagentMonitor = async ({ directory, client }) => {
       return null
     }
 
-    // Base template agents have no model — return null (inherits lead's model)
+    // Base template agents have no model, return null (inherits lead's model)
     return null
   }
 
   // Tasks are encoded at the front of the spawn description, e.g.
-  // "1.1, 1.2 — ProjectManager" -> ["1.1", "1.2"].
+  // "1.1, 1.2, ProjectManager" -> ["1.1", "1.2"].
   function parseTasks(title) {
     if (!title) return []
     const m = /^\s*([\d]+(?:\.[\d]+)*(?:\s*,\s*[\d]+(?:\.[\d]+)*)*)/.exec(title)

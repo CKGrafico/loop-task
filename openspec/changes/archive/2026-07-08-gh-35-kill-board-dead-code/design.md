@@ -20,12 +20,12 @@
 ### 1. Shared location: `src/shared/` (FSD-aligned)
 
 Place shared code in `src/shared/` per Feature-Sliced Design conventions:
-- `src/shared/format.ts` — format functions used by both CLI and TUI
-- `src/shared/ui/` — UI utilities: `state.ts`, `router.ts`, hooks (`useBreakpoint.ts`, `useHoverState.ts`, `useLogStream.ts`, `useLoopPolling.ts`), `format.ts` (UI-specific format helpers if any differ from CLI format)
+- `src/shared/format.ts`, format functions used by both CLI and TUI
+- `src/shared/ui/`, UI utilities: `state.ts`, `router.ts`, hooks (`useBreakpoint.ts`, `useHoverState.ts`, `useLogStream.ts`, `useLoopPolling.ts`), `format.ts` (UI-specific format helpers if any differ from CLI format)
 
 **Rationale**: FSD places shared, reusable code in the `shared` layer. Format functions are used by CLI (non-React) and TUI (React), so they belong in `shared/` not `shared/ui/`. UI-specific state/hooks belong in `shared/ui/`.
 
-**Alternative considered**: Keep format in `src/shared/ui/format.ts` — rejected because CLI does not import UI code.
+**Alternative considered**: Keep format in `src/shared/ui/format.ts`, rejected because CLI does not import UI code.
 
 ### 2. TUI format.ts split
 
@@ -33,7 +33,7 @@ Place shared code in `src/shared/` per Feature-Sliced Design conventions:
 
 ### 3. Re-export strategy
 
-TUI files that previously imported from `./format`, `./state`, `./router`, `./hooks/*` will update imports to `@/shared/format`, `@/shared/ui/state`, etc. No re-export shims — direct import updates only.
+TUI files that previously imported from `./format`, `./state`, `./router`, `./hooks/*` will update imports to `@/shared/format`, `@/shared/ui/state`, etc. No re-export shims, direct import updates only.
 
 ### 4. Board deletion order
 

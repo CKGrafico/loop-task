@@ -13,10 +13,10 @@ Neither integrates naturally with the MCP ecosystem where coding agents discover
 ## Implementation
 
 ### New module: `src/daemon/mcp/`
-- `server.ts` — `McpApiServer` class (transport adapter, same pattern as `HttpApiServer`)
-- `tools.ts` — MCP tool registration with Zod schemas matching HTTP API
-- `openapi-sync.ts` — Tool definitions auto-generated from `buildOpenApiSpec()`
-- `index.ts` — Public exports
+- `server.ts`, `McpApiServer` class (transport adapter, same pattern as `HttpApiServer`)
+- `tools.ts`, MCP tool registration with Zod schemas matching HTTP API
+- `openapi-sync.ts`, Tool definitions auto-generated from `buildOpenApiSpec()`
+- `index.ts`, Public exports
 
 ### Daemon integration (`src/daemon/index.ts`)
 - MCP server starts/stops with daemon lifecycle
@@ -24,9 +24,9 @@ Neither integrates naturally with the MCP ecosystem where coding agents discover
 - Runtime toggle via `SettingsManager.onChange()`
 
 ### Configuration
-- `LOOP_CLI_MCP_ENABLED` — enable/disable (default: `true`)
-- `LOOP_CLI_MCP_TRANSPORT` — `stdio` or `sse` (default: `stdio`)
-- `LOOP_CLI_MCP_PORT` — SSE port (default: `8846`)
+- `LOOP_CLI_MCP_ENABLED`, enable/disable (default: `true`)
+- `LOOP_CLI_MCP_TRANSPORT`, `stdio` or `sse` (default: `stdio`)
+- `LOOP_CLI_MCP_PORT`, SSE port (default: `8846`)
 
 ### Settings
 - `mcpApiEnabled` added to `DaemonSettings`
@@ -40,5 +40,5 @@ Neither integrates naturally with the MCP ecosystem where coding agents discover
 - **Logs**: `get_loop_logs`, `get_run_log`
 
 ### Dependencies
-- `@modelcontextprotocol/sdk` — MCP protocol handling
-- `zod` — Schema validation (peer dependency of MCP SDK)
+- `@modelcontextprotocol/sdk`, MCP protocol handling
+- `zod`, Schema validation (peer dependency of MCP SDK)

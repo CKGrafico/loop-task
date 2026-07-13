@@ -216,7 +216,7 @@ Destructive actions (pause, force run, delete) prompt a confirmation before exec
 
 ### Copy & paste in the command bar
 
-The bottom command bar is a normal terminal input, so use your terminal's own clipboard gestures — they work in every terminal (including the VS Code integrated terminal, where Ctrl+C/V are captured by the editor):
+The bottom command bar is a normal terminal input, so use your terminal's own clipboard gestures, they work in every terminal (including the VS Code integrated terminal, where Ctrl+C/V are captured by the editor):
 
 - **Paste** with **Ctrl+Shift+V** (Windows/Linux), **Cmd+V** (macOS), or **right-click**. Multi-line pastes collapse to a single line.
 - **Ctrl+U** clears the command bar (select-all + delete).
@@ -396,7 +396,7 @@ docker run -v ~/.loop-cli:/root/.loop-cli loop-task new 30m -- npm test
 
 ## HTTP API
 
-The daemon exposes a REST + SSE API on `localhost:8845` (configurable via `LOOP_CLI_HTTP_PORT`). It starts automatically with the daemon — no extra flags needed.
+The daemon exposes a REST + SSE API on `localhost:8845` (configurable via `LOOP_CLI_HTTP_PORT`). It starts automatically with the daemon, no extra flags needed.
 
 ### Quick reference
 
@@ -440,8 +440,8 @@ curl http://127.0.0.1:8845/api/projects
 
 ### From the CLI/TUI
 
-- `loop-task api` — prints all API endpoints to stdout
-- Board: press **Ctrl+G** or type `api` — shows a toast with API info
+- `loop-task api`, prints all API endpoints to stdout
+- Board: press **Ctrl+G** or type `api`, shows a toast with API info
 
 ### Response format
 
@@ -456,17 +456,17 @@ If the port is already in use, the daemon skips the HTTP server and continues wi
 
 ### Network access (remote / VMs)
 
-The HTTP API (8845) and MCP server (8846) bind to **`0.0.0.0` (all interfaces) by default**, so a daemon on a VM or homelab box is reachable from other machines out of the box — connect over SSH, [Tailscale](https://tailscale.com), or your LAN. `loop-task http-host` governs the bind for both.
+The HTTP API (8845) and MCP server (8846) bind to **`0.0.0.0` (all interfaces) by default**, so a daemon on a VM or homelab box is reachable f,  other machines out of the box — connect over SSH, [Tailscale](https://tailscale.com), or your LAN. `loop-task http-host` governs the bind for both.
 
-> **The HTTP API is unauthenticated.** Anything that can reach the bound port can create and trigger loops — i.e. run commands on the host. Because the default is `0.0.0.0`, **securing access is your responsibility at the network layer**: run the box behind a VPN (Tailscale), reach it only via an SSH tunnel, and/or block the port at the cloud firewall so it isn't exposed to the public internet.
+> **The HTTP API is unauthenticated.** Anything that can reach the bound port can create and trigger loops, i.e. run commands on the host. Because the default is `0.0.0.0`, **securing access is your responsibility at the network layer**: run the box behind a VPN (Tailscale), reach it only via an SSH tunnel, and/or block the port at the cloud firewall so it isn't exposed to the public internet.
 
-Change the bind host at any time (persisted in daemon settings — not an env var — and the daemon **rebinds live**, no restart):
+Change the bind host at any time (persisted in daemon settings, not an env var, and the daemon **rebinds live**, no restart):
 
 ```bash
 loop-task http-host                 # show the current bind host + reachable URL
-loop-task http-host local           # 127.0.0.1 — loopback only (lock it down)
+loop-task http-host local           # 127.0.0.1, loopback only (lock it down)
 loop-task http-host 100.99.155.102  # bind a single interface (e.g. a Tailscale IP)
-loop-task http-host all             # 0.0.0.0 — all interfaces (the default)
+loop-task http-host all             # 0.0.0.0, all interfaces (the default)
 ```
 
 **Locking it down:** if the box isn't behind a firewall/VPN you trust, either set `loop-task http-host local` and reach it through an SSH tunnel (`ssh -L 8845:127.0.0.1:8845 <host>`), or expose it tailnet-only with `tailscale serve --bg 8845` (HTTPS at `https://<node>.<tailnet>.ts.net`, restrict further with Tailscale ACLs; never `tailscale funnel`).
@@ -499,11 +499,11 @@ pnpm run build       # tsc -p tsconfig.build.json
 
 ### Testing the board in a browser (ttyd)
 
-> **Agents: Do NOT use ttyd unless the user explicitly asks you to check the CLI in a browser.** It is never the default. Do not start a ttyd server on your own for "manual pass" tasks or visual QA — those are for the human. Reach for ttyd only when the user says "check the board in the browser", "use ttyd", or similar.
+> **Agents: Do NOT use ttyd unless the user explicitly asks you to check the CLI in a browser.** It is never the default. Do not start a ttyd server on your own for "manual pass" tasks or visual QA, those are for the human. Reach for ttyd only when the user says "check the board in the browser", "use ttyd", or similar.
 
-The board is an interactive TUI, so it needs a real terminal — you can't drive it from a piped/captured shell (and neither can an AI agent). [`ttyd`](https://github.com/tsl0922/ttyd) shares a terminal over HTTP, which makes the board reachable from a browser and scriptable by browser-automation agents — but only when explicitly requested.
+The board is an interactive TUI, so it needs a real terminal, you can't drive it from a piped/captured shell (and neither can an AI agent). [`ttyd`](https://github.com/tsl0922/ttyd) shares a terminal over HTTP, which makes the board reachable from a browser and scriptable by browser-automation agents, but only when explicitly requested.
 
-Install ttyd (see the [ttyd README](https://github.com/tsl0922/ttyd#installation) — e.g. `winget install tsl0922.ttyd`, `brew install ttyd`, or `apt install ttyd`), then serve the board from an interactive terminal:
+Install ttyd (see the [ttyd README](https://github.com/tsl0922/ttyd#installation), e.g. `winget install tsl0922.ttyd`, `brew install ttyd`, or `apt install ttyd`), then serve the board from an interactive terminal:
 
 ```bash
 # Point -w at the repo (absolute path) and run the dev board:
@@ -515,7 +515,7 @@ ttyd -W -w "C:\Projects\Personal\loop-cli" -p 7681 node dist/entry.js
 
 Open `http://localhost:7681` in a browser and use the board as normal. `-W` makes it writable so keystrokes reach the TUI. Handy for demos, for testing on a machine without a good local terminal, and for letting an AI agent drive the board (navigate, send keys, screenshot; ttyd renders via xterm.js on a `<canvas>`, so read state from screenshots, not page text).
 
-> **Windows note:** always pass `-w "<absolute repo path>"`. Without it, ttyd gives the spawned command no valid working directory and it fails with `CreateProcessW failed with error 267` — for *every* command (`pnpm`, `npx`, `node` all fail the same way; it is not a `.cmd`-shim issue). On macOS/Linux `-w` is optional but harmless. Start ttyd from a real interactive terminal; a detached/console-less launch can crash its ConPTY on Windows.
+> **Windows note:** always pass `-w "<absolute repo path>"`. Without it, ttyd gives the spawned command no valid working directory and it fails with `CreateProcessW failed with error 267`, for *every* command (`pnpm`, `npx`, `node` all fail the same way; it is not a `.cmd`-shim issue). On macOS/Linux `-w` is optional but harmless. Start ttyd from a real interactive terminal; a detached/console-less launch can crash its ConPTY on Windows.
 
 ## License
 

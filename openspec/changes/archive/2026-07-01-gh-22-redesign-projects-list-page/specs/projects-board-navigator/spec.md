@@ -5,7 +5,7 @@ The Board ProjectsPage SHALL render projects in a multi-column scrollable table 
 
 #### Scenario: Project row rendering
 - **WHEN** the project list is displayed
-- **THEN** each row SHALL show: a colored bullet in the project's color, the project name, the loop count, and the created date — matching the column layout pattern from the loops Navigator
+- **THEN** each row SHALL show: a colored bullet in the project's color, the project name, the loop count, and the created date, matching the column layout pattern from the loops Navigator
 
 ### Requirement: ScrollBox with auto-scroll to selected
 The project list SHALL use `ScrollBox` for virtual scrolling and auto-scroll to keep the selected project visible.

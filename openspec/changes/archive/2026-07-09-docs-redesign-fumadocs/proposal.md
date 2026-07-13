@@ -1,6 +1,6 @@
 ## Why
 
-The `docs/` folder is a single hand-written HTML landing page that looks AI-generated (uniform 6-card grid, typewriter terminal animation, marketing-speak copy) and contains zero documentation content — no guides, no API reference, no architecture docs.
+The `docs/` folder is a single hand-written HTML landing page that looks AI-generated (uniform 6-card grid, typewriter terminal animation, marketing-speak copy) and contains zero documentation content, no guides, no API reference, no architecture docs.
 
 The project has a rich codebase with extensive functionality that deserves real documentation:
 
@@ -17,7 +17,7 @@ None of this is documented. We need to migrate to a modern docs framework (Fumad
 ## What Changes
 
 - **Replace** the static `docs/` (index.html + styles.css + script.js) with a Fumadocs (Next.js 15 + React 19 + Tailwind CSS 4) documentation site
-- **Redesign** the landing page using DESIGN.md dark tokens — kill the uniform card grid, typewriter animation, and AI-generated feel; apply asymmetric layout, composition variety, humanized copy
+- **Redesign** the landing page using DESIGN.md dark tokens, kill the uniform card grid, typewriter animation, and AI-generated feel; apply asymmetric layout, composition variety, humanized copy
 - **Write** 9 MDX documentation pages covering the full Diátaxis spectrum, all content derived from the actual codebase:
   - **Getting Started** (tutorial): `npm install -g loop-task`, Node.js 20+, first loop, opening the board, verifying runs
   - **CLI Reference** (reference): all 15 commands from `src/cli.ts` + all 9 flags from `src/loop-config.ts` + exit codes
@@ -31,7 +31,7 @@ None of this is documented. We need to migrate to a modern docs framework (Fumad
 - **Structure** docs using the Diátaxis framework (tutorials, how-to guides, reference, explanation)
 - **Update** GitHub Actions workflow to build Next.js static export and deploy to GitHub Pages
 - **Preserve** CNAME (loop.ckgrafico.com) and demo.gif asset
-- **Show all 3 interfaces** for every feature in docs — most loop-task functionalities can be used from the **CLI** (e.g. `loop-task new 30m -- npm test`), from the **TUI board** (e.g. open `loop-task` → Loops panel → type "new loop"), and from the **HTTP API** (e.g. `POST /api/loops`). When a feature is explained in any docs page, always show all 3 ways to do it when possible, using a consistent visual pattern (Tabs or side-by-side blocks) so users can pick their preferred interface:
+- **Show all 3 interfaces** for every feature in docs, most loop-task functionalities can be used from the **CLI** (e.g. `loop-task new 30m -- npm test`), from the **TUI board** (e.g. open `loop-task` → Loops panel → type "new loop"), and from the **HTTP API** (e.g. `POST /api/loops`). When a feature is explained in any docs page, always show all 3 ways to do it when possible, using a consistent visual pattern (Tabs or side-by-side blocks) so users can pick their preferred interface:
   ```
   ┌─────────────────────────────────────────────────────┐
   │  Create a loop                                       │
@@ -53,7 +53,7 @@ None of this is documented. We need to migrate to a modern docs framework (Fumad
 
 ### Modified Capabilities
 
-(none — no existing specs to modify)
+(none, no existing specs to modify)
 
 ## Non-goals
 
@@ -61,30 +61,30 @@ None of this is documented. We need to migrate to a modern docs framework (Fumad
 - No i18n for the docs site (English only, matching the app's current single locale)
 - No backend or API changes to support docs
 - No authentication, analytics, or CMS integration on the docs site
-- No migration of README.md content — docs content is authored fresh from the codebase
-- No light mode — dark-only theme matching the terminal product identity
+- No migration of README.md content, docs content is authored fresh from the codebase
+- No light mode, dark-only theme matching the terminal product identity
 
 ## Impact
 
 ### Files replaced
-- **docs/index.html** (263 lines) — → `docs/app/page.tsx` (Next.js landing)
-- **docs/styles.css** (501 lines) — → `docs/app/global.css` + `docs/tailwind.config.ts`
-- **docs/script.js** (138 lines) — → removed (no more typewriter/terminal animation)
-- **docs/CNAME** — moved to `docs/public/CNAME`
+- **docs/index.html** (263 lines), → `docs/app/page.tsx` (Next.js landing)
+- **docs/styles.css** (501 lines), → `docs/app/global.css` + `docs/tailwind.config.ts`
+- **docs/script.js** (138 lines), → removed (no more typewriter/terminal animation)
+- **docs/CNAME**, moved to `docs/public/CNAME`
 
 ### Files created
-- `docs/package.json`, `docs/next.config.mjs`, `docs/tsconfig.json`, `docs/tailwind.config.ts`, `docs/postcss.config.mjs`, `docs/source.config.ts` — Fumadocs project scaffold
-- `docs/app/layout.tsx`, `docs/app/global.css`, `docs/app/page.tsx`, `docs/app/source.ts` — Next.js app
-- `docs/app/[[...slug]]/page.tsx`, `docs/app/api/search/route.ts` — Fumadocs docs template + search
-- `docs/components/landing/**` — redesigned landing components (navbar, footer, copy button, code block)
-- `docs/components/docs/**` — custom MDX components (Callout, CodeBlock, Steps, Tabs)
-- `docs/content/*.mdx` — 9 documentation pages
+- `docs/package.json`, `docs/next.config.mjs`, `docs/tsconfig.json`, `docs/tailwind.config.ts`, `docs/postcss.config.mjs`, `docs/source.config.ts`, Fumadocs project scaffold
+- `docs/app/layout.tsx`, `docs/app/global.css`, `docs/app/page.tsx`, `docs/app/source.ts`, Next.js app
+- `docs/app/[[...slug]]/page.tsx`, `docs/app/api/search/route.ts`, Fumadocs docs template + search
+- `docs/components/landing/**`, redesigned landing components (navbar, footer, copy button, code block)
+- `docs/components/docs/**`, custom MDX components (Callout, CodeBlock, Steps, Tabs)
+- `docs/content/*.mdx`, 9 documentation pages
 
 ### Files modified
-- **.github/workflows/pages.yml** — add pnpm setup, Node.js 20, build step, change artifact path from `docs` to `docs/out`
-- **pnpm-workspace.yaml** — add `docs` as workspace member (if not already glob-matching)
-- **.agents/skills/project-guardrails/** — add a docs-sync rule: when changes in `src/` touch user-facing features (CLI commands, HTTP API endpoints, config options, architecture), the project-guardrails skill must flag that docs may need updating. During `/ob-propose` or `/ob-apply` or `/ob-autopilot`, if the change touches `src/**` files that map to documented behavior, the lead must check `docs/` and decide if the new changes need to be documented — if so, spawn a `docs-ui-engineer` task to update the relevant MDX pages.
+- **.github/workflows/pages.yml**, add pnpm setup, Node.js 20, build step, change artifact path from `docs` to `docs/out`
+- **pnpm-workspace.yaml**, add `docs` as workspace member (if not already glob-matching)
+- **.agents/skills/project-guardrails/**, add a docs-sync rule: when changes in `src/` touch user-facing features (CLI commands, HTTP API endpoints, config options, architecture), the project-guardrails skill must flag that docs may need updating. During `/ob-propose` or `/ob-apply` or `/ob-autopilot`, if the change touches `src/**` files that map to documented behavior, the lead must check `docs/` and decide if the new changes need to be documented, if so, spawn a `docs-ui-engineer` task to update the relevant MDX pages.
 
 ### No impact on
 - IPC contract (`src/types.ts`), persisted state shape (`LoopMeta`), cross-platform behavior, application runtime
-- Root `package.json` — docs deps are isolated in the docs workspace
+- Root `package.json`, docs deps are isolated in the docs workspace

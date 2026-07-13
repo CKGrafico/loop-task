@@ -1,14 +1,14 @@
 ## Context
 
-The daemon (`src/daemon/index.ts`) currently starts one `IpcServer` that listens on a local socket (Unix domain / Windows named pipe). All loop, task, and project management lives in `LoopManager`, `TaskManager`, and `ProjectManager` — shared instances that the IPC server calls directly. The `IpcRequest` union in `src/types.ts` defines the full operation surface (~22 request types).
+The daemon (`src/daemon/index.ts`) currently starts one `IpcServer` that listens on a local socket (Unix domain / Windows named pipe). All loop, task, and project management lives in `LoopManager`, `TaskManager`, and `ProjectManager`, shared instances that the IPC server calls directly. The `IpcRequest` union in `src/types.ts` defines the full operation surface (~22 request types).
 
-An HTTP transport would expose the same operations to any HTTP client (curl, browser, automation scripts) without introducing new business logic — it is a transport adapter, not a new system.
+An HTTP transport would expose the same operations to any HTTP client (curl, browser, automation scripts) without introducing new business logic, it is a transport adapter, not a new system.
 
 ## Goals / Non-Goals
 
 **Goals:**
 - Expose all existing daemon operations (loops, tasks, projects, logs, events) over HTTP on `localhost:8845`.
-- Use only Node built-in modules (`node:http`) — zero new npm dependencies.
+- Use only Node built-in modules (`node:http`), zero new npm dependencies.
 - Support Server-Sent Events (SSE) for live log streaming and push events.
 - Graceful degradation: if the port is taken, the daemon still works via IPC.
 - Clean lifecycle: HTTP server starts/stops alongside the IPC server.
@@ -25,7 +25,7 @@ An HTTP transport would expose the same operations to any HTTP client (curl, bro
 
 **Decision:** `HttpApiServer` is instantiated in `daemon/index.ts` alongside `IpcServer`, sharing the same `LoopManager` / `TaskManager` / `ProjectManager` instances.
 
-**Why not a separate gateway process?** A gateway would double-hop (HTTP → IPC → manager), adding latency and a second process to manage. The daemon already owns the state — a parallel listener is ~300 lines of adapter code with zero new state.
+**Why not a separate gateway process?** A gateway would double-hop (HTTP → IPC → manager), adding latency and a second process to manage. The daemon already owns the state, a parallel listener is ~300 lines of adapter code with zero new state.
 
 **Alternative considered:** Standalone HTTP-to-IPC proxy. Rejected because it introduces a failure mode (proxy down while daemon up) and duplicates request routing logic.
 
@@ -71,7 +71,7 @@ An HTTP transport would expose the same operations to any HTTP client (curl, bro
 | DELETE | `/api/projects/:id` | `projectManager.delete()` |
 | GET | `/api/events` | SSE event stream |
 
-**Why REST over JSON-RPC?** HTTP clients (curl, fetch, Postman) expect REST conventions. The operations map naturally to CRUD verbs. Explorability is better — `curl localhost:8845/api/loops` "just works."
+**Why REST over JSON-RPC?** HTTP clients (curl, fetch, Postman) expect REST conventions. The operations map naturally to CRUD verbs. Explorability is better, `curl localhost:8845/api/loops` "just works."
 
 ### 4. SSE for streaming (not WebSocket)
 
@@ -79,11 +79,11 @@ An HTTP transport would expose the same operations to any HTTP client (curl, bro
 
 **Why not WebSocket?**
 - SSE is unidirectional (server→client), which is exactly what we need.
-- Works with `curl -N` out of the box — zero client setup.
+- Works with `curl -N` out of the box, zero client setup.
 - No `ws` npm dependency.
 - Auto-reconnect is built into the EventSource browser API.
 
-**Implementation:** For events, piggyback on `IpcServer.pushEvent()` — the `HttpApiServer` maintains its own SSE subscriber set, and the daemon calls `httpServer.broadcastEvent(event, data)` alongside `ipcServer.pushEvent(event, data)`. For log streaming, reuse `streamLogFollow()` logic with SSE framing.
+**Implementation:** For events, piggyback on `IpcServer.pushEvent()`, the `HttpApiServer` maintains its own SSE subscriber set, and the daemon calls `httpServer.broadcastEvent(event, data)` alongside `ipcServer.pushEvent(event, data)`. For log streaming, reuse `streamLogFollow()` logic with SSE framing.
 
 ### 5. Request/response shape
 
@@ -103,11 +103,11 @@ An HTTP transport would expose the same operations to any HTTP client (curl, bro
 
 **Decision:** If `http.createServer().listen(port)` fails with `EADDRINUSE`, log a warning via `daemonLog()` and continue. The daemon remains fully functional via IPC.
 
-**Alternative considered:** Fail the daemon startup. Rejected — the HTTP API is additive, not critical. IPC is the primary transport.
+**Alternative considered:** Fail the daemon startup. Rejected, the HTTP API is additive, not critical. IPC is the primary transport.
 
 ### 7. No changes to `src/types.ts`
 
-**Decision:** The `IpcRequest` / `IpcResponse` types remain untouched. The HTTP server defines its own request/response types internally. The two transports are fully decoupled — they just happen to call the same manager methods.
+**Decision:** The `IpcRequest` / `IpcResponse` types remain untouched. The HTTP server defines its own request/response types internally. The two transports are fully decoupled, they just happen to call the same manager methods.
 
 ## Risks / Trade-offs
 
@@ -117,15 +117,15 @@ An HTTP transport would expose the same operations to any HTTP client (curl, bro
 | Accidental network exposure | Bind to `127.0.0.1` only (not `0.0.0.0`) |
 | SSE connection leaks (client never disconnects) | Track SSE connections in a `Set`, destroy all on `server.close()` |
 | Body parsing edge cases (malformed JSON) | Wrap `JSON.parse` in try/catch, return 400 on failure |
-| Concurrent writes from HTTP + IPC + FileWatcher | Already handled — all paths converge at `manager.method()` which is synchronous for state mutations |
+| Concurrent writes from HTTP + IPC + FileWatcher | Already handled, all paths converge at `manager.method()` which is synchronous for state mutations |
 | No auth = any local process can manage loops | Accepted: localhost-only is the trust boundary. Token auth is a follow-up. |
 
 ## Migration Plan
 
-No migration needed — the HTTP server is purely additive. Existing IPC clients (CLI, TUI) are unaffected. The daemon process gains an additional listener but its behavior is identical if the HTTP port is unavailable.
+No migration needed, the HTTP server is purely additive. Existing IPC clients (CLI, TUI) are unaffected. The daemon process gains an additional listener but its behavior is identical if the HTTP port is unavailable.
 
 **Rollback:** Remove the `HttpApiServer` instantiation from `daemon/index.ts` and delete `src/daemon/http-server.ts`. Zero side effects.
 
 ## Open Questions
 
-None — all decisions are resolved. Port is configurable via `LOOP_CLI_HTTP_PORT`, defaulting to `8845`.
+None, all decisions are resolved. Port is configurable via `LOOP_CLI_HTTP_PORT`, defaulting to `8845`.

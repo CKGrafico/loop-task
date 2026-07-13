@@ -24,10 +24,10 @@
 
 ## 6. Direct edit navigation
 
-- [x] 6.1 Edit action routes straight to `CreateView`/`WizardForm` in edit mode (`push("create")` with `editTarget` set) — no read-only detail view in the path. <!-- agent: frontend-engineer.build, depends_on: [], touches: [src/board/App.tsx, src/tui/App.tsx] -->
+- [x] 6.1 Edit action routes straight to `CreateView`/`WizardForm` in edit mode (`push("create")` with `editTarget` set), no read-only detail view in the path. <!-- agent: frontend-engineer.build, depends_on: [], touches: [src/board/App.tsx, src/tui/App.tsx] -->
 - [x] 6.2 Delete the now-unreferenced `src/board/components/DetailView.tsx` (confirmed zero imports repo-wide). <!-- agent: basic-engineer.fast, depends_on: [6.1], touches: [src/board/components/DetailView.tsx] -->
 
 ## 7. Verification
 
 - [x] 7.1 Manual ttyd pass: deferred to human QA (ttyd is opt-in only per AGENTS.md). <!-- agent: basic-engineer.fast, depends_on: [6.2], touches: [] -->
-- [x] 7.2 Run `npx tsc --noEmit` -> `pnpm lint` -> `pnpm test` — tsc passes; lint shows 87 pre-existing errors matching main; tests show pre-existing failures only (loop-config 2, client-commands 2, daemon-server 29 EACCES, loop-controller 2). <!-- agent: basic-engineer.fast, depends_on: [7.1], touches: [] -->
+- [x] 7.2 Run `npx tsc --noEmit` -> `pnpm lint` -> `pnpm test`, tsc passes; lint shows 87 pre-existing errors matching main; tests show pre-existing failures only (loop-config 2, client-commands 2, daemon-server 29 EACCES, loop-controller 2). <!-- agent: basic-engineer.fast, depends_on: [7.1], touches: [] -->

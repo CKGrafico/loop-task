@@ -31,11 +31,11 @@ Wait for the user to respond:
 **Step 0.b - Load exploration context**
 
 <!-- OB-CMD-CODEGRAPH-START -->
-Use codegraph MCP tools (NOT CLI commands). Do NOT run `codegraph` in bash — use the MCP tools directly: `codegraph_search`, `codegraph_impact`, `codegraph_callers`, `codegraph_callees`, `codegraph_node`.
+Use codegraph MCP tools (NOT CLI commands). Do NOT run `codegraph` in bash, use the MCP tools directly: `codegraph_search`, `codegraph_impact`, `codegraph_callers`, `codegraph_callees`, `codegraph_node`.
 <!-- OB-CMD-CODEGRAPH-END -->
 
 <!-- OB-CMD-MEMORY-START -->
-Use basic-memory MCP tools (NOT CLI commands). Do NOT run `basic-memory` in bash — use the MCP tools directly: `write_note`, `edit_note`, `search`, `build_context`, `recent_activity`.
+Use basic-memory MCP tools (NOT CLI commands). Do NOT run `basic-memory` in bash, use the MCP tools directly: `write_note`, `edit_note`, `search`, `build_context`, `recent_activity`.
 <!-- OB-CMD-MEMORY-END -->
 
 **Step 0.c - Load exploration skill**

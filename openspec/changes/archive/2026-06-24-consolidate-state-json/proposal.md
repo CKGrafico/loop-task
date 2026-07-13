@@ -10,7 +10,7 @@ Currently each loop and each task is stored as a separate JSON file (`loops/{id}
 2. **`saveTask`, `loadAllTasks`, `loadTask`, `deleteTask`** in `state.ts` now read/write a single `~/.loop-cli/tasks.json` array instead of individual files.
 3. **Migration on init**: When the daemon starts, if `loops.json` does not exist but `loops/` directory with `.json` files does, consolidate them into `loops.json`. Same for `tasks.json` from `tasks/` directory. Old individual files are NOT deleted (safe migration).
 4. **`paths.ts`**: Add `loopsJson()` and `tasksJson()` path functions. Keep `loopFile`/`taskFile` for migration reference.
-5. **`ProjectManager`**: Already uses individual files per project — consolidate to `projects.json` as well for consistency, with the same migration path.
+5. **`ProjectManager`**: Already uses individual files per project, consolidate to `projects.json` as well for consistency, with the same migration path.
 
 ## Non-goals
 

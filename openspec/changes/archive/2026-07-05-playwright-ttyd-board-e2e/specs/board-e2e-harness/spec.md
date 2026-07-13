@@ -34,7 +34,7 @@ The harness SHALL launch `ttyd -W -w <repo> -p <port> pnpm run dev` (or `node di
 
 ### Requirement: TerminalPage keyboard driver
 
-The harness SHALL expose a `TerminalPage` driver that focuses `.xterm-helper-textarea`, then sends real OS keyboard events through Playwright's `page.keyboard`. The driver MUST cover: printable typing, Enter, Escape, Backspace, ArrowUp/Down/Left/Right, Tab, Shift+Tab, Ctrl+letter chords (down-hold/press/up-release sequence), and multi-line paste (dispatch a `paste` event with the payload). The driver MUST NEVER mutate the textarea's `value` property directly — xterm.js ignores such mutations.
+The harness SHALL expose a `TerminalPage` driver that focuses `.xterm-helper-textarea`, then sends real OS keyboard events through Playwright's `page.keyboard`. The driver MUST cover: printable typing, Enter, Escape, Backspace, ArrowUp/Down/Left/Right, Tab, Shift+Tab, Ctrl+letter chords (down-hold/press/up-release sequence), and multi-line paste (dispatch a `paste` event with the payload). The driver MUST NEVER mutate the textarea's `value` property directly, xterm.js ignores such mutations.
 
 #### Scenario: Type and submit a command
 - **WHEN** the driver types `help` and presses Enter

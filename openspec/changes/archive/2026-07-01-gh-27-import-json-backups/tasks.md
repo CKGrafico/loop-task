@@ -1,7 +1,7 @@
 ## 1. Validation Module
 
 - [x] 1.1 Create `src/cli/import-validator.ts` with `validateExportFile()` that checks version field (must be `2`), required top-level keys (`loops`, `tasks`, `projects` must be arrays), and returns a structured result with errors
-- [x] 1.2 Add per-item validators for `LoopMeta` (all required fields with correct types), `TaskDefinition`, and `Project` — each returns item index + field-level error list
+- [x] 1.2 Add per-item validators for `LoopMeta` (all required fields with correct types), `TaskDefinition`, and `Project`, each returns item index + field-level error list
 - [x] 1.3 Add i18n strings to `src/i18n/en.json` for all import validation error messages (unsupported version, missing keys, per-item field errors, non-array fields)
 
 ## 2. Atomic Write with Rollback
