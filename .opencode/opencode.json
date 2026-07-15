@@ -1,18 +1,17 @@
 {
   "$schema": "https://opencode.ai/config.json",
-  "instructions": [
-    "AGENTS.md"
-  ],
-  "plugin": [
-    "opencode-plugin-openspec@latest",
-    "@different-ai/opencode-browser@latest",
-    "@mohak34/opencode-notifier@latest",
-    "@slkiser/opencode-quota@latest"
-  ],
-  "experimental": {
-    "mcp_timeout": 300000
+  "agent": {
+    "build": {
+      "disable": true
+    },
+    "plan": {
+      "disable": true
+    }
   },
   "model": "opencode-go/glm-5.1",
+  "plugin": [
+    "@slkiser/opencode-quota@latest"
+  ],
   "mcp": {
     "codegraph": {
       "type": "local",
@@ -25,14 +24,18 @@
       "enabled": true,
       "timeout": 120000
     },
-    "basic-memory": {
+    "agentmemory": {
       "type": "local",
       "command": [
-        "basic-memory",
-        "mcp"
+        "npx",
+        "-y",
+        "@agentmemory/mcp"
       ],
+      "env": {
+        "AGENTMEMORY_URL": "http://localhost:3111"
+      },
       "enabled": true,
-      "timeout": 300000
+      "timeout": 120000
     }
   }
 }

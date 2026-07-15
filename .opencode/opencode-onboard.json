@@ -1,51 +1,36 @@
 {
-  "schema": 1,
-  "generatedAt": "2026-07-05T10:54:12.089Z",
-  "onboardVersion": "1.2.0",
-  "opencodeVersion": "1.16.2",
-  "wizard": {
-    "platform": "github",
-    "backlogPlatform": "github",
-    "repoPlatform": "github",
-    "sourceMode": "current",
-    "sourceRoots": [
-      "C:\\Projects\\Personal\\loop-cli"
-    ],
-    "maxConcurrentAgents": 4,
-    "preserved": {
-      "design": true,
-      "architecture": true,
-      "openspec": true
-    },
-    "openspec": {
-      "available": true,
-      "initialized": true
-    },
-    "additionalSkillsProvider": "npx-skills",
-    "models": {
-      "plan": "opencode-go/glm-5.2",
-      "build": "opencode-go/glm-5.1",
-      "fast": "opencode/big-pickle"
-    },
-    "optionalTools": {
-      "rtk": {
-        "optedIn": true,
-        "checked": true,
-        "available": true
-      },
-      "quota": {
-        "optedIn": true,
-        "installed": true
-      },
-      "caveman": {
-        "optedIn": true,
-        "installed": true
-      }
-    },
-    "cavemanGuidance": {
-      "enabled": true,
-      "patchedFiles": 0
-    }
+  "version": 2,
+  "generatedAt": "2026-07-15T20:50:09.695Z",
+  "onboardVersion": "1.3.7",
+  "opencodeVersion": "1.17.14",
+  "platform": {
+    "backlog": "github",
+    "repo": "github"
   },
-  "note": "Snapshot of onboarding choices. Runtime config, wizard.models and wizard.maxConcurrentAgents, is read by /ob-apply and the agent generator and is preserved across `opencode-onboard metadata` refreshes. Other fields are informational."
+  "models": {
+    "plan": "opencode-go/glm-5.2",
+    "build": "opencode-go/glm-5.1",
+    "fast": "opencode/big-pickle"
+  },
+  "agents": {
+    "maxConcurrent": 2
+  },
+  "source": {
+    "mode": "current",
+    "roots": [
+      "C:\\Projects\\Personal\\loop-cli"
+    ]
+  },
+  "tools": {
+    "rtk": true,
+    "quota": true,
+    "caveman": true,
+    "codegraph": false,
+    "memory": false
+  },
+  "preexisting": {
+    "design": true,
+    "architecture": true,
+    "openspec": true
+  }
 }
