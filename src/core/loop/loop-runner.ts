@@ -4,6 +4,7 @@ import { resolveEffectiveCwd } from "../command/resolve-cwd.js";
 import { executeChain } from "./chain-executor.js";
 import { executeRunImpl } from "./run-executor.js";
 import { waitForResume, waitForDelay } from "./delay-utils.js";
+import { MAX_INMEMORY_RUN_HISTORY } from "../../shared/config/constants.js";
 import type { DelayAccess } from "./delay-utils.js";
 import type { ExecuteRunAccess } from "./run-executor.js";
 
@@ -21,13 +22,14 @@ export interface RunAccess extends DelayAccess, ExecuteRunAccess {
   readonly logPath: string;
   readonly projectDirectory: string | undefined;
   runHistory: import("../../types.js").RunRecord[];
-  logStream: fs.WriteStream | null;
+  logStream: import("node:stream").Writable | null;
   lastExitCode: number | null;
   lastDuration: number | null;
   remainingDelayMs: number | null;
   nextRunAt: string | null;
   sessionStartedAt: string | null;
   emit(event: string, ...args: unknown[]): boolean;
+  checkLogRotation(): void;
 }
 
 export async function runLoop(ctrl: RunAccess): Promise<void> {
@@ -102,8 +104,8 @@ export async function runLoop(ctrl: RunAccess): Promise<void> {
         ctrl.lastDuration = (ctrl.lastDuration ?? 0) + chainResult.lastDuration;
       }
 
-      if (ctrl.runHistory.length > 50) {
-        ctrl.runHistory = ctrl.runHistory.slice(-50);
+      if (ctrl.runHistory.length > MAX_INMEMORY_RUN_HISTORY) {
+        ctrl.runHistory = ctrl.runHistory.slice(-MAX_INMEMORY_RUN_HISTORY);
       }
       ctrl.emit("run:end", { exitCode, duration: totalDuration });
 

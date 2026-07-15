@@ -41,5 +41,6 @@ export function metaToState(meta: LoopMeta): LoopControllerState {
     runHistory: meta.runHistory,
     skippedCount: meta.skippedCount,
     silentChainCount: meta.silentChainCount,
+    totalRunCount: meta.totalRunCount,
   };
 }

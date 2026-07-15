@@ -16,4 +16,5 @@ export interface LoopControllerState {
   runHistory?: RunRecord[];
   skippedCount?: number;
   silentChainCount?: number;
+  totalRunCount?: number;
 }

@@ -15,16 +15,28 @@ import {
   migrateTasksToJson,
   migrateLoopsToJson,
   setSelfWriteNotifier,
+  readDaemonPid,
+  isDaemonAlive,
 } from "./state/index.js";
 import { setProjectSelfWriteNotifier } from "./managers/project-manager.js";
 import { t } from "../shared/i18n/index.js";
 import { daemonLog } from "./daemon-log.js";
+import { killAllActiveProcesses, getActivePids } from "../core/command/command-runner.js";
+import { setActivePidsGetter } from "./diagnostics.js";
+
+function cleanupStaleProcesses(): void {
+  const oldPid = readDaemonPid();
+  if (oldPid !== null && !isDaemonAlive(oldPid)) {
+    daemonLog(`previous daemon pid=${oldPid} is not running; child processes may be orphaned`);
+  }
+}
 
 async function main(): Promise<void> {
   const mcpEnabled = (process.env.LOOP_CLI_MCP_ENABLED ?? "true") !== "false";
   const mcpTransport = process.env.LOOP_CLI_MCP_TRANSPORT === "sse" ? "sse" : "stdio";
 
   const taskManager = new TaskManager();
+  setActivePidsGetter(getActivePids);
   migrateLoopsToJson();
   migrateTasksToJson();
   taskManager.init();
@@ -85,6 +97,7 @@ async function main(): Promise<void> {
   });
 
   manager.init();
+  cleanupStaleProcesses();
   writeDaemonPid(process.pid);
   writeDaemonSignature(computeCodeSignature());
   daemonLog(`started pid=${process.pid}`);
@@ -103,6 +116,7 @@ async function main(): Promise<void> {
     shuttingDown = true;
     daemonLog(`shutting down pid=${process.pid}`);
     try {
+      killAllActiveProcesses();
       fileWatcher.stop();
       removeDaemonPid();
       removeDaemonSignature();

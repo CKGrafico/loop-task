@@ -109,6 +109,7 @@ export interface LoopMeta {
   projectId: string;
   offset: number | null;
   context?: Record<string, unknown>;
+  totalRunCount?: number;
 }
 
 export interface DaemonSettings {
@@ -143,6 +144,7 @@ export type IpcRequest =
   | { type: "project-delete"; payload: { id: string } }
   | { type: "settings-get" }
   | { type: "settings-set"; settings: Partial<DaemonSettings> }
+  | { type: "diagnostics" }
   | { type: "subscribe" }
   | { type: "shutdown" };
 

@@ -3,6 +3,8 @@ import { buildOpenApiSpec, buildSwaggerHtml } from "./openapi.js";
 import { sendOk, sendError, readBody } from "./helpers.js";
 import type { RouteHandler } from "./helpers.js";
 import type { SettingsManager } from "../settings-manager.js";
+import type { LoopManager } from "../managers/loop-manager.js";
+import { collectDiagnostics, isDiagnosticsEnabled } from "../diagnostics.js";
 
 export function registerMiscRoutes(sseClients: SseClientSet, r: (method: string, path: string, handler: RouteHandler) => void): void {
   r("GET", "/api/openapi.json", (_req, res) => {
@@ -56,5 +58,13 @@ export function registerSettingsRoutes(settingsManager: SettingsManager, r: (met
     } catch (err) {
       sendError(res, 400, err instanceof Error ? err.message : String(err));
     }
+  });
+}
+
+export function registerDiagnosticsRoutes(loopManager: LoopManager, r: (method: string, path: string, handler: RouteHandler) => void): void {
+  r("GET", "/api/diagnostics", (_req, res) => {
+    const extended = isDiagnosticsEnabled();
+    const diag = collectDiagnostics(loopManager, extended);
+    sendOk(res, diag);
   });
 }

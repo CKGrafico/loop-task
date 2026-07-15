@@ -12,6 +12,10 @@ export const MAX_CONTEXT_STDOUT_BYTES = 1024 * 1024;
 
 export const MAX_LOG_GENERATIONS = 3;
 
+export const MAX_INMEMORY_RUN_HISTORY = 100;
+
+export const MAX_STREAM_INITIAL_BYTES = 256 * 1024;
+
 export const SLEEP_CHUNK_MS = 200;
 
 export const DAEMON_SPAWN_TIMEOUT_MS = 5000;

@@ -1,7 +1,7 @@
 import fs from "node:fs";
 import { LoopManager } from "../managers/loop-manager.js";
 import { LOG_TAIL_DEFAULT } from "../../shared/config/constants.js";
-import { tail } from "../../shared/tail.js";
+import { tailFileBounded, readByteRange, IncrementalFileWatcher } from "../../core/logging/bounded-log-reader.js";
 import { buildLoopOptions } from "../../loop-config.js";
 import { validateContext } from "../../core/context/validate-context.js";
 import { sendOk, sendError, sendNotFound, parseQuery, readBody } from "./helpers.js";
@@ -162,8 +162,6 @@ export function registerLoopRoutes(manager: LoopManager, routes: RouteEntry[], r
     sendOk(res, { count });
   });
 
-  // --- Run History ---
-
   r("GET", "/api/loops/:id/runs", (_req, res, params) => {
     const meta = manager.status(params.id);
     if (!meta) {
@@ -188,8 +186,6 @@ export function registerLoopRoutes(manager: LoopManager, routes: RouteEntry[], r
     }
     sendOk(res, runs);
   });
-
-  // --- Date-Filtered Logs ---
 
   r("GET", "/api/loops/:id/logs/date", (_req, res, params) => {
     const meta = manager.status(params.id);
@@ -224,18 +220,15 @@ export function registerLoopRoutes(manager: LoopManager, routes: RouteEntry[], r
       return;
     }
     matching.sort((a, b) => a.logOffset - b.logOffset);
-    const buffer = fs.readFileSync(logPath);
     const allSorted = meta.runHistory.slice().sort((a, b) => a.logOffset - b.logOffset);
     const parts = matching.map((record) => {
       const start = record.logOffset;
       const idx = allSorted.indexOf(record);
-      const end = idx < allSorted.length - 1 ? allSorted[idx + 1].logOffset : buffer.length;
-      return buffer.toString("utf-8", start, end);
+      const end = idx < allSorted.length - 1 ? allSorted[idx + 1].logOffset : undefined;
+      return readByteRange(logPath, start, end);
     });
     sendOk(res, parts.join(""));
   });
-
-  // --- Logs ---
 
   r("GET", "/api/loops/:id/logs", (_req, res, params) => {
     const logPath = manager.getLogPath(params.id);
@@ -250,8 +243,8 @@ export function registerLoopRoutes(manager: LoopManager, routes: RouteEntry[], r
       sendOk(res, "");
       return;
     }
-    const content = fs.readFileSync(logPath, "utf-8");
-    sendOk(res, tail(content, tailCount).join("\n"));
+    const lines = tailFileBounded(logPath, tailCount);
+    sendOk(res, lines.join("\n"));
   });
 
   r("GET", "/api/loops/:id/logs/stream", (_req, res, params) => {
@@ -270,46 +263,36 @@ export function registerLoopRoutes(manager: LoopManager, routes: RouteEntry[], r
     const query = parseQuery(_req.url);
     const tailCount = parseInt(query.get("tail") ?? "0", 10);
 
+    let initialOffset = 0;
+
     if (fs.existsSync(logPath)) {
-      const content = fs.readFileSync(logPath, "utf-8");
-      for (const line of tail(content, tailCount)) {
+      const lines = tailFileBounded(logPath, tailCount);
+      for (const line of lines) {
         if (line) {
           res.write(`data: ${line}\n\n`);
         }
       }
+      initialOffset = fs.statSync(logPath).size;
     }
 
-    let fileSize = fs.existsSync(logPath) ? fs.statSync(logPath).size : 0;
-
-    const watcher = fs.watch(logPath, (eventType) => {
-      if (eventType === "rename" && !fs.existsSync(logPath)) {
-        watcher.close();
+    const watcher = new IncrementalFileWatcher({
+      logPath,
+      initialOffset,
+      onLines: (lines) => {
+        for (const line of lines) {
+          res.write(`data: ${line}\n\n`);
+        }
+      },
+      onEnd: () => {
         res.write("event: end\ndata: {}\n\n");
         res.end();
-        return;
-      }
-
-      if (eventType === "change") {
-        try {
-          const stat = fs.statSync(logPath);
-          if (stat.size > fileSize) {
-            const fd = fs.openSync(logPath, "r");
-            const buf = Buffer.alloc(stat.size - fileSize);
-            fs.readSync(fd, buf, 0, buf.length, fileSize);
-            fs.closeSync(fd);
-            fileSize = stat.size;
-            for (const line of buf.toString().split("\n")) {
-              if (line) {
-                res.write(`data: ${line}\n\n`);
-              }
-            }
-          }
-        } catch {
-          watcher.close();
-          res.end();
-        }
-      }
+      },
+      onError: () => {
+        res.end();
+      },
     });
+
+    watcher.start();
 
     _req.on("close", () => {
       watcher.close();
@@ -341,14 +324,13 @@ export function registerLoopRoutes(manager: LoopManager, routes: RouteEntry[], r
       return;
     }
 
-    const buffer = fs.readFileSync(logPath);
     const allSorted = meta.runHistory.slice().sort((a, b) => a.logOffset - b.logOffset);
 
     const parts = records.map((record) => {
       const start = record.logOffset;
       const idx = allSorted.indexOf(record);
-      const end = idx < allSorted.length - 1 ? allSorted[idx + 1].logOffset : buffer.length;
-      return buffer.toString("utf-8", start, end);
+      const end = idx < allSorted.length - 1 ? allSorted[idx + 1].logOffset : undefined;
+      return readByteRange(logPath, start, end);
     });
 
     sendOk(res, parts.join(""));
