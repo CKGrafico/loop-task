@@ -1,53 +1,17 @@
 {
   "version": 1,
   "skills": {
-    "design-taste-frontend": {
-      "source": "leonxlnx/taste-skill",
+    "agentmemory": {
+      "source": "rohitg00/agentmemory",
       "sourceType": "github",
-      "skillPath": "skills/taste-skill/SKILL.md",
-      "computedHash": "899b84384f74f540ea5284d9b2e9234e050998b42eacc805410b518d4226c0b3"
+      "skillPath": "skills/remember/SKILL.md",
+      "computedHash": "agentmemory-skills-placeholder"
     },
-    "documentation-writer": {
-      "source": "github/awesome-copilot",
+    "find-skills": {
+      "source": "vercel-labs/skills",
       "sourceType": "github",
-      "skillPath": "skills/documentation-writer/SKILL.md",
-      "computedHash": "ee53d65b163cd7eb953a930c95841cfe398cc2c0bd24c06508bbaa07c432be35"
-    },
-    "fumadocs-component-docs": {
-      "source": "theorcdev/8bitcn-ui",
-      "sourceType": "github",
-      "skillPath": ".claude/skills/fumadocs-component-docs/SKILL.md",
-      "computedHash": "a138321af90f7f6806996dea4ca59e4e613f8de588dbdda5aa259db2513d0ff2"
-    },
-    "high-end-visual-design": {
-      "source": "leonxlnx/taste-skill",
-      "sourceType": "github",
-      "skillPath": "skills/soft-skill/SKILL.md",
-      "computedHash": "f730e4132775f13eea19e3dc39afc6bb453cfc0498872b127ad8f0d47cfd802d"
-    },
-    "inversify-hooks": {
-      "source": "ckgrafico/inversify-hooks",
-      "sourceType": "github",
-      "skillPath": "skills/inversify-hooks/SKILL.md",
-      "computedHash": "e67131906d824b0169153c999dd68fb490ecd59dc8991fba6420a92b3357114e"
-    },
-    "nextjs-app-router-patterns": {
-      "source": "wshobson/agents",
-      "sourceType": "github",
-      "skillPath": "plugins/frontend-mobile-development/skills/nextjs-app-router-patterns/SKILL.md",
-      "computedHash": "3a46e9093baecb3a85819529ce05006f817663f48d9e872868c32ae6049c0d5c"
-    },
-    "tailwind-design-system": {
-      "source": "wshobson/agents",
-      "sourceType": "github",
-      "skillPath": "plugins/frontend-mobile-development/skills/tailwind-design-system/SKILL.md",
-      "computedHash": "992ab1e874c4f4159aa18d4ff45d1c3f86f322f0bd2a6744cc32f7d6147f9f06"
-    },
-    "web-design-guidelines": {
-      "source": "vercel-labs/agent-skills",
-      "sourceType": "github",
-      "skillPath": "skills/web-design-guidelines/SKILL.md",
-      "computedHash": "f3bc47f890f42a44db1007ab390709ec368e4b8c089baee6b0007182236ac474"
+      "skillPath": "skills/find-skills/SKILL.md",
+      "computedHash": "781bd6d3f9b19f8c9af6b53d8d0e4876d0183841b565db34ca7092ffa412d111"
     }
   }
 }

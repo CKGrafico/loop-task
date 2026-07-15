@@ -34,14 +34,6 @@ Inspect `.opencode/agents/*.md` before spawning. Prefer the most specialized cus
 
 **Full wave protocol, pipeline phases, and concurrency limits:** see `/plan-apply` (authoritative). Max concurrent agents is `agents.maxConcurrent` in `.opencode/opencode-onboard.json`.
 
-**Available engineers:**
-
-| Engineer | File | Role |
-|---|---|---|
-| `frontend-engineer` | .opencode/agents/frontend-engineer.md | TUI frontend (Ink 7 + React 19, FSD, DI, design tokens, i18n) |
-| `docs-ui-engineer` | .opencode/agents/docs-ui-engineer.md | Docs website (Next.js 15, Fumadocs, Tailwind v4, design taste, MDX) |
-| `fullstack-engineer` | .opencode/agents/fullstack-engineer.md | Planning agent (mode: primary) — not spawned for implementation |
-
 ## Skills
 
 Skills live in `.agents/skills/`. Always installed: `@ob-default`, `@ob-guardrails-generic`, `@ob-guardrails-project`, `@browser-automation`. Agents load them via `@skill-name` in their `## Abilities` section.
