@@ -2,9 +2,11 @@ import { EventEmitter } from "node:events";
 import fs from "node:fs";
 import type { LoopOptions, LoopStatus, LoopMeta, RunRecord } from "../../types.js";
 import { computePhase, alignToPhase } from "../scheduling/index.js";
+import { RotatingWriteStream } from "../logging/rotating-log-stream.js";
 import type { TaskResolver, LoopControllerState } from "./types.js";
 import { runLoop } from "./loop-runner.js";
 import type { RunAccess } from "./loop-runner.js";
+import { Writable } from "node:stream";
 
 export type { TaskResolver } from "./types.js";
 export type { LoopControllerState } from "./types.js";
@@ -32,7 +34,7 @@ export class LoopController extends EventEmitter {
   readonly taskResolver: TaskResolver;
   private readonly projectDirectory: string | undefined;
   private remainingDelayMs: number | null = null;
-  private logStream: fs.WriteStream | null = null;
+  private logStream: import("node:stream").Writable | null = null;
   private loopPromise: Promise<void> | null = null;
   private _loopActive = false;
   private sessionStartedAt: string | null = null;
@@ -40,6 +42,7 @@ export class LoopController extends EventEmitter {
   private currentRunStartOffset: number = 0;
   private skippedCount = 0;
   private _silentChainCount = 0;
+  private _totalRunCount = 0;
 
   constructor(
     id: string,
@@ -72,6 +75,7 @@ export class LoopController extends EventEmitter {
     ).map((r) => ({ ...r, logOffset: r.logOffset ?? 0 }));
     this.skippedCount = state?.skippedCount ?? 0;
     this._silentChainCount = state?.silentChainCount ?? 0;
+    this._totalRunCount = state?.totalRunCount ?? this.runCount;
   }
 
   get status(): LoopStatus {
@@ -92,7 +96,7 @@ export class LoopController extends EventEmitter {
     this.skippedCount = 0;
     this.logStream?.end();
     this.abortController = new AbortController();
-    this.logStream = fs.createWriteStream(this.logPath, { flags: "a" });
+    this.logStream = RotatingWriteStream.create(this.logPath);
     if (this.options.interval === 0 && !this._stopAfterRun) {
       this._status = "idle";
       this.nextRunAt = null;
@@ -220,6 +224,7 @@ export class LoopController extends EventEmitter {
       runHistory: this.runHistory,
       skippedCount: this.skippedCount,
       silentChainCount: this._silentChainCount,
+      totalRunCount: this._totalRunCount,
     };
   }
 
@@ -234,6 +239,12 @@ export class LoopController extends EventEmitter {
 
   isMaxRunsReached(): boolean {
     return this._maxRunsReached;
+  }
+
+  checkLogRotation(): void {
+    if (this.logStream instanceof RotatingWriteStream) {
+      this.logStream.rotateIfNeeded();
+    }
   }
 
   private run(): Promise<void> {

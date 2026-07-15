@@ -1,7 +1,9 @@
 import fs from "node:fs";
+import { Writable } from "node:stream";
 import type { LoopOptions, RunRecord, TaskCommand, TaskStep, ExecutionResult } from "../../types.js";
 import { executeCommand } from "../command/command-runner.js";
 import { rotateLogIfNeeded } from "../logging/log-rotator.js";
+import { RotatingWriteStream } from "../logging/rotating-log-stream.js";
 import { parseStdout } from "../context/context-parser.js";
 import { interpolate } from "../context/template.js";
 import { resolveEffectiveCwd } from "../command/resolve-cwd.js";
@@ -14,7 +16,7 @@ export interface ExecuteRunAccess {
   lastRunAt: string | null;
   sessionStartedAt: string | null;
   nextRunAt: string | null;
-  logStream: fs.WriteStream | null;
+  logStream: Writable | null;
   runAbortController: AbortController | null;
   readonly logPath: string;
   readonly options: LoopOptions;
@@ -25,6 +27,7 @@ export interface ExecuteRunAccess {
   lastExitCode: number | null;
   lastDuration: number | null;
   emit(event: string, ...args: unknown[]): boolean;
+  checkLogRotation(): void;
 }
 
 export async function executeRunImpl(ctrl: ExecuteRunAccess, signal: AbortSignal): Promise<{ exitCode: number; totalDuration: number; chainContext: Record<string, unknown> }> {
@@ -86,6 +89,8 @@ export async function executeRunImpl(ctrl: ExecuteRunAccess, signal: AbortSignal
       )
     );
 
+    ctrl.checkLogRotation();
+
     let stepStdout = "";
     for (const r of stepResults) {
       if (r.status === "fulfilled") {
@@ -117,6 +122,8 @@ export async function executeRunImpl(ctrl: ExecuteRunAccess, signal: AbortSignal
 
   ctrl.lastExitCode = exitCode;
   ctrl.lastDuration = totalDuration;
+
+  ctrl.checkLogRotation();
 
   const logSize = fs.existsSync(ctrl.logPath) ? fs.statSync(ctrl.logPath).size - ctrl.currentRunStartOffset : 0;
   const runningRecord = ctrl.runHistory.find((r) => r.runNumber === ctrl.runCount);

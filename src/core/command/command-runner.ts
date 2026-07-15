@@ -1,10 +1,13 @@
 import fs from "node:fs";
+import { Writable } from "node:stream";
 import { execa, type ResultPromise } from "execa";
 import type { ExecutionResult } from "../../types.js";
 import { Logger } from "../../logger.js";
 import { formatDuration } from "../../duration.js";
 import { t } from "../../shared/i18n/index.js";
 import { MAX_CONTEXT_STDOUT_BYTES } from "../../shared/config/constants.js";
+import { StdoutCaptureTransform } from "./stdout-capture-transform.js";
+import { killProcessTree } from "./process-tree.js";
 
 function quoteArg(arg: string): string {
   if (arg.length === 0) return "''";
@@ -23,11 +26,28 @@ export function extractExitCode(error: unknown): number {
     : 1;
 }
 
+export interface WritableLogStream {
+  write(chunk: string | Buffer, cb?: (err?: Error | null) => void): boolean;
+  end(cb?: () => void): unknown;
+}
+
+const activePids = new Set<number>();
+
+export function getActivePids(): ReadonlySet<number> {
+  return activePids;
+}
+
+export function killAllActiveProcesses(): void {
+  for (const pid of activePids) {
+    killProcessTree(pid, "SIGTERM").catch(() => {});
+  }
+}
+
 export async function executeCommand(
   command: string,
   commandArgs: string[],
   cwd: string,
-  logStream: fs.WriteStream,
+  logStream: Writable,
   signal?: AbortSignal,
   runNumber?: number,
   captureStdout: boolean = false,
@@ -52,74 +72,84 @@ export async function executeCommand(
 
   const shellCommand = formatCommandLine(command, commandArgs);
   const needShell = /(\$\(|`|&&|\|\||;|>|<|\|)/.test(shellCommand);
+  const detachedOpt = process.platform !== "win32" ? { detached: true as const } : {};
   const child: ResultPromise = needShell
     ? execa(shellCommand, {
       stdout: "pipe",
       stderr: "pipe",
       stdin: "ignore",
+      buffer: false,
       cwd: cwd || undefined,
       cancelSignal: signal,
       shell: true,
       env: process.env,
+      killSignal: "SIGTERM",
+      ...detachedOpt,
     })
     : execa(command, commandArgs, {
       stdout: "pipe",
       stderr: "pipe",
       stdin: "ignore",
+      buffer: false,
       cwd: cwd || undefined,
       cancelSignal: signal,
       env: process.env,
+      killSignal: "SIGTERM",
+      ...detachedOpt,
     });
 
-  const stdoutChunks: string[] = [];
-  let stdoutTruncated = false;
-  let stdoutBytes = 0;
+  if (child.pid) {
+    activePids.add(child.pid);
+  }
 
-  child.stdout!.on("data", (chunk: Buffer) => {
-    logStream.write(chunk);
+  const stdoutCapture = captureStdout
+    ? new StdoutCaptureTransform(MAX_CONTEXT_STDOUT_BYTES)
+    : null;
 
-    if (captureStdout && !stdoutTruncated) {
-      const chunkStr = chunk.toString();
-      const chunkLen = Buffer.byteLength(chunkStr, "utf-8");
-
-      if (stdoutBytes + chunkLen > MAX_CONTEXT_STDOUT_BYTES) {
-        const remaining = MAX_CONTEXT_STDOUT_BYTES - stdoutBytes;
-        stdoutChunks.push(chunkStr.slice(0, remaining));
-        stdoutTruncated = true;
-        logStream.write(t("context.truncationWarning"));
-      } else {
-        stdoutChunks.push(chunkStr);
-        stdoutBytes += chunkLen;
-      }
-    }
-  });
-  child.stderr!.on("data", (chunk: Buffer) => {
-    logStream.write(chunk);
-  });
+  if (stdoutCapture) {
+    child.stdout!.pipe(stdoutCapture).pipe(logStream, { end: false });
+  } else {
+    child.stdout!.pipe(logStream, { end: false });
+  }
+  child.stderr!.pipe(logStream, { end: false });
 
   try {
     const result = await child;
     const endedAt = new Date();
     const duration = endedAt.getTime() - startedAt.getTime();
+    if (child.pid) activePids.delete(child.pid);
+    if (stdoutCapture?.isTruncated()) {
+      logStream.write(t("context.truncationWarning"));
+    }
     logStream.write(t("loop.exitMarker", { code: String(result.exitCode), duration: formatDuration(duration) }));
     return {
       exitCode: result.exitCode ?? 0,
       duration,
       startedAt,
       endedAt,
-      ...(captureStdout ? { stdout: stdoutChunks.join("") } : {}),
+      ...(captureStdout && stdoutCapture ? { stdout: stdoutCapture.getCaptured() } : {}),
     };
   } catch (error: unknown) {
     const endedAt = new Date();
     const duration = endedAt.getTime() - startedAt.getTime();
     const exitCode = extractExitCode(error);
+    if (child.pid) {
+      activePids.delete(child.pid);
+      if (signal?.aborted) {
+        killProcessTree(child.pid).catch(() => {});
+      }
+    }
+    if (stdoutCapture?.isTruncated()) {
+      logStream.write(t("context.truncationWarning"));
+    }
     logStream.write(t("loop.exitMarker", { code: exitCode, duration: formatDuration(duration) }));
+
     return {
       exitCode,
       duration,
       startedAt,
       endedAt,
-      ...(captureStdout ? { stdout: stdoutChunks.join("") } : {}),
+      ...(captureStdout && stdoutCapture ? { stdout: stdoutCapture.getCaptured() } : {}),
     };
   }
 }

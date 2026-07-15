@@ -18,7 +18,7 @@ export interface ChainExecuteOptions {
   runCount: number;
   logPath: string;
   runHistory: import("../../types.js").RunRecord[];
-  logStream: fs.WriteStream | null;
+  logStream: Writable | null;
   controller: LoopController;
 }
 
@@ -31,7 +31,7 @@ export interface ChainExecuteResult {
 export function executeChain(options: ChainExecuteOptions): Promise<ChainExecuteResult> {
   const { chainTargetId, exitCode, task, chainContext, cwd, signal, runCount, logPath, runHistory, logStream, controller } = options;
 
-  const nullStream = new Writable({ write(_chunk, _enc, cb) { cb(); } }) as unknown as fs.WriteStream;
+  const nullStream = new Writable({ write(_chunk, _enc, cb) { cb(); } });
 
   if (!chainTargetId) {
     return Promise.resolve({ runHistory, lastExitCode: exitCode, lastDuration: 0 });
@@ -90,7 +90,7 @@ export function executeChain(options: ChainExecuteOptions): Promise<ChainExecute
       let chainExitCode = 0;
       let chainDuration = 0;
 
-      const effectiveStream: fs.WriteStream = isSilent ? nullStream : (logStream ?? nullStream);
+      const effectiveStream: Writable = isSilent ? nullStream : (logStream ?? nullStream);
 
       for (const step of taskSteps) {
         const stepResults = await Promise.allSettled(

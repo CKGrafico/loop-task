@@ -20,8 +20,7 @@ vi.mock("node:fs", async () => {
     default: {
       ...actual,
       createWriteStream: (...args: unknown[]) => {
-        // Return a minimal WriteStream-like object instead of opening a real file
-        const stream = { end: vi.fn(), write: vi.fn(), destroyed: false, closed: false };
+        const stream = { end: vi.fn(), write: vi.fn(), destroyed: false, closed: false, on: vi.fn() };
         return stream;
       },
     },

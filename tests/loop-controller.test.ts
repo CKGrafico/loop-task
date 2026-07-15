@@ -16,8 +16,8 @@ const mockedExeca = vi.mocked(execa);
 function mockExecaSuccess(): void {
   mockedExeca.mockImplementation((() => {
     const child = Promise.resolve({ exitCode: 0, stdout: "", stderr: "", failed: false }) as never;
-    (child as { stdout: { on: () => void } }).stdout = { on: () => { } };
-    (child as { stderr: { on: () => void } }).stderr = { on: () => { } };
+    (child as { stdout: { on: () => void; pipe: () => void } }).stdout = { on: () => { }, pipe: () => child.stdout };
+    (child as { stderr: { on: () => void; pipe: () => void } }).stderr = { on: () => { }, pipe: () => child.stderr };
     return child;
   }) as never);
 }
@@ -29,8 +29,8 @@ function mockExecaAbortableRun(): void {
         reject({ exitCode: 1 });
       });
     }) as never;
-    (child as { stdout: { on: () => void } }).stdout = { on: () => { } };
-    (child as { stderr: { on: () => void } }).stderr = { on: () => { } };
+    (child as { stdout: { on: () => void; pipe: () => void } }).stdout = { on: () => { }, pipe: () => child.stdout };
+    (child as { stderr: { on: () => void; pipe: () => void } }).stderr = { on: () => { }, pipe: () => child.stderr };
     return child;
   }) as never);
 }

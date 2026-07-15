@@ -7,7 +7,7 @@ import { SettingsManager } from "../settings-manager.js";
 import { registerLoopRoutes } from "./route-loops.js";
 import { registerTaskRoutes } from "./route-tasks.js";
 import { registerProjectRoutes } from "./route-projects.js";
-import { registerMiscRoutes, registerSettingsRoutes } from "./route-misc.js";
+import { registerMiscRoutes, registerSettingsRoutes, registerDiagnosticsRoutes } from "./route-misc.js";
 
 export interface RouteDeps {
   manager: LoopManager;
@@ -31,6 +31,7 @@ export function registerRoutes(deps: RouteDeps): RouteEntry[] {
   registerProjectRoutes(projectManager, r);
   registerMiscRoutes(sseClients, r);
   registerSettingsRoutes(settingsManager, r);
+  registerDiagnosticsRoutes(manager, r);
 
   return routes;
 }

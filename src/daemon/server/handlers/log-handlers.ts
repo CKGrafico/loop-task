@@ -2,9 +2,8 @@ import fs from "node:fs";
 import type { IpcRequest } from "../../../types.js";
 import { send } from "../../ipc/send.js";
 import { t } from "../../../shared/i18n/index.js";
-import { LOG_TAIL_DEFAULT } from "../../../shared/config/constants.js";
-import { tail } from "../../../shared/tail.js";
-import { streamLogFollow } from "../../ipc/logs-stream.js";
+import { LOG_TAIL_DEFAULT, MAX_STREAM_INITIAL_BYTES } from "../../../shared/config/constants.js";
+import { tailFileBounded, readByteRange, IncrementalFileWatcher } from "../../../core/logging/bounded-log-reader.js";
 import type { HandlerContext } from "./loop-handlers.js";
 
 export function handleRunLog(
@@ -34,14 +33,13 @@ export function handleRunLog(
     return;
   }
 
-  const buffer = fs.readFileSync(logPath);
   const allSorted = meta.runHistory.slice().sort((a, b) => a.logOffset - b.logOffset);
 
   const parts = records.map((record) => {
     const start = record.logOffset;
     const idx = allSorted.indexOf(record);
-    const end = idx < allSorted.length - 1 ? allSorted[idx + 1].logOffset : buffer.length;
-    return buffer.toString("utf-8", start, end);
+    const end = idx < allSorted.length - 1 ? allSorted[idx + 1].logOffset : undefined;
+    return readByteRange(logPath, start, end);
   });
 
   send(socket, { type: "ok", data: parts.join("") });
@@ -76,11 +74,8 @@ export function handleRunLogStream(
   const stat = fs.statSync(logPath);
 
   if (stat.size > firstOffset) {
-    const fd = fs.openSync(logPath, "r");
-    const buf = Buffer.alloc(stat.size - firstOffset);
-    fs.readSync(fd, buf, 0, buf.length, firstOffset);
-    fs.closeSync(fd);
-    for (const line of buf.toString().split("\n")) {
+    const data = readByteRange(logPath, firstOffset, Math.min(stat.size, firstOffset + MAX_STREAM_INITIAL_BYTES));
+    for (const line of data.split("\n")) {
       if (line) {
         send(socket, { type: "data", line });
       }
@@ -93,36 +88,19 @@ export function handleRunLogStream(
     return;
   }
 
-  let fileSize = stat.size;
-
-  const watcher = fs.watch(logPath, (eventType) => {
-    if (eventType === "rename" && !fs.existsSync(logPath)) {
-      watcher.close();
-      send(socket, { type: "end" });
-      return;
-    }
-
-    if (eventType === "change") {
-      try {
-        const s = fs.statSync(logPath);
-        if (s.size > fileSize) {
-          const fd = fs.openSync(logPath, "r");
-          const buf = Buffer.alloc(s.size - fileSize);
-          fs.readSync(fd, buf, 0, buf.length, fileSize);
-          fs.closeSync(fd);
-          fileSize = s.size;
-          for (const line of buf.toString().split("\n")) {
-            if (line) {
-              send(socket, { type: "data", line });
-            }
-          }
-        }
-      } catch {
-        watcher.close();
-        send(socket, { type: "end" });
+  const watcher = new IncrementalFileWatcher({
+    logPath,
+    initialOffset: stat.size,
+    onLines: (lines) => {
+      for (const line of lines) {
+        send(socket, { type: "data", line });
       }
-    }
+    },
+    onEnd: () => send(socket, { type: "end" }),
+    onError: () => send(socket, { type: "end" }),
   });
+
+  watcher.start();
 
   socket.on("close", () => watcher.close());
   socket.on("error", () => watcher.close());
@@ -153,9 +131,43 @@ export function handleLogs(
   const tailCount = request.type === "logs" ? (request.payload.tail ?? LOG_TAIL_DEFAULT) : 0;
 
   if (follow) {
-    streamLogFollow(logPath, socket, tailCount);
+    streamLogFollowBounded(logPath, socket, tailCount);
   } else {
-    const content = fs.readFileSync(logPath, "utf-8");
-    send(socket, { type: "ok", data: tail(content, tailCount).join("\n") });
+    const lines = tailFileBounded(logPath, tailCount);
+    send(socket, { type: "ok", data: lines.join("\n") });
   }
+}
+
+function streamLogFollowBounded(
+  logPath: string,
+  socket: import("node:net").Socket,
+  tailCount: number,
+): void {
+  if (fs.existsSync(logPath)) {
+    const lines = tailFileBounded(logPath, tailCount);
+    for (const line of lines) {
+      if (line) {
+        send(socket, { type: "data", line });
+      }
+    }
+  }
+
+  const initialOffset = fs.existsSync(logPath) ? fs.statSync(logPath).size : 0;
+
+  const watcher = new IncrementalFileWatcher({
+    logPath,
+    initialOffset,
+    onLines: (lines) => {
+      for (const line of lines) {
+        send(socket, { type: "data", line });
+      }
+    },
+    onEnd: () => send(socket, { type: "end" }),
+    onError: () => send(socket, { type: "end" }),
+  });
+
+  watcher.start();
+
+  socket.on("close", () => watcher.close());
+  socket.on("error", () => watcher.close());
 }

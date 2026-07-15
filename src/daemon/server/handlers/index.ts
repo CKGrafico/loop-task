@@ -47,6 +47,8 @@ import {
   handleSettingsSet,
 } from "./settings-handlers.js";
 
+import { handleDiagnostics } from "./diagnostics-handlers.js";
+
 export {
   handleStart,
   handleUpdate,
@@ -73,6 +75,7 @@ export {
   handleProjectDelete,
   handleSettingsGet,
   handleSettingsSet,
+  handleDiagnostics,
 };
 
 /**
@@ -184,6 +187,10 @@ export async function dispatch(
 
     case "settings-set":
       await handleSettingsSet(request, socket, ctx.settingsManager);
+      break;
+
+    case "diagnostics":
+      handleDiagnostics(request, socket, ctx);
       break;
 
     default:
