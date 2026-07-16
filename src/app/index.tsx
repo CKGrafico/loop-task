@@ -4,10 +4,6 @@ import { App } from "./App.js";
 import { BRACKETED_PASTE_ENABLE, BRACKETED_PASTE_DISABLE, USER_TIMING_SWEEP_MS } from "../shared/config/constants.js";
 import { InversifyProvider } from "../shared/providers/InversifyProvider.js";
 
-// Node retains every performance.mark()/measure() entry until cleared.
-// React's development build emits them on each render, so a long-lived board
-// session grows the buffer without bound (#54). Sweeping keeps it flat no
-// matter which React build is loaded or what NODE_ENV the user exported.
 function startUserTimingSweep(): void {
   const timer = setInterval(() => {
     performance.clearMarks();

@@ -145,16 +145,20 @@ export interface FileWatcherOptions {
 const DEFAULT_REATTACH_DELAY_MS = 25;
 const DEFAULT_MAX_REATTACH_ATTEMPTS = 40;
 const DEFAULT_POLL_INTERVAL_MS = 100;
+const GENERATION_SCAN_MAX = 20;
 
-// Follows a log file across rotations. fs.watch tracks the inode on Linux,
-// so a rotation rename silently detaches the watch — and during the rotation
-// window the path briefly does not exist. Both cases re-attach to the path
-// instead of ending the stream. fs.watch alone is also not sufficient for
-// data flow: Windows defers directory-entry updates for files appended
-// through an open handle, so change events stop while the writer holds the
-// log open. A low-frequency poll backs the events up (tail -F style).
-// pause()/resume() let a consumer apply backpressure: while paused nothing
-// is read, the file itself is the buffer.
+interface CatchupEntry {
+  fd: number;
+  size: number;
+  offset: number;
+}
+
+function readFdBatch(fd: number, offset: number, maxBytes: number): { text: string; bytesRead: number } {
+  const buf = Buffer.allocUnsafe(maxBytes);
+  const bytesRead = fs.readSync(fd, buf, 0, maxBytes, offset);
+  return { text: buf.toString("utf-8", 0, bytesRead), bytesRead };
+}
+
 export class IncrementalFileWatcher {
   private watcher: fs.FSWatcher | null = null;
   private currentOffset: number;
@@ -173,9 +177,8 @@ export class IncrementalFileWatcher {
   private reattachTimer: ReturnType<typeof setTimeout> | null = null;
   private reattachAttempts = 0;
   private pollTimer: ReturnType<typeof setInterval> | null = null;
-  // identity of the file the offset refers to; 0/undefined on filesystems
-  // without inode numbers, where the shrink heuristic is the fallback
   private currentIno: number | null = null;
+  private catchup: CatchupEntry[] = [];
 
   constructor(options: FileWatcherOptions) {
     this.logPath = options.logPath;
@@ -221,6 +224,10 @@ export class IncrementalFileWatcher {
       clearInterval(this.pollTimer);
       this.pollTimer = null;
     }
+    for (const entry of this.catchup) {
+      try { fs.closeSync(entry.fd); } catch { /* */ }
+    }
+    this.catchup = [];
     this.watcher?.close();
     this.watcher = null;
   }
@@ -254,9 +261,6 @@ export class IncrementalFileWatcher {
     this.drain();
   }
 
-  // A rename event means rotation (file moved to .1, fresh file created) or
-  // deletion. Recover immediately when the path exists again — waiting a
-  // timer tick under heavy output loses whole rotation generations.
   private recoverFromRotation(): void {
     if (this.closed) return;
     if (!fs.existsSync(this.logPath)) {
@@ -266,19 +270,14 @@ export class IncrementalFileWatcher {
     try {
       const stat = fs.statSync(this.logPath);
       if (this.isRotation(stat)) {
-        this.readRotatedRemainder();
-        this.currentIno = stat.ino || null;
+        this.beginCatchup(stat);
       }
     } catch {
-      // raced another rotation; the next drain sorts it out
+      /* raced another rotation */
     }
     this.attach();
   }
 
-  // Rotation detection: the file at the path is no longer the bytes our
-  // offset refers to. A shrink below the offset always invalidates it (in-
-  // place truncation or replacement); a changed inode catches replacement
-  // even when the new file already grew past the old offset.
   private isRotation(stat: fs.Stats): boolean {
     if (stat.size < this.currentOffset) return true;
     if (this.currentIno !== null && stat.ino) {
@@ -287,30 +286,59 @@ export class IncrementalFileWatcher {
     return false;
   }
 
-  // The bytes between the last read offset and the end of the previous
-  // generation moved to `<logPath>.1` during rotation. Deliver them before
-  // continuing from the start of the fresh file. Bounded to one generation:
-  // if the log rotates faster than we read, older generations are skipped —
-  // the follower is a live view, not an archival reader (tail -F semantics).
-  private readRotatedRemainder(): void {
-    if (this.currentOffset === 0) return;
-    try {
-      const previous = `${this.logPath}.1`;
-      if (fs.existsSync(previous) && fs.statSync(previous).size > this.currentOffset) {
-        const result = readIncremental(
-          previous,
-          this.currentOffset,
-          INCREMENTAL_READ_CHUNK,
-          this.readBatchBytes,
-        );
-        if (result.lines.length > 0) {
-          this.onLines(result.lines);
-        }
+  private beginCatchup(currentStat: fs.Stats): void {
+    const gens: Array<{ fd: number; ino: number; size: number }> = [];
+    for (let index = 1; index <= GENERATION_SCAN_MAX; index++) {
+      const genPath = `${this.logPath}.${index}`;
+      if (!fs.existsSync(genPath)) break;
+      try {
+        const fd = fs.openSync(genPath, "r");
+        const stat = fs.fstatSync(fd);
+        gens.push({ fd, ino: stat.ino, size: stat.size });
+      } catch {
+        break;
       }
-    } catch {
-      // best effort — the remainder may already have rotated further
     }
+
+    let matched = -1;
+    if (this.currentIno !== null) {
+      matched = gens.findIndex((g) => g.ino !== 0 && g.ino === this.currentIno);
+    }
+    if (matched === -1 && this.currentOffset > 0 && gens.length > 0 && gens[0].size > this.currentOffset) {
+      matched = 0;
+    }
+
+    for (let index = matched; index >= 0; index--) {
+      const gen = gens[index];
+      const offset = index === matched ? Math.min(this.currentOffset, gen.size) : 0;
+      if (offset < gen.size) {
+        this.catchup.push({ fd: gen.fd, size: gen.size, offset });
+      } else {
+        try { fs.closeSync(gen.fd); } catch { /* */ }
+      }
+    }
+    for (let index = matched + 1; index < gens.length; index++) {
+      try { fs.closeSync(gens[index].fd); } catch { /* */ }
+    }
+
     this.currentOffset = 0;
+    this.currentIno = currentStat.ino || null;
+  }
+
+  private drainCatchupBatch(): void {
+    const head = this.catchup[0];
+    const toRead = Math.min(this.readBatchBytes, head.size - head.offset);
+    const { text, bytesRead } = readFdBatch(head.fd, head.offset, toRead);
+    head.offset += bytesRead;
+    if (head.offset >= head.size || bytesRead === 0) {
+      try { fs.closeSync(head.fd); } catch { /* */ }
+      this.catchup.shift();
+    }
+    this.pendingPoll = true;
+    const lines = splitLines(text);
+    if (lines.length > 0) {
+      this.onLines(lines);
+    }
   }
 
   private scheduleReattach(): void {
@@ -338,30 +366,7 @@ export class IncrementalFileWatcher {
     this.polling = true;
     this.pendingPoll = false;
     try {
-      let stat = fs.statSync(this.logPath);
-      if (this.isRotation(stat)) {
-        // rotation replaced the file under us — recover the unread tail of
-        // the previous generation before starting over
-        this.readRotatedRemainder();
-        stat = fs.statSync(this.logPath);
-      }
-      this.currentIno = stat.ino || null;
-      if (stat.size > this.currentOffset) {
-        const startOffset = this.currentOffset;
-        const result = readIncremental(
-          this.logPath,
-          this.currentOffset,
-          INCREMENTAL_READ_CHUNK,
-          this.readBatchBytes,
-        );
-        this.currentOffset = result.newOffset;
-        if (result.newOffset - startOffset >= this.readBatchBytes) {
-          this.pendingPoll = true;
-        }
-        if (result.lines.length > 0) {
-          this.onLines(result.lines);
-        }
-      }
+      this.drainOnce();
     } catch (err) {
       this.polling = false;
       if ((err as NodeJS.ErrnoException).code === "ENOENT") {
@@ -377,6 +382,36 @@ export class IncrementalFileWatcher {
     this.polling = false;
     if (this.pendingPoll && !this.paused && !this.closed) {
       setImmediate(() => this.drain());
+    }
+  }
+
+  private drainOnce(): void {
+    if (this.catchup.length > 0) {
+      this.drainCatchupBatch();
+      return;
+    }
+    const stat = fs.statSync(this.logPath);
+    if (this.isRotation(stat)) {
+      this.beginCatchup(stat);
+      this.pendingPoll = true;
+      return;
+    }
+    this.currentIno = stat.ino || null;
+    if (stat.size > this.currentOffset) {
+      const startOffset = this.currentOffset;
+      const result = readIncremental(
+        this.logPath,
+        this.currentOffset,
+        INCREMENTAL_READ_CHUNK,
+        this.readBatchBytes,
+      );
+      this.currentOffset = result.newOffset;
+      if (result.newOffset - startOffset >= this.readBatchBytes) {
+        this.pendingPoll = true;
+      }
+      if (result.lines.length > 0) {
+        this.onLines(result.lines);
+      }
     }
   }
 }

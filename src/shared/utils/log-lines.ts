@@ -2,9 +2,6 @@ import { LOG_LINE_CHARS_MAX } from "../config/constants.js";
 
 const TRUNCATION_MARKER = " …[line truncated]";
 
-// A single log line can be arbitrarily large (agents emit multi-megabyte
-// JSON lines). The board only ever displays a screen's width, so storing
-// unbounded lines in React state just risks memory (#54).
 export function clampLine(line: string, maxChars: number = LOG_LINE_CHARS_MAX): string {
   return line.length > maxChars ? line.slice(0, maxChars) + TRUNCATION_MARKER : line;
 }

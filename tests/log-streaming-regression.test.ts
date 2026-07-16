@@ -54,7 +54,6 @@ describe("IncrementalFileWatcher rotation survival", () => {
     fs.appendFileSync(logPath, "before-1\nbefore-2\n");
     await waitFor(() => received.length >= 2);
 
-    // rotate exactly like RotatingWriteStream.doRotate
     fs.renameSync(logPath, `${logPath}.1`);
     fs.writeFileSync(logPath, "");
 
@@ -84,7 +83,6 @@ describe("IncrementalFileWatcher rotation survival", () => {
     watchers.push(watcher);
     watcher.start();
 
-    // file disappears briefly (the rename→recreate gap)
     fs.rmSync(logPath);
     await sleep(30);
     fs.writeFileSync(logPath, "recovered\n");
@@ -112,6 +110,37 @@ describe("IncrementalFileWatcher rotation survival", () => {
 
     fs.rmSync(logPath);
     await waitFor(() => ended);
+  });
+
+  it("recovers every generation when multiple rotations happen while blind", async () => {
+    const logPath = path.join(tmpDir, "loop.log");
+    fs.writeFileSync(logPath, "");
+
+    const received: string[] = [];
+    const watcher = new IncrementalFileWatcher({
+      logPath,
+      initialOffset: 0,
+      reattachDelayMs: 10,
+      onLines: (lines) => received.push(...lines),
+      onEnd: () => {},
+      onError: () => {},
+    });
+    watchers.push(watcher);
+    watcher.start();
+
+    fs.appendFileSync(logPath, "gen1-a\ngen1-b\n");
+    await waitFor(() => received.length >= 2);
+
+    watcher.pause();
+    fs.renameSync(logPath, `${logPath}.1`);
+    fs.writeFileSync(logPath, "gen2-a\ngen2-b\n");
+    fs.renameSync(`${logPath}.1`, `${logPath}.2`);
+    fs.renameSync(logPath, `${logPath}.1`);
+    fs.writeFileSync(logPath, "gen3-a\n");
+    watcher.resume();
+
+    await waitFor(() => received.includes("gen3-a"));
+    expect(received).toEqual(["gen1-a", "gen1-b", "gen2-a", "gen2-b", "gen3-a"]);
   });
 
   it("does not read while paused and catches up on resume", async () => {
@@ -150,7 +179,7 @@ describe("followLogFile backpressure", () => {
     const dest = {
       write(chunk: string): boolean {
         written.push(chunk);
-        return false; // always report a full buffer
+        return false;
       },
       once(_event: "drain", listener: () => void): void {
         drainListener = listener;
@@ -170,13 +199,11 @@ describe("followLogFile backpressure", () => {
     fs.appendFileSync(logPath, "a\nb\n");
     await waitFor(() => written.length >= 2);
 
-    // watcher must now be paused: new data must NOT be read
     const before = written.length;
     fs.appendFileSync(logPath, "c\nd\n");
     await sleep(300);
     expect(written.length).toBe(before);
 
-    // drain the destination: the pending data flows again
     expect(drainListener).not.toBeNull();
     drainListener!();
     await waitFor(() => written.includes("c|") && written.includes("d|"));
@@ -272,7 +299,6 @@ describe("childEnv NODE_ENV scrubbing", () => {
     const env = childEnv();
     expect(env.NODE_ENV).toBeUndefined();
     expect(env.LOOP_TASK_DEFAULTED_NODE_ENV).toBeUndefined();
-    // the daemon's own env must stay untouched
     expect(process.env.NODE_ENV).toBe("production");
   });
 });

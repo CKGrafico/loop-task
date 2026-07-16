@@ -8,14 +8,6 @@ function safeCreateWriteStream(path: string): fs.WriteStream {
   return stream;
 }
 
-// Rotation is sequenced with writes instead of racing them. The previous
-// design rotated via setImmediate while writes were in flight, which had two
-// failure modes: a _write waiting for 'drain' on an innerStream that rotation
-// had just replaced deadlocked the stream forever (all later output stalled
-// and buffered), and renaming before the old stream's async open/flush
-// completed put a generation's bytes in the wrong file. Here a rotation
-// flushes and closes the old stream first, then renames, then continues;
-// writes arriving meanwhile wait in _rotationWaiters.
 export class RotatingWriteStream extends Writable {
   private innerStream: fs.WriteStream;
   private _bytesWritten = 0;
@@ -93,8 +85,6 @@ export class RotatingWriteStream extends Writable {
       callback();
     };
     const onError = (): void => {
-      // inner stream errors are suppressed (best-effort logging) — don't
-      // let a failed flush wedge the whole log stream
       inner.off("drain", onDrain);
       callback();
     };
@@ -139,7 +129,6 @@ export class RotatingWriteStream extends Writable {
       this._rotationWaiters = [];
       for (const waiter of waiters) waiter();
     };
-    // 'error' as well as 'finish': a failed flush must not wedge rotation
     old.once("error", finishRotation);
     old.end(finishRotation);
   }
@@ -160,7 +149,7 @@ export class RotatingWriteStream extends Writable {
         fs.renameSync(this.basePath, `${this.basePath}.1`);
       }
     } catch {
-      // best effort: a locked or vanished generation must not break logging
+      /* a locked or vanished generation must not break logging */
     }
 
     const dir = this.basePath.substring(0, this.basePath.lastIndexOf("/"));

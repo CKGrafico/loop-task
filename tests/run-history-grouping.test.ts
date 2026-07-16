@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { groupRunsByCycle } from "../src/tui/components/RunHistory.js";
+import { groupRunsByCycle } from "../src/widgets/right-panel/RunHistory.js";
 import type { RunRecord } from "../src/types.js";
 
 function makeRun(n: number, over: Partial<RunRecord> = {}): RunRecord {

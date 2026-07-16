@@ -1,7 +1,6 @@
 import { IncrementalFileWatcher } from "./bounded-log-reader.js";
 import { FOLLOW_READ_BATCH_BYTES } from "../../shared/config/constants.js";
 
-// net.Socket and http.ServerResponse both satisfy this shape.
 export interface FollowDestination {
   write(chunk: string): boolean;
   once(event: "drain", listener: () => void): unknown;
@@ -17,10 +16,6 @@ export interface FollowLogOptions {
   onError: (err: Error) => void;
 }
 
-// Streams a growing log file to a client without ever buffering more than
-// one read batch in daemon memory. When the destination reports its buffer
-// is full, reading stops until 'drain' — the log file itself is the queue,
-// so a slow client cannot grow the daemon heap (#54).
 export function followLogFile(options: FollowLogOptions): IncrementalFileWatcher {
   const { logPath, initialOffset, dest, formatLine, onEnd, onError } = options;
   const watcher = new IncrementalFileWatcher({

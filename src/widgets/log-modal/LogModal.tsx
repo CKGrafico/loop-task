@@ -38,7 +38,6 @@ export function LogModal(props: {
   const [searchQuery, setSearchQuery] = useState("");
   const [follow, setFollow] = useState(true);
   const [scrollOffset, setScrollOffset] = useState(0);
-  const bottomDistanceRef = useRef(0);
   const injectedLogService = useInject<LogService>(TYPES.LogService);
   const logServiceRef = useRef(injectedLogService);
   const logService = logServiceRef.current;

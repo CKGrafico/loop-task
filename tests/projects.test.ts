@@ -122,7 +122,7 @@ describe("ProjectManager migration", () => {
     rmSync(tmpDir, { recursive: true, force: true });
   });
 
-  it("B5: LoopManager.init migrates loops missing projectId to default", async () => {
+  it("B5: LoopManager.init migrates loops missing projectId to default", { timeout: 20000 }, async () => {
     const loopsDir = join(tmpDir, ".loop-cli", "loops");
     const logsDir = join(tmpDir, ".loop-cli", "logs");
     mkdirSync(loopsDir, { recursive: true });

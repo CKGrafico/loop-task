@@ -67,11 +67,6 @@ vi.mock("../src/daemon/managers/task-manager.js", () => ({
   })),
 }));
 
-// Mock the Log streaming / tail functions to avoid file system dependencies
-vi.mock("../src/ipc/handlers/logs-stream.js", () => ({
-  streamLogFollow: vi.fn(),
-}));
-
 vi.mock("../src/shared/tail.js", () => ({
   tail: vi.fn().mockReturnValue(["line1", "line2"]),
 }));
@@ -123,11 +118,11 @@ async function createServerAndClient(): Promise<{
   const taskManager = new TaskManager({} as any);
   const server = new IpcServer(manager, taskManager);
 
-  // Use a unique socket path in tmpDir
   mkdirSync(tmpDir, { recursive: true });
-  const socketPath = join(tmpDir, `test-${Date.now()}.sock`);
+  const socketPath = process.platform === "win32"
+    ? `\\\\.\\pipe\\loop-test-${process.pid}-${Date.now()}-${Math.floor(Math.random() * 1e6)}`
+    : join(tmpDir, `test-${Date.now()}.sock`);
 
-  // Override server's socketPath to use our temp path
   (server as any).socketPath = socketPath;
 
   await server.listen();

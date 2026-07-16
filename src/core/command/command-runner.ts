@@ -31,11 +31,6 @@ export interface WritableLogStream {
   end(cb?: () => void): unknown;
 }
 
-// entry.js defaults NODE_ENV to "production" so the Ink board runs the
-// production React build. That default is an implementation detail of this
-// process — user commands must see the environment the user actually set.
-// Keys are set to undefined rather than deleted: execa merges the given env
-// with process.env by default, so deleted keys would silently come back.
 export function childEnv(): NodeJS.ProcessEnv {
   if (process.env.LOOP_TASK_DEFAULTED_NODE_ENV !== "1") {
     return process.env;
