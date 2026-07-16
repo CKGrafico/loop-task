@@ -5,6 +5,7 @@ import { TYPES } from "../services/types.js";
 import type { LogService } from "../services/types.js";
 import { t } from "../i18n/index.js";
 import { LOG_LINES_MAX } from "../config/constants.js";
+import { appendClamped } from "../utils/log-lines.js";
 import type { View } from "../../app/types.js";
 
 export function useLogStream(
@@ -33,7 +34,7 @@ export function useLogStream(
       (line) =>
         setLogLines((prev) => {
           const next = prev[0] === t("board.logWaiting") ? [] : prev;
-          return [...next, line].slice(-LOG_LINES_MAX);
+          return appendClamped(next, line, LOG_LINES_MAX);
         }),
       onError
     );

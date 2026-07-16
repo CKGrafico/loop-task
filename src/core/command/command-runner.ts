@@ -31,6 +31,22 @@ export interface WritableLogStream {
   end(cb?: () => void): unknown;
 }
 
+// entry.js defaults NODE_ENV to "production" so the Ink board runs the
+// production React build. That default is an implementation detail of this
+// process — user commands must see the environment the user actually set.
+// Keys are set to undefined rather than deleted: execa merges the given env
+// with process.env by default, so deleted keys would silently come back.
+export function childEnv(): NodeJS.ProcessEnv {
+  if (process.env.LOOP_TASK_DEFAULTED_NODE_ENV !== "1") {
+    return process.env;
+  }
+  return {
+    ...process.env,
+    NODE_ENV: undefined,
+    LOOP_TASK_DEFAULTED_NODE_ENV: undefined,
+  };
+}
+
 const activePids = new Set<number>();
 
 export function getActivePids(): ReadonlySet<number> {
@@ -82,7 +98,7 @@ export async function executeCommand(
       cwd: cwd || undefined,
       cancelSignal: signal,
       shell: true,
-      env: process.env,
+      env: childEnv(),
       killSignal: "SIGTERM",
       ...detachedOpt,
     })
@@ -93,7 +109,7 @@ export async function executeCommand(
       buffer: false,
       cwd: cwd || undefined,
       cancelSignal: signal,
-      env: process.env,
+      env: childEnv(),
       killSignal: "SIGTERM",
       ...detachedOpt,
     });
@@ -176,6 +192,7 @@ export async function executeCommandForeground(
       stdin: "inherit",
       cwd: cwd || undefined,
       shell: true,
+      env: childEnv(),
     });
 
     const endedAt = new Date();

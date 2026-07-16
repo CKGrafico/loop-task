@@ -8,13 +8,22 @@ function safeCreateWriteStream(path: string): fs.WriteStream {
   return stream;
 }
 
+// Rotation is sequenced with writes instead of racing them. The previous
+// design rotated via setImmediate while writes were in flight, which had two
+// failure modes: a _write waiting for 'drain' on an innerStream that rotation
+// had just replaced deadlocked the stream forever (all later output stalled
+// and buffered), and renaming before the old stream's async open/flush
+// completed put a generation's bytes in the wrong file. Here a rotation
+// flushes and closes the old stream first, then renames, then continues;
+// writes arriving meanwhile wait in _rotationWaiters.
 export class RotatingWriteStream extends Writable {
   private innerStream: fs.WriteStream;
   private _bytesWritten = 0;
   private readonly maxBytes: number;
   private readonly maxGenerations: number;
   private readonly basePath: string;
-  private _pendingRotation = false;
+  private _rotating = false;
+  private _rotationWaiters: Array<() => void> = [];
 
   static create(
     basePath: string,
@@ -53,6 +62,19 @@ export class RotatingWriteStream extends Writable {
     _encoding: BufferEncoding,
     callback: (err?: Error | null) => void,
   ): void {
+    const proceed = (): void => this.writeChunk(chunk, callback);
+    if (this._rotating) {
+      this._rotationWaiters.push(proceed);
+      return;
+    }
+    if (this._bytesWritten >= this.maxBytes) {
+      this.rotateThen(proceed);
+      return;
+    }
+    proceed();
+  }
+
+  private writeChunk(chunk: Buffer, callback: (err?: Error | null) => void): void {
     this._bytesWritten += chunk.byteLength;
 
     if (!this.innerStream.writable) {
@@ -61,56 +83,84 @@ export class RotatingWriteStream extends Writable {
     }
 
     const canWrite = this.innerStream.write(chunk);
-    if (!canWrite) {
-      this.innerStream.once("drain", () => {
-        this._checkRotateDuringWrite();
-        callback();
-      });
-    } else {
-      this._checkRotateDuringWrite();
+    if (canWrite) {
       callback();
+      return;
     }
+    const inner = this.innerStream;
+    const onDrain = (): void => {
+      inner.off("error", onError);
+      callback();
+    };
+    const onError = (): void => {
+      // inner stream errors are suppressed (best-effort logging) — don't
+      // let a failed flush wedge the whole log stream
+      inner.off("drain", onDrain);
+      callback();
+    };
+    inner.once("drain", onDrain);
+    inner.once("error", onError);
   }
 
   override _final(callback: (err?: Error | null) => void): void {
-    this._pendingRotation = false;
-    this.innerStream.end(() => {
-      callback();
-    });
-  }
-
-  private _checkRotateDuringWrite(): void {
-    if (!this._pendingRotation && this._bytesWritten >= this.maxBytes) {
-      this._pendingRotation = true;
-      setImmediate(() => {
-        this._pendingRotation = false;
-        this.rotateIfNeeded();
+    const finish = (): void => {
+      this.innerStream.end(() => {
+        callback();
       });
+    };
+    if (this._rotating) {
+      this._rotationWaiters.push(finish);
+    } else {
+      finish();
     }
   }
 
   rotateIfNeeded(): boolean {
+    if (this._rotating) return false;
     if (this._bytesWritten < this.maxBytes) return false;
-    this.doRotate();
+    this.rotateThen(() => {});
     return true;
   }
 
-  private doRotate(): void {
+  private rotateThen(next: () => void): void {
+    this._rotationWaiters.push(next);
+    if (this._rotating) return;
+    this._rotating = true;
     this._bytesWritten = 0;
-    this.innerStream.end();
 
-    for (let index = this.maxGenerations; index >= 1; index--) {
-      const currentPath = `${this.basePath}.${index}`;
-      if (!fs.existsSync(currentPath)) continue;
-      if (index === this.maxGenerations) {
-        fs.unlinkSync(currentPath);
-        continue;
+    const old = this.innerStream;
+    let finished = false;
+    const finishRotation = (): void => {
+      if (finished) return;
+      finished = true;
+      this.shiftGenerations();
+      this._rotating = false;
+      const waiters = this._rotationWaiters;
+      this._rotationWaiters = [];
+      for (const waiter of waiters) waiter();
+    };
+    // 'error' as well as 'finish': a failed flush must not wedge rotation
+    old.once("error", finishRotation);
+    old.end(finishRotation);
+  }
+
+  private shiftGenerations(): void {
+    try {
+      for (let index = this.maxGenerations; index >= 1; index--) {
+        const currentPath = `${this.basePath}.${index}`;
+        if (!fs.existsSync(currentPath)) continue;
+        if (index === this.maxGenerations) {
+          fs.unlinkSync(currentPath);
+          continue;
+        }
+        fs.renameSync(currentPath, `${this.basePath}.${index + 1}`);
       }
-      fs.renameSync(currentPath, `${this.basePath}.${index + 1}`);
-    }
 
-    if (fs.existsSync(this.basePath)) {
-      fs.renameSync(this.basePath, `${this.basePath}.1`);
+      if (fs.existsSync(this.basePath)) {
+        fs.renameSync(this.basePath, `${this.basePath}.1`);
+      }
+    } catch {
+      // best effort: a locked or vanished generation must not break logging
     }
 
     const dir = this.basePath.substring(0, this.basePath.lastIndexOf("/"));

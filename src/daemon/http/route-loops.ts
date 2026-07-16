@@ -1,7 +1,8 @@
 import fs from "node:fs";
 import { LoopManager } from "../managers/loop-manager.js";
 import { LOG_TAIL_DEFAULT } from "../../shared/config/constants.js";
-import { tailFileBounded, readByteRange, IncrementalFileWatcher } from "../../core/logging/bounded-log-reader.js";
+import { tailFileBounded, readByteRange } from "../../core/logging/bounded-log-reader.js";
+import { followLogFile } from "../../core/logging/log-follower.js";
 import { buildLoopOptions } from "../../loop-config.js";
 import { validateContext } from "../../core/context/validate-context.js";
 import { sendOk, sendError, sendNotFound, parseQuery, readBody } from "./helpers.js";
@@ -275,14 +276,11 @@ export function registerLoopRoutes(manager: LoopManager, routes: RouteEntry[], r
       initialOffset = fs.statSync(logPath).size;
     }
 
-    const watcher = new IncrementalFileWatcher({
+    const watcher = followLogFile({
       logPath,
       initialOffset,
-      onLines: (lines) => {
-        for (const line of lines) {
-          res.write(`data: ${line}\n\n`);
-        }
-      },
+      dest: res,
+      formatLine: (line) => `data: ${line}\n\n`,
       onEnd: () => {
         res.write("event: end\ndata: {}\n\n");
         res.end();
@@ -291,8 +289,6 @@ export function registerLoopRoutes(manager: LoopManager, routes: RouteEntry[], r
         res.end();
       },
     });
-
-    watcher.start();
 
     _req.on("close", () => {
       watcher.close();

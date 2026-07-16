@@ -16,6 +16,18 @@ export const MAX_INMEMORY_RUN_HISTORY = 100;
 
 export const MAX_STREAM_INITIAL_BYTES = 256 * 1024;
 
+export const USER_TIMING_SWEEP_MS = 10_000;
+
+export const LOG_MODAL_LINES_MAX = 5000;
+
+export const LOG_LINE_CHARS_MAX = 10_000;
+
+export const FOLLOW_REATTACH_DELAY_MS = 100;
+
+export const FOLLOW_REATTACH_MAX_ATTEMPTS = 20;
+
+export const FOLLOW_READ_BATCH_BYTES = 1024 * 1024;
+
 export const SLEEP_CHUNK_MS = 200;
 
 export const DAEMON_SPAWN_TIMEOUT_MS = 5000;

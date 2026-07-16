@@ -3,8 +3,13 @@ import type { IpcRequest } from "../../../types.js";
 import { send } from "../../ipc/send.js";
 import { t } from "../../../shared/i18n/index.js";
 import { LOG_TAIL_DEFAULT, MAX_STREAM_INITIAL_BYTES } from "../../../shared/config/constants.js";
-import { tailFileBounded, readByteRange, IncrementalFileWatcher } from "../../../core/logging/bounded-log-reader.js";
+import { tailFileBounded, readByteRange } from "../../../core/logging/bounded-log-reader.js";
+import { followLogFile } from "../../../core/logging/log-follower.js";
 import type { HandlerContext } from "./loop-handlers.js";
+
+function ipcLine(line: string): string {
+  return JSON.stringify({ type: "data", line }) + "\n";
+}
 
 export function handleRunLog(
   request: Extract<IpcRequest, { type: "run-log" }>,
@@ -88,19 +93,14 @@ export function handleRunLogStream(
     return;
   }
 
-  const watcher = new IncrementalFileWatcher({
+  const watcher = followLogFile({
     logPath,
     initialOffset: stat.size,
-    onLines: (lines) => {
-      for (const line of lines) {
-        send(socket, { type: "data", line });
-      }
-    },
+    dest: socket,
+    formatLine: ipcLine,
     onEnd: () => send(socket, { type: "end" }),
     onError: () => send(socket, { type: "end" }),
   });
-
-  watcher.start();
 
   socket.on("close", () => watcher.close());
   socket.on("error", () => watcher.close());
@@ -154,19 +154,14 @@ function streamLogFollowBounded(
 
   const initialOffset = fs.existsSync(logPath) ? fs.statSync(logPath).size : 0;
 
-  const watcher = new IncrementalFileWatcher({
+  const watcher = followLogFile({
     logPath,
     initialOffset,
-    onLines: (lines) => {
-      for (const line of lines) {
-        send(socket, { type: "data", line });
-      }
-    },
+    dest: socket,
+    formatLine: ipcLine,
     onEnd: () => send(socket, { type: "end" }),
     onError: () => send(socket, { type: "end" }),
   });
-
-  watcher.start();
 
   socket.on("close", () => watcher.close());
   socket.on("error", () => watcher.close());

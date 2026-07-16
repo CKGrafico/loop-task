@@ -8,6 +8,8 @@ import { TYPES } from "../../shared/services/types.js";
 import type { LogService } from "../../shared/services/types.js";
 import { formatDate } from "../../shared/ui/format.js";
 import { copyToClipboard } from "../../shared/clipboard.js";
+import { LOG_MODAL_LINES_MAX } from "../../shared/config/constants.js";
+import { appendClamped, clampLines } from "../../shared/utils/log-lines.js";
 
 function colorForLine(line: string, run: RunRecord): string {
   if (line.includes("[Run #")) return theme.accent.loop;
@@ -30,7 +32,7 @@ export function LogModal(props: {
   onClose: () => void;
   onCopy?: () => void;
 }): React.ReactNode {
-  const [lines, setLines] = useState<string[]>(props.logLines);
+  const [lines, setLines] = useState<string[]>(() => clampLines(props.logLines, LOG_MODAL_LINES_MAX));
   const [streaming, setStreaming] = useState(false);
   const [searchMode, setSearchMode] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
@@ -45,7 +47,7 @@ export function LogModal(props: {
   const MAX_VISIBLE_LINES = Math.max(1, Math.floor(terminalHeight * 0.7) - 7);
 
   useEffect(() => {
-    setLines(props.logLines);
+    setLines(clampLines(props.logLines, LOG_MODAL_LINES_MAX));
   }, [props.logLines]);
 
   useEffect(() => {
@@ -55,7 +57,7 @@ export function LogModal(props: {
     const socket = logService.streamRunLog(
       props.loopId,
       props.run.runNumber,
-      (line) => setLines((prev) => [...prev, line]),
+      (line) => setLines((prev) => appendClamped(prev, line, LOG_MODAL_LINES_MAX)),
       () => setStreaming(false),
       () => setStreaming(false)
     );
