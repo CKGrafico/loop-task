@@ -140,7 +140,7 @@ describe("ProjectManager migration", () => {
       verbose: false,
       cwd: "",
       description: "test loop",
-      status: "stopped",
+      status: "idle",
       createdAt: new Date().toISOString(),
       sessionStartedAt: null,
       runCount: 0,

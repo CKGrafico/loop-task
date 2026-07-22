@@ -2,7 +2,7 @@
 
 Exhaustive reference for every meaningful Project property and behaviour.
 
-## Core Project Properties
+## Core Properties
 
 | Property | Meaning | Valid Values | Default | Lifecycle Impact | Edge Cases | Design Guidance |
 |---|---|---|---|---|---|---|
@@ -16,26 +16,22 @@ Exhaustive reference for every meaningful Project property and behaviour.
 
 ## The Default Project
 
-| Property | Value | Meaning |
-|---|---|---|
-| id | `"default"` | Reserved identifier |
-| name | `"Default"` | Fixed name |
-| color | `"#ffffff"` | White |
-| isSystem | `true` | Cannot be renamed or deleted |
-| directory | `""` | No default directory (falls through to process cwd) |
+| Property | Value |
+|---|---|
+| id | `"default"` |
+| name | `"Default"` |
+| color | `"#ffffff"` (white) |
+| isSystem | `true` |
+| directory | `""` (falls through to process cwd) |
 
-### Invariants of the default Project
+### Invariants
 
-- It **always** exists. It cannot be deleted.
-- Its `name` **cannot** be changed.
-- Its `color` **cannot** be changed.
-- Its `isSystem` flag is always `true`.
+- It always exists and cannot be deleted.
+- Its `name` and `color` cannot be changed.
 - Its `directory` can be changed.
 - It receives Loops from deleted Projects through reassignment.
 
 ## Project Color Palette
-
-The predefined color palette for Projects:
 
 | Hex Code | Colour Name |
 |---|---|
@@ -52,13 +48,11 @@ The predefined color palette for Projects:
 
 ## Working Directory Resolution
 
-When a Task executes, the working directory is resolved in this order:
-
-1. If the Loop has an explicit `cwd` property, use it.
-2. If the Loop has no `cwd`, use the Project's `directory` property.
+1. If the Loop has an explicit `cwd`, use it.
+2. If the Loop has no `cwd`, use the Project's `directory`.
 3. If the Project's `directory` is empty, use the runtime's process working directory.
 
-This resolution happens at **Task execution time**, not at Project or Loop creation time. Changing a Project's `directory` affects all Loops in that Project that do not have an explicit `cwd`.
+Resolution happens at **Task execution time**. Changing a Project's `directory` affects all Loops in that Project that lack an explicit `cwd`.
 
 ## Deletion and Reassignment
 
@@ -66,26 +60,24 @@ When a non-system Project is deleted:
 
 | Affected entity | Behaviour |
 |---|---|
-| Loops in the deleted Project | `projectId` is changed to `"default"` |
-| Loops' `cwd` | Unchanged (if it was set, it remains; if it was relying on the Project's directory, the Loop now falls back to the default Project's directory) |
+| Loops in the deleted Project | `projectId` changed to `"default"` |
+| Loops' `cwd` | Unchanged (if explicit; otherwise falls back to default Project's directory) |
 | Tasks | Unaffected (not scoped to Projects) |
-| Run history | Preserved on the reassigned Loops |
+| Run history | Preserved on reassigned Loops |
 | The deleted Project | Permanently removed; cannot be restored |
 
-### Side effect of reassignment on working directory
+### Side effect on working directory
 
-If a Loop in the deleted Project had no explicit `cwd` and relied on the Project's `directory`, the Loop now falls back to the default Project's `directory` (or the process cwd). This may cause Tasks to execute in a different directory than expected.
-
-**Recommendation**: Either set an explicit `cwd` on Loops that depend on a specific directory, or ensure the default Project's `directory` is set appropriately before deleting Projects.
+If a Loop relied on the deleted Project's `directory` without an explicit `cwd`, it now falls back to the default Project's directory (or process cwd). This may cause Tasks to execute in an unexpected directory.
 
 ## What Projects Do Not Provide
 
-| Capability | Does not exist in Loop Task |
+| Capability | Does not exist |
 |---|---|
-| Per-Project variables or environment variables | Use Task `context` or the runtime environment |
+| Per-Project variables or environment variables | Use Task `context` or external secret management |
 | Per-Project credentials or secrets | Use external secret management |
 | Project-scoped access control | All Loops are accessible regardless of Project |
 | Execution isolation between Projects | Loops in different Projects can access the same resources |
-| Project-scoped Task namespaces | Tasks are global, not scoped to Projects |
-| Project hierarchy or nesting | Projects are flat; no parent-child relationships |
-| Project-level concurrency limits | Concurrency is managed per-Loop, not per-Project |
+| Project-scoped Task namespaces | Tasks are global |
+| Project hierarchy or nesting | Projects are flat |
+| Project-level concurrency limits | Concurrency is per-Loop |

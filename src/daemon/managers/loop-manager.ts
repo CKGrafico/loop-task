@@ -46,7 +46,7 @@ export class LoopManager {
 
     const saved = loadAllLoops();
     let restarted = 0;
-    const shouldAutoStart = (s: string) => s !== "stopped" && s !== "idle";
+    const shouldAutoStart = (s: string) => s !== "idle";
     for (const meta of saved) {
       if (!meta.projectId) {
         meta.projectId = "default";
@@ -239,7 +239,7 @@ export class LoopManager {
 
   reconcile(newLoops: LoopMeta[]): void {
     const newIds = new Set(newLoops.map((l) => l.id));
-    const shouldAutoStart = (s: string) => s !== "stopped" && s !== "idle";
+    const shouldAutoStart = (s: string) => s !== "idle";
 
     for (const [existingId, entry] of this.loops) {
       if (!newIds.has(existingId)) {

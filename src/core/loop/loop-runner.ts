@@ -163,8 +163,8 @@ export async function runLoop(ctrl: RunAccess): Promise<void> {
       }
     }
   } finally {
-    if (ctrl._status !== "stopped" && ctrl._status !== "idle" && ctrl._status !== "paused" && !ctrl._maxRunsReached) {
-      ctrl._status = "stopped";
+    if (ctrl._status !== "idle" && ctrl._status !== "paused" && !ctrl._maxRunsReached) {
+      ctrl._status = "idle";
     }
   }
 }

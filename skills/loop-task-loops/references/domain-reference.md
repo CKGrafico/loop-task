@@ -2,14 +2,14 @@
 
 Exhaustive reference for every meaningful Loop property.
 
-## Core Loop Properties
+## Core Properties
 
 | Property | Meaning | Valid Values | Default | Lifecycle Impact | Edge Cases | Design Guidance |
 |---|---|---|---|---|---|---|
-| id | Unique identifier | 8-char hex string | Auto-generated | Immutable | Should not be reused after deletion | Never hardcode; treat as opaque |
-| purpose (description) | Human-readable statement of the recurring objective | Non-empty string | Required | Visible in listings and logs; no execution effect | Empty descriptions are rejected at creation | Write a clear one-sentence goal |
-| cadence (interval) | How often iterations become eligible | Positive integer (ms), or 0 for manual | Required | Defines the rhythm of execution | 0 = manual-only (never auto-schedules) | Choose the slowest cadence that meets the objective |
-| intervalHuman | Human-readable representation of the cadence | Strings like "30s", "5m", "1h", "1d", "1w" | Derived from interval | Display only; does not affect execution | Must match the numeric interval | Use the human-readable form for clarity |
+| id | Unique identifier | 8-char hex string | Auto-generated | Immutable | Should not be reused after deletion | Treat as opaque |
+| description | Human-readable statement of the recurring objective | Non-empty string | Required | Visible in listings and logs; no execution effect | Empty descriptions are rejected at creation | Write a clear one-sentence goal |
+| interval | How often iterations become eligible | Positive integer (ms), or 0 for manual | Required | Defines the rhythm of execution | 0 = manual-only (never auto-schedules) | Choose the slowest cadence that meets the objective |
+| intervalHuman | Human-readable representation of the cadence | Strings like "30s", "5m", "1h", "1d", "1w" | Derived from interval | Display only | Must match the numeric interval | Use the human-readable form for clarity |
 | taskId | References the initial Task for each iteration | Valid Task ID string, or null | null | When null, the Loop uses its inline command | If the referenced Task is deleted, the Loop fails at execution time | Prefer named Tasks over inline commands for reusability |
 | command | Inline executable payload (used when taskId is null) | Non-empty string | "" (empty) | Executes as the initial work of each iteration | Ignored when taskId references a valid Task | Use for simple one-off Loops; prefer Tasks for chains |
 | commandArgs | Arguments to the inline payload | Array of strings | [] | Passed alongside command | Ignored when taskId references a valid Task | Split payload into command + args for clarity |
@@ -22,9 +22,7 @@ Exhaustive reference for every meaningful Loop property.
 | context | Initial key-value pairs seeded into every iteration | Flat object (string/number/boolean/null values) | undefined | Merged into the iteration context before the first Task executes | Loop context overrides Task context for the same key; nested objects and arrays are rejected by validation | Use for environment-specific values that never change across iterations |
 | offset | Overrides the computed phase for spread scheduling | Integer (ms), or null | null | When null, phase is auto-computed from a hash of the Loop ID | Only affects the first-run delay alignment | Use null unless you need precise alignment with external schedules |
 
-## Runtime State Properties
-
-These properties reflect the current state of a Loop. They are persisted and restored across interruptions.
+## Runtime State
 
 | Property | Meaning | Values | Persistence |
 |---|---|---|---|
@@ -41,8 +39,6 @@ These properties reflect the current state of a Loop. They are persisted and res
 | skippedCount | Number of missed cadence points | Non-negative integer | Persisted |
 
 ## RunRecord Properties
-
-Each entry in the run history contains:
 
 | Property | Meaning |
 |---|---|

@@ -159,12 +159,12 @@ describe("LoopManager", () => {
       expect(projectManager.getAll().length).toBeGreaterThanOrEqual(1);
     });
 
-    it("does not restart loops with stopped/idle status", () => {
-      const meta = makeLoopMeta({ id: "stopped1", status: "stopped" });
+    it("does not restart loops with idle status", () => {
+      const meta = makeLoopMeta({ id: "stopped1", status: "idle" });
       saveLoop(meta);
 
       manager.init();
-      // The controller should have been created but start() not called for stopped loops
+      // The controller should have been created but start() not called for idle loops
       expect(mockControllerInstance.start).not.toHaveBeenCalled();
     });
 

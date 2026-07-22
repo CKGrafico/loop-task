@@ -63,7 +63,7 @@ export interface LoopState {
   shuttingDown: boolean;
 }
 
-export type LoopStatus = "running" | "paused" | "idle" | "stopped" | "waiting";
+export type LoopStatus = "running" | "paused" | "idle" | "waiting";
 
 export type RunStatus = "running" | "completed";
 

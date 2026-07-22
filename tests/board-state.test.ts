@@ -98,8 +98,7 @@ describe("board state", () => {
     expect(cycleStatusFilter("running")).toBe("waiting");
     expect(cycleStatusFilter("waiting")).toBe("paused");
     expect(cycleStatusFilter("paused")).toBe("idle");
-    expect(cycleStatusFilter("idle")).toBe("stopped");
-    expect(cycleStatusFilter("stopped")).toBe("all");
+    expect(cycleStatusFilter("idle")).toBe("all");
   });
 });
 

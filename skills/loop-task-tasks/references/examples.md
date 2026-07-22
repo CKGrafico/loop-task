@@ -1,43 +1,37 @@
 # Task Examples
 
-All examples use a conceptual YAML-like notation for illustration. **This is not a real configuration format.** It exists only to show the structure of Tasks, their chains, and context flow.
+All examples use a conceptual YAML-like notation. **This is not a real configuration format.**
 
 ---
 
 ## Example 1: File Backup with Verification
 
 ```yaml
-# Conceptual representation — not a real configuration format
 tasks:
   check-source:
     purpose: Verify the source file exists and is readable
-    consumes: nothing
     produces: { sourcePath, sourceSize }
     on-success: copy-file
-    on-failure: none (source missing, nothing to back up)
+    on-failure: none (source missing)
 
   copy-file:
-    purpose: Copy the source file to the backup location
+    purpose: Copy the source to the backup location
     consumes: { sourcePath }
     produces: { backupPath, copiedSize }
     on-success: verify-copy
-    on-failure: none (copy failed)
+    on-failure: none
 
   verify-copy:
     purpose: Compare the backup against the source
     consumes: { sourceSize, copiedSize }
     on-success: finalize-backup
-    on-failure: none (verification failed, backup is kept for investigation)
+    on-failure: none
 
   finalize-backup:
     purpose: Record the successful backup
     consumes: { backupPath, copiedSize }
     on-success: none
     on-failure: none
-
-terminal-outcomes:
-  success: File backed up and verified
-  failure: Source missing, copy failed, or verification failed
 ```
 
 ---
@@ -45,38 +39,29 @@ terminal-outcomes:
 ## Example 2: API Health Gate
 
 ```yaml
-# Conceptual representation — not a real configuration format
 tasks:
   call-api:
     purpose: Send a request to the target endpoint
-    consumes: nothing
     produces: { statusCode, responseTime }
     on-success: evaluate-response
-    on-failure: none (request could not be sent)
+    on-failure: none
 
   evaluate-response:
-    purpose: Interpret the API response and determine health
+    purpose: Interpret the API response
     consumes: { statusCode, responseTime }
-    # Internally: if statusCode >= 200 and statusCode < 300 then exit 0; else exit 1
+    # Internally: if statusCode >= 200 and < 300 then exit 0; else exit 1
     on-success: none (healthy)
-    on-failure: none (unhealthy but no recovery defined — iteration ends)
+    on-failure: none (unhealthy — no recovery defined)
 ```
-
-**Context flow**:
-- `call-api` produces `{ statusCode, responseTime }` via JSON stdout.
-- `evaluate-response` consumes them via `{{statusCode}}` interpolation in its payload.
-- The final result depends on the evaluate-response Task's exit code.
 
 ---
 
 ## Example 3: Issue Processing with Recovery
 
 ```yaml
-# Conceptual representation — not a real configuration format
 tasks:
   find-issue:
     purpose: Query for a work item labelled "ready"
-    consumes: nothing
     produces: { number, title, labels }
     on-success: claim-issue
     on-failure: none (no ready issues)
@@ -84,9 +69,8 @@ tasks:
   claim-issue:
     purpose: Assign the issue to prevent duplicates
     consumes: { number }
-    produces: nothing
     on-success: process-issue
-    on-failure: none (issue already claimed by another process)
+    on-failure: none (already claimed)
 
   process-issue:
     purpose: Execute the work described by the issue
@@ -114,21 +98,11 @@ tasks:
     on-failure: none
 ```
 
-**Context flow**:
-1. `find-issue` produces `{ number, title, labels }`.
-2. `claim-issue` consumes `{{number}}`. No new structured context.
-3. `process-issue` consumes `{{number}}`, `{{title}}`, `{{labels}}`. Produces `{ resultSummary }`.
-4. `verify-result` consumes `{{number}}`, `{{resultSummary}}`.
-5. `close-issue` / `release-issue` consume `{{number}}`.
-
-All context from steps 1–3 is available to steps 4–6. The `output` key is not used — all values are named JSON keys.
-
 ---
 
 ## Example 4: Multi-Step Build Pipeline
 
 ```yaml
-# Conceptual representation — not a real configuration format
 task:
   name: build-and-test
   steps:
@@ -137,42 +111,33 @@ task:
           - command: "fetch-dependency-a"
           - command: "fetch-dependency-b"
           - command: "fetch-dependency-c"
-        # All three run in parallel. Step fails if any fails.
+        # All three run in parallel.
 
     - step-2-build:
         commands:
           - command: "build-project"
-        # Sequential. Receives context from step 1.
 
     - step-3-test:
         commands:
           - command: "run-test-suite"
-        # Sequential. Receives context from steps 1 and 2.
 
   on-success: none
   on-failure: none
 ```
 
-**Key points**:
-- Step 1 fetches three dependencies concurrently.
-- Steps 2 and 3 are sequential, each depending on the previous.
-- If step 1 fails, steps 2 and 3 are skipped.
-- If step 2 fails, step 3 is skipped.
-- Stdout from each step is captured and parsed for context.
+Step 1 fetches three dependencies concurrently. Steps 2 and 3 are sequential. If step 1 fails, steps 2 and 3 are skipped.
 
 ---
 
 ## Example 5: Conditional Processing via Gate Task
 
 ```yaml
-# Conceptual representation — not a real configuration format
 tasks:
   fetch-data:
     purpose: Retrieve data and emit its type
-    consumes: nothing
     produces: { dataType, dataContent }
     on-success: route-on-type
-    on-failure: none (fetch failed)
+    on-failure: none
 
   route-on-type:
     purpose: Read dataType from context and exit accordingly
@@ -194,18 +159,11 @@ tasks:
     on-failure: none
 ```
 
-**Context flow**:
-- `fetch-data` produces `{ dataType, dataContent }`.
-- `route-on-type` reads `{{dataType}}` from context and uses shell logic to exit 0 or 1.
-- `handle-urgent` and `handle-normal` read `{{dataContent}}` from the same context.
-- The routing decision is made by the gate Task's executable payload, not by Loop Task itself.
-
 ---
 
 ## Example 6: Shared Finalization
 
 ```yaml
-# Conceptual representation — not a real configuration format
 tasks:
   step-a:
     purpose: Perform the first operation
@@ -223,36 +181,28 @@ tasks:
   step-c:
     purpose: Perform the final operation
     consumes: { stepBResult }
-    produces: nothing
     on-success: cleanup
     on-failure: cleanup
 
   cleanup:
     purpose: Release resources and finalize
-    consumes: whatever context is available
     on-success: none
     on-failure: none
 ```
 
-**Key points**:
-- `cleanup` is referenced by three different predecessors.
-- It handles both success-path finalization (from step-c) and failure recovery.
-- It receives whatever context has accumulated up to its invocation point.
-- It must not assume that all context keys are present (e.g., when called from step-a failure, `stepBResult` does not exist).
-```
+`cleanup` is referenced by three predecessors. It handles both success-path finalization and failure recovery. It must not assume all context keys are present.
 
 ---
 
 ## Example 7: Idempotent Resource Creation
 
 ```yaml
-# Conceptual representation — not a real configuration format
 tasks:
   check-resource:
     purpose: Determine whether the resource already exists
     produces: { resourceExists, resourceId }
     on-success: route-on-existence
-    on-failure: none (check failed)
+    on-failure: none
 
   route-on-existence:
     purpose: Read resourceExists from context and exit accordingly
@@ -265,7 +215,7 @@ tasks:
     purpose: Create the resource
     produces: { resourceId }
     on-success: use-resource
-    on-failure: none (creation failed)
+    on-failure: none
 
   use-existing-resource:
     purpose: Proceed with the existing resource
@@ -280,8 +230,4 @@ tasks:
     on-failure: none
 ```
 
-**Key points**:
-- The Task checks first and only creates when the resource does not exist.
-- This makes the Task safe to run on repeated iterations.
-- The "already exists" path is not an error — it is a successful state.
-- Context from the check is available to downstream Tasks regardless of which path was taken.
+The "already exists" path is not an error — it is a successful state.

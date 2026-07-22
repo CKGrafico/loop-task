@@ -2,41 +2,27 @@
 
 ## Verified Condition Model
 
-Loop Task does **not** provide a first-class Condition entity. There are no `Condition` types, no conditional expressions, and no switch/case routing.
-
-Conditions are modelled through **Task result semantics**:
+Loop Task has **no** first-class Condition entity. No `Condition` types, no conditional expressions, no switch/case routing. The **only** native routing mechanism is Task result semantics:
 
 1. A Task evaluates the condition.
-2. **Success** (exit code 0) selects `onSuccess`.
-3. **Failure** (exit code non-zero) selects `onFailure`.
-
-This is the **only** native condition mechanism in Loop Task.
+2. Success (exit code 0) selects `onSuccess`.
+3. Failure (exit code non-zero) selects `onFailure`.
 
 ## Three Concepts to Distinguish
 
 ### 1. Domain condition
 
-A real-world decision the system must make:
-
-- Does eligible work exist?
-- Are tests passing?
-- Is the deployment healthy?
-- Is the branch synchronized?
-- Does approval exist?
-- Has the resource been modified?
+A real-world decision: does work exist, are tests passing, is the deployment healthy, is the branch synchronized, does approval exist.
 
 ### 2. Task evaluation
 
-The Task's executable payload evaluates the condition. The Task runs a process (a shell command, a script, an agent) that checks the external state and exits with the appropriate code.
+The Task's executable payload evaluates the condition by checking external state and exiting with the appropriate code.
 
 ### 3. Transition result
 
-The Task expresses the outcome as success or failure, which selects one of the two available transitions:
+The Task expresses the outcome as success or failure, selecting one of the two available transitions.
 
-- `onSuccess` — the condition was met
-- `onFailure` — the condition was not met
-
-## Condition Use Cases and Recommended Representations
+## Condition Use Cases
 
 ### Continue only when work exists
 
@@ -44,10 +30,8 @@ The Task expresses the outcome as success or failure, which selects one of the t
 selection-task:
   purpose: Find one eligible work item
   on-success: process-work
-  on-failure: none (no work — iteration terminates, Loop waits for next cadence)
+  on-failure: none (no work — chain terminates, Loop waits for next cadence)
 ```
-
-When no work exists, the chain terminates cleanly. The Loop waits for the next cadence and tries again.
 
 ### Continue only when synchronization is needed
 
@@ -56,7 +40,7 @@ check-sync:
   purpose: Compare local and remote state
   produces: { needsSync, lastSyncTimestamp }
   on-success: perform-sync
-  on-failure: none (already synchronized — iteration terminates)
+  on-failure: none (already synchronized — chain terminates)
 ```
 
 ### Route to recovery when validation fails
@@ -78,87 +62,78 @@ find-work:
   on-failure: none
 ```
 
-This is the "empty-work" pattern. See the Loops skill for detailed guidance.
-
 ### Route different outcomes through success and failure
 
 ```
 health-check:
   purpose: Evaluate service health
-  on-success: none (healthy — iteration terminates)
+  on-success: none (healthy — chain terminates)
   on-failure: attempt-recovery
 ```
 
 ## Limitation: Two Result Channels
 
-A Task produces exactly one of two results: success or failure. This binary model cannot directly represent tri-state or multi-way conditions.
+A Task produces exactly one of two results. The binary model cannot directly represent tri-state conditions (e.g., "healthy / degraded / down").
 
-### Workarounds for tri-state conditions
+### Workaround 1: Two successive Tasks
 
-**Approach 1: Two successive Tasks**
-
-The first Task distinguishes between two states. The second (reached via a transition) distinguishes between the remaining states.
+The first Task distinguishes between two states. The second (reached via a transition) distinguishes the remaining states:
 
 ```
-# Conceptual representation
 check-health:
   purpose: Is the service healthy?
   on-success: none (healthy)
   on-failure: check-degraded
 
 check-degraded:
-  purpose: Is the service degraded (partially working) or down?
-  on-success: notify-degraded (degraded but partially functional)
-  on-failure: notify-down (service is down)
+  purpose: Is the service degraded or down?
+  on-success: notify-degraded
+  on-failure: notify-down
 ```
 
-**Approach 2: Context-based routing with a gate Task**
+### Workaround 2: Context-based routing with a gate Task
 
 Encode the state in the Task's stdout as context, and have a downstream "gate" Task read and act on it:
 
 ```
-# Conceptual representation
 health-check:
   purpose: Evaluate health and emit status
   produces: { healthStatus: "healthy" | "degraded" | "down" }
-  on-success: route-on-status (always succeeds so chain continues)
-  on-failure: notify-down (internal error during check)
+  on-success: route-on-status (always succeeds)
+  on-failure: notify-down (internal error)
 
 route-on-status:
-  purpose: Read healthStatus from context and act accordingly
+  purpose: Read healthStatus from context and exit accordingly
   consumes: { healthStatus }
-  on-success: none (handled internally based on status)
-  on-failure: none
+  # Internally: if healthStatus == "critical" then exit 0; else exit 1
+  on-success: handle-critical
+  on-failure: handle-non-critical
 ```
 
-Limitation: The "route-on-status" Task must internally branch based on the context value, using shell-level `if`/`case` logic. Loop Task routing still depends on the exit code, not context values.
+Routing still depends on the exit code, not context values. The gate Task embeds its routing logic in its executable payload.
 
-### When tri-state is not worth the complexity
+## What Conditions Are Not
 
-If the distinction between "degraded" and "down" does not affect the automation flow (both route to the same notification), a single binary check is sufficient.
-
-## What Conditions Are NOT
-
-| Concept | Does not exist in Loop Task |
+| Concept | Does not exist |
 |---|---|
 | First-class Condition entity | No `Condition` type exists |
 | Arbitrary conditional expressions | Only success/failure of a Task |
 | Switch/case routing | Only two transitions per Task |
-| Deducted conditions from context values | Routing depends on exit code only, not context contents |
+| Routing from context values | Depends on exit code, not context contents |
 | Multiple outgoing transitions | At most one successor per result |
-| Conditional guards on transitions | Not supported — the transition is always followed when defined |
-| Predicates on context keys | Not supported — use a gate Task that reads context and exits accordingly |
+| Conditional guards on transitions | Transition is always followed when defined |
+| Predicates on context keys | Use a gate Task that reads context and exits accordingly |
 
 ## Recommended Practices
 
-1. **Design selection Tasks explicitly for condition evaluation.** A Task whose purpose is "find work" should succeed when work is found and fail when it is not.
+1. **Design selection Tasks explicitly for condition evaluation.** "Find work" should succeed when work is found, fail when it is not.
 
-2. **Separate condition evaluation from action.** Use one Task to check the condition and another to act on it. This makes the flow readable and testable.
+2. **Separate condition evaluation from action.** One Task checks the condition, another acts on it.
 
-3. **Use failure-without-onFailure for "no work" states.** This is the quietest and most correct representation of "nothing to do."
+3. **Use failure-without-onFailure for "no work" states.** The quietest and most correct representation of "nothing to do."
 
 4. **Avoid using success to mean "nothing to do" when a successor is defined.** If `onSuccess` points to a "process work" Task, succeeding with no work causes the successor to execute on empty data.
 
-5. **Make condition Tasks produce structured context on success.** When a selection Task succeeds, it should emit the data the successor needs (IDs, titles, state). This avoids the successor having to re-query.
+5. **Make condition Tasks produce structured context on success.** Emit the data the successor needs (IDs, titles, state) so it does not need to re-query.
 
-6. **Do not rely on context values for routing.** Loop Task routes by exit code, not by context. If you need context-aware routing, use a gate Task that reads the context and exits with the appropriate code.
+6. **Do not rely on context values for routing.** Loop Task routes by exit code. If you need context-aware routing, use a gate Task.

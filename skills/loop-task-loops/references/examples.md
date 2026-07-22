@@ -1,13 +1,12 @@
 # Loop Examples
 
-All examples use a conceptual YAML-like notation for illustration. **This is not a real configuration format.** It exists only to show the structure of Loops, Tasks, and their relationships.
+All examples use a conceptual YAML-like notation. **This is not a real configuration format.** It illustrates the structure of Loops, Tasks, and their relationships.
 
 ---
 
-## Example 1: Repository Synchronization Followed by Work-Item Processing
+## Example 1: Repository Synchronization + Work-Item Processing
 
 ```yaml
-# Conceptual representation — not a real configuration format
 project:
   name: backend-repository
 
@@ -21,43 +20,39 @@ loop:
 tasks:
   sync-repository:
     purpose: Pull the latest changes from the remote
-    consumes: nothing
     produces: { latestCommit, branchName }
     on-success: select-stale-item
-    on-failure: none (sync failed, iteration terminates; Loop retries next cadence)
+    on-failure: none (sync failed — Loop retries next cadence)
 
   select-stale-item:
-    purpose: Find one eligible work item from the backlog
+    purpose: Find one eligible work item
     consumes: { latestCommit }
     produces: { itemId, itemTitle, itemBody }
     on-success: process-item
-    on-failure: none (no stale items, iteration terminates)
+    on-failure: none (no stale items)
 
   process-item:
-    purpose: Execute the work for the selected item
+    purpose: Execute the work
     consumes: { itemId, itemTitle, itemBody, branchName }
     produces: { resultSummary }
     on-success: verify-result
     on-failure: recover-item
 
   verify-result:
-    purpose: Independently confirm the work was completed
+    purpose: Confirm the work was completed
     consumes: { itemId, resultSummary }
-    produces: nothing
     on-success: finalize-item
     on-failure: recover-item
 
   finalize-item:
     purpose: Mark the item as completed
     consumes: { itemId }
-    produces: nothing
     on-success: none
     on-failure: none
 
   recover-item:
     purpose: Release the item and report the failure
     consumes: { itemId }
-    produces: nothing
     on-success: none
     on-failure: none
 
@@ -71,7 +66,6 @@ terminal-outcomes:
 ## Example 2: Issue Refinement
 
 ```yaml
-# Conceptual representation — not a real configuration format
 project:
   name: product-delivery
 
@@ -85,29 +79,26 @@ loop:
 tasks:
   find-refinement-candidate:
     purpose: Query for an issue labelled "to refine" and extract its data
-    consumes: nothing
     produces: { number, title, body }
     on-success: mark-as-refining
-    on-failure: none (no issues to refine, iteration terminates)
+    on-failure: none (no issues to refine)
 
   mark-as-refining:
     purpose: Change the issue label from "to refine" to "refining"
     consumes: { number }
-    produces: nothing
     on-success: refine-with-agent
-    on-failure: none (label change failed, iteration terminates)
+    on-failure: none (label change failed)
 
   refine-with-agent:
     purpose: Run an agent to rewrite the issue as a detailed user story
     consumes: { number, title, body }
     produces: { refinedTitle, refinedBody }
     on-success: mark-as-ready
-    on-failure: none (agent failed, issue stays in "refining" label)
+    on-failure: none (agent failed — issue stays in "refining")
 
   mark-as-ready:
     purpose: Change the issue label from "refining" to "to implement"
     consumes: { number }
-    produces: nothing
     on-success: none
     on-failure: none
 
@@ -121,7 +112,6 @@ terminal-outcomes:
 ## Example 3: Issue Implementation
 
 ```yaml
-# Conceptual representation — not a real configuration format
 project:
   name: product-delivery
 
@@ -134,16 +124,14 @@ loop:
 
 tasks:
   find-implementable-issue:
-    purpose: Check for in-progress work first, then find a "to implement" issue
-    consumes: nothing
+    purpose: Find a "to implement" issue
     produces: { number, title, body }
     on-success: mark-as-implementing
-    on-failure: none (no issues to implement, iteration terminates)
+    on-failure: none (no issues to implement)
 
   mark-as-implementing:
-    purpose: Change the issue label from "to implement" to "implementing"
+    purpose: Change the label from "to implement" to "implementing"
     consumes: { number }
-    produces: nothing
     on-success: implement-with-agent
     on-failure: none
 
@@ -157,21 +145,18 @@ tasks:
   verify-implementation:
     purpose: Confirm the changes are merged to main and synced
     consumes: { number, implementationResult }
-    produces: nothing
     on-success: close-issue
     on-failure: recover-issue
 
   close-issue:
     purpose: Close the issue after successful implementation
     consumes: { number }
-    produces: nothing
     on-success: none
     on-failure: none
 
   recover-issue:
     purpose: Remove the "implementing" label and report the failure
     consumes: { number }
-    produces: nothing
     on-success: none
     on-failure: none
 
@@ -185,7 +170,6 @@ terminal-outcomes:
 ## Example 4: Health Monitoring with Recovery
 
 ```yaml
-# Conceptual representation — not a real configuration format
 project:
   name: service-operations
 
@@ -199,14 +183,12 @@ loop:
 tasks:
   check-health:
     purpose: Verify the target endpoint responds successfully
-    consumes: nothing
     produces: { responseTime, statusCode }
     on-success: none (healthy — iteration terminates)
     on-failure: attempt-restart
 
   attempt-restart:
     purpose: Trigger a service restart
-    consumes: nothing
     produces: { restartInitiated }
     on-success: verify-recovery
     on-failure: notify-oncall
@@ -220,8 +202,6 @@ tasks:
 
   notify-oncall:
     purpose: Alert the on-call team that recovery failed
-    consumes: nothing
-    produces: nothing
     on-success: none
     on-failure: none
 
@@ -232,10 +212,37 @@ terminal-outcomes:
 
 ---
 
-## Example 5: Bounded Deployment Polling
+## Example 5: Multi-Loop Pipeline (Refine + Implement)
+
+Two Loops coordinating through shared labels. The refine Loop produces issues labelled `code:pick`. The implement Loop consumes them.
 
 ```yaml
-# Conceptual representation — not a real configuration format
+project:
+  name: product-delivery
+
+# Loop A: Refine
+loop-a:
+  purpose: Find one issue needing refinement and improve its quality
+  cadence: Every 30 minutes
+  initial-task: find-refinement-candidate
+
+# Loop B: Implement
+loop-b:
+  purpose: Implement one refined issue
+  cadence: Every 1 hour
+  initial-task: find-implementable-issue
+
+# The handoff: Loop A's finalization Task labels the issue "code:pick".
+# Loop B's selection Task queries for items labelled "code:pick".
+# Each Loop runs independently at its own cadence.
+# They coordinate through the label, never directly.
+```
+
+---
+
+## Example 6: Bounded Deployment Polling
+
+```yaml
 project:
   name: software-delivery
 
@@ -249,69 +256,11 @@ loop:
 tasks:
   check-deployment-status:
     purpose: Query the deployment's current health
-    consumes: nothing
     produces: { deploymentState, version }
-    on-success: none (deployment is healthy — but the Loop continues unless maxRuns is 1)
-    on-failure: none (not yet healthy — Loop retries on next cadence)
+    on-success: none (deployment is healthy)
+    on-failure: none (not yet healthy — Loop retries)
 
 terminal-outcomes:
-  success: Deployment became healthy before the iteration limit
-  failure: Deployment did not become healthy within 60 iterations (Loop pauses at maxRuns)
-
-design-note: >
-  For "stop on first success" semantics, use two Loops:
-  (1) a manual-only Loop (interval=0) with maxRuns=1 that checks once on trigger,
-  or (2) accept that the bounded Loop will continue checking even after success
-  (harmless, since success means the deployment is healthy).
-  The `maxRuns` limit prevents infinite polling regardless of outcome.
-```
-
----
-
-## Example 6: Periodic Report Generation
-
-```yaml
-# Conceptual representation — not a real configuration format
-project:
-  name: analytics-product
-
-loop:
-  purpose: Generate and store a summary report from recent data
-  cadence: Every 1 day
-  first-iteration: delayed
-  maximum-iterations: unlimited
-  initial-task: collect-metrics
-
-tasks:
-  collect-metrics:
-    purpose: Query the data source for the reporting period
-    consumes: nothing
-    produces: { reportDate, metricA, metricB, metricC }
-    on-success: generate-report
-    on-failure: none (data source unavailable, iteration terminates)
-
-  generate-report:
-    purpose: Transform collected metrics into a structured report
-    consumes: { reportDate, metricA, metricB, metricC }
-    produces: { reportPath, recordCount }
-    on-success: validate-report
-    on-failure: none (generation failed, iteration terminates)
-
-  validate-report:
-    purpose: Verify the report contains expected data
-    consumes: { reportPath, recordCount }
-    produces: nothing
-    on-success: deliver-report
-    on-failure: none (validation failed, report is kept but not delivered)
-
-  deliver-report:
-    purpose: Send or store the validated report
-    consumes: { reportPath, reportDate }
-    produces: nothing
-    on-success: none
-    on-failure: none
-
-terminal-outcomes:
-  success: Report collected, generated, validated, and delivered
-  failure: Data collection, generation, or validation failed (Loop retries next day)
+  success: Deployment became healthy within the iteration limit
+  failure: Deployment did not become healthy within 60 iterations
 ```

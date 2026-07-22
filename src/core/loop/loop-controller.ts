@@ -154,7 +154,7 @@ export class LoopController extends EventEmitter {
   }
 
   playLoop(): boolean {
-    if (this._status !== "idle" && this._status !== "stopped") return false;
+    if (this._status !== "idle") return false;
     if (this._maxRunsReached) return false;
     if (this.options.maxRuns !== null && this.runCount >= this.options.maxRuns) {
       this._maxRunsReached = true;
@@ -182,7 +182,7 @@ export class LoopController extends EventEmitter {
   triggerNow(): boolean {
     if (this._status === "running") return false;
     if (this._maxRunsReached) return false;
-    const needsStart = this._status === "stopped" || this._status === "idle";
+    const needsStart = this._status === "idle";
     this._savedRemainingMs = this.remainingDelayMs;
     this._forceRun = true;
     if (needsStart) {

@@ -1,13 +1,12 @@
 # Project Examples
 
-All examples use a conceptual YAML-like notation for illustration. **This is not a real configuration format.** It exists only to show the structure of Projects, their membership, and their organisational patterns.
+All examples use a conceptual YAML-like notation. **This is not a real configuration format.**
 
 ---
 
 ## Example 1: Microservice-Oriented Project Layout
 
 ```yaml
-# Conceptual representation — not a real configuration format
 projects:
   - name: User Service
     color: "#3b82f6"
@@ -38,14 +37,13 @@ loops:
     initial-task: send-notifications
 ```
 
-Each Project corresponds to one microservice. Its Loops operate on that service's resources. The `directory` points to the service's repository root.
+Each Project corresponds to one microservice. Its Loops operate on that service's resources.
 
 ---
 
 ## Example 2: Environment-Based Layout
 
 ```yaml
-# Conceptual representation — not a real configuration format
 projects:
   - name: Production
     color: "#ef4444"
@@ -67,14 +65,13 @@ loops:
     initial-task: check-health
 ```
 
-Both Loops reference the same Task (`check-health`) but operate in different directories. The Task's executable payload is the same; the working directory (and potentially environment) differs based on the Project.
+Both Loops reference the same Task (`check-health`) but operate in different directories. The Task's executable payload is the same; the working directory differs based on the Project.
 
 ---
 
 ## Example 3: Deletion and Reassignment
 
 ```yaml
-# Conceptual representation — not a real configuration format
 before deletion:
   projects:
     - name: Legacy Pipeline
@@ -85,41 +82,34 @@ before deletion:
     - purpose: Run legacy ETL
       project: Legacy Pipeline
       cadence: Every 1 day
-      cwd: /pipelines/legacy/etl
+      cwd: /pipelines/legacy/etl   # explicit cwd
 
     - purpose: Monitor legacy data
       project: Legacy Pipeline
       cadence: Every 30 minutes
       # No explicit cwd — relies on Project's directory
 
-
 after deleting "Legacy Pipeline":
   projects:
-    - name: Default
-      color: "#ffffff"
-      # default project
+    - name: Default   # default project
 
   loops:
     - purpose: Run legacy ETL
       project: Default           # reassigned
-      cadence: Every 1 day
       cwd: /pipelines/legacy/etl # preserved (was explicit)
 
     - purpose: Monitor legacy data
       project: Default           # reassigned
-      cadence: Every 30 minutes
-      # Still no explicit cwd — now falls back to Default's directory or process cwd
-      # This may cause the Task to run in an unexpected directory!
+      # Falls back to Default's directory or process cwd — may break!
 ```
 
-**Lesson**: Loops with explicit `cwd` are safe during reassignment. Loops that relied on the Project's `directory` may break if they depend on a specific working directory.
+Loops with explicit `cwd` are safe. Loops that relied on the Project's `directory` may break.
 
 ---
 
 ## Example 4: Cross-Project Task Reuse
 
 ```yaml
-# Conceptual representation — not a real configuration format
 projects:
   - name: Frontend
     color: "#3b82f6"
@@ -147,19 +137,18 @@ loops:
     cadence: Every 5 minutes
     initial-task: check-backend-health
 
-  # Both health-check Tasks reference notify-oncall:
+  # Both health-check Tasks reference notify-oncall on failure:
   # check-frontend-health --onFailure--> notify-oncall
   # check-backend-health --onFailure--> notify-oncall
 ```
 
-The `notify-oncall` Task is shared across Projects. It is not scoped to any Project. Both Loops can reference it regardless of their Project membership.
+The `notify-oncall` Task is shared across Projects. It is not scoped to any Project.
 
 ---
 
 ## Example 5: Single-Product Multi-Loop Layout
 
 ```yaml
-# Conceptual representation — not a real configuration format
 project:
   name: Product Delivery
   color: "#3b82f6"
@@ -183,16 +172,14 @@ loops:
     initial-task: find-reviewable-pr
 ```
 
-All Loops are grouped under one Product Project. They operate in the same directory. They run independently at different cadences. Their Tasks may share some common Tasks (e.g., notification, cleanup) while having distinct main workflows.
+All Loops are grouped under one Project. They run independently at different cadences. Their Tasks may share common Tasks while having distinct main workflows.
 
 ---
 
 ## Example 6: Default Project as Inbox
 
 ```yaml
-# Conceptual representation — not a real configuration format
 # A user starts by creating Loops without a Project (assigned to Default):
-
 loops:
   - purpose: Quick backup test
     project: Default
@@ -200,7 +187,6 @@ loops:
     initial-task: test-backup
 
 # Later, the user creates a proper Project and moves the Loop:
-
 projects:
   - name: Backup Operations
     color: "#f97316"
@@ -210,4 +196,4 @@ projects:
 # The Loop now uses the Backup Operations directory as its working directory.
 ```
 
-The default Project serves as a scratch space for prototyping. As workflows mature, they are moved to dedicated Projects.
+The default Project serves as a scratch space. As workflows mature, they move to dedicated Projects.
