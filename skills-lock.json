@@ -1,17 +1,119 @@
 {
   "version": 1,
   "skills": {
-    "agentmemory": {
+    "agentmemory-agents": {
       "source": "rohitg00/agentmemory",
       "sourceType": "github",
-      "skillPath": "skills/remember/SKILL.md",
-      "computedHash": "agentmemory-skills-placeholder"
+      "skillPath": "plugin/skills/agentmemory-agents/SKILL.md",
+      "computedHash": "651a4c714ebcefa0ffaa545995ed9933eb3043069bf76cf94335cc7fad7e35eb"
+    },
+    "caveman": {
+      "source": "juliusbrussee/caveman",
+      "sourceType": "github",
+      "skillPath": "skills/caveman/SKILL.md",
+      "computedHash": "723fb2a8bec1156c0f0b5bf020cc739ed09702b7726ec6377480038871339f6e"
+    },
+    "design-taste-frontend": {
+      "source": "leonxlnx/taste-skill",
+      "sourceType": "github",
+      "skillPath": "skills/taste-skill/SKILL.md",
+      "computedHash": "899b84384f74f540ea5284d9b2e9234e050998b42eacc805410b518d4226c0b3"
+    },
+    "documentation-writer": {
+      "source": "github/awesome-copilot",
+      "sourceType": "github",
+      "skillPath": "skills/documentation-writer/SKILL.md",
+      "computedHash": "ee53d65b163cd7eb953a930c95841cfe398cc2c0bd24c06508bbaa07c432be35"
+    },
+    "feature-sliced-design": {
+      "source": "feature-sliced/skills",
+      "sourceType": "github",
+      "skillPath": "feature-sliced-design/SKILL.md",
+      "computedHash": "d4eaefe92df4439ffa8c6c06762047f0fc3aeb5ffc620d5239dce8d95592fe60"
     },
     "find-skills": {
       "source": "vercel-labs/skills",
       "sourceType": "github",
       "skillPath": "skills/find-skills/SKILL.md",
-      "computedHash": "781bd6d3f9b19f8c9af6b53d8d0e4876d0183841b565db34ca7092ffa412d111"
+      "computedHash": "d6cb30212b3b19f531378574784af1da09928b2e5078f299eaeaedd50191a4af"
+    },
+    "fumadocs-component-docs": {
+      "source": "theorcdev/8bitcn-ui",
+      "sourceType": "github",
+      "skillPath": ".claude/skills/fumadocs-component-docs/SKILL.md",
+      "computedHash": "a138321af90f7f6806996dea4ca59e4e613f8de588dbdda5aa259db2513d0ff2"
+    },
+    "fumadocs-mdx-structure": {
+      "source": "theorcdev/8bitcn-ui",
+      "sourceType": "github",
+      "skillPath": ".claude/skills/fumadocs-mdx-structure/SKILL.md",
+      "computedHash": "f1b810c9074c3d9b7fae58fa1dde5eb21a5a60d37cff5089156fc750f8a91d77"
+    },
+    "high-end-visual-design": {
+      "source": "leonxlnx/taste-skill",
+      "sourceType": "github",
+      "skillPath": "skills/soft-skill/SKILL.md",
+      "computedHash": "f730e4132775f13eea19e3dc39afc6bb453cfc0498872b127ad8f0d47cfd802d"
+    },
+    "humanizer": {
+      "source": "blader/humanizer",
+      "sourceType": "github",
+      "skillPath": "SKILL.md",
+      "computedHash": "73c03cc8028b39c9c2ecb94b81e9c9cf4276e4062ac127ed251006ab7facd67d"
+    },
+    "internationalization-i18n": {
+      "source": "mindrally/skills",
+      "sourceType": "github",
+      "skillPath": "internationalization-i18n/SKILL.md",
+      "computedHash": "5dd3043eecc450d2a82a522611517f124650ff60fe2f7eff74d0075d040cd31e"
+    },
+    "inversify-hooks": {
+      "source": "CKGrafico/inversify-hooks",
+      "sourceType": "github",
+      "skillPath": "skills/inversify-hooks/SKILL.md",
+      "computedHash": "e67131906d824b0169153c999dd68fb490ecd59dc8991fba6420a92b3357114e"
+    },
+    "nextjs-app-router-patterns": {
+      "source": "wshobson/agents",
+      "sourceType": "github",
+      "skillPath": "plugins/frontend-mobile-development/skills/nextjs-app-router-patterns/SKILL.md",
+      "computedHash": "3a46e9093baecb3a85819529ce05006f817663f48d9e872868c32ae6049c0d5c"
+    },
+    "react-2026": {
+      "source": "PatternsDev/skills",
+      "sourceType": "github",
+      "skillPath": "react/react-2026/SKILL.md",
+      "computedHash": "1a756763884ce5f0fae7cb3b44a934ccb6e5a2192d04b9c06308aed9e22a63ab"
+    },
+    "react19-concurrent-patterns": {
+      "source": "github/awesome-copilot",
+      "sourceType": "github",
+      "skillPath": "skills/react19-concurrent-patterns/SKILL.md",
+      "computedHash": "9ffa84ccf6e6520ca56f84933f4f9f1b9ccbcd6848a0400f6c104a071aeaf42a"
+    },
+    "tailwind-design-system": {
+      "source": "giuseppe-trisciuoglio/developer-kit",
+      "sourceType": "github",
+      "skillPath": "plugins/developer-kit-typescript/skills/tailwind-design-system/SKILL.md",
+      "computedHash": "b199f7c9b924cf059ce292b9c809accc18635a40a39db0e7b876f9df1d459950"
+    },
+    "terminal-ui": {
+      "source": "pproenca/dot-skills",
+      "sourceType": "github",
+      "skillPath": "skills/.curated/terminal-ui/SKILL.md",
+      "computedHash": "6d92b8991dafd4f3356fa8a01d837e07ba893c657a73406d17c4a4103a16c0ab"
+    },
+    "vitest-testing": {
+      "source": "secondsky/claude-skills",
+      "sourceType": "github",
+      "skillPath": "plugins/vitest-testing/skills/vitest-testing/SKILL.md",
+      "computedHash": "1293182db06b7ee2316814a4a0b697dc16f038009e5f1febf2bbf9f5a0202beb"
+    },
+    "web-design-guidelines": {
+      "source": "akillness/oh-my-skills",
+      "sourceType": "github",
+      "skillPath": ".agent-skills/web-design-guidelines/SKILL.md",
+      "computedHash": "1d4ad5cd3bc3375c7ec59bfdea9cdd7a9dd51f8b4be32bb7cf32bf83a34dd317"
     },
     "writing-great-skills": {
       "source": "mattpocock/skills",

@@ -1,6 +1,6 @@
 ---
 name: ob-guardrails-project
-description: Project-specific rules and constraints extracted from ARCHITECTURE.md and project config files. Load this skill before implementing any change to understand boundaries, conventions, and constraints for this codebase.
+description: Project-specific rules and constraints extracted from ARCHITECTURE.md. Load this skill before implementing any change to understand boundaries, conventions, and constraints for this codebase.
 license: MIT
 ---
 
@@ -10,134 +10,112 @@ license: MIT
 
 ## Architecture Constraints
 
-- **FSD one-way dependency flow**: TUI layers must only import from layers below: `app → widgets → features → entities → shared`. A layer may never import from a layer above it.
-  - `app/` may import from any layer.
-  - `widgets/` may import from `features/`, `entities/`, `shared/`.
-  - `features/` may import from `entities/`, `shared/`.
-  - `entities/` may import from `shared/` only.
-  - `shared/` has no internal imports from other FSD layers.
-- **`src/core/` must NOT import from `src/daemon/`, `src/app/`, or any FSD UI layer.** Core is runtime-agnostic.
-- **`src/daemon/` may import from `src/core/` and `src/shared/` but NOT from `src/app/` or FSD UI layers (widgets/features/entities).**
-- **`src/client/` (CLI) consumes IPC only** — it must not import daemon internals directly.
-- **UI must use Inversify DI**: Components use `useInject<T>(TYPES.XxxService)` instead of importing daemon functions directly. Service interfaces are in `src/shared/services/types.ts`, IPC implementations in `src/shared/services/`.
-- **Dictionary dispatch over switch/case**: Use `Record<string, () => void>` for command handling, not nested `if/else` or `switch` statements.
-- **No `src/tui/` or `src/board/` directories** — these are deleted. All TUI code lives in the FSD layers (`app/`, `widgets/`, `features/`, `entities/`, `shared/`).
-- **IPC contract lives in `src/types.ts`** — it is the single source of truth for all IPC request/response shapes (`IpcRequest`, `IpcResponse`, `LoopOptions`, `LoopMeta`).
-- **Inversify DI container bindings in `src/shared/container/index.ts`** — service interfaces bound to IPC implementations, not daemon internals.
+- **FSD one-way dependency flow**: `app → widgets → features → entities → shared`. Higher layers may import from lower layers only. `shared/` has no imports from other FSD layers.
+- **`src/core/` is runtime-agnostic**: must NOT import from `src/daemon/`, `src/app/`, or any FSD UI layer.
+- **`src/daemon/` is backend-only**: must NOT import from FSD UI layers (`app/`, `widgets/`, `features/`, `entities/`).
+- **DI boundary**: TUI components use `useInject<T>(TYPES.XxxService)` instead of importing daemon or IPC modules directly. Service interfaces defined in `src/shared/services/types.ts`, IPC implementations in `src/shared/services/`.
+- **Client-daemon separation**: `src/client/` communicates with daemon exclusively via IPC (JSON-lines over socket). No direct imports of daemon internals.
 
 ## File Organization
 
-- **No god-files**: Each file must have one clear responsibility. Do NOT create dumping-ground files like `constants.ts`, `types.ts`, `config.ts`, or `utils.ts` that collect unrelated things.
-  - Magic numbers live in `src/shared/config/constants.ts` (project-scoped name).
-  - Filesystem paths live in `src/shared/config/paths.ts`.
-  - User-facing strings live in `src/shared/i18n/en.json`.
-  - Shared domain + IPC types in `src/types.ts` (single file, IPC contract specific).
-  - Domain entity types separated by entity: `src/entities/loops/`, `src/entities/tasks/`, `src/entities/projects/`.
-- **Split by domain or feature**, not by technical concern. E.g. `user-constants.ts`, `order-types.ts` rather than a global `constants.ts`.
-- A file that imports from 5+ unrelated modules is a sign it should be split.
+- **Small components**: each component under 150 lines. If larger, extract sub-components or hooks into sibling files.
+- **One responsibility per file**: split by domain or feature (e.g. `user-constants.ts`, `order-types.ts`, `auth-config.ts`) — never create catch-all files like `constants.js`, `types.ts`, `config.js`, `utils.ts` that collect unrelated things. A file importing from 5+ unrelated modules should be split.
+- **No god-files**: `App.tsx` delegates to hooks (`useAppState`, `useCommandHandlers`, `useGlobalShortcuts`); do not re-centralize state logic there.
+- **Co-locate**: component + its hooks + its types live in the same directory. Shared types go to the nearest FSD layer's types file.
 
 ## Naming Conventions
 
-- **TypeScript strict, ESM only**: `"type": "module"` in package.json.
-- **File naming**: `.ts` for logic, `.tsx` for React/Ink components.
-- **Test files**: `*.test.ts` for logic tests, `*.test.tsx` for Ink component tests, all in the `tests/` directory.
-- **Shell commands must be prefixed with `rtk`** in agent contexts (see AGENTS.md / openspec config).
-- **Conventional commits**: `feat:`, `fix:`, `docs:`, `chore:`, `archive:` prefix on commit messages.
-- **Trunk-based on `main`**: feature branches fork from `main`.
+- **Package name**: `loop-task` (npm, CLI binary).
+- **FSD layer directories**: `app/`, `widgets/`, `features/`, `entities/`, `shared/` — use these exact names.
+- **Domain entity directories**: `loops/`, `tasks/`, `projects/` — one per entity, lowercase plural.
+- **Service interfaces**: named `XxxService` (e.g. `LoopService`, `TaskService`), bound via `TYPES.XxxService` symbol.
+- **Hooks**: prefixed `use` (e.g. `useAppState`, `useCommandHandlers`, `useInject`).
+- **Test files**: `*.test.ts` for logic, `*.test.tsx` for Ink components, in `tests/` directory.
 
 ## Code Style
 
-- **TypeScript strict mode** (`"strict": true` in tsconfig.json). All source code.
-- **ESM only** (`"type": "module"`). Use `export`/`import`, not `require`.
-- **Linter**: ESLint 9 + `typescript-eslint` recommended config (`eslint.config.js`).
-  - `no-console`: off (console is allowed).
-  - `@typescript-eslint/no-unused-vars`: error, with `argsIgnorePattern: "^_"`, `varsIgnorePattern: "^_"`.
-  - `ecmaVersion: 2022`, `sourceType: "module"`.
-- **Ignored paths**: `dist/`, `node_modules/`, `coverage/`, `eslint.config.js`.
-- **No comments** unless absolutely necessary (from CONTRIBUTING.md).
-- **Follow existing conventions** — do not introduce new patterns without reason.
-- **Decorators**: `experimentalDecorators: true`, `useDefineForClassFields: false` (for InversifyJS).
+- **TypeScript strict mode**: `"strict": true` in tsconfig.json.
+- **ESM only**: `"type": "module"` in package.json. No CommonJS `require()`/`module.exports`.
+- **ESLint 9 + typescript-eslint recommended**: extends `tseslint.configs.recommended`.
+- **Unused vars**: error, but underscore-prefixed names are ignored (`_` prefix for intentionally unused).
+- **`no-console`**: off — `console` usage is allowed (CLI tool, not a library).
+- **JSX**: `react-jsx` transform, import source `react`. No `React.createElement` calls.
+- **Decorators**: `experimentalDecorators: true` (Inversify `@injectable`), `useDefineForClassFields: false`.
+- **Comment ratio under 10%**: comments are for WHY, not WHAT. If code needs a comment to be understood, refactor for clarity instead. Never leave blocks of commented-out code.
+- **Use patterns, avoid if-chains**: prefer dictionary dispatch (`Record<string, () => void>`), early returns, and guard clauses over nested `if/else if/else` chains. Switch statements are acceptable only when the compiler can verify exhaustiveness (e.g. discriminated unions).
+- **Early return / guard clauses**: validate inputs and error cases first, return early. The happy path stays unindented.
 
 ## Testing
 
 - **Framework**: Vitest 3 with `globals: true`.
-- **Location**: `tests/` directory.
-- **Naming**: `*.test.ts` for logic, `*.test.tsx` for Ink components.
-- **Coverage**: v8 provider, 90% threshold on lines, functions, branches, and statements.
-- **Coverage excludes**: `src/cli.ts`, `src/types.ts`, `src/daemon/index.ts`, `src/tui/**`, `src/board/**`.
-- **`background-cli.test.ts` is excluded** from default `pnpm test` runs (run with `pnpm test:all` manually if needed).
-- **TUI testing with `ink-testing-library`**: Use `render()`, `lastFrame()`, `stdin.write()`.
-  - Wrap absolute/100% layouts in a sized `<Box>`.
-  - Type chars one-at-a-time with `await delay()` between them.
-  - `await` after `stdin.write()` for async key handling (esc, ctrl combos).
-- **Test isolation**: Use `LOOP_CLI_HOME` env var to isolate daemon state per test.
-- **Pre-existing test failures**: `tests/cli.test.ts`, `tests/loop-controller.test.ts`, and `tests/projects.test.ts` have known pre-existing failures. Confirm failures are pre-existing before touching assertions.
-- **New/changed TUI components must ship with a `.test.tsx`** even though `src/tui/**` is coverage-excluded.
+- **Location**: `tests/` directory at project root.
+- **TUI component testing**: use `ink-testing-library` (`render()`, `lastFrame()`, `stdin.write()`).
+- **TUI test rules**: wrap absolute/100% layouts in sized `<Box>`; type chars one-at-a-time with `await delay()` between them; `await` after `stdin.write()` for async key handling.
+- **Coverage threshold**: 90% (lines/functions/branches/statements) via `pnpm run test:coverage`.
+- **Coverage excludes**: `src/cli.ts`, `src/types.ts`, `src/daemon/index.ts`, `src/tui/**`.
+- **Test isolation**: use `LOOP_CLI_HOME` env var to isolate daemon state between tests.
+- **Known pre-existing failures**: `tests/cli.test.ts`, `tests/loop-controller.test.ts`, `tests/projects.test.ts` — confirm failures are pre-existing before touching assertions.
+- **Excluded from test run**: `background-cli.test.ts` excluded by default.
 
 ## Build & Deployment
 
-- **Package manager**: `pnpm` (version 10.x via `packageManager` field). Use `pnpm`, not `npm` or `yarn`.
-- **Dev runner**: `tsx` (replaces Bun). `pnpm run dev` runs `tsx src/cli.ts`.
-- **Build**: `pnpm run build` = `tsc -p tsconfig.build.json` + copy `entry.js` and `esm-loader.js` to `dist/`.
-- **Node >= 20** required for CLI, daemon, and TUI.
-- **Gate order**: `typecheck` → `lint` → `test` → `build`. Always run all four before claiming done.
-  - `pnpm run typecheck` = `tsc --noEmit`
-  - `pnpm run lint` = `eslint src/ tests/`
-  - `pnpm run test` = `vitest run --exclude '**/background-cli.test.ts'`
-  - `pnpm run build` = `tsc -p tsconfig.build.json` + copy
-- **Distribution**: Published to npm as `loop-task`. `bin` field points at `dist/entry.js`.
+- **Package manager**: `pnpm` only (root project). `npm` for `docs/` subproject (separate package-lock.json).
+- **Root build**: `pnpm run build` — compiles TypeScript to `dist/`, copies `entry.js` and `esm-loader.js`.
+- **Root dev**: `pnpm run dev` — runs via `tsx src/cli.ts`.
+- **Docs build**: `cd docs && npm run build` — Next.js static export to `docs/out/`.
+- **Docs dev**: `cd docs && npm run dev` — Next.js dev server.
+- **Gate order (root)**: run all four before claiming done: `typecheck → lint → test → build`.
+- **Node version**: `>= 20.0.0`.
+- **Distribution**: npm package `loop-task`, published via `pnpm run release`.
 - **Docker**: `node:20-slim` base image, volume mount `~/.loop-cli`.
-- **Gate in agent context**: Every change must pass `rtk npx tsc --noEmit` → `rtk pnpm lint` → `rtk pnpm test` (from openspec/config.yaml).
+
+## Docs Subproject (`docs/`)
+
+- **Stack**: Next.js 15, Fumadocs (fumadocs-core, fumadocs-mdx, fumadocs-ui), Tailwind CSS v4, MDX, React 19, motion (framer-motion).
+- **Static export**: `output: 'export'` in next.config.mjs. No server-side rendering at runtime.
+- **Package manager**: `npm` (docs has its own `package-lock.json`, separate from root `pnpm`).
+- **Path alias**: `@/*` maps to `./*` (docs-relative).
+- **MDX content**: `content/docs/*.mdx` — documentation pages. `source.config.ts` defines the docs source.
+- **Components**: `components/landing/` for landing page, `components/docs/` for documentation page components. `mdx-components.tsx` for MDX provider.
+- **Design tokens**: `app/global.css` uses Tailwind v4 `@theme` block mapping DESIGN.md tokens (brand, loop, task, project, semantic colors, background/text/border scales). Fumadocs CSS variables overridden in `:root, .dark`.
+- **Fonts**: Geist Sans + Geist Mono via `next/font`.
+- **Icons**: `@phosphor-icons/react`.
+- **No FSD**: docs/ uses Next.js App Router conventions, not FSD.
 
 ## Data & State
 
-- **All persistence is filesystem-based** under `~/.loop-cli/` (overridable via `LOOP_CLI_HOME`).
-- **State files**: `loops.json`, `tasks.json`, `projects.json` — JSON arrays.
-- **Write strategy**: All state writes use `writeFileAtomic()` (temp-then-rename) for crash safety.
-- **Synchronous writes** to preserve immediate-disk-state-on-pause semantics.
-- **No schema versioning**: Future `LoopMeta` shape changes risk breaking persisted JSON. Corrupted files are silently skipped.
-- **Chain context is ephemeral**: In-memory only per loop iteration. Never persisted to disk or exposed via IPC.
-- **Log rotation**: 1 MB max per file, 3 generations (`.{1}`, `.{2}`, `.{3}`).
-- **Daemon PID file** (`daemon.pid`) and **code signature** (`daemon.sig`) recreated on each daemon start.
+- **All persistence** under `~/.loop-cli/` (overridable via `LOOP_CLI_HOME` env var).
+- **Write strategy**: all state writes use `writeFileAtomic()` (temp-then-rename) for crash safety. Synchronous writes.
+- **Data files**: `loops.json`, `tasks.json`, `projects.json` — JSON arrays. No schema versioning.
+- **Log rotation**: 1 MB max per file, 3 generations. Handled by `log-rotator.ts`.
+- **Chain context**: ephemeral, in-memory only per loop iteration. Never persisted or exposed via IPC.
+- **Hot-reload**: `FileWatcher` detects external changes via `fs.watch` + SHA-1 hash + 300ms debounce. Reconciles with in-memory state.
 
 ## Security
 
-- **Trust boundary**: Local machine/user only. No network listener by default.
-- **No authentication**: Daemon trusts local socket connections.
-- **No secrets handling**: Loop metadata and logs are plain files. **Never read or output `.env` files.**
-- **HTTP API is unauthenticated**: Binds to `0.0.0.0` by default. Securing access is the user's responsibility at the network layer (VPN/SSH tunnel/firewall).
-- **Input validation**: Duration parsing (`parseDuration`), max-runs (`parseMaxRuns`), command emptiness, quote balancing (`parseCommandLine`) in `loop-config.ts`.
-- **IPC robustness**: Malformed JSON requests answered with error response, not crash.
-- **Child processes inherit daemon's environment** — do not inject secrets via env.
+- **Trust boundary**: local machine/user only. No network auth.
+- **IPC**: daemon trusts local socket connections. No authentication.
+- **Input validation**: duration parsing (`parseDuration`), max-runs (`parseMaxRuns`), command emptiness, quote balancing (`parseCommandLine`) in `loop-config.ts`.
+- **IPC robustness**: malformed JSON → error response, not crash.
+- **No secrets handling**: loop metadata and logs are plain files. Never read or output `.env` files.
+- **HTTP API default bind**: `0.0.0.0` — unauthenticated. Securing network access is the user's responsibility.
 
 ## Dependencies
 
-- **Package manager**: `pnpm` (specified as `pnpm@10.30.3` in `packageManager` field).
-- **Lockfile**: `pnpm-lock.yaml`. Do not commit `package-lock.json`.
-- **Key dependencies are pinned by major**: Commander 13, execa 9, Ink 7, React 19, Vitest 3, ESLint 9, TypeScript 5.8.
-- **Overrides**: `picocolors: 1.1.0` (pinned via pnpm overrides).
-- **Dev only**: `tsx` for dev runner, `ink-testing-library` for component tests.
-- **No `@opentui/*` packages** — removed in favor of Ink 7.
-- **No Bun runtime dependency** — `tsx` replaces Bun for dev.
+- **Package manager (root)**: `pnpm` only. `packageManager: pnpm@10.30.3` in package.json.
+- **Package manager (docs)**: `npm`. Separate `docs/package-lock.json`.
+- **Lockfiles**: always commit, never delete.
+- **Root key deps**: React 19, Ink 7, Commander 13, execa 9, InversifyJS, ink-combobox, ink-scroll-list, zod.
+- **Docs key deps**: Next.js 15, fumadocs-core/mdx/ui, Tailwind CSS v4, motion, @phosphor-icons/react.
+- **Root key dev deps**: Vitest 3, TypeScript 5.8, tsx, ESLint 9, ink-testing-library.
+- **No database**: filesystem-backed only. No `sqlite3`, `better-sqlite3`, or similar.
 
 ## Git Workflow
 
-- **Trunk-based on `main`**: Feature branches fork from `main`.
-- **Conventional commits**: `feat:`, `fix:`, `docs:`, `chore:`, `archive:` prefix.
-- **PR process**: Fork → feature branch → typecheck + lint + test + build → open PR.
-- **Platform**: GitHub (from `opencode-onboard.json`: `platform.backlog: "github"`, `platform.repo: "github"`).
-- **Max concurrent agents**: 2 (from `opencode-onboard.json`: `agents.maxConcurrent`).
+- **Platform**: GitHub (`github` backlog and repo, from `opencode-onboard.json`).
+- **Branch target**: `main`. CI also runs on `feature/v2.0.0`.
+- **CI matrix**: ubuntu-latest, macos-latest, windows-latest (Node 20, pnpm v11).
+- **CI steps**: typecheck → lint → test → build.
+- **RTK**: prefix all CLI commands with `rtk` in agent contexts (read-only commands like `cat`/`ls` exempt).
 
-## Domain-Specific Rules
-
-- **Board-first product direction**: Loop management actions should prefer the board (TUI) over adding more CLI commands. Only `new` and `run` are CLI-facing.
-- **Keyboard-only UI**: No mouse. All interaction via keystrokes. The command input is always-focused at the bottom.
-- **4 primary colors only**: brand (amber), loop (blue), task (purple), project (green) + 4 semantic + grays. No decorative colors outside this set.
-- **Command-first input model**: Single always-focused command palette with fuzzy autocomplete via `ink-combobox`. All actions discoverable.
-- **Panel focus via `isFocused` prop** — not Ink's native `useFocus()`.
-- **Ctrl+Enter detection via `input.includes("\n")`** with `input.length === 1` guard to prevent newline injection.
-- **Spread scheduling**: `computePhase(loopId, intervalMs) = hash(loopId) % intervalMs` distributes loop start times.
-- **Chunked abortable sleep**: `SLEEP_CHUNK_MS = 200ms` for responsive pause/resume/trigger.
-- **`opencode-onboard.json` is the team config** (shared, git-tracked). `.opencode/opencode-onboard.user.json` is user-local override (gitignored). Tier models: `plan`, `build`, `fast`.
-
-<!-- Last updated: 2026-07-15T20:00:00Z -->
+<!-- Last updated: 2026-07-23T01:00:00.000Z -->

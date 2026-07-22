@@ -26,7 +26,9 @@
     "lint": "eslint src/ tests/",
     "typecheck": "tsc --noEmit",
     "release:dry": "npm publish --dry-run",
-    "release": "npm publish"
+    "release": "npm publish",
+    "visual-evidence": "tsx src/visual-evidence/cli.ts",
+    "visual-evidence:publish": "tsx src/visual-evidence/publish.ts"
   },
   "keywords": [
     "cli",

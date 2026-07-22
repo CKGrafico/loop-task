@@ -8,9 +8,7 @@ metadata:
   version: "1.1"
 ---
 
-**ALL GitHub data MUST come from `gh` CLI. NEVER use webfetch, HTTP requests, or browser MCP tools to fetch GitHub URLs, even if gh CLI fails. If `gh` is unavailable, report it as a blocker.**
-
----
+Use `gh` CLI for all GitHub operations. If `gh` is unavailable, report it as a blocker.
 
 ## GitHub CLI Setup (One-Time)
 
@@ -24,37 +22,52 @@ Verify:
 gh auth status
 ```
 
----
-
 ## Steps
 
 1. **Extract owner, repo, and issue number** from URL
-   - `https://github.com/{owner}/{repo}/issues/42` → owner: `{owner}`, repo: `{repo}`, number: `42`
+   - `https://github.com/{owner}/{repo}/issues/42` -> owner: `{owner}`, repo: `{repo}`, number: `42`
 
-2. **Fetch Issue**, always pass `--repo` explicitly, never rely on git context:
+2. **Fetch Issue**, always pass `--repo` explicitly:
    ```bash
    gh issue view 42 --repo {owner}/{repo} --json number,title,body,labels,milestone,state
    ```
-   If this returns an auth error or 404, report as a blocker, do NOT fall back to webfetch or web search.
+   If this returns an auth error or 404, report as a blocker.
 
 3. **Extract Key Fields** from JSON response:
-   - `number` → Issue number
-   - `title` → Title
-   - `body` → Description / acceptance criteria
-   - `labels` → Labels
-   - `milestone` → Milestone / sprint equivalent
-   - `state` → State (open/closed)
+   - `number` -> Issue number
+   - `title` -> Title
+   - `body` -> Description / acceptance criteria
+   - `labels` -> Labels
+   - `milestone` -> Milestone / sprint equivalent
+   - `state` -> State (open/closed)
 
 4. **Create OpenSpec Change**
    ```bash
    openspec new change "gh-{number}-{slug}"
    ```
 
----
+5. **Hand off to proposal.** Load the `ob-plan-propose` skill (interactive mode) to generate the proposal, specs, and tasks. After it completes, call the `question` tool:
+
+   ```json
+   {
+     "questions": [
+       {
+         "header": "Ready to implement",
+         "question": "Ready to implement?",
+         "options": [
+           { "label": "yes", "description": "Load the ob-plan-apply skill to start implementation." },
+           { "label": "no", "description": "Stop here. You can run /plan-apply later." }
+         ]
+       }
+     ]
+   }
+   ```
+
+   Wait for confirmation before loading `ob-plan-apply`.
 
 ## Full GitHub CLI Reference
 
-Use these for ALL GitHub operations, browser MCP and webfetch are FORBIDDEN. Always pass `--repo {owner}/{repo}`, never rely on git context.
+Always pass `--repo {owner}/{repo}`, relying on git context is unreliable.
 
 ### Issues
 ```bash
@@ -68,23 +81,17 @@ gh issue list --repo {owner}/{repo} --state open --limit 10
 gh issue edit <number> --repo {owner}/{repo} --add-label "in-progress"
 ```
 
----
-
 ## Screenshot / Image Strategy
 
-**Never embed images as attachments.** Save to openspec change folder and reference via GitHub blob URL pinned to commit SHA.
+Save to openspec change folder and reference via GitHub blob URL pinned to commit SHA. Keep `?raw=true` when embedding in markdown:
 
-### Save location
 ```
 openspec/changes/{change-name}/images/{screenshot}.png
 ```
 
-### Blob URL format (preferred: keep `?raw=true` when embedding in markdown)
 ```
 https://github.com/{owner}/{repo}/blob/{sha}/openspec/changes/{change}/images/{file}.png?raw=true
 ```
-
----
 
 ## URL Formats Reference
 
@@ -99,31 +106,15 @@ https://github.com/{owner}/{repo}/pull/{number}
 https://github.com/{owner}/{repo}/blob/{sha}/{path}
 ```
 
----
-
 ## Output Format
 
 ```
 ## Issue Parsed
 
-**Issue:** #{number}
-**Title:** {title}
-**State:** {state}
-**Milestone:** {milestone}
+Issue: #{number}
+Title: {title}
+State: {state}
+Milestone: {milestone}
 
-**Change Created:** gh-{number}-{slug}
+Change Created: gh-{number}-{slug}
 ```
-
-After outputting the above, the lead MUST run `/plan-propose` to generate the proposal, specs, and tasks. After `/plan-propose` completes, STOP and ask the user: **"Ready to implement? (yes/no)"**, do NOT proceed to `/plan-apply` until confirmed.
-
----
-
-## Guardrails
-
-- ✅ Parse GitHub Issue URL and create OpenSpec change
-- ✅ Use `gh` CLI for all GitHub operations
-- ✅ Always run `/plan-propose` after parsing, never skip to implementation
-- ✅ Always stop and confirm with user after propose, before running `/plan-apply`
-- ❌ `webfetch` or HTTP requests to GitHub URLs, FORBIDDEN, use `gh` CLI only
-- ❌ Browser MCP tools for GitHub operations, FORBIDDEN
-- ❌ Jump to implementation without user confirmation, FORBIDDEN

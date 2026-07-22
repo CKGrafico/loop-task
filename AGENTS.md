@@ -1,45 +1,59 @@
 # AGENTS.md
 
-<!-- OB-NOT-INITIALIZED -->
-
 This file provides guidance to AI agents when working in this repository.
 
-*Agent-agnostic, works with OpenCode, Claude Code, Codex, Gemini, etc.*
+Agent-agnostic. Works with OpenCode, Claude Code, Codex, Gemini, and others.
 
 ## Context
 
-Load DESIGN.md for design principles and guidelines. Load ARCHITECTURE.md for system architecture and component interactions. These files are generated during initialization and updated as the codebase evolves.
+Load `DESIGN.md` for design principles and guidelines. Load `ARCHITECTURE.md` for system architecture and component interactions. These files are generated during initialization and updated as the codebase evolves.
 
-**Command aliases:** OpenSpec skills may reference `/opsx-propose`, `/opsx-apply`, `/opsx-archive`, or `/opsx-explore`. Always substitute them with `/plan-propose`, `/plan-apply`, `/plan-archive`, `/plan-explore` respectively, and never mention the `opsx-` names to the user.
+Command aliases: OpenSpec skills may reference `/opsx-propose`, `/opsx-apply`, `/opsx-archive`, or `/opsx-explore`. Always substitute them with the `ob-plan-propose`, `ob-plan-apply`, `ob-plan-archive`, `ob-plan-explore` skills respectively (user-facing command names: `/plan-propose`, `/plan-apply`, `/plan-archive`, `/plan-explore`). Never mention the `opsx-` names to the user.
 
-## I Am the Lead, Full Workflow Ownership
+## I am the lead, full workflow ownership
 
 <!-- OB-PLATFORM-WORKFLOW-START -->
-When the user provides a work item URL or says "implement the plan" or "I've added comments to the PR", **I own the full lifecycle**. I load the appropriate userstory skill and coordinate implementation as native subagent waves via `/ob-apply`.
+When the user provides a work item URL or says "implement the plan" or "I've added comments to the PR", **I own the full lifecycle**. I load the appropriate userstory skill and coordinate implementation as native subagent waves via the `ob-plan-apply` skill.
 
 Trigger patterns, I recognize ALL of these, exact wording does not matter:
-- User pastes or mentions a GitHub Issue URL → load `ob-userstory` skill → parse issue → run `/ob-propose` → confirm with user → run `/ob-apply` → ship
-- `implement the plan` / `implement` / `start` / `go` → run `/ob-apply` → ship
+- User pastes or mentions a GitHub Issue URL → load `ob-userstory` skill → parse issue → load the `ob-plan-propose` skill → confirm with user → load the `ob-plan-apply` skill → ship
+- `implement the plan` / `implement` / `start` / `go` → load the `ob-plan-apply` skill → ship
 - `I've added comments to the PR` → read PR comments → fix → update PR
 - Any GitHub PR URL in a feedback/fix request (e.g. "check comments", "fix PR feedback") → run PR Feedback Loop
 
 **A GitHub URL in the user's message is a strong trigger: follow the pipeline unless the user explicitly asks for analysis or context only.**
 <!-- OB-PLATFORM-WORKFLOW-END -->
 
-**Never delegate without a plan. Default to specialists for implementation. If a subagent wave repeatedly fails, stop forcing it: report, then continue in the main session or ask the user.**
+Never delegate without a plan. Default to specialists for implementation. If a subagent wave repeatedly fails, stop forcing it: report, then continue in the main session or ask the user.
 
-## Engineer Selection
+## Engineer selection
 
-Inspect `.opencode/agents/*.md` before spawning. Prefer the most specialized custom engineer. **Never assign `fullstack-engineer` to a task** — it is `mode: primary` (the user's planning agent), not a spawned worker. If no specialist matches, tell the user to create one with `/make-engineer`. Never spawn engineers not present in that directory.
+Inspect `.opencode/agents/*.md` before spawning. Prefer the most specialized custom engineer. `fullstack-engineer` is `mode: primary` (the user's planning agent), not a spawned worker. If no specialist matches, tell the user to create one with `/make-engineer`. Spawn only engineers present in that directory.
 
-**Full wave protocol, pipeline phases, and concurrency limits:** see `/plan-apply` (authoritative). Max concurrent agents is `agents.maxConcurrent` in `.opencode/opencode-onboard.json`.
+| Engineer | File | Scope |
+|---|---|---|
+| `docs-ui-engineer` | `.opencode/agents/docs-ui-engineer.md` | docs/ website: Next.js 15, Fumadocs, Tailwind CSS v4, MDX, visual design |
+| `frontend-engineer` | `.opencode/agents/frontend-engineer.md` | TUI frontend: Ink 7 + React 19, FSD, Inversify DI, i18n, design tokens |
+
+Full wave protocol, pipeline phases, and concurrency limits: see the `ob-plan-apply` skill (authoritative). Max concurrent agents is `agents.maxConcurrent` in `.opencode/opencode-onboard.json`.
 
 ## Skills
 
-Skills live in `.agents/skills/`. Always installed: `@ob-default`, `@ob-guardrails-generic`, `@ob-guardrails-project`, `@browser-automation`. Agents load them via `@skill-name` in their `## Abilities` section.
+Skills live in `.agents/skills/`. Always installed: `@ob-guardrails-generic`, `@ob-guardrails-project`, `@browser-automation`. Agents load them via `@skill-name` in their `## Abilities` section.
 
 <!-- OB-PLATFORM-SKILLS-GUIDE-START -->
 Platform skills (GitHub):
 - `@ob-userstory`: load when a GitHub Issue URL is detected. Fetches the issue via `gh` CLI and creates an OpenSpec change. NEVER use webfetch to access GitHub URLs.
-- `@ob-pullrequest`: load in ship mode to create a PR with screenshots, or in feedback mode to read and classify PR review comments.
+- `ob-ops-ship`: load in ship mode to create a PR with screenshots, or in feedback mode to read and classify PR review comments.
 <!-- OB-PLATFORM-SKILLS-GUIDE-END -->
+
+<!-- CODEGRAPH_START -->
+## CodeGraph
+
+In repositories indexed by CodeGraph (a `.codegraph/` directory exists at the repo root), reach for it BEFORE grep/find or reading files when you need to understand or locate code:
+
+- **MCP tool** (when available): `codegraph_explore` answers most code questions in one call — the relevant symbols' verbatim source plus the call paths between them, including dynamic-dispatch hops grep can't follow. Name a file or symbol in the query to read its current line-numbered source. If it's listed but deferred, load it by name via tool search.
+- **Shell** (always works): `codegraph explore "<symbol names or question>"` prints the same output.
+
+If there is no `.codegraph/` directory, skip CodeGraph entirely — indexing is the user's decision.
+<!-- CODEGRAPH_END -->

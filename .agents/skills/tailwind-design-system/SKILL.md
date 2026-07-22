@@ -1,186 +1,274 @@
 ---
 name: tailwind-design-system
-description: Build scalable design systems with Tailwind CSS v4, design tokens, component libraries, and responsive patterns. Use when creating component libraries, implementing design systems, or standardizing UI patterns.
+description: Skill for creating and managing a Design System using Tailwind CSS and shadcn/ui. Use when defining design tokens, setting up theming with CSS variables, building a consistent UI component library, initializing a design system configuration, or wrapping shadcn/ui components into design system primitives.
+allowed-tools: Read, Write, Edit, Bash, Glob, Grep
 ---
 
-# Tailwind Design System (v4)
+# Tailwind CSS & shadcn/ui Design System
 
-Build production-ready design systems with Tailwind CSS v4, including CSS-first configuration, design tokens, component variants, responsive patterns, and accessibility.
+## Overview
 
-> **Note**: This skill targets Tailwind CSS v4 (2024+). For v3 projects, refer to the [upgrade guide](https://tailwindcss.com/docs/upgrade-guide).
+Expert guide for creating and managing a centralized Design System using Tailwind CSS (v4.1+) and shadcn/ui. This skill provides structured workflows for defining design tokens, configuring themes with CSS variables, and building a consistent UI component library based on shadcn/ui primitives.
 
-## When to Use This Skill
+**Relationship with other skills:**
+- **tailwind-css-patterns** covers utility-first styling, responsive design, and general Tailwind CSS usage
+- **shadcn-ui** covers individual component installation, configuration, and implementation
+- **This skill** focuses on the **system-level** orchestration: design tokens, theming infrastructure, component wrapping patterns, and ensuring consistency across the entire application
 
-- Creating a component library with Tailwind v4
-- Implementing design tokens and theming with CSS-first configuration
-- Building responsive and accessible components
-- Standardizing UI patterns across a codebase
-- Migrating from Tailwind v3 to v4
-- Setting up dark mode with native CSS features
+## When to Use
 
-## Key v4 Changes
+- Setting up a new design system from scratch with Tailwind CSS and shadcn/ui
+- Defining design tokens (colors, typography, spacing, radius, shadows) as CSS variables
+- Configuring `globals.css` with a centralized theming system (light/dark mode)
+- Wrapping shadcn/ui components into design system primitives with enforced constraints
+- Building a token-driven component library for consistent UI
+- Migrating from a JavaScript-based Tailwind config to CSS-first configuration (v4.1+)
+- Establishing color palettes with oklch format for perceptual uniformity
+- Creating multi-theme support beyond light/dark (e.g., brand themes)
 
-| v3 Pattern                            | v4 Pattern                                                            |
-| ------------------------------------- | --------------------------------------------------------------------- |
-| `tailwind.config.ts`                  | `@theme` in CSS                                                       |
-| `@tailwind base/components/utilities` | `@import "tailwindcss"`                                               |
-| `darkMode: "class"`                   | `@custom-variant dark (&:where(.dark, .dark *))`                      |
-| `theme.extend.colors`                 | `@theme { --color-*: value }`                                         |
-| `require("tailwindcss-animate")`      | CSS `@keyframes` in `@theme` + `@starting-style` for entry animations |
+## Instructions
 
-## Quick Start
+### Step 1: Initialize Design System Configuration
+
+Run these commands to set up the project:
+
+```bash
+# Check if Tailwind is installed
+npx tailwindcss --version
+
+# For Tailwind v4 (recommended)
+npx @tailwindcss/vite@latest init   # or: npm install -D tailwindcss @tailwindcss/vite
+
+# Initialize shadcn/ui CLI
+npx shadcn@latest init
+
+# Install core shadcn/ui components
+npx shadcn@latest add button card input -y
+```
+
+**Validation checkpoint**: After setup, verify with:
+```bash
+ls src/components/ui/        # Should list installed components
+cat src/app/globals.css       # Should contain @tailwind directives
+```
+
+### Step 2: Define Design Tokens
+
+Create `src/app/globals.css` with your design tokens:
 
 ```css
-/* app.css - Tailwind v4 CSS-first configuration */
-@import "tailwindcss";
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
-/* Define your theme with @theme */
-@theme {
-  /* Semantic color tokens using OKLCH for better color perception */
-  --color-background: oklch(100% 0 0);
-  --color-foreground: oklch(14.5% 0.025 264);
-
-  --color-primary: oklch(14.5% 0.025 264);
-  --color-primary-foreground: oklch(98% 0.01 264);
-
-  --color-secondary: oklch(96% 0.01 264);
-  --color-secondary-foreground: oklch(14.5% 0.025 264);
-
-  --color-muted: oklch(96% 0.01 264);
-  --color-muted-foreground: oklch(46% 0.02 264);
-
-  --color-accent: oklch(96% 0.01 264);
-  --color-accent-foreground: oklch(14.5% 0.025 264);
-
-  --color-destructive: oklch(53% 0.22 27);
-  --color-destructive-foreground: oklch(98% 0.01 264);
-
-  --color-border: oklch(91% 0.01 264);
-  --color-ring: oklch(14.5% 0.025 264);
-
-  --color-card: oklch(100% 0 0);
-  --color-card-foreground: oklch(14.5% 0.025 264);
-
-  /* Ring offset for focus states */
-  --color-ring-offset: oklch(100% 0 0);
-
-  /* Radius tokens */
-  --radius-sm: 0.25rem;
-  --radius-md: 0.375rem;
-  --radius-lg: 0.5rem;
-  --radius-xl: 0.75rem;
-
-  /* Animation tokens - keyframes inside @theme are output when referenced by --animate-* variables */
-  --animate-fade-in: fade-in 0.2s ease-out;
-  --animate-fade-out: fade-out 0.2s ease-in;
-  --animate-slide-in: slide-in 0.3s ease-out;
-  --animate-slide-out: slide-out 0.3s ease-in;
-
-  @keyframes fade-in {
-    from {
-      opacity: 0;
-    }
-    to {
-      opacity: 1;
-    }
-  }
-
-  @keyframes fade-out {
-    from {
-      opacity: 1;
-    }
-    to {
-      opacity: 0;
-    }
-  }
-
-  @keyframes slide-in {
-    from {
-      transform: translateY(-0.5rem);
-      opacity: 0;
-    }
-    to {
-      transform: translateY(0);
-      opacity: 1;
-    }
-  }
-
-  @keyframes slide-out {
-    from {
-      transform: translateY(0);
-      opacity: 1;
-    }
-    to {
-      transform: translateY(-0.5rem);
-      opacity: 0;
-    }
-  }
-}
-
-/* Dark mode variant - use @custom-variant for class-based dark mode */
-@custom-variant dark (&:where(.dark, .dark *));
-
-/* Dark mode theme overrides */
-.dark {
-  --color-background: oklch(14.5% 0.025 264);
-  --color-foreground: oklch(98% 0.01 264);
-
-  --color-primary: oklch(98% 0.01 264);
-  --color-primary-foreground: oklch(14.5% 0.025 264);
-
-  --color-secondary: oklch(22% 0.02 264);
-  --color-secondary-foreground: oklch(98% 0.01 264);
-
-  --color-muted: oklch(22% 0.02 264);
-  --color-muted-foreground: oklch(65% 0.02 264);
-
-  --color-accent: oklch(22% 0.02 264);
-  --color-accent-foreground: oklch(98% 0.01 264);
-
-  --color-destructive: oklch(42% 0.15 27);
-  --color-destructive-foreground: oklch(98% 0.01 264);
-
-  --color-border: oklch(22% 0.02 264);
-  --color-ring: oklch(83% 0.02 264);
-
-  --color-card: oklch(14.5% 0.025 264);
-  --color-card-foreground: oklch(98% 0.01 264);
-
-  --color-ring-offset: oklch(14.5% 0.025 264);
-}
-
-/* Base styles */
 @layer base {
-  * {
-    @apply border-border;
+  :root {
+    /* Brand Colors */
+    --primary: oklch(0.55 0.18 250);
+    --primary-foreground: oklch(0.985 0 0);
+
+    /* Semantic Colors */
+    --background: oklch(0.99 0 0);
+    --foreground: oklch(0.15 0 0);
+    --secondary: oklch(0.96 0.01 250);
+    --secondary-foreground: oklch(0.20 0 0);
+
+    /* Validation: all colors must have foreground pair */
+    --destructive: oklch(0.55 0.22 25);
+    --destructive-foreground: oklch(0.985 0 0);
   }
 
-  body {
-    @apply bg-background text-foreground antialiased;
+  .dark {
+    --primary: oklch(0.65 0.20 250);
+    --background: oklch(0.14 0 0);
+    --foreground: oklch(0.97 0 0);
+    --secondary: oklch(0.25 0.02 250);
   }
 }
 ```
 
-## Core Concepts
-
-### 1. Design Token Hierarchy
-
-```
-Brand Tokens (abstract)
-    └── Semantic Tokens (purpose)
-        └── Component Tokens (specific)
-
-Example:
-    oklch(45% 0.2 260) → --color-primary → bg-primary
+**Validation checkpoint**: Verify tokens are valid CSS:
+```bash
+grep -E "^[[:space:]]*--[a-z-]+:" src/app/globals.css | wc -l
+# Should return count of defined tokens (e.g., 10+)
 ```
 
-### 2. Component Architecture
+### Step 3: Configure Theming Infrastructure
 
+Bridge CSS variables to Tailwind utilities (Tailwind v4.1+):
+
+```css
+@theme inline {
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+}
 ```
-Base styles → Variants → Sizes → States → Overrides
+
+Add dark mode class toggle in `components/providers/theme-provider.tsx`:
+```tsx
+import { useEffect } from "react";
+export function ThemeProvider({ children }: { children: React.ReactNode }) {
+  useEffect(() => {
+    const isDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+    document.documentElement.classList.toggle("dark", isDark);
+  }, []);
+  return <>{children}</>;
+}
 ```
 
-## Detailed patterns and worked examples
+**Validation checkpoint**: Test dark mode:
+```bash
+document.documentElement.classList.contains("dark") // in browser console
+```
 
-Detailed pattern documentation lives in `references/details.md`. Read that file when the navigation tier above is insufficient.
+### Step 4: Wrap shadcn/ui Components
 
+Create `src/components/ds/Button.tsx`:
+```tsx
+import { Button as ShadcnButton } from "@/components/ui/button";
+
+type DSVariant = "primary" | "secondary" | "destructive" | "ghost";
+const variantMap: Record<DSVariant, "default" | "secondary" | "destructive" | "ghost"> = {
+  primary: "default", secondary: "secondary",
+  destructive: "destructive", ghost: "ghost",
+};
+
+export function Button({ variant = "primary", ...props }: { variant?: DSVariant } & React.ComponentProps<typeof ShadcnButton>) {
+  return <ShadcnButton variant={variantMap[variant]} {...props} />;
+}
+```
+
+**Validation checkpoint**: Verify build passes:
+```bash
+npx tsc --noEmit src/components/ds/Button.tsx
+```
+
+### Step 5: Validate and Document
+
+Run the token validation script:
+```bash
+REQUIRED=("primary" "primary-foreground" "background" "foreground" "secondary" "secondary-foreground")
+for token in "${REQUIRED[@]}"; do
+  grep -q "$token:" src/app/globals.css || echo "MISSING: --$token"
+done
+```
+
+**Validation checkpoint**: Ensure all shadcn components use DS tokens:
+```bash
+grep -r "bg-primary\|text-primary\|bg-background" src/components/ds/
+```
+
+## Examples
+
+### Adding Custom Tokens
+
+Extend the base tokens in `globals.css`:
+
+```css
+:root {
+  --warning: oklch(0.84 0.16 84);
+  --warning-foreground: oklch(0.28 0.07 46);
+}
+
+.dark {
+  --warning: oklch(0.41 0.11 46);
+  --warning-foreground: oklch(0.99 0.02 95);
+}
+
+@theme inline {
+  --color-warning: var(--warning);
+  --color-warning-foreground: var(--warning-foreground);
+}
+```
+
+Usage: `<div className="bg-warning text-warning-foreground">Warning</div>`
+
+### Wrapping shadcn/ui Components as Design System Primitives
+
+See `references/component-wrapping.md` for complete examples including Button, Text, and Stack primitives with full TypeScript types.
+
+Create constrained design system components that enforce token usage.
+Inline example:
+
+```tsx
+import { Button as ShadcnButton } from "@/components/ui/button";
+
+export function Button({ variant = "primary", size = "md", ...props }) {
+  const variantMap = { primary: "default", secondary: "secondary" };
+  const sizeMap = { sm: "sm", md: "default", lg: "lg" };
+  return (
+    <ShadcnButton
+      variant={variantMap[variant]}
+      size={sizeMap[size]}
+      {...props}
+    />
+  );
+}
+```
+
+### Multi-Theme Support
+
+For applications requiring multiple brand themes beyond light/dark:
+
+```css
+[data-theme="ocean"] {
+  --primary: oklch(0.55 0.18 230);
+  --primary-foreground: oklch(0.985 0 0);
+}
+
+[data-theme="forest"] {
+  --primary: oklch(0.50 0.15 145);
+  --primary-foreground: oklch(0.985 0 0);
+}
+```
+
+```tsx
+const [theme, setTheme] = useState("light");
+useEffect(() => {
+  document.documentElement.setAttribute("data-theme", theme);
+}, [theme]);
+```
+
+### Design Token Validation
+
+Verify all required tokens are defined:
+
+```bash
+#!/bin/bash
+REQUIRED=("--background" "--foreground" "--primary" "--primary-foreground")
+for token in "${REQUIRED[@]}"; do
+  grep -q "$token:" src/styles/globals.css || echo "Missing: $token"
+done
+```
+
+## Constraints and Warnings
+
+- **oklch color format**: Use oklch for perceptual uniformity. Not all browsers support oklch natively; check compatibility if targeting older browsers
+- **Token naming**: Follow the shadcn/ui convention (`--primary`, `--primary-foreground`) for seamless integration
+- **`@`theme inline vs `@`theme**: Use `@theme inline` when bridging CSS variables to Tailwind utilities; use `@theme` for direct token definition
+- **Component wrapping**: Keep wrapper components thin. Only add constraints that enforce design system rules; avoid duplicating shadcn/ui logic
+- **Dark mode**: Always define dark mode values for every token in `:root`. Missing dark tokens cause visual regressions
+- **CSS variable scoping**: Tokens defined in `:root` are global. Use `[data-theme]` selectors for multi-theme without conflicts
+- **Performance**: Avoid excessive CSS custom property chains. Each `var()` lookup adds minimal but non-zero overhead
+- **Tailwind v4 vs v3**: The `@theme` directive and `@theme inline` are v4.1+ features. For v3 projects, use `tailwind.config.js` with `theme.extend`
+
+## Best Practices
+
+1. **Single source of truth**: All design tokens live in `globals.css`. Never hardcode color values in components
+2. **Semantic naming**: Use purpose-based names (`--primary`, `--destructive`) not appearance-based (`--blue-500`, `--red-600`)
+3. **Foreground pairing**: Every background token must have a matching `-foreground` token for contrast compliance
+4. **Token scale**: Define a complete scale for custom palettes (50-950) to provide flexibility
+5. **Component barrel exports**: Export all DS components from a single `index.ts` for clean imports
+6. **Accessibility**: Ensure all token pairs (background/foreground) meet WCAG AA contrast (4.5:1 for text, 3:1 for large text)
+7. **Document tokens**: Maintain a visual reference of all tokens for the team
+8. **Consistent spacing**: Use Tailwind's spacing scale (`gap-2`, `gap-4`, `gap-6`) through DS components rather than arbitrary values
+
+## References
+
+- Tailwind CSS v4 Theme Configuration: https://tailwindcss.com/docs/theme
+- Tailwind CSS Functions and Directives: https://tailwindcss.com/docs/functions-and-directives
+- shadcn/ui Theming Guide: https://ui.shadcn.com/docs/theming
+- shadcn/ui Installation (Manual): https://ui.shadcn.com/docs/installation/manual
+- oklch Color Space: https://oklch.com

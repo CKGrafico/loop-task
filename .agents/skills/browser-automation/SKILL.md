@@ -8,10 +8,9 @@ metadata:
   version: "1.0"
 ---
 
-Browser MCP tools are permitted ONLY for interactions with the LOCAL running app on `localhost` URLs.
-**Navigating to external services (github.com, dev.azure.com, etc.) via browser MCP is FORBIDDEN.**
+This skill operates on `localhost` URLs only. Screenshots, clicks, typing, scrolling, and queries on locally running apps are in scope. External services (github.com, dev.azure.com, npmjs.com, etc.) are out of scope for browser tools.
 
----
+The only exception: when the user selects "Others (Browser)" as their backlog platform during onboarding, the `ob-userstory` skill may navigate to work item URLs the user explicitly provides. That is the sole case where external navigation is permitted, and only to URLs the user explicitly gives you.
 
 ## Best-practice workflow
 
@@ -23,8 +22,6 @@ Browser MCP tools are permitted ONLY for interactions with the LOCAL running app
 6. Click, type, or select using `index`
 7. Confirm using `browser_query` or `browser_snapshot`
 
----
-
 ## CLI-first debugging
 
 - List all available tools: `npx @different-ai/opencode-browser tools`
@@ -33,15 +30,11 @@ Browser MCP tools are permitted ONLY for interactions with the LOCAL running app
 - Run smoke test: `npx @different-ai/opencode-browser self-test`
 - After `update`, reload the unpacked extension in `chrome://extensions`
 
----
-
 ## Selecting options
 
 - Use `browser_select` for native `<select>` elements
 - Prefer `value` or `label`; use `optionIndex` when needed
 - Example: `browser_select({ selector: "select", value: "plugin" })`
-
----
 
 ## Query modes
 
@@ -51,14 +44,10 @@ Browser MCP tools are permitted ONLY for interactions with the LOCAL running app
 - `exists`: check presence and count
 - `page_text`: extract visible page text
 
----
-
 ## Opening tabs
 
 - Use `browser_open_tab` to create a new tab, optionally with `url` and `active`
 - Example: `browser_open_tab({ url: "https://example.com", active: false })`
-
----
 
 ## Troubleshooting
 
@@ -66,17 +55,12 @@ Browser MCP tools are permitted ONLY for interactions with the LOCAL running app
 - Use `mode=list` on broad selectors (`button`, `a`, `*[role="button"]`, `*[role="listitem"]`) and choose by index
 - For inbox/chat panes, try text selectors first (`text:Subject line`) then verify selection with `browser_query`
 - For scrollable containers, pass both `selector` and `x`/`y` to `browser_scroll` and then verify `scrollTop`
-- Confirm results after each action
 
----
+## Scope
 
-## Guardrails
-
-- ✅ Screenshots of locally running app on `localhost` URLs
-- ✅ Click, type, scroll, query on `localhost` pages
-- ✅ Navigate to work item URLs the user EXPLICITLY provides (when backlog platform is "Others (Browser)")
-- ❌ Navigate to external services (github.com, dev.azure.com, npmjs.com, etc.) for non-work-item purposes, FORBIDDEN
-- ❌ Use browser tools for any DevOps or GitHub CLI operations, FORBIDDEN
-- ❌ Use browser tools to read or modify production systems, FORBIDDEN
-
-**Exception for "Others (Browser)" backlog platform:** When the user selects "Others (Browser)" as their backlog platform during onboarding, the `ob-userstory` skill explicitly allows navigating to work item URLs the user provides. This is the ONLY case where external navigation is permitted: and ONLY to URLs the user explicitly gives you.
+- Screenshots of locally running app on `localhost` URLs: in scope
+- Click, type, scroll, query on `localhost` pages: in scope
+- Navigate to work item URLs the user explicitly provides (when backlog platform is "Others (Browser)"): in scope
+- Navigate to external services for non-work-item purposes: out of scope
+- DevOps or GitHub CLI operations via browser tools: out of scope
+- Reading or modifying production systems via browser tools: out of scope
