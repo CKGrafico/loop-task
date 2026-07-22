@@ -72,3 +72,17 @@ export function buildMeta(
 ): LoopMeta {
   return toMeta(entry.controller, entry.options, entry.intervalHuman, taskManager);
 }
+
+export function buildRecipeMeta(
+  id: string,
+  entry: StoredLoop,
+  taskManager: TaskManager,
+  recipeFile?: string,
+): LoopMeta {
+  const base = toMeta(entry.controller, entry.options, entry.intervalHuman, taskManager);
+  return {
+    ...base,
+    isRecipe: true,
+    recipeFile: recipeFile ?? "",
+  };
+}

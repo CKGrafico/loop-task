@@ -57,6 +57,10 @@ export function registerLoopRoutes(manager: LoopManager, routes: RouteEntry[], r
 
   r("PATCH", "/api/loops/:id", async (req, res, params) => {
     try {
+      if (manager.isRecipeLoop(params.id)) {
+        sendError(res, 403, "Recipe loops only allow editing interval, maxRuns, and context");
+        return;
+      }
       const body = await readBody(req) as Record<string, unknown>;
       let context: Record<string, unknown> | undefined;
       if (body.context !== undefined) {
@@ -93,6 +97,10 @@ export function registerLoopRoutes(manager: LoopManager, routes: RouteEntry[], r
   });
 
   r("DELETE", "/api/loops/:id", async (_req, res, params) => {
+    if (manager.isRecipeLoop(params.id)) {
+      sendError(res, 403, "Recipe loops cannot be deleted; remove the recipe file instead");
+      return;
+    }
     const ok = await manager.delete(params.id);
     if (!ok) {
       sendNotFound(res, params.id);

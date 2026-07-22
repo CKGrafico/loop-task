@@ -3,10 +3,12 @@ import path from "node:path";
 import { createHash } from "node:crypto";
 import { loopsJson, tasksJson, projectsJson } from "../../shared/config/paths.js";
 import type { LoopMeta, TaskDefinition, Project } from "../../types.js";
-import { loadAllLoops, saveLoop } from "../state/index.js";
+import { loadAllLoops } from "../state/index.js";
 import type { LoopManager } from "../managers/loop-manager.js";
 import type { TaskManager } from "../managers/task-manager.js";
 import type { ProjectManager } from "../managers/project-manager.js";
+import type { RecipeScanner } from "../recipe/scanner.js";
+import type { DeferredReloadManager } from "../recipe/deferred-reload.js";
 
 const DEBOUNCE_MS = 300;
 const MTIME_POLL_MS = 2000;
@@ -17,17 +19,29 @@ interface WatcherEntry {
   lastMtime: number;
 }
 
+interface DirWatcherEntry {
+  debounceTimer: ReturnType<typeof setTimeout> | null;
+}
+
 export class FileWatcher {
   private watchers = new Map<string, WatcherEntry>();
   private mtimeTimers = new Map<string, ReturnType<typeof setInterval>>();
+  private dirWatchers = new Map<string, DirWatcherEntry>();
   private loopManager: LoopManager | null = null;
   private taskManager: TaskManager | null = null;
   private projectManager: ProjectManager | null = null;
+  private recipeScanner: RecipeScanner | null = null;
+  private deferredReload: DeferredReloadManager | null = null;
 
   setManagers(loopManager: LoopManager, taskManager: TaskManager, projectManager: ProjectManager): void {
     this.loopManager = loopManager;
     this.taskManager = taskManager;
     this.projectManager = projectManager;
+  }
+
+  setRecipeScanner(scanner: RecipeScanner, deferredReload: DeferredReloadManager): void {
+    this.recipeScanner = scanner;
+    this.deferredReload = deferredReload;
   }
 
   start(): void {
@@ -193,5 +207,80 @@ export class FileWatcher {
     }
 
     this.projectManager.reload(newProjects);
+  }
+
+  watchRecipeDirectory(projectId: string, recipesDir: string): void {
+    if (this.dirWatchers.has(recipesDir)) return;
+
+    this.dirWatchers.set(recipesDir, { debounceTimer: null });
+
+    try {
+      fs.mkdirSync(recipesDir, { recursive: true });
+    } catch {
+      // directory may not be creatable (remote fs, permissions)
+    }
+
+    try {
+      fs.watch(recipesDir, (eventType, filename) => {
+        if (!filename || !filename.endsWith(".json")) return;
+        this.handleRecipeFileEvent(projectId, recipesDir, filename);
+      });
+    } catch {
+      // fs.watch not available on this path
+    }
+  }
+
+  stopWatchingRecipeDirectory(recipesDir: string): void {
+    const entry = this.dirWatchers.get(recipesDir);
+    if (entry?.debounceTimer) {
+      clearTimeout(entry.debounceTimer);
+    }
+    this.dirWatchers.delete(recipesDir);
+  }
+
+  private handleRecipeFileEvent(projectId: string, recipesDir: string, filename: string): void {
+    if (!this.recipeScanner) return;
+
+    const entry = this.dirWatchers.get(recipesDir);
+    if (!entry) return;
+
+    if (entry.debounceTimer) {
+      clearTimeout(entry.debounceTimer);
+    }
+
+    entry.debounceTimer = setTimeout(() => {
+      entry.debounceTimer = null;
+      this.processRecipeFileChange(projectId, recipesDir, filename);
+    }, DEBOUNCE_MS);
+  }
+
+  private processRecipeFileChange(projectId: string, recipesDir: string, filename: string): void {
+    if (!this.recipeScanner || !this.loopManager) return;
+
+    const filePath = path.join(recipesDir, filename);
+
+    const existingRecipe = this.recipeScanner.findRecipeByPath(filePath);
+
+    if (!fs.existsSync(filePath)) {
+      if (existingRecipe) {
+        this.recipeScanner.unloadRecipe(existingRecipe.id);
+        this.deferredReload?.cancelReload(existingRecipe.id);
+      }
+      return;
+    }
+
+    if (existingRecipe) {
+      const isRunning = this.loopManager.isRunning(existingRecipe.id);
+      if (isRunning && this.deferredReload) {
+        const entry = this.loopManager["recipes"].get(existingRecipe.id);
+        if (entry) {
+          this.deferredReload.requestReload(existingRecipe.id, filePath, entry.controller);
+        }
+      } else {
+        this.recipeScanner.reloadRecipe(existingRecipe.id);
+      }
+    } else {
+      this.recipeScanner.loadRecipe(projectId, filePath, filename);
+    }
   }
 }

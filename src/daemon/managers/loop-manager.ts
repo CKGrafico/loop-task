@@ -13,17 +13,26 @@ import {
 import { daemonLog } from "../daemon-log.js";
 import { type StoredLoop } from "./loop-options.js";
 import { createLoopEntry, metaToState } from "./loop-entry.js";
-import { wireEvents, persistLoop, buildMeta } from "./loop-serialization.js";
+import { wireEvents, persistLoop, buildMeta, buildRecipeMeta } from "./loop-serialization.js";
+import { writeRecipeOverrides } from "../recipe/file-writer.js";
+import type { RecipeScanner } from "../recipe/scanner.js";
 
 export class LoopManager {
   private loops = new Map<string, StoredLoop>();
+  private recipes = new Map<string, StoredLoop>();
+  private recipeMeta = new Map<string, { isRecipe: true; recipeFile: string }>();
   private lastSerialized = new Map<string, string>();
   private taskManager: TaskManager;
   private projectManager: ProjectManager;
+  private recipeScanner: RecipeScanner | null = null;
 
   constructor(taskManager: TaskManager, projectManager?: ProjectManager) {
     this.taskManager = taskManager;
     this.projectManager = projectManager || new ProjectManager();
+  }
+
+  setRecipeScanner(scanner: RecipeScanner): void {
+    this.recipeScanner = scanner;
   }
 
   private taskResolver = (taskId: string) => this.taskManager.get(taskId);
@@ -84,6 +93,11 @@ export class LoopManager {
     options: LoopOptions,
     intervalHuman: string
   ): Promise<boolean> {
+    const recipeEntry = this.recipes.get(id);
+    if (recipeEntry) {
+      return this.updateRecipe(id, options, intervalHuman, recipeEntry);
+    }
+
     const entry = this.loops.get(id);
     if (!entry) return false;
 
@@ -113,10 +127,63 @@ export class LoopManager {
     return true;
   }
 
+  private updateRecipe(id: string, options: LoopOptions, intervalHuman: string, entry: StoredLoop): boolean {
+    if (options.taskId !== entry.options.taskId ||
+        options.command !== entry.options.command ||
+        options.commandArgs.join(" ") !== entry.options.commandArgs.join(" ") ||
+        options.cwd !== entry.options.cwd ||
+        options.immediate !== entry.options.immediate ||
+        options.verbose !== entry.options.verbose ||
+        options.description !== entry.options.description ||
+        options.offset !== entry.options.offset ||
+        options.projectId !== entry.options.projectId) {
+      throw new Error("Recipe loops only allow editing interval, maxRuns, and context");
+    }
+
+    const intervalChanged = entry.options.interval !== options.interval;
+    const maxRunsChanged = entry.options.maxRuns !== options.maxRuns;
+    const contextChanged = JSON.stringify(entry.options.context) !== JSON.stringify(options.context);
+
+    Object.assign(entry.options, options);
+    entry.intervalHuman = intervalHuman;
+
+    if (maxRunsChanged) {
+      entry.controller.clearMaxRunsReached();
+    }
+
+    if (intervalChanged || maxRunsChanged || contextChanged) {
+      const recipeInfo = this.recipeMeta.get(id);
+      if (recipeInfo && this.recipeScanner) {
+        const recipeEntry = this.recipeScanner.getRecipe(id);
+        if (recipeEntry) {
+          try {
+            writeRecipeOverrides(recipeEntry.filePath, {
+              interval: options.interval,
+              intervalHuman,
+              maxRuns: options.maxRuns,
+              context: options.context,
+            });
+          } catch (err) {
+            daemonLog(`error writing recipe overrides for ${id}: ${String(err)}`);
+          }
+        }
+      }
+    }
+
+    if (entry.controller.status === "running" && intervalChanged) {
+      entry.controller.pause(true);
+    }
+    return true;
+  }
+
   list(): LoopMeta[] {
     const result: LoopMeta[] = [];
     for (const [id, entry] of this.loops) {
       result.push(buildMeta(id, entry, this.taskManager));
+    }
+    for (const [id, entry] of this.recipes) {
+      const meta = this.recipeMeta.get(id);
+      result.push(buildRecipeMeta(id, entry, this.taskManager, meta?.recipeFile));
     }
     return result;
   }
@@ -140,36 +207,54 @@ export class LoopManager {
         this.persist(loopId, entry.controller, entry.options, entry.intervalHuman);
       }
     }
+
+    if (this.recipeScanner) {
+      this.recipeScanner.unloadRecipesForProject(id);
+    }
+
     this.projectManager.delete(id);
   }
 
   status(id: string): LoopMeta | null {
-    const entry = this.loops.get(id);
-    if (!entry) return null;
-    return buildMeta(id, entry, this.taskManager);
+    const userEntry = this.loops.get(id);
+    if (userEntry) return buildMeta(id, userEntry, this.taskManager);
+
+    const recipeEntry = this.recipes.get(id);
+    if (recipeEntry) {
+      const meta = this.recipeMeta.get(id);
+      return buildRecipeMeta(id, recipeEntry, this.taskManager, meta?.recipeFile);
+    }
+
+    return null;
   }
 
   pause(id: string): boolean {
-    const entry = this.loops.get(id);
+    const entry = this.loops.get(id) ?? this.recipes.get(id);
     if (!entry) return false;
     entry.controller.pause();
-    this.persist(id, entry.controller, entry.options, entry.intervalHuman);
+    if (this.loops.has(id)) {
+      this.persist(id, entry.controller, entry.options, entry.intervalHuman);
+    }
     return true;
   }
 
   resume(id: string): boolean {
-    const entry = this.loops.get(id);
+    const entry = this.loops.get(id) ?? this.recipes.get(id);
     if (!entry) return false;
     entry.controller.resume();
-    this.persist(id, entry.controller, entry.options, entry.intervalHuman);
+    if (this.loops.has(id)) {
+      this.persist(id, entry.controller, entry.options, entry.intervalHuman);
+    }
     return true;
   }
 
   stopLoop(id: string): boolean {
-    const entry = this.loops.get(id);
+    const entry = this.loops.get(id) ?? this.recipes.get(id);
     if (!entry) return false;
     entry.controller.stopLoop(true);
-    this.persist(id, entry.controller, entry.options, entry.intervalHuman);
+    if (this.loops.has(id)) {
+      this.persist(id, entry.controller, entry.options, entry.intervalHuman);
+    }
     return true;
   }
 
@@ -180,40 +265,48 @@ export class LoopManager {
       this.persist(id, entry.controller, entry.options, entry.intervalHuman);
       count++;
     }
+    for (const [, entry] of this.recipes) {
+      entry.controller.stopLoop(true);
+      count++;
+    }
     return count;
   }
 
   playLoop(id: string): boolean {
-    const entry = this.loops.get(id);
+    const entry = this.loops.get(id) ?? this.recipes.get(id);
     if (!entry) return false;
     const ok = entry.controller.playLoop();
-    if (ok) {
+    if (ok && this.loops.has(id)) {
       this.persist(id, entry.controller, entry.options, entry.intervalHuman);
     }
     return ok;
   }
 
   trigger(id: string): boolean {
-    const entry = this.loops.get(id);
+    const entry = this.loops.get(id) ?? this.recipes.get(id);
     if (!entry) return false;
     const ok = entry.controller.triggerNow();
-    if (ok) {
+    if (ok && this.loops.has(id)) {
       this.persist(id, entry.controller, entry.options, entry.intervalHuman);
     }
     return ok;
   }
 
   isMaxRunsBlocked(id: string): boolean {
-    const entry = this.loops.get(id);
+    const entry = this.loops.get(id) ?? this.recipes.get(id);
     return !!entry?.controller.isMaxRunsReached();
   }
 
   isRunning(id: string): boolean {
-    const entry = this.loops.get(id);
+    const entry = this.loops.get(id) ?? this.recipes.get(id);
     return entry?.controller.status === "running";
   }
 
   async delete(id: string): Promise<boolean> {
+    if (this.recipes.has(id)) {
+      throw new Error("Recipe loops cannot be deleted; remove the recipe file instead");
+    }
+
     const entry = this.loops.get(id);
     if (!entry) return false;
     await entry.controller.stop();
@@ -224,8 +317,8 @@ export class LoopManager {
   }
 
   getLogPath(id: string): string | null {
-    if (!this.loops.has(id)) return null;
-    return getLogPath(id);
+    if (this.loops.has(id) || this.recipes.has(id)) return getLogPath(id);
+    return null;
   }
 
   async shutdown(): Promise<void> {
@@ -233,8 +326,12 @@ export class LoopManager {
     for (const [, entry] of this.loops) {
       stops.push(entry.controller.stop());
     }
+    for (const [, entry] of this.recipes) {
+      stops.push(entry.controller.stop());
+    }
     await Promise.all(stops);
     this.loops.clear();
+    this.recipes.clear();
   }
 
   reconcile(newLoops: LoopMeta[]): void {
@@ -277,5 +374,26 @@ export class LoopManager {
         }
       }
     }
+  }
+
+  addRecipeLoop(id: string, entry: StoredLoop, recipeFile: string): void {
+    this.recipes.set(id, entry);
+    this.recipeMeta.set(id, { isRecipe: true, recipeFile });
+    wireEvents(id, entry.controller, entry.options, entry.intervalHuman, () => {
+      // Recipe loop state changes are not persisted to loops.json
+    });
+  }
+
+  removeRecipeLoop(id: string): void {
+    const entry = this.recipes.get(id);
+    if (entry) {
+      entry.controller.stopLoop(true);
+      this.recipes.delete(id);
+      this.recipeMeta.delete(id);
+    }
+  }
+
+  isRecipeLoop(id: string): boolean {
+    return this.recipes.has(id);
   }
 }

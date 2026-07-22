@@ -52,6 +52,7 @@ function createMocks() {
     playLoop: vi.fn((_id: string) => true),
     isMaxRunsBlocked: vi.fn(() => false),
     isRunning: vi.fn(() => false),
+    isRecipeLoop: vi.fn(() => false),
     getLogPath: vi.fn((_id: string) => null),
   };
   const mockTaskManager = {

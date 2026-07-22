@@ -62,16 +62,28 @@ export function registerTaskRoutes(taskManager: TaskManager, r: (method: string,
       }
       sendOk(res, updated);
     } catch (err) {
+      if (err instanceof Error && err.message.includes("immutable")) {
+        sendError(res, 403, err.message);
+        return;
+      }
       sendError(res, 400, err instanceof Error ? err.message : String(err));
     }
   });
 
   r("DELETE", "/api/tasks/:id", (_req, res, params) => {
-    if (!taskManager.delete(params.id)) {
-      sendNotFound(res, params.id);
-      return;
+    try {
+      if (!taskManager.delete(params.id)) {
+        sendNotFound(res, params.id);
+        return;
+      }
+      sendOk(res);
+    } catch (err) {
+      if (err instanceof Error && err.message.includes("immutable")) {
+        sendError(res, 403, err.message);
+        return;
+      }
+      sendError(res, 400, err instanceof Error ? err.message : String(err));
     }
-    sendOk(res);
   });
 
   r("POST", "/api/task-chains", async (req, res) => {

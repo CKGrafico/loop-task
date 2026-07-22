@@ -139,9 +139,13 @@ export function registerMcpTools(server: McpServer, deps: McpToolDeps): void {
   );
 
   server.registerTool("delete_loop", { description: "Delete a loop by ID", inputSchema: { id: z.string().describe("Loop ID") } }, async (args) => {
-    const deleted = await manager.delete(args.id as string);
-    if (!deleted) return err(`Loop not found: ${args.id}`);
-    return ok();
+    try {
+      const deleted = await manager.delete(args.id as string);
+      if (!deleted) return err(`Loop not found: ${args.id}`);
+      return ok();
+    } catch (e) {
+      return err(e instanceof Error ? e.message : String(e));
+    }
   });
 
   server.registerTool("pause_loop", { description: "Pause a loop", inputSchema: { id: z.string().describe("Loop ID") } }, async (args) => {
@@ -280,8 +284,12 @@ export function registerMcpTools(server: McpServer, deps: McpToolDeps): void {
   );
 
   server.registerTool("delete_task", { description: "Delete a task by ID", inputSchema: { id: z.string().describe("Task ID") } }, async (args) => {
-    if (!taskManager.delete(args.id as string)) return err(`Task not found: ${args.id}`);
-    return ok();
+    try {
+      if (!taskManager.delete(args.id as string)) return err(`Task not found: ${args.id}`);
+      return ok();
+    } catch (e) {
+      return err(e instanceof Error ? e.message : String(e));
+    }
   });
 
   server.registerTool("list_projects", { description: "List all projects" }, async () => {

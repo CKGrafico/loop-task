@@ -63,7 +63,7 @@ export interface LoopState {
   shuttingDown: boolean;
 }
 
-export type LoopStatus = "running" | "paused" | "idle" | "waiting";
+export type LoopStatus = "running" | "paused" | "idle" | "waiting" | "stopped";
 
 export type RunStatus = "running" | "completed";
 
@@ -110,6 +110,8 @@ export interface LoopMeta {
   offset: number | null;
   context?: Record<string, unknown>;
   totalRunCount?: number;
+  isRecipe?: boolean;
+  recipeFile?: string;
 }
 
 export interface DaemonSettings {

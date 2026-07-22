@@ -24,8 +24,12 @@ export async function handleUpdate(
   ctx: HandlerContext
 ): Promise<void> {
   const { id, intervalHuman, ...options } = request.payload;
-  const ok = await ctx.manager.update(id, options, intervalHuman);
-  ctx.respondOk(socket, ok, id, ok ? { id } : undefined);
+  try {
+    const ok = await ctx.manager.update(id, options, intervalHuman);
+    ctx.respondOk(socket, ok, id, ok ? { id } : undefined);
+  } catch (err) {
+    send(socket, { type: "error", message: err instanceof Error ? err.message : String(err) });
+  }
 }
 
 export function handleList(
@@ -111,6 +115,10 @@ export async function handleDelete(
   socket: import("node:net").Socket,
   ctx: HandlerContext
 ): Promise<void> {
-  const ok = await ctx.manager.delete(request.payload.id);
-  ctx.respondOk(socket, ok, request.payload.id);
+  try {
+    const ok = await ctx.manager.delete(request.payload.id);
+    ctx.respondOk(socket, ok, request.payload.id);
+  } catch (err) {
+    send(socket, { type: "error", message: err instanceof Error ? err.message : String(err) });
+  }
 }
