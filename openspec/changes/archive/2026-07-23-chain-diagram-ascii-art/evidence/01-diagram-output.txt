@@ -1,0 +1,23 @@
++---------------------------------------+
+|  Dev 1 - To Implement                   |
+|    Step 1: gh issue list                |
+|    Step 2: gh issue edit                |
+|    onSuccess -> Dev 2 - Implementing    |
+|    onFailure -> No Tasks (silent)       |
++---------------------------------------+
+               |               
+               v
++-----------------------------------------------+
+|  Dev 2 - Implementing                           |
+|    opencode run /plan-goal                      |
+|    onSuccess -> (none)                          |
+|    onFailure -> Dev 1 - To Implement (cycle)    |
++-----------------------------------------------+
+               |               
+               v
++-------------------------+
+|  No Tasks [s]             |
+|    echo                   |
+|    onSuccess -> (none)    |
+|    onFailure -> (none)    |
++-------------------------+
