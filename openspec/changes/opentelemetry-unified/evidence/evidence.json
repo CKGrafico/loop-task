@@ -1,0 +1,23 @@
+{
+  "version": 1,
+  "changeId": "opentelemetry-unified",
+  "required": true,
+  "status": "passed",
+  "assets": [
+    {
+      "type": "text-capture",
+      "path": "openspec/changes/opentelemetry-unified/evidence/01-telemetry-cli-subcommand-is-registered.txt",
+      "caption": "Telemetry CLI subcommand is registered",
+      "bytes": 547,
+      "format": "txt"
+    },
+    {
+      "type": "text-capture",
+      "path": "openspec/changes/opentelemetry-unified/evidence/02-telemetry-status-command-runs.txt",
+      "caption": "Telemetry status command runs",
+      "bytes": 372,
+      "format": "txt"
+    }
+  ],
+  "prMarkdown": "## Evidence ✅ passed\n- **Telemetry CLI subcommand is registered** (txt, 547 bytes)\n- **Telemetry status command runs** (txt, 372 bytes)"
+}

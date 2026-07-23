@@ -1,0 +1,20 @@
+# Telemetry CLI subcommand is registered
+# Exit code: 0
+
+## stdout
+Usage: loop-task telemetry [options] [command]
+
+Manage OpenTelemetry configuration
+
+Options:
+  -h, --help           display help for command
+
+Commands:
+  status               Show OpenTelemetry status and configuration
+  on                   Enable OpenTelemetry
+  off                  Disable OpenTelemetry
+  endpoint <url>       Set the OTLP export endpoint
+  protocol <protocol>  Set the OTLP export protocol
+  test                 Test the OpenTelemetry connection
+
+## stderr

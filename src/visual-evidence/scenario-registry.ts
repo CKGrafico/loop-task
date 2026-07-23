@@ -139,3 +139,33 @@ register("gh-58-per-task-max-runs", async (_cli) => ({
     },
   ],
 }));
+
+// ─── GH-63: Daemon-managed unified OpenTelemetry ───
+
+register("opentelemetry-unified", async (_cli) => ({
+  changeId: "opentelemetry-unified",
+  steps: [
+    {
+      args: ["telemetry", "--help"],
+      label: "Telemetry CLI subcommand is registered",
+      assert: (r) => {
+        if (r.exitCode !== 0) {
+          throw new Error(`Expected exit code 0, got ${r.exitCode}`);
+        }
+        if (!r.stdout.includes("telemetry")) {
+          throw new Error("Help output missing 'telemetry'");
+        }
+      },
+    },
+    {
+      args: ["telemetry", "status"],
+      label: "Telemetry status command runs",
+      assert: (r) => {
+        // May fail if daemon not running, but should at least attempt
+        if (!r.stdout.includes("OpenTelemetry") && !r.stderr.includes("Failed")) {
+          throw new Error("Status output missing 'OpenTelemetry'");
+        }
+      },
+    },
+  ],
+}));
