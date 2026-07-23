@@ -1,5 +1,8 @@
-## MODIFIED Requirements
+# task-management Specification
 
+## Purpose
+TBD - created by archiving change recipe-loops. Update Purpose after archive.
+## Requirements
 ### Requirement: TaskManager serves recipe tasks alongside user tasks
 The `list()` method SHALL return tasks from both the user task map and `RecipeTaskStore`. The `get()` method SHALL check the user task map first, then `RecipeTaskStore`. The `update()` and `delete()` methods SHALL throw for recipe tasks. The `reload()` method SHALL only reload user tasks from `tasks.json` (recipe tasks remain in their own store).
 
@@ -14,3 +17,4 @@ The `list()` method SHALL return tasks from both the user task map and `RecipeTa
 #### Scenario: Reload only affects user tasks
 - **WHEN** `reload(newTasks)` is called
 - **THEN** the system SHALL clear and reload only user tasks; recipe tasks SHALL remain unchanged
+

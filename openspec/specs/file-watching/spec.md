@@ -1,5 +1,8 @@
-## MODIFIED Requirements
+# file-watching Specification
 
+## Purpose
+TBD - created by archiving change recipe-loops. Update Purpose after archive.
+## Requirements
 ### Requirement: FileWatcher watches recipe directories per project
 The FileWatcher SHALL watch `{project.directory}/.loops/recipes/` directories for each project that has a directory set. Recipe file additions, modifications, and deletions SHALL trigger the corresponding RecipeScanner actions.
 
@@ -21,3 +24,4 @@ When the daemon writes override values back to a recipe JSON file, the FileWatch
 #### Scenario: Daemon writes override to recipe file
 - **WHEN** the daemon writes updated `interval` to a recipe file and calls `registerSelfWrite`
 - **THEN** the subsequent file change event SHALL be ignored
+

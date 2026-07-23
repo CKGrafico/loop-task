@@ -1,5 +1,8 @@
-## MODIFIED Requirements
+# loop-management Specification
 
+## Purpose
+TBD - created by archiving change recipe-loops. Update Purpose after archive.
+## Requirements
 ### Requirement: LoopManager list returns combined user and recipe loops
 The `list()` method SHALL return `LoopMeta` entries from both the `.loops` map (user-created) and the `.recipes` map (recipe-loaded), with recipe entries marked `isRecipe: true`.
 
@@ -27,3 +30,4 @@ When `deleteProject()` is called, recipe loops belonging to that project SHALL b
 #### Scenario: Delete project with recipe and user loops
 - **WHEN** `deleteProject(projectId)` is called
 - **THEN** recipe loops from that project SHALL be deleted, user loops reassigned to default
+
