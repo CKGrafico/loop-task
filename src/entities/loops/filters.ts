@@ -32,6 +32,7 @@ const statusOrder: Record<LoopMeta["status"], number> = {
   waiting: 1,
   paused: 2,
   idle: 3,
+  stopped: 4,
 };
 
 function intervalBucketOf(interval: number): IntervalFilter {
