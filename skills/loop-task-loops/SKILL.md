@@ -14,7 +14,7 @@ A Loop is a **cadence** — a recurring schedule that decides when an iteration 
 
 ## Pre-Design Questionnaire
 
-Before designing a Loop, use the **question** tool to ask the user about their tooling. Present all questions as a single form:
+Before designing a Loop, use the **question** tool to ask about any tooling the user has not already specified. Present missing questions together as one form. Never guess the issue tracker, CLI, AI runner, shell, or package manager.
 
 ```json
 [
@@ -24,6 +24,7 @@ Before designing a Loop, use the **question** tool to ask the user about their t
     "options": [
       { "label": "GitHub Issues (gh)", "description": "Use gh CLI for issue and PR management." },
       { "label": "Azure DevOps (az)", "description": "Use az CLI for work-item and PR management." },
+      { "label": "GitLab Issues (glab)", "description": "Use glab CLI for issue and merge request management." },
       { "label": "Jira (custom)", "description": "Use a custom script or API wrapper for Jira." },
       { "label": "Other", "description": "Specify the tool." }
     ]
@@ -32,8 +33,8 @@ Before designing a Loop, use the **question** tool to ask the user about their t
     "question": "What AI runner do you use for AI Tasks?",
     "header": "AI Runner",
     "options": [
-      { "label": "opencode run", "description": "Use opencode for AI agent execution." },
-      { "label": "claude -p", "description": "Use Claude CLI for AI execution." },
+      { "label": "opencode run", "description": "Use opencode run for AI agent execution." },
+      { "label": "claude -p", "description": "Use Claude CLI with -p for AI execution." },
       { "label": "aider", "description": "Use aider for AI-assisted coding." },
       { "label": "Other", "description": "Specify the runner." }
     ]
@@ -69,7 +70,7 @@ Before designing a Loop, use the **question** tool to ask the user about their t
 ]
 ```
 
-Wait for ALL answers before proceeding. Use the answers to select the executable syntax and chain composition. No model or agent flags should be hardcoded in Task definitions — those are runtime concerns.
+Wait for all requested answers before proceeding. Answers determine executable syntax and chain composition. A Task's `command` must be a real executable such as `gh`, `az`, `glab`, `opencode`, or `claude`. Slash commands such as `/plan-goal` belong inside an AI prompt passed as an argument to `opencode run` or `claude -p`. Model and agent flags remain runtime concerns.
 
 For interface-specific syntax vocabulary to compose concrete tasks from the questionnaire answers, see [references/recipes.md](references/recipes.md).
 
