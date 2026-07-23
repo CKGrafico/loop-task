@@ -389,7 +389,6 @@ program
   });
 
 program
-  .description("Show HTTP API server info (base URL, Swagger UI, OpenAPI spec)")
   .action(() => {
     const port = process.env.LOOP_CLI_HTTP_PORT ?? String(HTTP_API_PORT);
     const baseUrl = `http://${HTTP_API_HOST}:${port}`;
