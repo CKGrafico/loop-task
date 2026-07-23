@@ -168,6 +168,13 @@ export function buildTabCommands(context: CommandContext): Command[] {
       { label: t('cmd.delete'), value: 'delete', hint: '', tier: COMMAND_TIER_CONFIRM, category: COMMAND_CATEGORY_LOOP, shortcut: 'ctrl+a+d' },
       { label: t('cmd.logs'), value: 'logs', hint: '', tier: COMMAND_TIER_ACTION, category: COMMAND_CATEGORY_LOOP, shortcut: 'ctrl+a+o' },
     );
+
+    if (context.selectedLoop?.taskId) {
+      commands.push({
+        label: t('cmd.diagram'), value: 'diagram', hint: '',
+        tier: COMMAND_TIER_ACTION, category: COMMAND_CATEGORY_LOOP,
+      });
+    }
   }
 
   if (context.activeTab === 'tasks') {
