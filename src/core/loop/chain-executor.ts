@@ -146,6 +146,7 @@ export function executeChain(options: ChainExecuteOptions): Promise<ChainExecute
           loopName: loopName ?? "chain",
           taskId: chainTask.id,
           taskName: chainTask.name,
+          telemetryConfig: chainTask.telemetry,
         }
         : undefined;
 

@@ -109,4 +109,88 @@ describe("TelemetryManager", () => {
     const mgr = new TelemetryManager(makeSettings({ telemetryEnabled: false }));
     await expect(mgr.flush()).resolves.toBeUndefined();
   });
+
+  describe("runtime toggling during live execution", () => {
+    it("switches from enabled+endpoint to disabled and back", () => {
+      const mgr = new TelemetryManager(makeSettings({
+        telemetryEnabled: true,
+        telemetryEndpoint: "http://localhost:4318",
+      }));
+      expect(mgr.getStatus().enabled).toBe(true);
+      expect(mgr.getStatus().exporterState).toBe("configured");
+
+      // Disable mid-execution
+      mgr.onSettingsChanged(makeSettings({ telemetryEnabled: false }));
+      expect(mgr.getStatus().enabled).toBe(false);
+      expect(mgr.getStatus().exporterState).toBe("disabled");
+
+      // Re-enable with same endpoint
+      mgr.onSettingsChanged(makeSettings({
+        telemetryEnabled: true,
+        telemetryEndpoint: "http://localhost:4318",
+      }));
+      expect(mgr.getStatus().enabled).toBe(true);
+      expect(mgr.getStatus().exporterConfigured).toBe(true);
+    });
+
+    it("enables then changes endpoint at runtime", () => {
+      const mgr = new TelemetryManager(makeSettings({
+        telemetryEnabled: true,
+        telemetryEndpoint: "http://localhost:4318",
+      }));
+
+      mgr.onSettingsChanged(makeSettings({
+        telemetryEnabled: true,
+        telemetryEndpoint: "http://newhost:4318",
+      }));
+      expect(mgr.getStatus().endpoint).toBe("http://newhost:4318");
+    });
+
+    it("enables without endpoint then configures endpoint", () => {
+      const mgr = new TelemetryManager(makeSettings({
+        telemetryEnabled: true,
+        telemetryEndpoint: undefined,
+      }));
+      expect(mgr.getStatus().enabled).toBe(true);
+      expect(mgr.getStatus().exporterState).toBe("not-configured");
+
+      mgr.onSettingsChanged(makeSettings({
+        telemetryEnabled: true,
+        telemetryEndpoint: "http://localhost:4318",
+      }));
+      expect(mgr.getStatus().enabled).toBe(true);
+      expect(mgr.getStatus().exporterConfigured).toBe(true);
+    });
+
+    it("disabling preserves endpoint in status for UI display", () => {
+      const mgr = new TelemetryManager(makeSettings({
+        telemetryEnabled: true,
+        telemetryEndpoint: "http://localhost:4318",
+      }));
+
+      // When disabling, settings persist the endpoint but adapter reports disabled
+      mgr.onSettingsChanged(makeSettings({
+        telemetryEnabled: false,
+        telemetryEndpoint: "http://localhost:4318",
+      }));
+      // Adapter is now a NoopTelemetryAdapter with enabled=false
+      expect(mgr.getStatus().enabled).toBe(false);
+    });
+
+    it("changing protocol triggers reconfiguration", () => {
+      const mgr = new TelemetryManager(makeSettings({
+        telemetryEnabled: true,
+        telemetryEndpoint: "http://localhost:4318",
+        telemetryProtocol: "http/protobuf",
+      }));
+      expect(mgr.getStatus().protocol).toBe("http/protobuf");
+
+      mgr.onSettingsChanged(makeSettings({
+        telemetryEnabled: true,
+        telemetryEndpoint: "http://localhost:4318",
+        telemetryProtocol: "grpc",
+      }));
+      expect(mgr.getStatus().protocol).toBe("grpc");
+    });
+  });
 });

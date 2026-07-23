@@ -112,6 +112,7 @@ export async function executeRunImpl(ctrl: ExecuteRunAccess, signal: AbortSignal
       taskId: task?.id,
       taskName: task?.name,
       projectId: ctrl.options.projectId,
+      telemetryConfig: task?.telemetry,
     }
     : undefined;
 

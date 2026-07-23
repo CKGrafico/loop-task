@@ -68,6 +68,8 @@ export interface TelemetryCommandContext {
   taskName?: string;
   projectId?: string;
   projectName?: string;
+  /** Per-task telemetry override from TaskDefinition */
+  telemetryConfig?: import("../../types.js").TaskTelemetryConfig;
 }
 
 export async function executeCommand(
@@ -101,8 +103,11 @@ export async function executeCommand(
   const shellCommand = formatCommandLine(command, commandArgs);
   const needShell = /(\$\(|`|&&|\|\||;|>|<|\|)/.test(shellCommand);
 
+  // Per-task telemetry override: skip telemetry for this command entirely
+  const taskTelemetryDisabled = telemetryCtx?.telemetryConfig?.enabled === false;
+
   // Telemetry: create command span and prepare child env
-  const commandSpan = telemetryCtx
+  const commandSpan = (telemetryCtx && !taskTelemetryDisabled)
     ? telemetryCtx.telemetry.startCommand(
       {
         command,
@@ -120,8 +125,9 @@ export async function executeCommand(
   let telemetryEnv: Record<string, string> = {};
   let detectedIntegrationId: string | undefined;
 
-  if (telemetryCtx && telemetryCtx.telemetry.getStatus().enabled) {
+  if (telemetryCtx && telemetryCtx.telemetry.getStatus().enabled && !taskTelemetryDisabled) {
     const traceCtx = (telemetryCtx.taskSpan ?? telemetryCtx.loopSpan)?.getTraceContext() ?? {};
+    const integrationOverride = telemetryCtx.telemetryConfig?.integration;
     const prepared = telemetryCtx.telemetry.prepareChildProcess(
       { command, args: commandArgs, cwd },
       {
@@ -135,6 +141,7 @@ export async function executeCommand(
         traceParent: traceCtx.traceParent,
         traceState: traceCtx.traceState,
       },
+      integrationOverride,
     );
     telemetryEnv = prepared.env;
     detectedIntegrationId = prepared.integrationId;

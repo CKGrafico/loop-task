@@ -13,7 +13,7 @@ import type {
 } from "./telemetry-types.js";
 import type { DaemonSettings } from "../../types.js";
 import { SPAN_NAMES, CORRELATION_KEYS, METRIC_NAMES } from "./telemetry-types.js";
-import { detectAgentIntegration } from "./agent-integrations/index.js";
+import { detectAgentIntegration, getAgentIntegrations } from "./agent-integrations/index.js";
 
 import { NodeSDK } from "@opentelemetry/sdk-node";
 import { resourceFromAttributes } from "@opentelemetry/resources";
@@ -369,6 +369,7 @@ export class OpenTelemetryAdapter implements Telemetry {
   prepareChildProcess(
     invocation: CommandInvocation,
     childContext: ChildTelemetryContext,
+    integrationOverride?: "auto" | "opencode" | "claude-code" | "generic" | "none",
   ): PreparedChildProcessTelemetry {
     const env: Record<string, string> = {};
     const endpoint = this.resolveEndpoint();
@@ -408,15 +409,41 @@ export class OpenTelemetryAdapter implements Telemetry {
 
     // Apply agent-specific integrations when auto-instrumentation is enabled
     let integrationId: string | undefined;
-    if (this.settings.telemetryAutoInstrumentAgents) {
-      const integration = detectAgentIntegration(invocation.command, invocation.args);
-      if (integration) {
-        integrationId = integration.id;
-        const prepared = integration.prepare(
-          { ...invocation, env: { ...invocation.env, ...env } },
-          childContext,
-        );
-        Object.assign(env, prepared.env);
+    if (this.settings.telemetryAutoInstrumentAgents || integrationOverride) {
+      // Per-task override takes precedence
+      if (integrationOverride === "none") {
+        // Explicitly disable agent integration — no agent-specific env
+        integrationId = undefined;
+      } else if (integrationOverride && integrationOverride !== "auto") {
+        // Force a specific integration: opencode, claude-code, or generic
+        if (integrationOverride === "generic") {
+          // Generic: no agent-specific activation, just the base OTLP env
+          integrationId = undefined;
+        } else {
+          const allIntegrations = [
+            ...getAgentIntegrations(),
+          ];
+          const target = allIntegrations.find((i) => i.id === integrationOverride);
+          if (target) {
+            integrationId = target.id;
+            const prepared = target.prepare(
+              { ...invocation, env: { ...invocation.env, ...env } },
+              childContext,
+            );
+            Object.assign(env, prepared.env);
+          }
+        }
+      } else {
+        // Auto-detect
+        const integration = detectAgentIntegration(invocation.command, invocation.args);
+        if (integration) {
+          integrationId = integration.id;
+          const prepared = integration.prepare(
+            { ...invocation, env: { ...invocation.env, ...env } },
+            childContext,
+          );
+          Object.assign(env, prepared.env);
+        }
       }
     }
 

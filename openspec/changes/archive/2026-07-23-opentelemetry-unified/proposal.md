@@ -36,6 +36,9 @@ Ctrl+P commands: telemetry (info), toggle-telemetry, telemetry-diagnostics.
 ### Privacy
 Content capture disabled by default. No prompts, responses, source code, secrets, or auth headers exported. Command args sanitized.
 
+### Per-Task Override
+`TaskTelemetryConfig` on `TaskDefinition` allows disabling telemetry or forcing a specific integration per task.
+
 ### Error Isolation
 Telemetry failures never fail a loop or task. All errors logged to daemon log.
 
@@ -54,8 +57,9 @@ Telemetry failures never fail a loop or task. All errors logged to daemon log.
 12. ✅ Add command palette commands
 13. ✅ Add i18n strings
 14. ✅ Create redaction utilities
-15. ✅ Write tests (settings, manager, detection, redaction, child env)
-16. ✅ Write documentation
+15. ✅ Wire per-task telemetry override into execution engine
+16. ✅ Write tests (settings, manager, detection, redaction, child env, task override)
+17. ✅ Write documentation
 
 ## References
 - GitHub Issue #63

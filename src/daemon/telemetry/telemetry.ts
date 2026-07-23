@@ -5,7 +5,6 @@ import type {
   CommandTelemetryInput,
   RetryTelemetryInput,
   ChildTelemetryContext,
-  PreparedChildProcessTelemetry,
   AgentUsage,
   CommandInvocation,
 } from "./telemetry-types.js";
@@ -29,9 +28,10 @@ export interface Telemetry {
   recordAgentUsage(input: AgentUsage): void;
   /** Prepare environment variables for a child process */
   prepareChildProcess(
-    invocation: CommandInvocation,
-    context: ChildTelemetryContext,
-  ): PreparedChildProcessTelemetry;
+    invocation: import("./telemetry-types.js").CommandInvocation,
+    context: import("./telemetry-types.js").ChildTelemetryContext,
+    integrationOverride?: "auto" | "opencode" | "claude-code" | "generic" | "none",
+  ): import("./telemetry-types.js").PreparedChildProcessTelemetry;
   /** Get current telemetry status */
   getStatus(): TelemetryStatus;
   /** Flush pending telemetry */

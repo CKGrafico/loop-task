@@ -1,9 +1,0 @@
-{
-  "version": 1,
-  "changeId": "opentelemetry-unified",
-  "required": false,
-  "status": "skipped",
-  "assets": [],
-  "reason": "No user-visible changes detected",
-  "prMarkdown": "## Evidence ⏭️ skipped\n> No user-visible changes detected"
-}
