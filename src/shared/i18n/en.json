@@ -664,5 +664,11 @@
   "cmdsBrowser.groupLoop": "Loop Actions",
   "cmdsBrowser.groupTask": "Task Actions",
   "cmdsBrowser.groupProject": "Project Actions",
-  "cmdsBrowser.hint": "Up/Down to navigate, Enter to execute, Esc to close"
+  "cmdsBrowser.hint": "Up/Down to navigate, Enter to execute, Esc to close",
+  "cmd.diagram": "Diagram task chain",
+  "diagram.modalTitle": "Chain Diagram",
+  "diagram.hint": "up/down:scroll  c:copy  esc:close",
+  "diagram.noTaskChain": "This loop has no task chain.",
+  "diagram.loopNotFound": "Loop not found: {id}",
+  "diagram.noTaskLinked": "Loop {id} has no task chain"
 }

@@ -62,7 +62,7 @@ export function App(props: { onQuit: () => void }): React.ReactNode {
     setConfirmState: s.setConfirmState, setCommandsBrowserOpen: s.setCommandsBrowserOpen, setSearchValue: s.setSearchValue, setSearchState: s.setSearchState,
     setFilters: s.setFilters, setSort: s.setSort, setCurrentProjectId: s.setCurrentProjectId,
     setProjectFilters: s.setProjectFilters, setProjectSelectedIndex: s.setProjectSelectedIndex,
-    setDebugMode: s.setDebugMode, setExportModal: s.setExportModal,
+    setDebugMode: s.setDebugMode, setExportModal: s.setExportModal, setDiagramModal: s.setDiagramModal,
     push, pop, refresh, refreshTasks: s.refreshTasks, refreshProjects: s.refreshProjects, pushToast,
     loopService, taskService, projectService, exportService, logService,
     runAction: s.runAction, handleOpenRunLog: s.handleOpenRunLog,
@@ -80,6 +80,7 @@ export function App(props: { onQuit: () => void }): React.ReactNode {
     confirmState: s.confirmState, setConfirmState: s.setConfirmState, searchState: s.searchState, setSearchState: s.setSearchState, setSearchValue: s.setSearchValue,
     logModalRun: s.logModalRun, setLogModalRun: s.setLogModalRun, logModalLoopId: s.logModalLoopId, setLogModalLoopId: s.setLogModalLoopId,
     commandsBrowserOpen: s.commandsBrowserOpen, setCommandsBrowserOpen: s.setCommandsBrowserOpen, exportModal: s.exportModal, setExportModal: s.setExportModal,
+    diagramModal: s.diagramModal, setDiagramModal: s.setDiagramModal,
     contextHelpOpen: s.contextHelpOpen, setContextHelpOpen: s.setContextHelpOpen, view, pop, onQuit, exit,
     commandBarHasText: s.commandBarHasText, commandBarDropdownOpen: s.commandBarDropdownOpen,
   });
@@ -89,6 +90,7 @@ export function App(props: { onQuit: () => void }): React.ReactNode {
     view, handleCommand, triggerContextualAction, popLayer,
     anyModalOpen, debugMode: s.debugMode, setDebugEntries: s.setDebugEntries, inputOwner,
     confirmState: s.confirmState, searchState: s.searchState, logModalRun: s.logModalRun, commandsBrowserOpen: s.commandsBrowserOpen, exportModal: s.exportModal,
+    diagramModal: s.diagramModal,
     contextHelpOpen: s.contextHelpOpen, setContextHelpOpen: s.setContextHelpOpen, onQuit, exit, setConfirmState: s.setConfirmState,
     setLogModalRun: s.setLogModalRun, setLogModalLoopId: s.setLogModalLoopId, setCommandsBrowserOpen: s.setCommandsBrowserOpen,
     chordState: s.chordState, setChordState: s.setChordState,
@@ -179,6 +181,7 @@ export function App(props: { onQuit: () => void }): React.ReactNode {
         contextHelpOpen={s.contextHelpOpen} onContextHelpClose={() => s.setContextHelpOpen(false)}
         exportModal={s.exportModal} onExportModalClose={() => s.setExportModal(null)}
         onExportCopy={() => pushToast("success", t("board.toastCopied"))}
+        diagramModal={s.diagramModal} onDiagramModalClose={() => s.setDiagramModal(null)}
         logModalRun={s.logModalRun} logModalLoopId={s.logModalLoopId}
         logModalLines={s.logModalLines} logModalLoading={s.logModalLoading}
         onLogModalClose={() => { s.setLogModalRun(null); s.setLogModalLoopId(null); }}

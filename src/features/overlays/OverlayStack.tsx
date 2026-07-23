@@ -3,6 +3,7 @@ import { LogModal } from "../../widgets/log-modal/LogModal.js";
 import { CommandsBrowserModal } from "../../widgets/commands-browser/CommandsBrowserModal.js";
 import { ContextHelpModal } from "./ContextHelpModal.js";
 import { ExportModal } from "./ExportModal.js";
+import { DiagramModal } from "./DiagramModal.js";
 import { ToastStack } from "../../shared/ui/Toast.js";
 import type { OverlayStackProps } from "../../app/types.js";
 
@@ -24,6 +25,12 @@ export function OverlayStack(props: OverlayStackProps): React.ReactNode {
           error={props.exportModal.error}
           onClose={props.onExportModalClose}
           onCopy={props.onExportCopy}
+        />
+      ) : null}
+      {props.diagramModal ? (
+        <DiagramModal
+          diagramText={props.diagramModal}
+          onClose={props.onDiagramModalClose}
         />
       ) : null}
       {props.logModalRun ? (

@@ -15,7 +15,7 @@ export function useGlobalShortcuts(context: ShortcutContext) {
     view, handleCommand, triggerContextualAction, popLayer,
     anyModalOpen, debugMode, setDebugEntries,
     inputOwner, confirmState, searchState,
-    logModalRun, commandsBrowserOpen, exportModal,
+    logModalRun, commandsBrowserOpen, exportModal, diagramModal,
     contextHelpOpen, setContextHelpOpen,
     onQuit, exit, setConfirmState,
     setLogModalRun, setLogModalLoopId, setCommandsBrowserOpen,
@@ -24,7 +24,7 @@ export function useGlobalShortcuts(context: ShortcutContext) {
 
   useInput((input, key) => {
     if (key.ctrl && input === "c") {
-      if (!logModalRun && !confirmState && !commandsBrowserOpen && !exportModal) {
+      if (!logModalRun && !confirmState && !commandsBrowserOpen && !exportModal && !diagramModal) {
         setConfirmState({
           prompt: "",
           onConfirm: () => { onQuit(); exit(); },
@@ -55,12 +55,12 @@ export function useGlobalShortcuts(context: ShortcutContext) {
 
     const isMultiCharEnter = input.length > 1 && (input.includes("\r") || input.includes("\n"));
     const isCtrlEnter = (key.ctrl && key.return) || input === "\x0e" || isMultiCharEnter;
-    if (isCtrlEnter && isBoardView(view) && !logModalRun && !commandsBrowserOpen && !confirmState && !searchState?.active) {
+    if (isCtrlEnter && isBoardView(view) && !logModalRun && !commandsBrowserOpen && !confirmState && !searchState?.active && !diagramModal) {
       triggerContextualAction();
       return;
     }
 
-    const canShortcut = key.ctrl && isBoardView(view) && !logModalRun && !commandsBrowserOpen && !confirmState && !searchState?.active && !exportModal;
+    const canShortcut = key.ctrl && isBoardView(view) && !logModalRun && !commandsBrowserOpen && !confirmState && !searchState?.active && !exportModal && !diagramModal;
     if (canShortcut) {
       const globalShortcuts: Record<string, () => void> = {
         p: () => { setCommandsBrowserOpen(true); },

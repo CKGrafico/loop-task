@@ -60,6 +60,8 @@ export interface AppState {
   setContextHelpOpen: React.Dispatch<React.SetStateAction<boolean>>;
   exportModal: { json: string; filePath: string | null; error: string | null } | null;
   setExportModal: React.Dispatch<React.SetStateAction<{ json: string; filePath: string | null; error: string | null } | null>>;
+  diagramModal: string | null;
+  setDiagramModal: React.Dispatch<React.SetStateAction<string | null>>;
   confirmState: ConfirmState | null;
   setConfirmState: React.Dispatch<React.SetStateAction<ConfirmState | null>>;
   searchState: SearchState | null;
@@ -137,6 +139,7 @@ export function useAppState(
   const [commandsBrowserOpen, setCommandsBrowserOpen] = useState(false);
   const [contextHelpOpen, setContextHelpOpen] = useState(false);
   const [exportModal, setExportModal] = useState<{ json: string; filePath: string | null; error: string | null } | null>(null);
+  const [diagramModal, setDiagramModal] = useState<string | null>(null);
   const [confirmState, setConfirmState] = useState<ConfirmState | null>(null);
   const [searchState, setSearchState] = useState<SearchState | null>(null);
   const [searchValue, setSearchValue] = useState("");
@@ -237,7 +240,7 @@ export function useAppState(
     projects, setProjects, currentProjectId, setCurrentProjectId,
     projectSelectedIndex, setProjectSelectedIndex, projectFilters, setProjectFilters,
     commandsBrowserOpen, setCommandsBrowserOpen, contextHelpOpen, setContextHelpOpen,
-    exportModal, setExportModal, confirmState, setConfirmState,
+    exportModal, setExportModal, diagramModal, setDiagramModal, confirmState, setConfirmState,
     searchState, setSearchState, searchValue, setSearchValue,
     debugMode, setDebugMode, debugEntries, setDebugEntries,
     chordState, setChordState, commandBarHasText, setCommandBarHasText, commandBarDropdownOpen, setCommandBarDropdownOpen,

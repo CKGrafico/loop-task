@@ -356,7 +356,39 @@ program
   });
 
 program
-  .command("api")
+  .command("diagram")
+  .description("Show ASCII chain diagram for a loop's task")
+  .argument("<id>", "Loop ID")
+  .action(async (id: string) => {
+    try {
+      const { sendRequest } = await import("./client/ipc.js");
+      const loopRes = await sendRequest({ type: "status", payload: { id } });
+      if (loopRes.type === "error") {
+        console.error(loopRes.message);
+        process.exit(1);
+      }
+      if (loopRes.type !== "ok" || !loopRes.data) {
+        console.error(`Loop ${id} not found`);
+        process.exit(1);
+      }
+      const loop = loopRes.data as import("./types.js").LoopMeta;
+      if (!loop.taskId) {
+        console.log(`Loop ${id} has no task chain`);
+        process.exit(0);
+      }
+      const tasksRes = await sendRequest({ type: "task-list" });
+      const tasks = tasksRes.type === "ok" ? (tasksRes.data as import("./types.js").TaskDefinition[]) : [];
+      const { renderChainDiagram } = await import("./features/chain-editor/renderChainDiagram.js");
+      const diagram = renderChainDiagram(loop.taskId, tasks);
+      console.log(diagram);
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : String(error);
+      console.error(t("cli.error", { message }));
+      process.exit(1);
+    }
+  });
+
+program
   .description("Show HTTP API server info (base URL, Swagger UI, OpenAPI spec)")
   .action(() => {
     const port = process.env.LOOP_CLI_HTTP_PORT ?? String(HTTP_API_PORT);

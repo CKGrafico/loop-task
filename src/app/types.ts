@@ -79,6 +79,7 @@ export interface CommandHandlerContext {
   setProjectSelectedIndex: (v: number) => void;
   setDebugMode: React.Dispatch<React.SetStateAction<boolean>>;
   setExportModal: (v: { json: string; filePath: string | null; error: string | null } | null) => void;
+  setDiagramModal: (v: string | null) => void;
   push: (view: View) => void;
   refresh: () => void;
   refreshTasks: () => Promise<void>;
@@ -133,6 +134,8 @@ export interface OverlayContext {
   setCommandsBrowserOpen: (v: boolean) => void;
   exportModal: { json: string; filePath: string | null; error: string | null } | null;
   setExportModal: (v: { json: string; filePath: string | null; error: string | null } | null) => void;
+  diagramModal: string | null;
+  setDiagramModal: (v: string | null) => void;
   contextHelpOpen: boolean;
   setContextHelpOpen: (v: boolean) => void;
   view: View;
@@ -161,6 +164,7 @@ export interface ShortcutContext {
   logModalRun: RunRecord | null;
   commandsBrowserOpen: boolean;
   exportModal: { json: string; filePath: string | null; error: string | null } | null;
+  diagramModal: string | null;
   contextHelpOpen: boolean;
   setContextHelpOpen: (v: boolean) => void;
   onQuit: () => void;
@@ -202,6 +206,8 @@ export interface OverlayStackProps {
   exportModal: { json: string; filePath: string | null; error: string | null } | null;
   onExportModalClose: () => void;
   onExportCopy: () => void;
+  diagramModal: string | null;
+  onDiagramModalClose: () => void;
   logModalRun: RunRecord | null;
   logModalLoopId: string | null;
   logModalLines: string[];

@@ -11,6 +11,7 @@ export function useOverlayStack(context: OverlayContext) {
     logModalLoopId, setLogModalLoopId,
     commandsBrowserOpen, setCommandsBrowserOpen,
     exportModal, setExportModal,
+    diagramModal, setDiagramModal,
     contextHelpOpen, setContextHelpOpen,
     view, pop, onQuit, exit,
     commandBarHasText, commandBarDropdownOpen,
@@ -26,6 +27,7 @@ export function useOverlayStack(context: OverlayContext) {
     if (logModalRun) { setLogModalRun(null); setLogModalLoopId(null); return true; }
     if (commandsBrowserOpen) { setCommandsBrowserOpen(false); return true; }
     if (exportModal) { setExportModal(null); return true; }
+    if (diagramModal) { setDiagramModal(null); return true; }
     if (contextHelpOpen) { setContextHelpOpen(false); return true; }
     if (view !== "board") { pop(); return true; }
     setConfirmState({
@@ -35,16 +37,16 @@ export function useOverlayStack(context: OverlayContext) {
     return true;
   };
 
-  const anyModalOpen = !!(logModalRun || commandsBrowserOpen || exportModal);
+  const anyModalOpen = !!(logModalRun || commandsBrowserOpen || exportModal || diagramModal);
   const commandInputDisabled = anyModalOpen;
 
   const inputOwner = useMemo(
     () => resolveInputOwner({
-      modalOpen: !!(logModalRun || commandsBrowserOpen || exportModal || contextHelpOpen || confirmState || searchState?.active),
+      modalOpen: !!(logModalRun || commandsBrowserOpen || exportModal || diagramModal || contextHelpOpen || confirmState || searchState?.active),
       commandBarHasText,
       commandBarDropdownOpen,
     }),
-    [logModalRun, commandsBrowserOpen, exportModal, contextHelpOpen, confirmState, searchState?.active, commandBarHasText, commandBarDropdownOpen],
+    [logModalRun, commandsBrowserOpen, exportModal, diagramModal, contextHelpOpen, confirmState, searchState?.active, commandBarHasText, commandBarDropdownOpen],
   );
 
   return { popLayer, anyModalOpen, commandInputDisabled, inputOwner };
