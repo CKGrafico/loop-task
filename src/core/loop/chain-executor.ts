@@ -49,6 +49,7 @@ export function executeChain(options: ChainExecuteOptions): Promise<ChainExecute
 
   return (async () => {
     while (currentTargetId) {
+      if (signal.aborted) break;
       const chainTask = controller.taskResolver(currentTargetId);
       if (!chainTask) break;
 
@@ -93,6 +94,7 @@ export function executeChain(options: ChainExecuteOptions): Promise<ChainExecute
       const effectiveStream: Writable = isSilent ? nullStream : (logStream ?? nullStream);
 
       for (const step of taskSteps) {
+        if (signal.aborted) break;
         const stepResults = await Promise.allSettled(
           step.commands.map((cmd) =>
             executeCommand(
@@ -106,6 +108,8 @@ export function executeChain(options: ChainExecuteOptions): Promise<ChainExecute
             )
           )
         );
+
+        if (signal.aborted) break;
 
         let stepStdout = "";
         for (const r of stepResults) {

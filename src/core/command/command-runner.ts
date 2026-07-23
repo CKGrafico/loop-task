@@ -147,7 +147,7 @@ export async function executeCommand(
     if (child.pid) {
       activePids.delete(child.pid);
       if (signal?.aborted) {
-        killProcessTree(child.pid).catch(() => {});
+        await killProcessTree(child.pid);
       }
     }
     if (stdoutCapture?.isTruncated()) {
