@@ -60,7 +60,6 @@ const STATUS_COLORS: Record<LoopMeta["status"], string> = {
   waiting: "#6b7280",
   paused: "#facc15",
   idle: "#fb923c",
-  stopped: "#f87171",
 };
 
 export function statusColor(status: LoopMeta["status"]): string {

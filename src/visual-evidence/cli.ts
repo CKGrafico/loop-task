@@ -11,7 +11,7 @@
  */
 
 import { readFileSync, existsSync } from "node:fs";
-import { runEvidence } from "./run.ts";
+import { runEvidence } from "./run.js";
 
 interface CliInput {
   changeId?: string;
