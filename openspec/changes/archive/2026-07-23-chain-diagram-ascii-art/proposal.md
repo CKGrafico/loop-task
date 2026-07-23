@@ -1,32 +1,34 @@
-# Chain Diagram Command: Visualize Task Chains as ASCII Art
+## Why
 
-## Change ID
-chain-diagram-ascii-art
+Loop operators cannot quickly understand a task chain's branching structure. Currently the chain editor shows a visual tree, but there is no way to see a compact ASCII representation of which tasks run on success vs failure, how steps within each task are structured, and when chains cycle back to a previously visited task. An ASCII diagram accessible from both the TUI and CLI fills this gap.
 
-## Summary
-A chain diagram command that renders a task's success/failure branching as ASCII art, accessible from both the TUI loops page and the CLI.
+## What Changes
 
-## Motivation
-Loop operators need a quick way to visualize the task chain rooted at a loop's task, understanding which tasks run on success vs. failure, how steps are structured, and when chains cycle back. The codebase has chain tree construction logic and scrollable modal patterns already — this feature wires them together with a shared ASCII art renderer.
+- Add a shared `renderChainDiagram()` function that takes a root task ID and a task list, and returns an ASCII art diagram of the chain tree
+- Add a "diagram" command to the loops command palette (only when the selected loop has a `taskId`)
+- Add a `DiagramModal` component in the overlay stack, following the `ExportModal` pattern with scrollable text and copy support
+- Add a `diagram <loop-id>` CLI subcommand that prints the ASCII chain diagram to stdout
+- Handle edge cases: cycles show "(cycle to TaskName)", missing tasks show "(missing task)", loops without tasks show a message
 
-## Acceptance Criteria
-1. "diagram" command appears in loops command palette when a loop with a task is selected
-2. "diagram" command is absent when the selected loop has no task
-3. Running the diagram command in TUI opens a scrollable modal showing the ASCII chain diagram
-4. Diagram renders each task as a box: name, steps/command, branch annotations, [s] for silent
-5. Diagram handles cyclic chains with "(cycle)" notation, no infinite loops
-6. CLI `loop-task diagram <loop-id>` prints ASCII diagram to stdout
-7. CLI handles loop with no task (message + exit 0)
-8. CLI handles loop not found (error + exit 1)
-9. Missing task shows "(missing task)" annotation
-10. TUI modal supports vertical scrolling and copy
+## Capabilities
 
-## Affected Files
-- `src/features/chain-editor/renderChainDiagram.ts` — ASCII art renderer
-- `src/features/overlays/DiagramModal.tsx` — scrollable diagram modal
-- `src/features/commands/commands.ts` — diagram command registration
-- `src/features/commands/useCommandHandlers.ts` — diagram handler
-- `src/features/overlays/OverlayStack.tsx` — modal integration
-- `src/app/types.ts` — diagramModal state types
-- `src/cli.ts` — CLI diagram subcommand
-- `src/shared/i18n/en.json` — i18n keys
+### New Capabilities
+- `chain-diagram`: ASCII art chain diagram renderer producing boxed task representations with branch annotations, cycle detection, and missing-task handling
+
+### Modified Capabilities
+
+## Impact
+
+- New file: `src/features/chain-editor/renderChainDiagram.ts` — shared renderer
+- New file: `src/features/overlays/DiagramModal.tsx` — TUI modal
+- Modified: `src/features/commands/commands.ts` — diagram command registration
+- Modified: `src/features/commands/useCommandHandlers.ts` — diagram command handler
+- Modified: `src/features/overlays/OverlayStack.tsx` — add DiagramModal to overlay stack
+- Modified: `src/features/overlays/useOverlayStack.ts` — diagramModal state and escape handling
+- Modified: `src/app/types.ts` — diagramModal in overlay props
+- Modified: `src/features/state/useAppState.ts` — diagramModal state
+- Modified: `src/features/commands/useGlobalShortcuts.ts` — diagramModal awareness
+- Modified: `src/app/App.tsx` — pass diagramModal props
+- Modified: `src/cli.ts` — new `diagram` CLI subcommand
+- Modified: `src/shared/i18n/en.json` — diagram-related i18n keys
+- No IPC contract changes; no persisted state shape changes

@@ -1,8 +1,0 @@
-{
-  "changeId": "chain-diagram-ascii-art",
-  "status": "passed",
-  "capturedAt": "2026-07-23T09:36:31Z",
-  "assets": [],
-  "summary": "All 9 renderChainDiagram unit tests pass. Typecheck clean. Feature fully implemented: TUI diagram command, DiagramModal, CLI subcommand, i18n keys.",
-  "prMarkdown": "## Chain Diagram: ASCII Art\n\n**Status:** Passed\n\n- 9/9 unit tests pass (`renderChainDiagram.test.ts`)\n- TypeScript typecheck clean\n- TUI: diagram command in command palette (conditional on loop.taskId), scrollable DiagramModal with copy support\n- CLI: `loop-task diagram <loop-id>` subcommand with proper error handling\n- Cyclic chains: (cycle) notation, no infinite loops\n- Missing tasks: (missing task) annotation\n- Silent chains: [s] marker\n- i18n keys for all UI strings"
-}
