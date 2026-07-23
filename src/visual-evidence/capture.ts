@@ -7,7 +7,7 @@
 
 import { writeFileSync, existsSync, mkdirSync, statSync } from "node:fs";
 import { join } from "node:path";
-import type { EvidenceAsset } from "./manifest.ts";
+import type { EvidenceAsset } from "./manifest.js";
 
 /** Max bytes per capture file (1 MB) */
 const MAX_CAPTURE_BYTES = 1_024_000;

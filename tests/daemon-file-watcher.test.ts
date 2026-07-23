@@ -1,9 +1,8 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
-import fs from "node:fs";
 import { mkdtempSync, rmSync, mkdirSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import type { LoopMeta, TaskDefinition, Project } from "../src/types.js";
+import type { LoopMeta } from "../src/types.js";
 
 // Mock the managers to avoid complex initialization
 const mockReconcile = vi.fn();
@@ -66,9 +65,9 @@ describe("FileWatcher", () => {
   let projectManager: ProjectManager;
 
   beforeEach(() => {
-    loopManager = new LoopManager({} as any, {} as any);
-    taskManager = new TaskManager({} as any);
-    projectManager = new ProjectManager({} as any);
+    loopManager = new LoopManager({} as never, {} as never);
+    taskManager = new TaskManager({} as never);
+    projectManager = new ProjectManager({} as never);
     watcher = new FileWatcher();
     watcher.setManagers(loopManager, taskManager, projectManager);
   });
@@ -81,7 +80,7 @@ describe("FileWatcher", () => {
 
   describe("hash-based change detection", () => {
     it("skips onChange when file content hash matches (self-write protection)", async () => {
-      const dataDir = createDataDir();
+      const _dataDir = createDataDir();
       const loopsFile = loopsJson();
       writeFileSync(loopsFile, JSON.stringify([]));
 
@@ -103,7 +102,7 @@ describe("FileWatcher", () => {
     });
 
     it("calls onChange when file content hash differs", async () => {
-      const dataDir = createDataDir();
+      const _dataDir = createDataDir();
       const loopsFile = loopsJson();
       writeFileSync(loopsFile, JSON.stringify([]));
 
@@ -159,7 +158,7 @@ describe("FileWatcher", () => {
 
   describe("registerSelfWrite()", () => {
     it("updates the hash to prevent self-triggering", () => {
-      const dataDir = createDataDir();
+      const _dataDir = createDataDir();
       const loopsFile = loopsJson();
       writeFileSync(loopsFile, JSON.stringify([]));
 
@@ -179,7 +178,7 @@ describe("FileWatcher", () => {
 
   describe("debounce behavior", () => {
     it("multiple rapid events result in a single callback after debounce", async () => {
-      const dataDir = createDataDir();
+      const _dataDir = createDataDir();
       const tasksFile = tasksJson();
       writeFileSync(tasksFile, JSON.stringify([]));
 
@@ -205,7 +204,7 @@ describe("FileWatcher", () => {
 
   describe("change handlers", () => {
     it("handles malformed loops.json gracefully", async () => {
-      const dataDir = createDataDir();
+      const _dataDir = createDataDir();
       const loopsFile = loopsJson();
       writeFileSync(loopsFile, "not valid json {{{");
 
@@ -220,7 +219,7 @@ describe("FileWatcher", () => {
     });
 
     it("handles malformed tasks.json gracefully", async () => {
-      const dataDir = createDataDir();
+      const _dataDir = createDataDir();
       const tasksFile = tasksJson();
       writeFileSync(tasksFile, "not valid json {{{");
 
@@ -231,7 +230,7 @@ describe("FileWatcher", () => {
     });
 
     it("handles malformed projects.json gracefully", async () => {
-      const dataDir = createDataDir();
+      const _dataDir = createDataDir();
       const projectsFile = projectsJson();
       writeFileSync(projectsFile, "not valid json {{{");
 
@@ -246,7 +245,7 @@ describe("FileWatcher", () => {
 
   describe("stop()", () => {
     it("clears all watchers and timers", () => {
-      const dataDir = createDataDir();
+      const _dataDir = createDataDir();
       writeFileSync(loopsJson(), "[]");
       writeFileSync(tasksJson(), "[]");
       writeFileSync(projectsJson(), "[]");

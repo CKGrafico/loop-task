@@ -68,7 +68,7 @@ export interface ValidationResult {
 const EXPECTED_VERSION = 2;
 const REQUIRED_KEYS = ["loops", "tasks", "projects"] as const;
 
-function validateItems<T>(items: unknown[], fields: FieldSpec[], label: string): ValidationError[] {
+function validateItems<_T>(items: unknown[], fields: FieldSpec[], label: string): ValidationError[] {
   const errors: ValidationError[] = [];
   for (let i = 0; i < items.length; i++) {
     const item = items[i];

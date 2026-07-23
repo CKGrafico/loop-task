@@ -8,7 +8,7 @@ export function useOverlayStack(context: OverlayContext) {
     confirmState, setConfirmState,
     searchState, setSearchState, setSearchValue,
     logModalRun, setLogModalRun,
-    logModalLoopId, setLogModalLoopId,
+    logModalLoopId: _logModalLoopId, setLogModalLoopId,
     commandsBrowserOpen, setCommandsBrowserOpen,
     exportModal, setExportModal,
     contextHelpOpen, setContextHelpOpen,

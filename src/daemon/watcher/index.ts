@@ -3,7 +3,7 @@ import path from "node:path";
 import { createHash } from "node:crypto";
 import { loopsJson, tasksJson, projectsJson } from "../../shared/config/paths.js";
 import type { LoopMeta, TaskDefinition, Project } from "../../types.js";
-import { loadAllLoops } from "../state/index.js";
+
 import type { LoopManager } from "../managers/loop-manager.js";
 import type { TaskManager } from "../managers/task-manager.js";
 import type { ProjectManager } from "../managers/project-manager.js";

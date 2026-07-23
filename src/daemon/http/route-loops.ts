@@ -57,10 +57,6 @@ export function registerLoopRoutes(manager: LoopManager, routes: RouteEntry[], r
 
   r("PATCH", "/api/loops/:id", async (req, res, params) => {
     try {
-      if (manager.isRecipeLoop(params.id)) {
-        sendError(res, 403, "Recipe loops only allow editing interval, maxRuns, and context");
-        return;
-      }
       const body = await readBody(req) as Record<string, unknown>;
       let context: Record<string, unknown> | undefined;
       if (body.context !== undefined) {
@@ -92,7 +88,9 @@ export function registerLoopRoutes(manager: LoopManager, routes: RouteEntry[], r
       }
       sendOk(res, { id: params.id });
     } catch (err) {
-      sendError(res, 400, err instanceof Error ? err.message : String(err));
+      const message = err instanceof Error ? err.message : String(err);
+      const isRecipeRestriction = message.includes("Recipe loops");
+      sendError(res, isRecipeRestriction ? 403 : 400, message);
     }
   });
 

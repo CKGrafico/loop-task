@@ -7,12 +7,12 @@
 
 import { mkdirSync, writeFileSync, existsSync } from "node:fs";
 import { join } from "node:path";
-import { isEvidenceRequired } from "./evidence-required.ts";
-import { resolveChange } from "./openspec-resolver.ts";
-import { writeManifest, type EvidenceManifest, type EvidenceStatus } from "./manifest.ts";
-import { launch } from "./launch.ts";
-import { captureOutput } from "./capture.ts";
-import { runScenario } from "./scenario-registry.ts";
+import { isEvidenceRequired } from "./evidence-required.js";
+import { resolveChange } from "./openspec-resolver.js";
+import { writeManifest, type EvidenceManifest, type EvidenceStatus } from "./manifest.js";
+import { launch } from "./launch.js";
+import { captureOutput } from "./capture.js";
+import { runScenario } from "./scenario-registry.js";
 
 export interface RunResult {
   status: EvidenceStatus;
@@ -24,13 +24,12 @@ export interface RunResult {
 
 export async function runEvidence(changeId: string): Promise<RunResult> {
   // 1. Resolve the change
-  let changeDir: string;
   let proposal: string;
   let affectedFiles: string[];
 
   try {
     const ctx = resolveChange(changeId);
-    changeDir = ctx.changeDir;
+    void ctx.changeDir;
     proposal = ctx.proposal;
     affectedFiles = ctx.affectedFiles;
   } catch (err: unknown) {

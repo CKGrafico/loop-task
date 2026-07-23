@@ -1,4 +1,4 @@
-import React, { createContext, useContext } from "react";
+import React, { createContext } from "react";
 import type { Container } from "inversify";
 import { container } from "../container/index.js";
 

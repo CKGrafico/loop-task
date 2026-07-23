@@ -11,10 +11,10 @@ function isBoardView(view: View): boolean {
 
 export function useGlobalShortcuts(context: ShortcutContext) {
   const {
-    activeTab, focusedPanel, setFocusedPanel, setActiveTab,
+    activeTab, focusedPanel: _focusedPanel, setFocusedPanel, setActiveTab,
     view, handleCommand, triggerContextualAction, popLayer,
-    anyModalOpen, debugMode, setDebugEntries,
-    inputOwner, confirmState, searchState,
+    anyModalOpen: _anyModalOpen, debugMode, setDebugEntries,
+    inputOwner: _inputOwner, confirmState, searchState,
     logModalRun, commandsBrowserOpen, exportModal,
     contextHelpOpen, setContextHelpOpen,
     onQuit, exit, setConfirmState,

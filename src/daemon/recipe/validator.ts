@@ -1,5 +1,3 @@
-import type { RecipeFile } from "./validator.js";
-
 export interface RecipeLoopsEntry {
   taskId?: string;
   interval?: number;

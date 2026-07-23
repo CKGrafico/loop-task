@@ -23,9 +23,9 @@ import { ensureDaemon, getSocket } from "../src/daemon/spawner/index.js";
 import { sendRequest, streamRequest } from "../src/client/ipc.js";
 
 function createMockSocket() {
-  const listeners: Record<string, Function[]> = {};
+  const listeners: Record<string, ((...args: unknown[]) => void)[]> = {};
   return {
-    on: vi.fn((event: string, cb: Function) => {
+    on: vi.fn((event: string, cb: (...args: unknown[]) => void) => {
       (listeners[event] ??= []).push(cb);
     }),
     write: vi.fn(),

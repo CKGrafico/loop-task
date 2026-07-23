@@ -1,12 +1,10 @@
 import { EventEmitter } from "node:events";
-import fs from "node:fs";
 import type { LoopOptions, LoopStatus, LoopMeta, RunRecord } from "../../types.js";
 import { computePhase, alignToPhase } from "../scheduling/index.js";
 import { RotatingWriteStream } from "../logging/rotating-log-stream.js";
 import type { TaskResolver, LoopControllerState } from "./types.js";
 import { runLoop } from "./loop-runner.js";
 import type { RunAccess } from "./loop-runner.js";
-import { Writable } from "node:stream";
 
 export type { TaskResolver } from "./types.js";
 export type { LoopControllerState } from "./types.js";

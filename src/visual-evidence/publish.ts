@@ -12,7 +12,7 @@
 import { readFileSync, existsSync } from "node:fs";
 import { join } from "node:path";
 import { execSync } from "node:child_process";
-import type { EvidenceManifest } from "./manifest.ts";
+import type { EvidenceManifest } from "./manifest.js";
 
 function parseArgs(args: string[]): {
   changeId?: string;

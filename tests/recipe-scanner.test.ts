@@ -54,7 +54,7 @@ describe("RecipeScanner", () => {
 
     const { loopManager, taskManager, projectManager } = createTestManagers(tmpDir);
     taskManager.setRecipeTaskStore(store);
-    const testProject = projectManager.create("TestProject", "#ffffff", tmpDir);
+    const _testProject = projectManager.create("TestProject", "#ffffff", tmpDir);
     scanner.setManagers(loopManager, projectManager);
     loopManager.setRecipeScanner(scanner);
   });

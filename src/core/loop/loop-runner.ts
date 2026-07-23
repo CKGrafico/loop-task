@@ -1,4 +1,3 @@
-import fs from "node:fs";
 import { computePhase, alignToPhase } from "../scheduling/index.js";
 import { resolveEffectiveCwd } from "../command/resolve-cwd.js";
 import { executeChain } from "./chain-executor.js";

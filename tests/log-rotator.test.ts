@@ -5,12 +5,12 @@ import os from "node:os";
 import { rotateLogIfNeeded } from "../src/core/logging/log-rotator.js";
 
 const MAX_LOG_BYTES = 1024 * 1024;
-const MAX_LOG_GENERATIONS = 3;
+const _MAX_LOG_GENERATIONS = 3;
 
 let tmpDir: string;
 
 // Track all WriteStreams created by the mock so we don't leak file descriptors
-let createdStreams: { end: () => void }[];
+let _createdStreams: { end: () => void }[];
 
 // Mock fs.createWriteStream to avoid deferred-open ENOENT issues with temp dirs
 vi.mock("node:fs", async () => {
@@ -19,7 +19,7 @@ vi.mock("node:fs", async () => {
     ...actual,
     default: {
       ...actual,
-      createWriteStream: (...args: unknown[]) => {
+      createWriteStream: (..._args: unknown[]) => {
         const stream = { end: vi.fn(), write: vi.fn(), destroyed: false, closed: false, on: vi.fn() };
         return stream;
       },
@@ -29,7 +29,7 @@ vi.mock("node:fs", async () => {
 
 beforeEach(() => {
   tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "log-rotator-test-"));
-  createdStreams = [];
+  _createdStreams = [];
 });
 
 afterEach(() => {
