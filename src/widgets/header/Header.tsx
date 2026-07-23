@@ -12,6 +12,7 @@ interface HeaderProps {
   daemonStatus: DaemonStatus;
   httpApiEnabled?: boolean;
   mcpApiEnabled?: boolean;
+  telemetryEnabled?: boolean;
   counts: { total: number; running: number; waiting: number; paused: number; idle: number };
   activeTab: TabName;
   onTabChange: (tab: TabName) => void;
@@ -83,6 +84,7 @@ export function Header(props: HeaderProps): React.ReactNode {
           <Text color={theme.text.secondary}>{daemonText(props.daemonStatus)}</Text>
           <ServiceStatus label="api" enabled={props.httpApiEnabled} online={online} />
           <ServiceStatus label="mcp" enabled={props.mcpApiEnabled} online={online} />
+          <ServiceStatus label="otel" enabled={props.telemetryEnabled} online={online} />
           {!compact && entries.map((e) =>
             e.value > 0 ? (
               <React.Fragment key={e.label}>

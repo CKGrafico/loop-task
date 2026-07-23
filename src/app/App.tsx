@@ -124,7 +124,7 @@ export function App(props: { onQuit: () => void }): React.ReactNode {
 
   return (
     <Box flexDirection="column" width="100%" height={process.stdout.rows || 24} backgroundColor={theme.bg.base}>
-      <Header daemonStatus={daemonStatus} httpApiEnabled={daemonSettings.reachable ? daemonSettings.httpApiEnabled : undefined} mcpApiEnabled={daemonSettings.reachable ? daemonSettings.mcpApiEnabled : undefined} counts={s.counts} activeTab={s.activeTab} onTabChange={s.setActiveTab} tabCounts={s.tabCounts} />
+      <Header daemonStatus={daemonStatus} httpApiEnabled={daemonSettings.reachable ? daemonSettings.httpApiEnabled : undefined} mcpApiEnabled={daemonSettings.reachable ? daemonSettings.mcpApiEnabled : undefined} telemetryEnabled={daemonSettings.reachable ? daemonSettings.telemetryEnabled : undefined} counts={s.counts} activeTab={s.activeTab} onTabChange={s.setActiveTab} tabCounts={s.tabCounts} />
       <Box key={viewKey(view, s.editTarget, s.editTask)} flexGrow={1}>
         {isBoardView(view) ? (
           <Box flexDirection={breakpoint === "narrow" ? "column" : "row"} flexGrow={1}>

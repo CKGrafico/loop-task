@@ -12,7 +12,7 @@ const DEFAULTS: DaemonSettings = {
   // `loop-task http-host <ip|local>` when you want loopback-only.
   httpApiHost: "0.0.0.0",
   telemetryEnabled: true,
-  telemetryEndpoint: undefined,
+  telemetryEndpoint: "http://127.0.0.1:4318",
   telemetryProtocol: "http/protobuf",
   telemetryAutoInstrumentAgents: true,
   telemetryCaptureContent: false,

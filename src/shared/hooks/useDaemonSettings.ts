@@ -7,6 +7,7 @@ import { POLL_MS } from "../config/constants.js";
 export interface DaemonSettingsState {
   httpApiEnabled: boolean;
   mcpApiEnabled: boolean;
+  telemetryEnabled: boolean;
   /** false until the first successful fetch, or after the daemon becomes unreachable */
   reachable: boolean;
 }
@@ -16,6 +17,7 @@ export function useDaemonSettings(): DaemonSettingsState {
   const [state, setState] = useState<DaemonSettingsState>({
     httpApiEnabled: false,
     mcpApiEnabled: false,
+    telemetryEnabled: false,
     reachable: false,
   });
 
@@ -29,6 +31,7 @@ export function useDaemonSettings(): DaemonSettingsState {
           setState({
             httpApiEnabled: settings.httpApiEnabled,
             mcpApiEnabled: settings.mcpApiEnabled,
+            telemetryEnabled: settings.telemetryEnabled,
             reachable: true,
           });
         }
