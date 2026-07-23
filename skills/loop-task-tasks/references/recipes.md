@@ -69,11 +69,12 @@ Invoke an AI runner with interpolated context. The AI performs judgment-heavy wo
 ### opencode run
 
 ```
-opencode run "Implement this issue. Issue title: {{title}} Issue body: {{body}} Issue id: {{number}} Don't ask for confirmation, you are in auto mode. Plan, execute, and generate visual evidence."
+opencode run "/plan-goal Implement this issue. Issue title: {{title}} Issue body: {{body}} Issue id: {{number}} Don't ask for confirmation, you are in auto mode. Plan, execute, and generate visual evidence."
 ```
 
 - `{{title}}`, `{{body}}`, `{{number}}` are interpolated from context.
 - Keep the prompt focused on the interpolated values, not vague search instructions.
+- `/plan-goal` is prompt text. The executable remains `opencode`, with `run` as its first argument.
 - No `--model` or `--agent` flags — those are runtime concerns, not task definition concerns.
 
 ### claude -p

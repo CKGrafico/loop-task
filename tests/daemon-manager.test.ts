@@ -294,15 +294,15 @@ describe("LoopManager", () => {
   });
 
   describe("stopLoop()", () => {
-    it("delegates to controller.stopLoop() and persists", () => {
+    it("delegates to controller.stopLoop() and persists", async () => {
       const id = manager.start(makeOptions(), "1m");
-      const result = manager.stopLoop(id);
+      const result = await manager.stopLoop(id);
       expect(result).toBe(true);
       expect(mockControllerInstance.stopLoop).toHaveBeenCalledWith(true);
     });
 
-    it("returns false for unknown id", () => {
-      expect(manager.stopLoop("nonexistent")).toBe(false);
+    it("returns false for unknown id", async () => {
+      expect(await manager.stopLoop("nonexistent")).toBe(false);
     });
   });
 
@@ -389,16 +389,16 @@ describe("LoopManager", () => {
 
 
   describe("stopAllLoops()", () => {
-    it("stops all loops and returns the count", () => {
+    it("stops all loops and returns the count", async () => {
       manager.start(makeOptions(), "1m");
       manager.start(makeOptions({ command: "ls" }), "5m");
 
-      const count = manager.stopAllLoops();
+      const count = await manager.stopAllLoops();
       expect(count).toBe(2);
     });
 
-    it("returns 0 when no loops", () => {
-      expect(manager.stopAllLoops()).toBe(0);
+    it("returns 0 when no loops", async () => {
+      expect(await manager.stopAllLoops()).toBe(0);
     });
   });
 

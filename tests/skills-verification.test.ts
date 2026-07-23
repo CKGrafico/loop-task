@@ -33,6 +33,28 @@ describe("skill verification guidance", () => {
     expect(reliability).toContain("||");
   });
 
+  it("asks for tracker and runner choices without guessing", () => {
+    const tasks = fs.readFileSync(path.join(skillRoot, "SKILL.md"), "utf8");
+    const loops = fs.readFileSync(path.resolve("skills/loop-task-loops/SKILL.md"), "utf8");
+    const recipes = fs.readFileSync(path.join(skillRoot, "references/recipes.md"), "utf8");
+    for (const text of [tasks, loops]) {
+      expect(text).toContain("GitLab Issues (glab)");
+      expect(text).toContain("Never guess");
+      expect(text).toContain("/plan-goal");
+    }
+    expect(recipes).toContain('opencode run "/plan-goal');
+  });
+
+  it("keeps verification artifacts inside the ignored repository", () => {
+    const verification = fs.readFileSync(
+      path.join(skillRoot, "references/verification.md"),
+      "utf8",
+    );
+    expect(verification).toContain(".loop-task-tmp/verify-$$");
+    expect(verification).toContain("Never use");
+    expect(fs.readFileSync(path.resolve(".gitignore"), "utf8")).toContain(".loop-task-tmp/");
+  });
+
   it("keeps the skill directory documentation-only", () => {
     const files = fs
       .readdirSync(skillRoot, { recursive: true, withFileTypes: true })

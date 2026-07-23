@@ -15,7 +15,7 @@ A Task is one unit of executable work with a binary result: success or failure. 
 
 ## Pre-Design Questionnaire
 
-Before composing concrete Task definitions, use the **question** tool to ask the user about their tooling. Present all questions as a single form:
+Before composing concrete Task definitions, use the **question** tool to ask about any tooling the user has not already specified. Present missing questions together as one form. Never guess the issue tracker, CLI, AI runner, shell, or package manager.
 
 ```json
 [
@@ -25,6 +25,7 @@ Before composing concrete Task definitions, use the **question** tool to ask the
     "options": [
       { "label": "GitHub Issues (gh)", "description": "Use gh CLI for issue and PR management." },
       { "label": "Azure DevOps (az)", "description": "Use az CLI for work-item and PR management." },
+      { "label": "GitLab Issues (glab)", "description": "Use glab CLI for issue and merge request management." },
       { "label": "Jira (custom)", "description": "Use a custom script or API wrapper for Jira." },
       { "label": "Other", "description": "Specify the tool." }
     ]
@@ -33,8 +34,8 @@ Before composing concrete Task definitions, use the **question** tool to ask the
     "question": "What AI runner do you use for AI Tasks?",
     "header": "AI Runner",
     "options": [
-      { "label": "opencode run", "description": "Use opencode for AI agent execution." },
-      { "label": "claude -p", "description": "Use Claude CLI for AI execution." },
+      { "label": "opencode run", "description": "Use opencode run for AI agent execution." },
+      { "label": "claude -p", "description": "Use Claude CLI with -p for AI execution." },
       { "label": "aider", "description": "Use aider for AI-assisted coding." },
       { "label": "Other", "description": "Specify the runner." }
     ]
@@ -70,7 +71,7 @@ Before composing concrete Task definitions, use the **question** tool to ask the
 ]
 ```
 
-Wait for ALL answers before proceeding. The answers determine which executable syntax to use in Task payloads. No model or agent flags should be hardcoded in Task definitions — those are runtime concerns.
+Wait for all requested answers before proceeding. Answers determine executable syntax in Task payloads. A Task's `command` must be a real executable such as `gh`, `az`, `glab`, `opencode`, or `claude`. Slash commands such as `/plan-goal` belong inside an AI prompt passed as an argument to `opencode run` or `claude -p`. Model and agent flags remain runtime concerns.
 
 For interface-specific syntax vocabulary to compose tasks from the questionnaire answers, see [references/recipes.md](references/recipes.md).
 
@@ -171,6 +172,12 @@ sh -c 'openspec list --json | jq -e ''(.changes | length) == 0'' >/dev/null && p
 ```
 
 Use the repository's package manager and scripts when available. A pipeline is shell syntax, not a Loop Task argument list. On POSIX systems, set the Task command to `sh` and pass `-c` plus the complete script as arguments. On Windows, use an equivalent PowerShell command or a project-provided verification command. A verification command must exit non-zero for malformed output, unexpected schema, pending OpenSpec changes, lint errors, or type errors.
+
+If verification or evidence capture needs temporary output, create a PID-scoped
+directory under the current repository (for example `.loop-task-tmp/verify-$$`)
+and ensure it is ignored. Do not use `/tmp` or another external directory;
+remote runners can reject those paths or expose them through a different
+permission boundary.
 
 For the full verification contract and platform-safe alternatives, see [references/verification.md](references/verification.md).
 

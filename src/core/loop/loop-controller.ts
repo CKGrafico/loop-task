@@ -121,7 +121,7 @@ export class LoopController extends EventEmitter {
     }
   }
 
-  stopLoop(interruptCurrentRun = false): void {
+  async stopLoop(interruptCurrentRun = false): Promise<void> {
     if (this._status === "running" || this._status === "waiting" || this._status === "paused") {
       this._paused = true;
       this._status = "idle";
@@ -137,6 +137,9 @@ export class LoopController extends EventEmitter {
         this.resumeResolve = null;
       }
       this.emit("stopped");
+      if (this.loopPromise) {
+        await this.loopPromise;
+      }
     }
   }
 

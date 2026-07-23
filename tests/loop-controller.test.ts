@@ -171,6 +171,19 @@ describe("LoopController", () => {
     await controller.stop();
   });
 
+  it("stopLoop(true) interrupts and waits for the active run to finish", async () => {
+    mockExecaAbortableRun();
+    const controller = new LoopController("stoprun1", makeOptions({ immediate: true }), logPath, noopTaskResolver);
+    controller.start();
+    await vi.advanceTimersByTimeAsync(10);
+
+    const stopping = controller.stopLoop(true);
+    expect(controller.status).toBe("idle");
+    await stopping;
+
+    expect(controller.getMeta().runHistory.at(-1)?.status).toBe("completed");
+  });
+
   it("triggerNow returns false when loop is running", async () => {
     mockExecaAbortableRun();
     const controller = new LoopController("hhhhhhhh", makeOptions({ immediate: true }), logPath, noopTaskResolver);
@@ -256,7 +269,7 @@ describe("LoopController", () => {
     expect(["waiting", "running", "paused"]).toContain(controller.status);
 
     // Stop
-    controller.stopLoop();
+    await controller.stopLoop();
     expect(controller.status).toBe("idle");
     await controller.stop();
   });
@@ -311,7 +324,7 @@ describe("LoopController", () => {
     await vi.advanceTimersByTimeAsync(10);
     controller.pause();
     expect(controller.status).toBe("paused");
-    controller.stopLoop();
+    await controller.stopLoop();
     expect(controller.status).toBe("idle");
     await controller.stop();
   });
@@ -346,7 +359,7 @@ describe("LoopController", () => {
     const controller = new LoopController("trigidle", makeOptions({ immediate: false, interval: 10000, maxRuns: 2 }), logPath, noopTaskResolver);
     controller.start();
     await vi.advanceTimersByTimeAsync(100);
-    controller.stopLoop();
+    await controller.stopLoop();
     await vi.advanceTimersByTimeAsync(10);
     const result = controller.triggerNow();
     expect(result).toBe(true);

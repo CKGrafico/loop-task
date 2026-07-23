@@ -83,7 +83,7 @@ export async function runLoop(ctrl: RunAccess): Promise<void> {
         ? (ctrl.options.taskId ? ctrl.taskResolver(ctrl.options.taskId)?.onSuccessTaskId : undefined)
         : (ctrl.options.taskId ? ctrl.taskResolver(ctrl.options.taskId)?.onFailureTaskId : undefined);
 
-      if (chainTargetId) {
+      if (chainTargetId && !signal.aborted) {
         const task = ctrl.options.taskId ? ctrl.taskResolver(ctrl.options.taskId) : null;
         const cwd = resolveEffectiveCwd(ctrl.options.cwd, ctrl.projectDirectory);
         const chainResult = await executeChain({

@@ -75,6 +75,7 @@ export async function executeRunImpl(ctrl: ExecuteRunAccess, signal: AbortSignal
   let totalDuration = 0;
 
   for (const step of taskSteps) {
+    if (signal.aborted || ctrl.runAbortController?.signal.aborted) break;
     const stepResults = await Promise.allSettled(
       step.commands.map((cmd) =>
         executeCommand(
@@ -88,6 +89,8 @@ export async function executeRunImpl(ctrl: ExecuteRunAccess, signal: AbortSignal
         )
       )
     );
+
+    if (signal.aborted || ctrl.runAbortController?.signal.aborted) break;
 
     ctrl.checkLogRotation();
 
