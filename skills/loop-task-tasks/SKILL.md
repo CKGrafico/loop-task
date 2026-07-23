@@ -173,6 +173,12 @@ sh -c 'openspec list --json | jq -e ''(.changes | length) == 0'' >/dev/null && p
 
 Use the repository's package manager and scripts when available. A pipeline is shell syntax, not a Loop Task argument list. On POSIX systems, set the Task command to `sh` and pass `-c` plus the complete script as arguments. On Windows, use an equivalent PowerShell command or a project-provided verification command. A verification command must exit non-zero for malformed output, unexpected schema, pending OpenSpec changes, lint errors, or type errors.
 
+If verification or evidence capture needs temporary output, create a PID-scoped
+directory under the current repository (for example `.loop-task-tmp/verify-$$`)
+and ensure it is ignored. Do not use `/tmp` or another external directory;
+remote runners can reject those paths or expose them through a different
+permission boundary.
+
 For the full verification contract and platform-safe alternatives, see [references/verification.md](references/verification.md).
 
 ## Reliable Task Workflow

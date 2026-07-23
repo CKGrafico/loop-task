@@ -45,6 +45,22 @@ sh -c 'openspec list --json | jq -e ''(.changes | length) == 0'' >/dev/null && p
 
 Prefer existing `package.json` scripts when they express the required check. Do not add `npx` to a canonical command when the repository declares another package manager.
 
+## Temporary verification artifacts
+
+When verification or evidence capture needs intermediate output, keep it inside
+the repository under an ignored directory such as `.loop-task-tmp/`. Never use
+`/tmp` or another external directory: hosted runners may reject access to it,
+and the evidence step may run in a different permission boundary.
+
+```sh
+sh -c 'set -eu; tmpDir=".loop-task-tmp/verify-$$"; mkdir -p "$tmpDir"; pnpm exec tsc --noEmit >"$tmpDir/typecheck.log" 2>&1 && pnpm test >"$tmpDir/test.log" 2>&1'
+```
+
+Use a PID-suffixed directory so concurrent loops do not overwrite one another.
+The directory must be listed in `.gitignore` before the verification Task runs.
+Keep failure logs when useful; clean successful artifacts in a later cleanup
+Task or at the end of the same shell script.
+
 ## Chain placement
 
 ```text

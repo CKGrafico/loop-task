@@ -45,6 +45,16 @@ describe("skill verification guidance", () => {
     expect(recipes).toContain('opencode run "/plan-goal');
   });
 
+  it("keeps verification artifacts inside the ignored repository", () => {
+    const verification = fs.readFileSync(
+      path.join(skillRoot, "references/verification.md"),
+      "utf8",
+    );
+    expect(verification).toContain(".loop-task-tmp/verify-$$");
+    expect(verification).toContain("Never use");
+    expect(fs.readFileSync(path.resolve(".gitignore"), "utf8")).toContain(".loop-task-tmp/");
+  });
+
   it("keeps the skill directory documentation-only", () => {
     const files = fs
       .readdirSync(skillRoot, { recursive: true, withFileTypes: true })
