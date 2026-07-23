@@ -541,15 +541,21 @@ loop-task daemon
 │   ├── NoopTelemetryAdapter (disabled / no endpoint)
 │   └── OpenTelemetryAdapter (@opentelemetry/sdk-node)
 │       ├── Tracer (loop_task.loop.run, loop_task.task.execute, etc.)
+│       ├── Meter (counters + histograms for runs, tasks, commands, agents, failures)
 │       ├── MetricReader (periodic, 30s)
-│       └── OTLP Exporters (http/protobuf or grpc)
+│       └── OTLP Exporters (http/protobuf or grpc, with auth headers)
+├── LoopManager → LoopController → RunAccess → TelemetryManager
+│   └── executeRunImpl: creates loop + task spans, passes to executeCommand
+│   └── chain-executor: creates chain task spans, passes to executeCommand
 ├── Agent Integrations (agent-integrations/)
-│   ├── OpenCodeTelemetryIntegration
-│   └── ClaudeCodeTelemetryIntegration
+│   ├── OpenCodeTelemetryIntegration (OPENCODE_EXPERIMENTAL_OPEN_TELEMETRY)
+│   └── ClaudeCodeTelemetryIntegration (CLAUDE_CODE_ENABLE_TELEMETRY)
+├── Usage Parsing (parseUsage in agent integrations)
+│   └── Parsed after command execution → recordAgentUsage (tokens + cost)
 └── Redaction (telemetry-redaction.ts)
 ```
 
-Span model uses stable names: `loop_task.loop.run`, `loop_task.task.execute`, `loop_task.command.execute`. Dynamic identifiers are span attributes, not span names. Content capture is disabled by default.
+Span model uses stable names: `loop_task.loop.run`, `loop_task.task.execute`, `loop_task.command.execute`. Dynamic identifiers are span attributes, not span names. Content capture is disabled by default. Telemetry is wired into the execution engine: `LoopManager` holds `TelemetryManager`, passes it to `LoopController`, which exposes it to `RunAccess`. `executeRunImpl` and `executeChain` create loop/task spans and pass `TelemetryCommandContext` to `executeCommand`, which creates command spans, injects OTEL_* env vars into child processes, and parses agent usage after execution.
 
 ---
 
