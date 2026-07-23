@@ -84,6 +84,7 @@ function makeTaskDef(overrides: Partial<TaskDefinition> = {}): TaskDefinition {
     commandArgs: ["hello"],
     onSuccessTaskId: null,
     onFailureTaskId: null,
+    maxRuns: 5,
     createdAt: new Date().toISOString(),
     ...overrides,
   };

@@ -29,6 +29,7 @@ function makeTaskInput(overrides: Partial<Omit<TaskDefinition, "createdAt">> = {
     commandArgs: ["hello"],
     onSuccessTaskId: null,
     onFailureTaskId: null,
+    maxRuns: 5,
     ...overrides,
   };
 }
@@ -122,6 +123,7 @@ describe("TaskManager", () => {
         commandArgs: ["-la"],
         onSuccessTaskId: null,
         onFailureTaskId: null,
+        maxRuns: 5,
       });
 
       expect(updated).not.toBeNull();
@@ -141,6 +143,7 @@ describe("TaskManager", () => {
         commandArgs: [],
         onSuccessTaskId: null,
         onFailureTaskId: null,
+        maxRuns: 5,
       });
 
       // Verify via fresh manager
@@ -157,6 +160,7 @@ describe("TaskManager", () => {
         commandArgs: [],
         onSuccessTaskId: null,
         onFailureTaskId: null,
+        maxRuns: 5,
       });
       expect(result).toBeNull();
     });
@@ -237,6 +241,7 @@ describe("TaskManager", () => {
           commandArgs: ["new"],
           onSuccessTaskId: null,
           onFailureTaskId: null,
+          maxRuns: 5,
           createdAt: new Date().toISOString(),
         },
         {
@@ -246,6 +251,7 @@ describe("TaskManager", () => {
           commandArgs: [],
           onSuccessTaskId: null,
           onFailureTaskId: null,
+          maxRuns: 5,
           createdAt: new Date().toISOString(),
         },
       ];
@@ -278,6 +284,7 @@ describe("TaskManager", () => {
         commandArgs: ["persisted"],
         onSuccessTaskId: null,
         onFailureTaskId: null,
+        maxRuns: 5,
         createdAt: new Date().toISOString(),
       };
       saveTask(task);
@@ -298,6 +305,7 @@ describe("TaskManager", () => {
         commandArgs: ["1"],
         onSuccessTaskId: null,
         onFailureTaskId: null,
+        maxRuns: 5,
         createdAt: "2024-01-01T00:00:00.000Z",
       });
       saveTask({
@@ -307,6 +315,7 @@ describe("TaskManager", () => {
         commandArgs: ["2"],
         onSuccessTaskId: null,
         onFailureTaskId: null,
+        maxRuns: 5,
         createdAt: "2024-06-01T00:00:00.000Z",
       });
 

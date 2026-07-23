@@ -531,6 +531,7 @@ describe("HttpApiServer integration", () => {
         commandArgs: ["hi"],
         onSuccessTaskId: null,
         onFailureTaskId: null,
+        maxRuns: 5,
       });
 
       expect(res.status).toBe(201);
@@ -546,6 +547,7 @@ describe("HttpApiServer integration", () => {
         commandArgs: [],
         onSuccessTaskId: null,
         onFailureTaskId: null,
+        maxRuns: 5,
       });
 
       expect(res.status).toBe(400);
@@ -561,6 +563,7 @@ describe("HttpApiServer integration", () => {
         commandArgs: [],
         onSuccessTaskId: null,
         onFailureTaskId: null,
+        maxRuns: 5,
       });
 
       expect(res.status).toBe(400);
@@ -576,6 +579,7 @@ describe("HttpApiServer integration", () => {
         commandArgs: [],
         onSuccessTaskId: null,
         onFailureTaskId: null,
+        maxRuns: 5,
       });
 
       expect(res.status).toBe(400);
@@ -987,18 +991,18 @@ describe("HttpApiServer integration", () => {
   describe("POST /api/task-chains", () => {
     it("returns 201 with taskIds for sequential-success chain", async () => {
       mocks.mockTaskManager.create
-        .mockReturnValueOnce({ id: "t1", name: "A", command: "echo", commandArgs: [], onSuccessTaskId: null, onFailureTaskId: null, createdAt: new Date().toISOString() })
-        .mockReturnValueOnce({ id: "t2", name: "B", command: "echo", commandArgs: [], onSuccessTaskId: null, onFailureTaskId: null, createdAt: new Date().toISOString() })
-        .mockReturnValueOnce({ id: "t3", name: "C", command: "echo", commandArgs: [], onSuccessTaskId: null, onFailureTaskId: null, createdAt: new Date().toISOString() });
+        .mockReturnValueOnce({ id: "t1", name: "A", command: "echo", commandArgs: [], onSuccessTaskId: null, onFailureTaskId: null, maxRuns: 5, createdAt: new Date().toISOString() })
+        .mockReturnValueOnce({ id: "t2", name: "B", command: "echo", commandArgs: [], onSuccessTaskId: null, onFailureTaskId: null, maxRuns: 5, createdAt: new Date().toISOString() })
+        .mockReturnValueOnce({ id: "t3", name: "C", command: "echo", commandArgs: [], onSuccessTaskId: null, onFailureTaskId: null, maxRuns: 5, createdAt: new Date().toISOString() });
       mocks.mockTaskManager.update
-        .mockReturnValueOnce({ id: "t1", name: "A", command: "echo", commandArgs: [], onSuccessTaskId: "t2", onFailureTaskId: null, createdAt: new Date().toISOString() })
-        .mockReturnValueOnce({ id: "t2", name: "B", command: "echo", commandArgs: [], onSuccessTaskId: "t3", onFailureTaskId: null, createdAt: new Date().toISOString() });
+        .mockReturnValueOnce({ id: "t1", name: "A", command: "echo", commandArgs: [], onSuccessTaskId: "t2", onFailureTaskId: null, maxRuns: 5, createdAt: new Date().toISOString() })
+        .mockReturnValueOnce({ id: "t2", name: "B", command: "echo", commandArgs: [], onSuccessTaskId: "t3", onFailureTaskId: null, maxRuns: 5, createdAt: new Date().toISOString() });
 
       const res = await request(port, "POST", "/api/task-chains", {
         tasks: [
-          { id: "t1", name: "A", command: "echo", commandArgs: [], onSuccessTaskId: null, onFailureTaskId: null },
-          { id: "t2", name: "B", command: "echo", commandArgs: [], onSuccessTaskId: null, onFailureTaskId: null },
-          { id: "t3", name: "C", command: "echo", commandArgs: [], onSuccessTaskId: null, onFailureTaskId: null },
+          { id: "t1", name: "A", command: "echo", commandArgs: [], onSuccessTaskId: null, onFailureTaskId: null, maxRuns: 5 },
+          { id: "t2", name: "B", command: "echo", commandArgs: [], onSuccessTaskId: null, onFailureTaskId: null, maxRuns: 5 },
+          { id: "t3", name: "C", command: "echo", commandArgs: [], onSuccessTaskId: null, onFailureTaskId: null, maxRuns: 5 },
         ],
         chain: "sequential-success",
       });
@@ -1020,7 +1024,7 @@ describe("HttpApiServer integration", () => {
 
     it("returns 400 for invalid chain mode", async () => {
       const res = await request(port, "POST", "/api/task-chains", {
-        tasks: [{ id: "t1", name: "A", command: "echo", commandArgs: [], onSuccessTaskId: null, onFailureTaskId: null }],
+        tasks: [{ id: "t1", name: "A", command: "echo", commandArgs: [], onSuccessTaskId: null, onFailureTaskId: null, maxRuns: 5 }],
         chain: "invalid",
       });
 
@@ -1030,7 +1034,7 @@ describe("HttpApiServer integration", () => {
 
     it("returns 400 when task name is missing", async () => {
       const res = await request(port, "POST", "/api/task-chains", {
-        tasks: [{ id: "t1", name: "", command: "echo", commandArgs: [], onSuccessTaskId: null, onFailureTaskId: null }],
+        tasks: [{ id: "t1", name: "", command: "echo", commandArgs: [], onSuccessTaskId: null, onFailureTaskId: null, maxRuns: 5 }],
         chain: "none",
       });
 

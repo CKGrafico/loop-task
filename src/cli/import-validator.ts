@@ -18,6 +18,7 @@ const TASK_FIELDS: FieldSpec[] = [
   { name: "commandArgs", type: "array", nullable: false },
   { name: "onSuccessTaskId", type: "string", nullable: true },
   { name: "onFailureTaskId", type: "string", nullable: true },
+  { name: "maxRuns", type: "number", nullable: false },
   { name: "createdAt", type: "string", nullable: false },
 ];
 

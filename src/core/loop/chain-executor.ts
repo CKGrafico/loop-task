@@ -2,6 +2,7 @@ import crypto from "node:crypto";
 import fs from "node:fs";
 import { Writable } from "node:stream";
 import type { ExecutionResult, TaskCommand, TaskDefinition, TaskStep } from "../../types.js";
+import { DEFAULT_TASK_MAX_RUNS } from "../../types.js";
 import { executeCommand } from "../command/command-runner.js";
 import { t } from "../../shared/i18n/index.js";
 import { parseStdout } from "../context/context-parser.js";
@@ -52,6 +53,26 @@ export function executeChain(options: ChainExecuteOptions): Promise<ChainExecute
       if (signal.aborted) break;
       const chainTask = controller.taskResolver(currentTargetId);
       if (!chainTask) break;
+
+      // Per-task maxRuns check for chained tasks
+      const chainTaskMaxRuns = chainTask.maxRuns ?? DEFAULT_TASK_MAX_RUNS;
+      const chainTaskRunCount = controller.getTaskRunCount(chainTask.id);
+      if (chainTaskRunCount >= chainTaskMaxRuns) {
+        // Chained task exceeded its max runs limit — fail it and continue chain
+        const chainRecord = runHistory.find(r => r.chainGroupId === chainGroupId && r.status === "running" && r.chainName === chainTask.name);
+        if (chainRecord) {
+          chainRecord.exitCode = 1;
+          chainRecord.duration = 0;
+          chainRecord.logSize = 0;
+          chainRecord.status = "completed";
+        }
+        totalExtraDuration += 0;
+        finalExitCode = 1;
+        currentTargetId = chainTask.onFailureTaskId ?? null;
+        prevBranch = "onFailure";
+        prevExit = 1;
+        continue;
+      }
 
       const isSilent = chainTask.silentChain === true;
       if (isSilent) {
@@ -150,6 +171,9 @@ export function executeChain(options: ChainExecuteOptions): Promise<ChainExecute
 
       totalExtraDuration += chainDuration;
       finalExitCode = chainExitCode;
+
+      // Increment per-task run counter for the chained task
+      controller.incrementTaskRunCount(chainTask.id);
 
       currentTargetId = (chainExitCode === 0 ? chainTask.onSuccessTaskId : chainTask.onFailureTaskId) ?? null;
       prevBranch = chainExitCode === 0 ? "onSuccess" : "onFailure";
