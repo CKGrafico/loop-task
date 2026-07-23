@@ -139,10 +139,7 @@ export class RecipeScanner {
       taskIds,
     });
 
-    const shouldAutoStart = options.interval > 0;
-    if (shouldAutoStart) {
-      controller.start();
-    }
+    controller.start();
 
     daemonLog(`loaded recipe loop ${id} from ${fileName} (project: ${projectId})`);
     return id;

@@ -73,8 +73,8 @@ export function Navigator(props: {
     const failed = isFailed(loop);
     const sColor = failed ? theme.semantic.danger : statusColor(loop.status);
     const sLabel = statusLabel(loop.status);
-    const recipeBadge = loop.isRecipe ? "R" : "";
-    const statusText = recipeBadge ? `${recipeBadge}${sLabel}` : sLabel;
+    const recipeBadge = loop.isRecipe ? "R " : "";
+    const statusText = `${recipeBadge}${sLabel}`;
     const fg = isSelected ? theme.text.inverse : theme.text.primary;
     const dotChar = failed ? "\u2717 " : "\u25cf ";
     const dotColor = failed
