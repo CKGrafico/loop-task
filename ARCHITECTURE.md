@@ -108,6 +108,7 @@ loop-task/
 │   │   ├── recipe/             # RecipeScanner, RecipeTaskStore, id-remapper, validator, file-writer, deferred-reload
 │   │   ├── state/              # State persistence, PID/signature, code signature
 │   │   ├── spawner/            # ensureDaemon: spawn/restart daemon, code-signature check
+│   │   ├── telemetry/          # Daemon-managed OpenTelemetry: TelemetryManager, adapters (Noop/OpenTelemetry), agent integrations (OpenCode, Claude Code), redaction
 │   │   ├── watcher/            # Hot-reloading JSON configs + recipe directories (fs.watch + debounce + hash)
 │   │   └── daemon-log.ts       # Daemon-side diagnostic log
 │   │
@@ -523,6 +524,7 @@ Published to npm as `loop-task`. Version: 2.0.0.
 
 | Aspect | Implementation |
 |---|---|
+| OpenTelemetry | `src/daemon/telemetry/` — daemon-managed, enabled by default, persists in settings; auto-instruments OpenCode and Claude Code child processes; CLI subcommand `loop-task telemetry`; Ctrl+P commands |
 | Daemon log | `src/daemon/daemon-log.ts` - writes to `~/.loop-cli/daemon.log` |
 | Loop logs | Per-loop log files at `~/.loop-cli/logs/{id}.log` with run headers, chain markers, exit codes |
 | Log rotation | 1 MB max per file, 3 generations (`.{1}`, `.{2}`, `.{3}`) |
@@ -531,7 +533,23 @@ Published to npm as `loop-task`. Version: 2.0.0.
 | TUI toasts | `useToasts` hook shows auto-dismissing (3.5s) success/error/info notifications |
 | Debug panel | Toggleable DebugPanel showing last 12 keypresses with modifier flags |
 
-No metrics, tracing, or error reporting beyond local logs.
+### OpenTelemetry Architecture
+
+```text
+loop-task daemon
+├── TelemetryManager (lifecycle, settings listener)
+│   ├── NoopTelemetryAdapter (disabled / no endpoint)
+│   └── OpenTelemetryAdapter (@opentelemetry/sdk-node)
+│       ├── Tracer (loop_task.loop.run, loop_task.task.execute, etc.)
+│       ├── MetricReader (periodic, 30s)
+│       └── OTLP Exporters (http/protobuf or grpc)
+├── Agent Integrations (agent-integrations/)
+│   ├── OpenCodeTelemetryIntegration
+│   └── ClaudeCodeTelemetryIntegration
+└── Redaction (telemetry-redaction.ts)
+```
+
+Span model uses stable names: `loop_task.loop.run`, `loop_task.task.execute`, `loop_task.command.execute`. Dynamic identifiers are span attributes, not span names. Content capture is disabled by default.
 
 ---
 
