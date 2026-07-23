@@ -4,6 +4,16 @@
 
 This file provides syntax patterns for each position in the hybrid chain. The agent reads these to learn the executable vocabulary, then composes a unique task set based on the questionnaire answers.
 
+## Preflight
+
+Run repository preflight before selecting work:
+
+```
+git status --porcelain && git switch main && git pull --ff-only
+```
+
+Keep this separate from selection. A dirty worktree, missing `main` branch, or non-fast-forward update stops the chain before any issue is reserved.
+
 ## Selection
 
 Query for eligible work items. Output must be JSON so Loop Task can parse it into context.
@@ -11,14 +21,15 @@ Query for eligible work items. Output must be JSON so Loop Task can parse it int
 ### GitHub Issues
 
 ```
-gh issue list --label "code:pick" --search "sort:created-asc" --limit 1 --json number,title,body --jq ".[0] // empty"
+sh -c 'issue=$(gh issue list --label "code:pick" --state open --limit 1000 --json number,title,body --jq ''sort_by(.number) | .[0] // empty | {number,title,body}''); test -n "$issue" && printf "%s\n" "$issue"'
 ```
 
-- `--search "sort:created-asc"` tells GitHub to sort by creation date ascending (oldest first) server-side.
-- `--limit 1` ensures GitHub returns only one result after sorting. **This is critical**: without `--limit`, the gh CLI defaults to 30 results. With `--jq` processing locally, you'd download 30 issues, throw away 29, and waste bandwidth. Worse, if the oldest issue is beyond the default 30-issue window, you'd never select it. `--limit` makes GitHub sort then return one result.
+- `--state open` excludes closed work.
+- `--limit 1000` bounds the query before local sorting.
+- `sort_by(.number) | .[0]` selects the lowest issue number from the returned candidates.
 - `--json number,title,body` selects fields for context parsing.
-- `--jq ".[0] // empty"` extracts the single object or outputs nothing.
-- When no issues match, `gh` exits non-zero → chain terminates (empty-work pattern).
+- The shell guard rejects an empty selection instead of passing an empty `{{number}}` to reservation. For non-POSIX environments, use the equivalent native shell guard.
+- When no issues match, the selection Task exits non-zero without calling reservation.
 - When an issue matches, stdout is `{"number":42,"title":"...","body":"..."}` → parsed into context.
 
 ### Azure DevOps
@@ -165,6 +176,30 @@ git pull --ff-only
 ```
 az boards work-item update {{number}} --fields "System.Tags=code:pick" --output json
 ```
+
+## Verification
+
+Verification is its own concrete Task between AI work and finalization. It must independently check repository state and exit non-zero when checks fail.
+
+For this repository, run the OpenSpec predicate inside an explicit shell Task:
+
+```
+sh -c 'openspec list --json | jq -e ''(.changes | length) == 0'' >/dev/null'
+```
+
+Quick verification gate:
+
+```
+sh -c 'openspec list --json | jq -e ''(.changes | length) == 0'' >/dev/null && pnpm exec eslint --max-warnings 0 src/ tests/ && pnpm exec tsc --noEmit'
+```
+
+Full verification gate:
+
+```
+sh -c 'openspec list --json | jq -e ''(.changes | length) == 0'' >/dev/null && pnpm exec eslint --max-warnings 0 src/ tests/ && pnpm exec tsc --noEmit && pnpm run test && pnpm run build'
+```
+
+Do not compare serialized OpenSpec output to `[]`: `openspec list --json` returns `{ "changes": [] }`. Do not store the pipeline as raw `openspec` arguments. For Windows, use the equivalent PowerShell command.
 
 ## PR Closure
 

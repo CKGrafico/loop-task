@@ -39,6 +39,16 @@ Before designing a Loop, use the **question** tool to ask the user about their t
     ]
   },
   {
+    "question": "What operating system, shell, and package manager will run these Tasks?",
+    "header": "Runtime",
+    "options": [
+      { "label": "Windows + PowerShell", "description": "Prefer Node-based helpers and Windows-safe commands." },
+      { "label": "macOS/Linux + POSIX shell", "description": "POSIX shell commands are available." },
+      { "label": "Mixed environments", "description": "Use portable Node helpers where possible." },
+      { "label": "Other", "description": "Specify the environment." }
+    ]
+  },
+  {
     "question": "What label lifecycle do you use?",
     "header": "Labels",
     "options": [

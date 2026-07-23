@@ -40,6 +40,16 @@ Before composing concrete Task definitions, use the **question** tool to ask the
     ]
   },
   {
+    "question": "What operating system, shell, and package manager will run these Tasks?",
+    "header": "Runtime",
+    "options": [
+      { "label": "Windows + PowerShell", "description": "Prefer Node-based helpers and Windows-safe commands." },
+      { "label": "macOS/Linux + POSIX shell", "description": "POSIX shell commands are available." },
+      { "label": "Mixed environments", "description": "Use portable Node helpers where possible." },
+      { "label": "Other", "description": "Specify the environment." }
+    ]
+  },
+  {
     "question": "What label lifecycle do you use?",
     "header": "Labels",
     "options": [
@@ -149,6 +159,32 @@ For interface-specific syntax vocabulary for composing concrete tasks, see [refe
 ## Idempotency
 
 Because Loops repeat, Tasks must be safe to execute multiple times. Inspect before changing. Reserve before processing. Verify before finalizing. Handle "already done" gracefully. Separate selection from mutation.
+
+## Verification Gates
+
+Verification is a separate concrete Task after any AI or mutation Task. Never finalize work based only on an agent's exit code or self-reported summary.
+
+Verification commands must validate structured output semantically. Never compare serialized JSON as a string. For example, `openspec list --json` returns an object such as `{ "changes": [] }`, not the array `[]`:
+
+```sh
+sh -c 'openspec list --json | jq -e ''(.changes | length) == 0'' >/dev/null && pnpm exec eslint --max-warnings 0 src/ tests/ && pnpm exec tsc --noEmit'
+```
+
+Use the repository's package manager and scripts when available. A pipeline is shell syntax, not a Loop Task argument list. On POSIX systems, set the Task command to `sh` and pass `-c` plus the complete script as arguments. On Windows, use an equivalent PowerShell command or a project-provided verification command. A verification command must exit non-zero for malformed output, unexpected schema, pending OpenSpec changes, lint errors, or type errors.
+
+For the full verification contract and platform-safe alternatives, see [references/verification.md](references/verification.md).
+
+## Reliable Task Workflow
+
+Use this order for repository work:
+
+```text
+preflight → select → reserve → work → verify → finalize
+```
+
+Keep each boundary in a separate concrete Task when it can fail independently. Preflight checks the working tree, switches to the expected base branch, and fast-forward pulls it. Selection must produce a validated JSON object or exit non-zero for no work. Reservation runs only after selection succeeds. Work Tasks define a timeout and retry policy. Finalization runs only after verification succeeds.
+
+Read [references/reliability.md](references/reliability.md) for environment, safety, timeout, retry, idempotency, output-contract, and confirmation rules.
 
 ## Antipatterns
 
