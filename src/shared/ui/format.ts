@@ -1,4 +1,4 @@
-import type { LoopMeta } from "../../types.js";
+import type { LoopMeta, LoopStatus } from "../../types.js";
 import { t } from "../i18n/index.js";
 
 export function unescapeCommand(str: string): string {
@@ -55,7 +55,7 @@ export function timeUntil(iso: string | null): string {
   return t("format.daysAhead", { days: Math.floor(hrs / 24) });
 }
 
-const STATUS_COLORS: Record<LoopMeta["status"], string> = {
+const STATUS_COLORS: Record<LoopStatus, string> = {
   running: "#4ade80",
   waiting: "#6b7280",
   paused: "#facc15",

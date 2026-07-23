@@ -30,7 +30,7 @@ export interface ChainExecuteResult {
 }
 
 export function executeChain(options: ChainExecuteOptions): Promise<ChainExecuteResult> {
-  const { chainTargetId, exitCode, task, chainContext, cwd, signal, runCount, logPath, runHistory, logStream, controller } = options;
+  const { chainTargetId, exitCode, task: _task, chainContext, cwd, signal, runCount, logPath, runHistory, logStream, controller } = options;
 
   const nullStream = new Writable({ write(_chunk, _enc, cb) { cb(); } });
 

@@ -13,6 +13,8 @@ export function setProjectSelfWriteNotifier(notifier: SelfWriteNotifier | null):
   selfWriteNotifier = notifier;
 }
 
+type DirectoryChangeCallback = (projectId: string, oldDirectory: string, newDirectory: string) => void;
+
 const GITHUB_SOURCE_REGEX = /^[a-zA-Z0-9_.\-]+\/[a-zA-Z0-9_.\-]+$/;
 
 function validateGithubSource(githubSource: string): void {
@@ -23,6 +25,11 @@ function validateGithubSource(githubSource: string): void {
 
 export class ProjectManager {
   private projects: Map<string, Project> = new Map();
+  private onDirectoryChange: DirectoryChangeCallback | null = null;
+
+  setOnDirectoryChange(callback: DirectoryChangeCallback): void {
+    this.onDirectoryChange = callback;
+  }
 
   init(): void {
     const dataDir = getDataDir();
@@ -129,6 +136,8 @@ export class ProjectManager {
     const project = this.projects.get(id);
     if (!project) throw new Error(`Project ${id} not found`);
     if (project.isSystem) throw new Error("Cannot rename system project");
+
+    const oldDirectory = project.directory ?? "";
     project.name = name;
     if (color) project.color = color;
     if (directory !== undefined) project.directory = directory;
@@ -137,6 +146,10 @@ export class ProjectManager {
       project.githubSource = githubSource || undefined;
     }
     this.saveProject(project);
+
+    if (directory !== undefined && directory !== oldDirectory) {
+      this.onDirectoryChange?.(id, oldDirectory, directory);
+    }
   }
 
   delete(id: string): void {

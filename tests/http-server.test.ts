@@ -76,6 +76,7 @@ const mockManager = {
   trigger: vi.fn().mockReturnValue(true),
   isMaxRunsBlocked: vi.fn().mockReturnValue(false),
   isRunning: vi.fn().mockReturnValue(false),
+  isRecipeLoop: vi.fn().mockReturnValue(false),
   getLogPath: vi.fn().mockReturnValue(null),
 };
 

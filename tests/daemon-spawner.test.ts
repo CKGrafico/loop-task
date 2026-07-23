@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
-import { mkdtempSync, rmSync, mkdirSync } from "node:fs";
+import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
@@ -15,13 +15,13 @@ const { mockReadDaemonPid, mockIsDaemonAlive, mockRemoveDaemonPid, mockRemoveDae
 }));
 
 vi.mock("../src/daemon/state/index.js", () => ({
-  readDaemonPid: (...args: any[]) => mockReadDaemonPid(...args),
-  isDaemonAlive: (...args: any[]) => mockIsDaemonAlive(...args),
-  removeDaemonPid: (...args: any[]) => mockRemoveDaemonPid(...args),
-  removeDaemonSignature: (...args: any[]) => mockRemoveDaemonSignature(...args),
-  readDaemonSignature: (...args: any[]) => mockReadDaemonSignature(...args),
-  computeCodeSignature: (...args: any[]) => mockComputeCodeSignature(...args),
-  getSocketPath: (...args: any[]) => mockGetSocketPath(...args),
+  readDaemonPid: (..._args: unknown[]) => mockReadDaemonPid(),
+  isDaemonAlive: (..._args: unknown[]) => mockIsDaemonAlive(),
+  removeDaemonPid: (..._args: unknown[]) => mockRemoveDaemonPid(),
+  removeDaemonSignature: (..._args: unknown[]) => mockRemoveDaemonSignature(),
+  readDaemonSignature: (..._args: unknown[]) => mockReadDaemonSignature(),
+  computeCodeSignature: (..._args: unknown[]) => mockComputeCodeSignature(),
+  getSocketPath: (..._args: unknown[]) => mockGetSocketPath(),
 }));
 
 import { getSocket, stopDaemon } from "../src/daemon/spawner/index.js";

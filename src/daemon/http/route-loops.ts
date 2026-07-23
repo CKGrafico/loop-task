@@ -88,11 +88,17 @@ export function registerLoopRoutes(manager: LoopManager, routes: RouteEntry[], r
       }
       sendOk(res, { id: params.id });
     } catch (err) {
-      sendError(res, 400, err instanceof Error ? err.message : String(err));
+      const message = err instanceof Error ? err.message : String(err);
+      const isRecipeRestriction = message.includes("Recipe loops");
+      sendError(res, isRecipeRestriction ? 403 : 400, message);
     }
   });
 
   r("DELETE", "/api/loops/:id", async (_req, res, params) => {
+    if (manager.isRecipeLoop(params.id)) {
+      sendError(res, 403, "Recipe loops cannot be deleted; remove the recipe file instead");
+      return;
+    }
     const ok = await manager.delete(params.id);
     if (!ok) {
       sendNotFound(res, params.id);

@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useCallback, useState, useRef } from "react";
 
-import type { TaskDefinition, TaskCommand, TaskStep } from "../../types.js";
+import type { TaskDefinition, TaskStep } from "../../types.js";
 import { DEFAULT_TASK_MAX_RUNS } from "../../types.js";
 import { WizardForm, type WizardStepConfig } from "../loop-form/WizardForm.js";
 import { SelectModal, SelectValueField, type SelectOption } from "../../shared/ui/SelectModal.js";

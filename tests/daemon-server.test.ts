@@ -1,9 +1,9 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
-import { mkdtempSync, rmSync, mkdirSync, writeFileSync } from "node:fs";
+import { mkdtempSync, rmSync, mkdirSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import net from "node:net";
-import type { LoopMeta, TaskDefinition, IpcResponse } from "../src/types.js";
+import type { LoopMeta, IpcResponse } from "../src/types.js";
 
 // Mock LoopManager
 const mockStart = vi.fn().mockReturnValue("loop1");
@@ -114,8 +114,8 @@ async function createServerAndClient(): Promise<{
   sendRequest: (request: object) => Promise<IpcResponse[]>;
   close: () => Promise<void>;
 }> {
-  const manager = new LoopManager({} as any);
-  const taskManager = new TaskManager({} as any);
+  const manager = new LoopManager({} as never);
+  const taskManager = new TaskManager({} as never);
   const server = new IpcServer(manager, taskManager);
 
   mkdirSync(tmpDir, { recursive: true });
@@ -123,7 +123,7 @@ async function createServerAndClient(): Promise<{
     ? `\\\\.\\pipe\\loop-test-${process.pid}-${Date.now()}-${Math.floor(Math.random() * 1e6)}`
     : join(tmpDir, `test-${Date.now()}.sock`);
 
-  (server as any).socketPath = socketPath;
+  (server as Record<string, unknown>).socketPath = socketPath;
 
   await server.listen();
 
@@ -220,7 +220,7 @@ describe("IpcServer", () => {
 
     const responses = await sendRequest({ type: "list" });
     expect(responses[0].type).toBe("ok");
-    expect((responses[0] as any).data).toEqual(fakeList);
+    expect((responses[0] as Record<string, unknown>).data).toEqual(fakeList);
   });
 
   it("routes start request and returns id", async () => {
@@ -242,13 +242,13 @@ describe("IpcServer", () => {
       },
     });
     expect(responses[0].type).toBe("ok");
-    expect((responses[0] as any).data.id).toBe("loop1");
+    expect((responses[0] as Record<string, unknown>).data.id).toBe("loop1");
     expect(mockStart).toHaveBeenCalled();
   });
 
   it("returns error for malformed JSON", async () => {
     const responses = await new Promise<IpcResponse[]>((resolve, reject) => {
-      const client = net.createConnection((server as any).socketPath, () => {
+      const client = net.createConnection((server as Record<string, unknown>).socketPath as string, () => {
         client.write("this is not valid json\n");
       });
 
@@ -297,7 +297,7 @@ describe("IpcServer", () => {
     mockStopAllLoops.mockReturnValueOnce(3);
     const responses = await sendRequest({ type: "stop-all" });
     expect(responses[0].type).toBe("ok");
-    expect((responses[0] as any).data).toBe(3);
+    expect((responses[0] as Record<string, unknown>).data).toBe(3);
   });
 
   it("routes status request and returns meta when found", async () => {
@@ -333,7 +333,7 @@ describe("IpcServer", () => {
 
     const responses = await sendRequest({ type: "status", payload: { id: "abc" } });
     expect(responses[0].type).toBe("ok");
-    expect((responses[0] as any).data).toEqual(fakeMeta);
+    expect((responses[0] as Record<string, unknown>).data).toEqual(fakeMeta);
   });
 
   it("routes status request and returns error when not found", async () => {
@@ -343,7 +343,7 @@ describe("IpcServer", () => {
   });
 
   it("routes delete request", async () => {
-    const responses = await sendRequest({ type: "delete", payload: { id: "abc" } });
+    const _responses = await sendRequest({ type: "delete", payload: { id: "abc" } });
     expect(mockDelete).toHaveBeenCalledWith("abc");
   });
 
@@ -446,7 +446,7 @@ describe("IpcServer", () => {
 
   it("pushEvent sends event to subscribers", async () => {
     // Subscribe first
-    const subSocket = net.createConnection((server as any).socketPath);
+    const subSocket = net.createConnection((server as Record<string, unknown>).socketPath as string);
     await new Promise<void>((resolve) => subSocket.on("connect", resolve));
     subSocket.write(JSON.stringify({ type: "subscribe" }) + "\n");
 
@@ -457,7 +457,7 @@ describe("IpcServer", () => {
     server.pushEvent("loop:started", { id: "abc" });
 
     // Read the event response
-    const eventData = await new Promise<IpcResponse | null>((resolve) => {
+    const _eventData = await new Promise<IpcResponse | null>((resolve) => {
       let buf = "";
       subSocket.on("data", (chunk: Buffer) => {
         buf += chunk.toString();
@@ -481,7 +481,7 @@ describe("IpcServer", () => {
 
 
   it("routes update request", async () => {
-    const responses = await sendRequest({
+    const _responses = await sendRequest({
       type: "update",
       payload: {
         id: "abc",

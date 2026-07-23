@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { mkdtempSync, rmSync, mkdirSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import type { LoopMeta, LoopOptions, TaskDefinition } from "../src/types.js";
+import type { LoopMeta, LoopOptions } from "../src/types.js";
 
 // Track the last constructed controller id so getMeta can return it
 let lastControllerId = "test-loop";
@@ -21,7 +21,7 @@ function makeMockMeta(id: string) {
     lastDuration: null,
     nextRunAt: null,
     remainingDelayMs: null,
-    runHistory: [] as any[],
+    runHistory: [] as unknown[],
     skippedCount: 0,
   };
 }
@@ -56,7 +56,7 @@ vi.mock("execa", () => ({
 import { LoopManager } from "../src/daemon/managers/loop-manager.js";
 import { TaskManager } from "../src/daemon/managers/task-manager.js";
 import { ProjectManager } from "../src/daemon/managers/project-manager.js";
-import { saveLoop, loadAllLoops, loadLoop, deleteLoop as deleteLoopState } from "../src/daemon/state/index.js";
+import { saveLoop, loadLoop } from "../src/daemon/state/index.js";
 
 let tmpDir: string;
 let origHome: string | undefined;
@@ -186,7 +186,7 @@ describe("LoopManager", () => {
 
     it("migrates loops without projectId to default", () => {
       const meta = makeLoopMeta({ id: "no-project" });
-      delete (meta as any).projectId;
+      delete (meta as Record<string, unknown>).projectId;
       saveLoop(meta);
 
       manager.init();

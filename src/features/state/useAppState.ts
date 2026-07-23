@@ -2,7 +2,7 @@ import { useState, useMemo, useEffect, useCallback } from "react";
 import type { LoopMeta, RunRecord, TaskDefinition, Project } from "../../types.js";
 import type { ConfirmState, View, TabName, PanelFocus, SearchState } from "../../app/types.js";
 import type { Filters, SortMode } from "../../entities/loops/filters.js";
-import { applyLoopFilters, defaultFilters, cycleSortMode, cycleStatusFilter } from "../../entities/loops/filters.js";
+import { applyLoopFilters, defaultFilters } from "../../entities/loops/filters.js";
 import type { ProjectFilters } from "../../entities/projects/filters.js";
 import { applyProjectFilters, defaultProjectFilters } from "../../entities/projects/filters.js";
 import type { DebugEntry } from "../../shared/ui/DebugPanel.js";
@@ -88,9 +88,9 @@ export function useAppState(
   taskService: TaskService,
   projectService: ProjectService,
   logService: LogService,
-  view: View,
-  push: (view: View) => void,
-  pop: () => void,
+  _view: View,
+  _push: (view: View) => void,
+  _pop: () => void,
 ): AppState & {
   visible: LoopMeta[];
   clampedIndex: number;

@@ -100,14 +100,15 @@ loop-task/
 │   │   └── foreground/         # runLoop: blocking foreground loop for `run`
 │   │
 │   ├── daemon/                 # Background server process (subdomain-organized)
-│   │   ├── index.ts            # Daemon entry: bind socket -> init managers -> handle signals
+│   │   ├── index.ts            # Daemon entry: bind socket -> init managers -> recipe scan -> handle signals
 │   │   ├── server/             # IpcServer + extracted handler modules (loop-handlers, task-handlers, etc.)
-│   │   ├── http/               # HttpApiServer + route handlers (route-loops, route-tasks, route-projects, SSE, OpenAPI)
+│   │   ├── http/               # HttpApiServer + route handlers (route-loops, route-tasks, route-projects) + SSE + OpenAPI
 │   │   ├── ipc/                # Shared IPC primitives (send.ts, logs-stream.ts)
-│   │   ├── managers/           # LoopManager, TaskManager, ProjectManager, loop-entry, loop-options, loop-serialization
+│   │   ├── managers/           # LoopManager, TaskManager, ProjectManager + support modules (loop-entry, loop-options, loop-serialization)
+│   │   ├── recipe/             # RecipeScanner, RecipeTaskStore, id-remapper, validator, file-writer, deferred-reload
 │   │   ├── state/              # State persistence, PID/signature, code signature
 │   │   ├── spawner/            # ensureDaemon: spawn/restart daemon, code-signature check
-│   │   ├── watcher/            # Hot-reloading JSON configs (fs.watch + debounce + hash)
+│   │   ├── watcher/            # Hot-reloading JSON configs + recipe directories (fs.watch + debounce + hash)
 │   │   └── daemon-log.ts       # Daemon-side diagnostic log
 │   │
 │   ├── client/                 # CLI-side IPC consumer
@@ -267,7 +268,8 @@ graph TB
 - `src/daemon/ipc/` - Shared IPC primitives: send.ts, logs-stream.ts
 - `src/daemon/spawner/` - `ensureDaemon()`: spawn daemon as child process, code-signature verification
 - `src/daemon/state/` - Persistence: load/save loops, PID/signature files, migration from old directory format
-- `src/daemon/watcher/` - `FileWatcher`: fs.watch + debounce + SHA-1 hash; mtime polling fallback for Windows
+- `src/daemon/recipe/` - `RecipeScanner`, `RecipeTaskStore`, `DeferredReloadManager`, `id-remapper`, `validator`, `file-writer`: auto-discovered `.loops/recipes/*.json` files per project directory
+- `src/daemon/watcher/` - `FileWatcher`: fs.watch + debounce + SHA-1 hash; mtime polling fallback for Windows; recipe directory watching
 
 **Technologies:** Node.js net module (TCP server), fs (file I/O), execa (child process spawning via LoopController)
 
@@ -368,6 +370,45 @@ sequenceDiagram
     Mgr->>Mgr: Re-save corrected state if needed
 ```
 
+### Recipe Loop Discovery Flow
+
+When a project has a `directory` set, the daemon scans `{directory}/.loops/recipes/*.json` at startup and watches for changes. Each recipe file defines one loop + its tasks in v2 export format. Recipe loops are loaded into an in-memory `RecipeTaskStore` (never persisted to `tasks.json`). Task IDs are generated as 8-char hex at load time with cross-reference remapping. Loop meta gets `isRecipe: true` and `recipeFile`. Overridable fields (interval, maxRuns, context) are written back to the recipe JSON file. Recipe loops cannot be deleted via API — only by removing the file.
+
+```mermaid
+sequenceDiagram
+    participant FS as Filesystem
+    participant FW as FileWatcher
+    participant Scanner as RecipeScanner
+    participant Store as RecipeTaskStore
+    participant Mgr as LoopManager
+
+    FW->>FS: Watch .loops/recipes/ directory
+    FS->>FW: New/modified/deleted .json file
+    FW->>Scanner: loadRecipe / reloadRecipe / unloadRecipe
+    Scanner->>Store: setMany(remappedTasks)
+    Scanner->>Mgr: addRecipeLoop(id, entry, fileName)
+    Mgr->>Mgr: Wire events, auto-start if interval > 0
+```
+
+### Recipe Deferred Reload Flow
+
+When a recipe file changes while its loop is running, the reload is deferred until the loop stops:
+
+```mermaid
+sequenceDiagram
+    participant FW as FileWatcher
+    participant DR as DeferredReloadManager
+    participant Ctrl as LoopController
+    participant Scanner as RecipeScanner
+
+    FW->>DR: File changed, loop is running
+    DR->>DR: Add to pendingReloads
+    DR->>Ctrl: Subscribe to "stopped" event
+    Ctrl->>DR: Loop stops, emit "stopped"
+    DR->>Scanner: reloadRecipe(recipeId)
+    Scanner->>Scanner: Re-read file, rebuild tasks, reconcile options
+```
+
 ---
 
 ## 5. Data Stores
@@ -379,6 +420,8 @@ All persistence is filesystem-based under `~/.loop-cli/` (overridable via `LOOP_
 | Loops | `loops.json` | JSON array | `LoopMeta[]` | Migrates from old `loops/` directory if JSON doesn't exist |
 | Tasks | `tasks.json` | JSON array | `TaskDefinition[]` | Migrates from old `tasks/` directory |
 | Projects | `projects.json` | JSON array | `Project[]` | Default project created on first init |
+| Recipe tasks | In-memory `RecipeTaskStore` | `Map<id, TaskDefinition>` | `TaskDefinition[]` (never persisted) | Loaded from `{project.dir}/.loops/recipes/*.json` at startup and on file watch events |
+| Recipe loops | In-memory `LoopManager.recipes` | `Map<id, StoredLoop>` | `StoredLoop[]` (never persisted) | Loaded from recipe files; `isRecipe: true` in `LoopMeta` |
 | Logs | `logs/{id}.log` | Plain text | Append-only with run headers | Rotated at 1 MB x 3 generations |
 | Daemon PID | `daemon.pid` | Plain text | Process ID | Recreated on each daemon start |
 | Code signature | `daemon.sig` | Plain text | SHA-1 hash | Recreated on each daemon start |
@@ -638,3 +681,7 @@ All shell commands must be prefixed with `rtk` in agent contexts (see AGENTS.md)
 | Command palette | The always-focused bottom input where users type commands with fuzzy autocomplete via `ink-combobox`. |
 | Wizard form | Multi-step create form: one field per screen, breadcrumb progress, Ctrl+S to skip optional steps. |
 | Patch edit | Inline edit form: read-only table of all field values, `change <field>` command targets individual rows. |
+| Recipe loop | An auto-discovered loop loaded from `.loops/recipes/*.json` in a project's directory. Immutable task chain; overridable fields (interval, maxRuns, context) written back to the file. Marked with `isRecipe: true` and a visual `R` badge in the TUI. |
+| Recipe file | A JSON file in v2 export format containing one loop + its tasks. Placed in `{project.dir}/.loops/recipes/`. Logical task IDs are remapped to 8-char hex at load time. |
+| RecipeTaskStore | In-memory `Map<taskId, TaskDefinition>` for recipe tasks. Never persisted to `tasks.json`. Loaded and unloaded with recipe file lifecycle. |
+| Deferred reload | When a recipe file changes while its loop is running, the reload is deferred until the loop stops, then applied automatically. |

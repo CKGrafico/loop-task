@@ -3,7 +3,7 @@ import { Writable } from "node:stream";
 import type { LoopOptions, RunRecord, TaskCommand, TaskStep, ExecutionResult } from "../../types.js";
 import { executeCommand } from "../command/command-runner.js";
 import { rotateLogIfNeeded } from "../logging/log-rotator.js";
-import { RotatingWriteStream } from "../logging/rotating-log-stream.js";
+
 import { parseStdout } from "../context/context-parser.js";
 import { interpolate } from "../context/template.js";
 import { resolveEffectiveCwd } from "../command/resolve-cwd.js";

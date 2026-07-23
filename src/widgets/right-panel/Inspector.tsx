@@ -4,7 +4,6 @@ import type { LoopMeta, Project } from "../../types.js";
 import { darkTheme as theme, statusColor } from "../../shared/ui/theme.js";
 import { describeLoop, commandLine, timeAgo, timeUntil, truncate } from "../../shared/ui/format.js";
 import { t } from "../../shared/i18n/index.js";
-import { resolveEffectiveCwd } from "../../core/command/resolve-cwd.js";
 
 const LABEL_WIDTH = 11;
 
@@ -29,7 +28,7 @@ function MutedField(props: { label: string; children: React.ReactNode }): React.
 }
 
 export function Inspector(props: { loop: LoopMeta | null; projects?: Project[] }): React.ReactNode {
-  const { loop, projects } = props;
+  const { loop } = props;
 
   if (!loop) {
     return (
@@ -65,6 +64,12 @@ export function Inspector(props: { loop: LoopMeta | null; projects?: Project[] }
         <Text color={theme.text.muted}>{DIVIDER}</Text>
       </Box>
       <Box flexDirection="column" paddingLeft={1}>
+        {loop.isRecipe ? (
+          <Box>
+            <Text bold color={theme.semantic.warning}>{"Recipe".padEnd(LABEL_WIDTH)}</Text>
+            <Text color={theme.semantic.warning}>{loop.recipeFile ?? ""}</Text>
+          </Box>
+        ) : null}
         <Box>
           <Text bold color={theme.text.muted}>{t("board.fieldStatus").padEnd(LABEL_WIDTH)}</Text>
           <Text color={sColor}>{loop.status}</Text>

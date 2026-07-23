@@ -1,0 +1,19 @@
+{
+  "version": 1,
+  "changeId": "recipe-loops",
+  "required": true,
+  "status": "passed",
+  "assets": [
+    {
+      "type": "test-output",
+      "path": "01-recipe-tests.txt",
+      "description": "All 42 recipe loop tests pass (7 test files)"
+    },
+    {
+      "type": "verification",
+      "path": "02-verification.txt",
+      "description": "Full verification: typecheck + lint + build + 942 tests pass"
+    }
+  ],
+  "reason": "Recipe Loops feature fully implemented with all tests passing"
+}

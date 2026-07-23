@@ -696,11 +696,11 @@ describe("viewLogs", () => {
   });
 
   it("sets up stream on follow mode", async () => {
-    const fakeSocket = { destroy: vi.fn(), on: vi.fn() } as any;
+    const fakeSocket = { destroy: vi.fn(), on: vi.fn() } as unknown as { destroy: () => void; on: (event: string, cb: () => void) => void };
     mockedStreamRequest.mockReturnValue(fakeSocket);
 
     // This will not resolve (follow mode keeps running), so wrap in try/catch
-    const promise = viewLogs("abc", true, 10);
+    void viewLogs("abc", true, 10);
 
     // Just check that streamRequest was called
     expect(mockedStreamRequest).toHaveBeenCalled();
@@ -715,11 +715,11 @@ describe("viewLogs", () => {
 
 describe("attachLoop", () => {
   it("sets up stream and console.log for attach", async () => {
-    const fakeSocket = { destroy: vi.fn(), on: vi.fn() } as any;
+    const fakeSocket = { destroy: vi.fn(), on: vi.fn() } as unknown as { destroy: () => void; on: (event: string, cb: () => void) => void };
     mockedStreamRequest.mockReturnValue(fakeSocket);
     const consoleSpy = vi.spyOn(console, "log").mockImplementation(() => { });
 
-    const promise = attachLoop("abc");
+    void attachLoop("abc");
 
     expect(consoleSpy).toHaveBeenCalled(); // "Attaching to..." log
     expect(mockedStreamRequest).toHaveBeenCalled();
@@ -756,7 +756,7 @@ describe("listProjectsCli", () => {
           { id: "p1", name: "Alpha", color: "#06b6d4", createdAt: "2024-01-01", isSystem: false, isDefault: false },
         ],
       })
-      .mockResolvedValueOnce({ type: "ok", data: [] as any[] });
+      .mockResolvedValueOnce({ type: "ok", data: [] as unknown[] });
     const consoleSpy = vi.spyOn(console, "log").mockImplementation(() => { });
 
     try {

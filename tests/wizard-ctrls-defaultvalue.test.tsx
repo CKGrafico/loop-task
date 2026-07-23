@@ -110,7 +110,7 @@ describe("WizardForm Ctrl+S with defaultValue-sourced custom field", () => {
       onChange: () => { },
       onAdvance: () => { },
     };
-    let activeKey = "interval";
+    const _activeKey = "interval";
 
     const steps: WizardStepConfig[] = [
       {
@@ -156,7 +156,7 @@ describe("WizardForm Ctrl+S with defaultValue-sourced custom field", () => {
       },
     ];
 
-    const { stdin, lastFrame } = render(
+    const { stdin, lastFrame: _lastFrame } = render(
       <Box height={30} width={80}>
         <WizardForm title="Test" steps={steps} onComplete={onComplete} onCancel={() => { }} />
       </Box>,

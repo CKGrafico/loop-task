@@ -100,14 +100,14 @@ describe("validateExportFile", () => {
   });
 
   it("rejects missing required keys", () => {
-    const { loops, tasks, projects, ...rest } = validExport;
+    const { loops: _loops, tasks: _tasks, projects: _projects, ...rest } = validExport;
     const result = validateExportFile({ ...rest });
     expect(result.valid).toBe(false);
     expect(result.errors.some((e) => e.message.includes("Missing required keys"))).toBe(true);
   });
 
   it("reports which keys are missing", () => {
-    const { tasks, projects, ...rest } = validExport;
+    const { tasks: _tasks, projects: _projects, ...rest } = validExport;
     const result = validateExportFile(rest);
     expect(result.valid).toBe(false);
     expect(result.errors[0].message).toContain("tasks");

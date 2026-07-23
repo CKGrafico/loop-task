@@ -1,0 +1,26 @@
+Recipe Loops: Auto-discovered .loops/recipes/*.json files
+Verification Report — 2026-07-23
+
+TYPECHECK: PASS (tsc --noEmit — zero errors)
+LINT: PASS (eslint src/ tests/ — zero errors)
+BUILD: PASS (tsc -p tsconfig.build.json — zero errors)
+TESTS: 942 passed | 5 skipped | 2 failed (pre-existing background-cli.test.ts failures unrelated to recipe loops)
+
+Recipe-specific test results (42 tests, 7 files):
+- tests/recipe-validator.test.ts: 8 tests PASS
+- tests/recipe-task-store.test.ts: 8 tests PASS
+- tests/recipe-id-remapper.test.ts: 6 tests PASS
+- tests/recipe-scanner.test.ts: 6 tests PASS
+- tests/recipe-deferred-reload.test.ts: 4 tests PASS
+- tests/recipe-loop-manager.test.ts: 5 tests PASS
+- tests/recipe-task-manager.test.ts: 5 tests PASS
+
+Key fixes from previous branch state:
+1. Fixed circular self-import in validator.ts (TS2440)
+2. Fixed PATCH /api/loops/:id to allow overridable recipe fields instead of blanket 403
+3. Fixed 89 lint errors across codebase
+4. Fixed .ts import extensions in visual-evidence/ (build error)
+5. Fixed missing type:'update' in daemon-server test
+6. Added 14 missing integration tests (3 new test files)
+
+All OpenSpec tasks (34/34) marked complete. Change archived.

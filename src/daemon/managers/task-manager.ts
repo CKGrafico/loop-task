@@ -1,11 +1,17 @@
 import crypto from "node:crypto";
 import type { TaskDefinition } from "../../types.js";
 import { DEFAULT_TASK_MAX_RUNS } from "../../types.js";
-import { saveTask, loadAllTasks, loadTask, deleteTask as deleteTaskState } from "../state/index.js";
+import { saveTask, loadAllTasks, deleteTask as deleteTaskState } from "../state/index.js";
 import { daemonLog } from "../daemon-log.js";
+import type { RecipeTaskStore } from "../recipe/task-store.js";
 
 export class TaskManager {
   private tasks = new Map<string, TaskDefinition>();
+  private recipeTaskStore: RecipeTaskStore | null = null;
+
+  setRecipeTaskStore(store: RecipeTaskStore): void {
+    this.recipeTaskStore = store;
+  }
 
   init(): void {
     const saved = loadAllTasks();
@@ -33,14 +39,26 @@ export class TaskManager {
   }
 
   get(id: string): TaskDefinition | null {
-    return this.tasks.get(id) ?? null;
+    const userTask = this.tasks.get(id) ?? null;
+    if (userTask) return userTask;
+    if (this.recipeTaskStore) {
+      return this.recipeTaskStore.get(id);
+    }
+    return null;
   }
 
   list(): TaskDefinition[] {
-    return [...this.tasks.values()];
+    const userTasks = [...this.tasks.values()];
+    if (this.recipeTaskStore) {
+      return [...userTasks, ...this.recipeTaskStore.list()];
+    }
+    return userTasks;
   }
 
   update(id: string, input: Omit<TaskDefinition, "id" | "createdAt">): TaskDefinition | null {
+    if (this.recipeTaskStore?.has(id)) {
+      throw new Error("Recipe tasks are immutable and cannot be updated");
+    }
     const existing = this.tasks.get(id);
     if (!existing) return null;
     const updated: TaskDefinition = { ...existing, ...input };
@@ -50,6 +68,9 @@ export class TaskManager {
   }
 
   delete(id: string): boolean {
+    if (this.recipeTaskStore?.has(id)) {
+      throw new Error("Recipe tasks are immutable and cannot be deleted");
+    }
     if (!this.tasks.has(id)) return false;
     this.tasks.delete(id);
     deleteTaskState(id);

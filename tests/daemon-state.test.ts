@@ -1,8 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
-import fs from "node:fs";
 import path from "node:path";
-import os from "node:os";
-import { mkdtempSync, rmSync, mkdirSync, writeFileSync, existsSync, readFileSync } from "node:fs";
+import { mkdtempSync, rmSync, mkdirSync, writeFileSync, existsSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import type { LoopMeta, TaskDefinition } from "../src/types.js";

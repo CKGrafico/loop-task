@@ -73,6 +73,8 @@ export function Navigator(props: {
     const failed = isFailed(loop);
     const sColor = failed ? theme.semantic.danger : statusColor(loop.status);
     const sLabel = statusLabel(loop.status);
+    const recipeBadge = loop.isRecipe ? "R" : "";
+    const statusText = recipeBadge ? `${recipeBadge}${sLabel}` : sLabel;
     const fg = isSelected ? theme.text.inverse : theme.text.primary;
     const dotChar = failed ? "\u2717 " : "\u25cf ";
     const dotColor = failed
@@ -88,7 +90,7 @@ export function Navigator(props: {
         <Text color={fg}>{String(loop.runCount).padStart(RUNS_WIDTH) + " ".repeat(COL_GAP)}</Text>
         <Text color={fg}>{String(loop.skippedCount).padStart(SKIPPED_WIDTH) + " ".repeat(COL_GAP)}</Text>
         <Text color={fg}>{String(loop.silentChainCount ?? 0).padStart(SILENT_WIDTH) + " ".repeat(COL_GAP)}</Text>
-        <Text color={isSelected ? theme.text.inverse : sColor}>{sLabel.padEnd(STATUS_WIDTH + COL_GAP)}</Text>
+        <Text color={isSelected ? theme.text.inverse : sColor}>{statusText.padEnd(STATUS_WIDTH + 1 + COL_GAP)}</Text>
         <Text color={fg}>{timing}</Text>
         {loop.status === "running" ? (
           <Text color={theme.semantic.success}>{" "}<Spinner type="dots" /></Text>

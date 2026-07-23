@@ -23,6 +23,11 @@ import { t } from "../shared/i18n/index.js";
 import { daemonLog } from "./daemon-log.js";
 import { killAllActiveProcesses, getActivePids } from "../core/command/command-runner.js";
 import { setActivePidsGetter } from "./diagnostics.js";
+import { RecipeScanner } from "./recipe/scanner.js";
+import { RecipeTaskStore } from "./recipe/task-store.js";
+import { DeferredReloadManager } from "./recipe/deferred-reload.js";
+import { setRecipeSelfWriteNotifier } from "./recipe/file-writer.js";
+import path from "node:path";
 
 function cleanupStaleProcesses(): void {
   const oldPid = readDaemonPid();
@@ -118,6 +123,24 @@ async function main(): Promise<void> {
   });
 
   manager.init();
+
+  // Recipe loop infrastructure
+  const recipeTaskStore = new RecipeTaskStore();
+  taskManager.setRecipeTaskStore(recipeTaskStore);
+  const recipeScanner = new RecipeScanner(recipeTaskStore);
+  const deferredReload = new DeferredReloadManager(recipeScanner);
+  recipeScanner.setManagers(manager, manager["projectManager"]);
+  manager.setRecipeScanner(recipeScanner);
+
+  // Set up project directory change callback for recipe reloading
+  manager["projectManager"].setOnDirectoryChange((projectId: string, _oldDirectory: string, newDirectory: string) => {
+    recipeScanner.unloadRecipesForProject(projectId);
+    if (newDirectory) {
+      recipeScanner.scanDirectory(projectId, newDirectory);
+      fileWatcher.watchRecipeDirectory(projectId, path.join(newDirectory, ".loops/recipes"));
+    }
+  });
+
   cleanupStaleProcesses();
   writeDaemonPid(process.pid);
   writeDaemonSignature(computeCodeSignature());
@@ -130,6 +153,21 @@ async function main(): Promise<void> {
 
   setSelfWriteNotifier((filePath, content) => fileWatcher.registerSelfWrite(filePath, content));
   setProjectSelfWriteNotifier((filePath, content) => fileWatcher.registerSelfWrite(filePath, content));
+  setRecipeSelfWriteNotifier((filePath, content) => fileWatcher.registerSelfWrite(filePath, content));
+
+  // Scan all project directories for recipe files
+  recipeScanner.scanAllProjects();
+  fileWatcher.setRecipeScanner(recipeScanner, deferredReload);
+
+  // Watch recipe directories for each project
+  for (const project of manager.listProjects()) {
+    if (project.directory) {
+      const recipesDir = path.join(project.directory, ".loops/recipes");
+      fileWatcher.watchRecipeDirectory(project.id, recipesDir);
+    }
+  }
+
+  daemonLog(`recipe scanner initialized`);
 
   let shuttingDown = false;
   const cleanup = async () => {

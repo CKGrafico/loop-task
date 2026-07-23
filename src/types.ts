@@ -113,6 +113,8 @@ export interface LoopMeta {
   offset: number | null;
   context?: Record<string, unknown>;
   totalRunCount?: number;
+  isRecipe?: boolean;
+  recipeFile?: string;
 }
 
 export interface DaemonSettings {

@@ -5,8 +5,8 @@
  * capture checkpoints. Returns `blocked` for unknown change IDs.
  */
 
-import type { CliHandle } from "./launch.ts";
-import type { CaptureCheckpoint } from "./capture.ts";
+import type { CliHandle } from "./launch.js";
+import type { CaptureCheckpoint } from "./capture.js";
 
 export interface ScenarioStep {
   /** CLI args (without the binary name) */
@@ -50,7 +50,7 @@ export async function runScenario(
 
     try {
       step.assert(result);
-    } catch (err: unknown) {
+    } catch {
       // Still capture on failure for debugging
       checkpoints.push({
         label: step.label,

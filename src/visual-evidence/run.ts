@@ -24,13 +24,12 @@ export interface RunResult {
 
 export async function runEvidence(changeId: string): Promise<RunResult> {
   // 1. Resolve the change
-  let changeDir: string;
   let proposal: string;
   let affectedFiles: string[];
 
   try {
     const ctx = resolveChange(changeId);
-    changeDir = ctx.changeDir;
+    void ctx.changeDir;
     proposal = ctx.proposal;
     affectedFiles = ctx.affectedFiles;
   } catch (err: unknown) {
