@@ -1,0 +1,18 @@
+{
+  "status": "passed",
+  "changeId": "chain-diagram-ascii",
+  "timestamp": "2026-07-23T09:14:50Z",
+  "artifacts": [
+    {
+      "type": "test",
+      "path": "tests/renderChainDiagram.test.ts",
+      "description": "9 unit tests covering: single task, steps rendering, command rendering, silent [s] marker, onSuccess chain, cycle detection, missing task, box borders, connector arrows",
+      "result": "passed"
+    }
+  ],
+  "verification": {
+    "typecheck": "passed",
+    "lint": "passed",
+    "tests": "9/9 passed (2 pre-existing failures in unrelated test file)"
+  }
+}
