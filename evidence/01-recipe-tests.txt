@@ -1,0 +1,16 @@
+
+ RUN  v3.2.6 /home/azureuser/projects/loop-task
+
+ ✓ tests/recipe-scanner.test.ts (6 tests) 27ms
+ ✓ tests/recipe-loop-manager.test.ts (5 tests) 27ms
+ ✓ tests/recipe-task-manager.test.ts (5 tests) 24ms
+ ✓ tests/recipe-deferred-reload.test.ts (4 tests) 23ms
+ ✓ tests/recipe-task-store.test.ts (8 tests) 9ms
+ ✓ tests/recipe-id-remapper.test.ts (6 tests) 8ms
+ ✓ tests/recipe-validator.test.ts (8 tests) 9ms
+
+ Test Files  7 passed (7)
+      Tests  42 passed (42)
+   Start at  12:53:11
+   Duration  3.71s (transform 477ms, setup 0ms, collect 1.26s, tests 126ms, environment 2ms, prepare 747ms)
+
