@@ -251,6 +251,13 @@ projectCmd
 
 program.action(async () => {
   const { launchBoard } = await import("./app/index.js");
+  const port = process.env.LOOP_CLI_HTTP_PORT ?? String(HTTP_API_PORT);
+  const baseUrl = `http://${HTTP_API_HOST}:${port}`;
+  console.log(`HTTP API Server`);
+  console.log(`  Base URL:   ${baseUrl}`);
+  console.log(`  Swagger UI: ${baseUrl}/api/docs`);
+  console.log(`  OpenAPI:    ${baseUrl}/api/openapi.json`);
+  console.log(`  Events:     ${baseUrl}/api/events (SSE)`);
   await launchBoard();
 });
 
@@ -388,16 +395,7 @@ program
     }
   });
 
-program
-  .action(() => {
-    const port = process.env.LOOP_CLI_HTTP_PORT ?? String(HTTP_API_PORT);
-    const baseUrl = `http://${HTTP_API_HOST}:${port}`;
-    console.log(`HTTP API Server`);
-    console.log(`  Base URL:   ${baseUrl}`);
-    console.log(`  Swagger UI: ${baseUrl}/api/docs`);
-    console.log(`  OpenAPI:    ${baseUrl}/api/openapi.json`);
-    console.log(`  Events:     ${baseUrl}/api/events (SSE)`);
-  });
+
 
 program
   .command("http-host")
