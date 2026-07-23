@@ -21,6 +21,9 @@ function globalCommands(): Command[] {
     { label: t('cmd.toggleApi'), value: 'toggle-api', hint: '', tier: COMMAND_TIER_GLOBAL, category: COMMAND_CATEGORY_GLOBAL },
     { label: t('cmd.mcp'), value: 'mcp', hint: '', tier: COMMAND_TIER_GLOBAL, category: COMMAND_CATEGORY_GLOBAL },
     { label: t('cmd.toggleMcp'), value: 'toggle-mcp', hint: '', tier: COMMAND_TIER_GLOBAL, category: COMMAND_CATEGORY_GLOBAL },
+    { label: t('cmd.telemetry'), value: 'telemetry', hint: '', tier: COMMAND_TIER_GLOBAL, category: COMMAND_CATEGORY_GLOBAL },
+    { label: t('cmd.toggleTelemetry'), value: 'toggle-telemetry', hint: '', tier: COMMAND_TIER_GLOBAL, category: COMMAND_CATEGORY_GLOBAL },
+    { label: t('cmd.telemetryDiagnostics'), value: 'telemetry-diagnostics', hint: '', tier: COMMAND_TIER_GLOBAL, category: COMMAND_CATEGORY_GLOBAL },
     { label: t('cmd.export'), value: 'export', hint: '', tier: COMMAND_TIER_GLOBAL, category: COMMAND_CATEGORY_GLOBAL, shortcut: 'ctrl+x' },
     { label: t('cmd.import'), value: 'import', hint: '', tier: COMMAND_TIER_GLOBAL, category: COMMAND_CATEGORY_GLOBAL, shortcut: 'ctrl+i' },
   ];

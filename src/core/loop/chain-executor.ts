@@ -8,6 +8,8 @@ import { t } from "../../shared/i18n/index.js";
 import { parseStdout } from "../context/context-parser.js";
 import { interpolate } from "../context/template.js";
 import type { LoopController } from "./loop-controller.js";
+import type { TelemetryManager } from "../../daemon/telemetry/telemetry-manager.js";
+import type { TelemetrySpan } from "../../daemon/telemetry/index.js";
 
 export interface ChainExecuteOptions {
   chainTargetId: string | undefined;
@@ -21,6 +23,11 @@ export interface ChainExecuteOptions {
   runHistory: import("../../types.js").RunRecord[];
   logStream: Writable | null;
   controller: LoopController;
+  telemetryManager?: TelemetryManager | null;
+  loopId?: string;
+  loopName?: string;
+  runId?: string;
+  loopSpan?: TelemetrySpan;
 }
 
 export interface ChainExecuteResult {
@@ -30,7 +37,7 @@ export interface ChainExecuteResult {
 }
 
 export function executeChain(options: ChainExecuteOptions): Promise<ChainExecuteResult> {
-  const { chainTargetId, exitCode, task: _task, chainContext, cwd, signal, runCount, logPath, runHistory, logStream, controller } = options;
+  const { chainTargetId, exitCode, task: _task, chainContext, cwd, signal, runCount, logPath, runHistory, logStream, controller, telemetryManager, loopId, loopName, runId, loopSpan } = options;
 
   const nullStream = new Writable({ write(_chunk, _enc, cb) { cb(); } });
 
@@ -114,6 +121,35 @@ export function executeChain(options: ChainExecuteOptions): Promise<ChainExecute
 
       const effectiveStream: Writable = isSilent ? nullStream : (logStream ?? nullStream);
 
+      // Telemetry: create task span for chained task
+      const telemetry = telemetryManager?.getAdapter();
+      const chainTaskSpan = (telemetry && chainTask)
+        ? telemetry.startTask(
+          {
+            taskId: chainTask.id,
+            taskName: chainTask.name,
+            runId: runId ?? `chain-${chainGroupId}`,
+            loopId: loopId ?? "chain",
+            loopName: loopName ?? "chain",
+          },
+          loopSpan,
+        )
+        : undefined;
+
+      const chainTelemetryCtx = telemetry
+        ? {
+          telemetry,
+          loopSpan,
+          taskSpan: chainTaskSpan,
+          runId: runId ?? `chain-${chainGroupId}`,
+          loopId: loopId ?? "chain",
+          loopName: loopName ?? "chain",
+          taskId: chainTask.id,
+          taskName: chainTask.name,
+          telemetryConfig: chainTask.telemetry,
+        }
+        : undefined;
+
       for (const step of taskSteps) {
         if (signal.aborted) break;
         const stepResults = await Promise.allSettled(
@@ -126,6 +162,8 @@ export function executeChain(options: ChainExecuteOptions): Promise<ChainExecute
               signal,
               runCount,
               shouldCaptureStdout,
+              false,
+              chainTelemetryCtx,
             )
           )
         );
@@ -171,6 +209,11 @@ export function executeChain(options: ChainExecuteOptions): Promise<ChainExecute
 
       totalExtraDuration += chainDuration;
       finalExitCode = chainExitCode;
+
+      // End the chain task span
+      if (chainTaskSpan) {
+        chainTaskSpan.end(chainExitCode === 0 ? "ok" : "error");
+      }
 
       // Increment per-task run counter for the chained task
       controller.incrementTaskRunCount(chainTask.id);

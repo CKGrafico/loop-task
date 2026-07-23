@@ -7,6 +7,7 @@ import { MAX_INMEMORY_RUN_HISTORY } from "../../shared/config/constants.js";
 import { DEFAULT_TASK_MAX_RUNS } from "../../types.js";
 import type { DelayAccess } from "./delay-utils.js";
 import type { ExecuteRunAccess } from "./run-executor.js";
+import type { TelemetryManager } from "../../daemon/telemetry/telemetry-manager.js";
 
 export interface RunAccess extends DelayAccess, ExecuteRunAccess {
   abortController: AbortController;
@@ -21,6 +22,7 @@ export interface RunAccess extends DelayAccess, ExecuteRunAccess {
   taskResolver: import("./types.js").TaskResolver;
   readonly logPath: string;
   readonly projectDirectory: string | undefined;
+  telemetryManager: TelemetryManager | null;
   runHistory: import("../../types.js").RunRecord[];
   logStream: import("node:stream").Writable | null;
   lastExitCode: number | null;
@@ -127,6 +129,10 @@ export async function runLoop(ctrl: RunAccess): Promise<void> {
         if (ctrl.options.taskId) {
           ctrl.incrementTaskRunCount(ctrl.options.taskId);
         }
+
+        // Save for chain executor
+        (ctrl as unknown as Record<string, unknown>).__lastRunId = result.runId;
+        (ctrl as unknown as Record<string, unknown>).__lastLoopSpan = result.loopSpan;
       }
 
       const chainTargetId = exitCode === 0
@@ -136,6 +142,8 @@ export async function runLoop(ctrl: RunAccess): Promise<void> {
       if (chainTargetId && !signal.aborted) {
         const task = ctrl.options.taskId ? ctrl.taskResolver(ctrl.options.taskId) : null;
         const cwd = resolveEffectiveCwd(ctrl.options.cwd, ctrl.projectDirectory);
+        const lastRunId = (ctrl as unknown as Record<string, unknown>).__lastRunId as string | undefined;
+        const lastLoopSpan = (ctrl as unknown as Record<string, unknown>).__lastLoopSpan as import("../../daemon/telemetry/index.js").TelemetrySpan | undefined;
         const chainResult = await executeChain({
           chainTargetId,
           exitCode,
@@ -148,6 +156,11 @@ export async function runLoop(ctrl: RunAccess): Promise<void> {
           runHistory: ctrl.runHistory,
           logStream: ctrl.logStream,
           controller: ctrl as unknown as import("./loop-controller.js").LoopController,
+          telemetryManager: ctrl.telemetryManager,
+          loopId: ctrl.id,
+          loopName: ctrl.options.description || ctrl.id,
+          runId: lastRunId,
+          loopSpan: lastLoopSpan,
         });
         ctrl.runHistory = chainResult.runHistory;
         ctrl.lastExitCode = chainResult.lastExitCode;

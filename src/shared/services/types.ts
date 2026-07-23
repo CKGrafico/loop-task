@@ -1,5 +1,5 @@
 import type net from "node:net";
-import type { LoopMeta, LoopOptions, TaskDefinition, Project, DaemonSettings } from "../../types.js";
+import type { LoopMeta, LoopOptions, TaskDefinition, Project, DaemonSettings, TelemetrySettings } from "../../types.js";
 
 export const TYPES = {
   LoopService: Symbol.for("LoopService"),
@@ -62,4 +62,8 @@ export interface SettingsService {
   setHttpApiEnabled(enabled: boolean): Promise<DaemonSettings>;
   getMcpApiEnabled(): Promise<boolean>;
   setMcpApiEnabled(enabled: boolean): Promise<DaemonSettings>;
+  getTelemetryEnabled(): Promise<boolean>;
+  setTelemetryEnabled(enabled: boolean): Promise<DaemonSettings>;
+  getTelemetrySettings(): Promise<TelemetrySettings>;
+  setTelemetrySettings(settings: Partial<TelemetrySettings>): Promise<DaemonSettings>;
 }

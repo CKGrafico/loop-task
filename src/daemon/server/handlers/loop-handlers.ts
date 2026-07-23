@@ -1,10 +1,12 @@
 import type { IpcRequest } from "../../../types.js";
 import type { LoopManager } from "../../managers/loop-manager.js";
+import type { TelemetryManager } from "../../telemetry/telemetry-manager.js";
 import { send } from "../../ipc/send.js";
 import { t } from "../../../shared/i18n/index.js";
 
 export interface HandlerContext {
   manager: LoopManager;
+  telemetryManager: TelemetryManager;
   respondOk(socket: import("node:net").Socket, ok: boolean, id: string, data?: unknown): void;
 }
 

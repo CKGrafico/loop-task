@@ -478,4 +478,128 @@ program
     console.log(`    { "mcpServers": { "loop-task": { "type": "sse", "url": "${sseUrl}" } } }`);
   });
 
+const telemetryCmd = program.command("telemetry").description("Manage OpenTelemetry configuration");
+
+telemetryCmd
+  .command("status")
+  .description("Show OpenTelemetry status and configuration")
+  .action(async () => {
+    const { sendRequest } = await import("./client/ipc.js");
+    const res = await sendRequest({ type: "settings-get" });
+    if (res.type !== "ok") {
+      console.error("Failed to get settings");
+      process.exit(1);
+    }
+    const s = res.data as import("./types.js").DaemonSettings;
+    const endpoint = s.telemetryEndpoint ?? "not configured";
+    const hasHeaders = !!(process.env.OTEL_EXPORTER_OTLP_HEADERS || process.env.OTEL_EXPORTER_OTLP_TRACES_HEADERS);
+    console.log("OpenTelemetry");
+    console.log(`  Enabled:                ${s.telemetryEnabled ? "yes" : "no"}`);
+    console.log(`  Endpoint:               ${endpoint}`);
+    console.log(`  Protocol:               ${s.telemetryProtocol}`);
+    console.log(`  Service:                ${s.telemetryServiceName}`);
+    console.log(`  Auto-instrument agents: ${s.telemetryAutoInstrumentAgents ? "yes" : "no"}`);
+    console.log(`  Capture content:        ${s.telemetryCaptureContent ? "yes" : "no"}`);
+    console.log(`  Headers:                ${hasHeaders ? "configured" : "not configured"}`);
+    console.log(`  Configuration source:   daemon settings`);
+  });
+
+telemetryCmd
+  .command("on")
+  .description("Enable OpenTelemetry")
+  .action(async () => {
+    const { sendRequest } = await import("./client/ipc.js");
+    const res = await sendRequest({ type: "settings-set", settings: { telemetryEnabled: true } });
+    if (res.type !== "ok") {
+      console.error("Failed to enable telemetry");
+      process.exit(1);
+    }
+    console.log("OpenTelemetry enabled");
+  });
+
+telemetryCmd
+  .command("off")
+  .description("Disable OpenTelemetry")
+  .action(async () => {
+    const { sendRequest } = await import("./client/ipc.js");
+    const res = await sendRequest({ type: "settings-set", settings: { telemetryEnabled: false } });
+    if (res.type !== "ok") {
+      console.error("Failed to disable telemetry");
+      process.exit(1);
+    }
+    console.log("OpenTelemetry disabled");
+  });
+
+telemetryCmd
+  .command("endpoint")
+  .description("Set the OTLP export endpoint")
+  .argument("<url>", "OTLP endpoint URL (e.g. http://127.0.0.1:4318)")
+  .action(async (url: string) => {
+    const { sendRequest } = await import("./client/ipc.js");
+    const res = await sendRequest({ type: "settings-set", settings: { telemetryEndpoint: url } });
+    if (res.type !== "ok") {
+      console.error("Failed to set telemetry endpoint");
+      process.exit(1);
+    }
+    console.log(`Telemetry endpoint set to ${url}`);
+  });
+
+telemetryCmd
+  .command("protocol")
+  .description("Set the OTLP export protocol")
+  .argument("<protocol>", "Protocol: grpc or http/protobuf")
+  .action(async (protocol: string) => {
+    if (protocol !== "grpc" && protocol !== "http/protobuf") {
+      console.error("Protocol must be 'grpc' or 'http/protobuf'");
+      process.exit(1);
+    }
+    const { sendRequest } = await import("./client/ipc.js");
+    const res = await sendRequest({ type: "settings-set", settings: { telemetryProtocol: protocol } });
+    if (res.type !== "ok") {
+      console.error("Failed to set telemetry protocol");
+      process.exit(1);
+    }
+    console.log(`Telemetry protocol set to ${protocol}`);
+  });
+
+telemetryCmd
+  .command("test")
+  .description("Test the OpenTelemetry connection")
+  .action(async () => {
+    const { sendRequest } = await import("./client/ipc.js");
+    const res = await sendRequest({ type: "telemetry-test" });
+    if (res.type !== "ok") {
+      console.error("Telemetry test failed");
+      process.exit(1);
+    }
+    const result = res.data as { success: boolean; message: string };
+    if (result.success) {
+      console.log(`OpenTelemetry test succeeded: ${result.message}`);
+    } else {
+      console.error(`OpenTelemetry test failed: ${result.message}`);
+      process.exit(1);
+    }
+  });
+
+// Default: show status
+telemetryCmd.action(async () => {
+  const { sendRequest } = await import("./client/ipc.js");
+  const res = await sendRequest({ type: "settings-get" });
+  if (res.type !== "ok") {
+    console.error("Failed to get settings");
+    process.exit(1);
+  }
+  const s = res.data as import("./types.js").DaemonSettings;
+  const endpoint = s.telemetryEndpoint ?? "not configured";
+  const hasHeaders = !!(process.env.OTEL_EXPORTER_OTLP_HEADERS || process.env.OTEL_EXPORTER_OTLP_TRACES_HEADERS);
+  console.log("OpenTelemetry");
+  console.log(`  Enabled:                ${s.telemetryEnabled ? "yes" : "no"}`);
+  console.log(`  Endpoint:               ${endpoint}`);
+  console.log(`  Protocol:               ${s.telemetryProtocol}`);
+  console.log(`  Service:                ${s.telemetryServiceName}`);
+  console.log(`  Auto-instrument agents: ${s.telemetryAutoInstrumentAgents ? "yes" : "no"}`);
+  console.log(`  Capture content:        ${s.telemetryCaptureContent ? "yes" : "no"}`);
+  console.log(`  Headers:                ${hasHeaders ? "configured" : "not configured"}`);
+});
+
 await program.parseAsync(process.argv);

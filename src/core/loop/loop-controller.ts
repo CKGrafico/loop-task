@@ -5,6 +5,7 @@ import { RotatingWriteStream } from "../logging/rotating-log-stream.js";
 import type { TaskResolver, LoopControllerState } from "./types.js";
 import { runLoop } from "./loop-runner.js";
 import type { RunAccess } from "./loop-runner.js";
+import type { TelemetryManager } from "../../daemon/telemetry/telemetry-manager.js";
 
 export type { TaskResolver } from "./types.js";
 export type { LoopControllerState } from "./types.js";
@@ -31,6 +32,7 @@ export class LoopController extends EventEmitter {
   private readonly logPath: string;
   readonly taskResolver: TaskResolver;
   private readonly projectDirectory: string | undefined;
+  private readonly _telemetryManager: TelemetryManager | null;
   private remainingDelayMs: number | null = null;
   private logStream: import("node:stream").Writable | null = null;
   private loopPromise: Promise<void> | null = null;
@@ -59,6 +61,7 @@ export class LoopController extends EventEmitter {
     taskResolver: TaskResolver,
     state?: LoopControllerState,
     projectDirectory?: string,
+    telemetryManager?: TelemetryManager,
   ) {
     super();
     this.id = id;
@@ -66,6 +69,7 @@ export class LoopController extends EventEmitter {
     this.logPath = logPath;
     this.taskResolver = taskResolver;
     this.projectDirectory = projectDirectory;
+    this._telemetryManager = telemetryManager ?? null;
     this.abortController = new AbortController();
     this.createdAt = state?.createdAt ?? new Date().toISOString();
     this.runCount = state?.runCount ?? 0;
@@ -88,6 +92,10 @@ export class LoopController extends EventEmitter {
 
   get status(): LoopStatus {
     return this._status;
+  }
+
+  get telemetryManager(): TelemetryManager | null {
+    return this._telemetryManager;
   }
 
   get silentChainCount(): number {

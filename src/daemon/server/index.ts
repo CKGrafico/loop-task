@@ -3,6 +3,7 @@ import type { IpcRequest } from "../../types.js";
 import { LoopManager } from "../managers/loop-manager.js";
 import { TaskManager } from "../managers/task-manager.js";
 import { SettingsManager } from "../settings-manager.js";
+import type { TelemetryManager } from "../telemetry/telemetry-manager.js";
 import { getSocketPath, removeSocketFile } from "../state/index.js";
 import { t } from "../../shared/i18n/index.js";
 import { send } from "../ipc/send.js";
@@ -14,14 +15,16 @@ export class IpcServer {
   private manager: LoopManager;
   private taskManager: TaskManager;
   private settingsManager: SettingsManager;
+  private telemetryManager: TelemetryManager;
   private socketPath: string;
   private clients = new Set<net.Socket>();
   private subscribers = new Set<net.Socket>();
 
-  constructor(manager: LoopManager, taskManager: TaskManager, settingsManager: SettingsManager) {
+  constructor(manager: LoopManager, taskManager: TaskManager, settingsManager: SettingsManager, telemetryManager: TelemetryManager) {
     this.manager = manager;
     this.taskManager = taskManager;
     this.settingsManager = settingsManager;
+    this.telemetryManager = telemetryManager;
     this.socketPath = getSocketPath();
     this.server = net.createServer((socket) => this.handleConnection(socket));
   }
@@ -119,6 +122,7 @@ export class IpcServer {
       manager: this.manager,
       taskManager: this.taskManager,
       settingsManager: this.settingsManager,
+      telemetryManager: this.telemetryManager,
       respondOk: (s: import("node:net").Socket, ok: boolean, id: string, data?: unknown) => this.respondOk(s, ok, id, data),
     });
 

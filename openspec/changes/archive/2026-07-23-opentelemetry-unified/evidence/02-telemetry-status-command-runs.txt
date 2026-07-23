@@ -1,0 +1,15 @@
+# Telemetry status command runs
+# Exit code: 0
+
+## stdout
+OpenTelemetry
+  Enabled:                yes
+  Endpoint:               not configured
+  Protocol:               http/protobuf
+  Service:                loop-task
+  Auto-instrument agents: yes
+  Capture content:        no
+  Headers:                not configured
+  Configuration source:   daemon settings
+
+## stderr
