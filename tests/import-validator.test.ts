@@ -22,6 +22,7 @@ function validTask(overrides: Partial<TaskDefinition> = {}): TaskDefinition {
     commandArgs: [],
     onSuccessTaskId: null,
     onFailureTaskId: null,
+    maxRuns: 5,
     createdAt: "2024-01-01T00:00:00.000Z",
     ...overrides,
   };

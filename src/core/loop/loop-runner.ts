@@ -4,6 +4,7 @@ import { executeChain } from "./chain-executor.js";
 import { executeRunImpl } from "./run-executor.js";
 import { waitForResume, waitForDelay } from "./delay-utils.js";
 import { MAX_INMEMORY_RUN_HISTORY } from "../../shared/config/constants.js";
+import { DEFAULT_TASK_MAX_RUNS } from "../../types.js";
 import type { DelayAccess } from "./delay-utils.js";
 import type { ExecuteRunAccess } from "./run-executor.js";
 
@@ -29,6 +30,8 @@ export interface RunAccess extends DelayAccess, ExecuteRunAccess {
   sessionStartedAt: string | null;
   emit(event: string, ...args: unknown[]): boolean;
   checkLogRotation(): void;
+  getTaskRunCount(taskId: string): number;
+  incrementTaskRunCount(taskId: string): void;
 }
 
 export async function runLoop(ctrl: RunAccess): Promise<void> {
@@ -76,13 +79,61 @@ export async function runLoop(ctrl: RunAccess): Promise<void> {
       }
 
       const runStartedAtMs = Date.now();
-      const { exitCode, totalDuration, chainContext } = await executeRunImpl(ctrl, signal);
+
+      // Per-task maxRuns check
+      let exitCode: number;
+      let totalDuration: number;
+      let chainContext: Record<string, unknown>;
+
+      const currentTask = ctrl.options.taskId ? ctrl.taskResolver(ctrl.options.taskId) : null;
+      const taskMaxRuns = currentTask?.maxRuns ?? DEFAULT_TASK_MAX_RUNS;
+      const currentTaskRunCount = ctrl.options.taskId ? ctrl.getTaskRunCount(ctrl.options.taskId) : 0;
+
+      if (ctrl.options.taskId && currentTaskRunCount >= taskMaxRuns) {
+        // Task exceeded its max runs limit — fail it
+        ctrl._status = "running";
+        ctrl._forceRun = false;
+        ctrl.runCount++;
+        ctrl.lastRunAt = new Date().toISOString();
+        if (ctrl.sessionStartedAt === null) {
+          ctrl.sessionStartedAt = ctrl.lastRunAt;
+        }
+        ctrl.nextRunAt = null;
+        ctrl.emit("run:start", ctrl.runCount);
+
+        exitCode = 1;
+        totalDuration = 0;
+        chainContext = { ...(currentTask?.context ?? {}), ...(ctrl.options.context ?? {}) };
+
+        ctrl.runHistory.push({
+          runNumber: ctrl.runCount,
+          startedAt: ctrl.lastRunAt,
+          exitCode,
+          duration: totalDuration,
+          logSize: 0,
+          status: "completed",
+          logOffset: ctrl.currentRunStartOffset,
+        });
+
+        ctrl.lastExitCode = exitCode;
+        ctrl.lastDuration = totalDuration;
+      } else {
+        const result = await executeRunImpl(ctrl, signal);
+        exitCode = result.exitCode;
+        totalDuration = result.totalDuration;
+        chainContext = result.chainContext;
+
+        // Increment per-task run counter after successful execution
+        if (ctrl.options.taskId) {
+          ctrl.incrementTaskRunCount(ctrl.options.taskId);
+        }
+      }
 
       const chainTargetId = exitCode === 0
         ? (ctrl.options.taskId ? ctrl.taskResolver(ctrl.options.taskId)?.onSuccessTaskId : undefined)
         : (ctrl.options.taskId ? ctrl.taskResolver(ctrl.options.taskId)?.onFailureTaskId : undefined);
 
-      if (chainTargetId) {
+      if (chainTargetId && !signal.aborted) {
         const task = ctrl.options.taskId ? ctrl.taskResolver(ctrl.options.taskId) : null;
         const cwd = resolveEffectiveCwd(ctrl.options.cwd, ctrl.projectDirectory);
         const chainResult = await executeChain({

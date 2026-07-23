@@ -113,11 +113,11 @@ export async function dispatch(
       break;
 
     case "stop-loop":
-      handleStopLoop(request, socket, ctx);
+      await handleStopLoop(request, socket, ctx);
       break;
 
     case "stop-all":
-      handleStopAll(request, socket, ctx);
+      await handleStopAll(request, socket, ctx);
       break;
 
     case "play-loop":

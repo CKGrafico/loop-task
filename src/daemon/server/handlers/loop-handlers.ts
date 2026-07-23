@@ -65,20 +65,20 @@ export function handleResume(
   ctx.respondOk(socket, ctx.manager.resume(request.payload.id), request.payload.id);
 }
 
-export function handleStopLoop(
+export async function handleStopLoop(
   request: Extract<IpcRequest, { type: "stop-loop" }>,
   socket: import("node:net").Socket,
   ctx: HandlerContext
-): void {
-  ctx.respondOk(socket, ctx.manager.stopLoop(request.payload.id), request.payload.id);
+): Promise<void> {
+  ctx.respondOk(socket, await ctx.manager.stopLoop(request.payload.id), request.payload.id);
 }
 
-export function handleStopAll(
+export async function handleStopAll(
   _request: Extract<IpcRequest, { type: "stop-all" }>,
   socket: import("node:net").Socket,
   ctx: HandlerContext
-): void {
-  const count = ctx.manager.stopAllLoops();
+): Promise<void> {
+  const count = await ctx.manager.stopAllLoops();
   send(socket, { type: "ok", data: count });
 }
 

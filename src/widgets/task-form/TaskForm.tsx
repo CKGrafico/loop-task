@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useCallback, useState, useRef } from "react";
 
 import type { TaskDefinition, TaskStep } from "../../types.js";
+import { DEFAULT_TASK_MAX_RUNS } from "../../types.js";
 import { WizardForm, type WizardStepConfig } from "../loop-form/WizardForm.js";
 import { SelectModal, SelectValueField, type SelectOption } from "../../shared/ui/SelectModal.js";
 import { CodeEditorPreview } from "../../features/code-editor/CodeEditorPreview.js";
@@ -11,7 +12,7 @@ import type { TaskService } from "../../shared/services/types.js";
 import { validateContext } from "../../core/context/validate-context.js";
 import crypto from "node:crypto";
 import { t } from "../../shared/i18n/index.js";
-import { joinCommandLines, parseCommandLine } from "../../loop-config.js";
+import { joinCommandLines, parseCommandLine, parseMaxRuns } from "../../loop-config.js";
 
 
 
@@ -178,6 +179,24 @@ export function TaskForm(props: TaskFormProps): React.ReactNode {
         ),
       },
       {
+        key: "maxRuns",
+        prompt: t("wizard.taskMaxRunsPrompt"),
+        hint: t("wizard.taskMaxRunsHint"),
+        required: false,
+        inputType: "text",
+        defaultValue: editTask ? String(editTask.maxRuns) : String(DEFAULT_TASK_MAX_RUNS),
+        validate: (value: string) => {
+          if (!value?.trim()) return true;
+          try {
+            parseMaxRuns(value);
+            return true;
+          } catch {
+            return false;
+          }
+        },
+        validationError: t("errors.maxRunsInvalid"),
+      },
+      {
         key: "context",
         prompt: t("wizard.contextPrompt"),
         hint: t("wizard.contextHint"),
@@ -218,6 +237,15 @@ export function TaskForm(props: TaskFormProps): React.ReactNode {
       const onSuccessTaskId = resolveChainId(values.onSuccess ?? "");
       const onFailureTaskId = resolveChainId(values.onFailure ?? "");
       const silentChain = values.silentChain === t("board.silentChainYes");
+      const maxRunsRaw = values.maxRuns?.trim();
+      let maxRuns = DEFAULT_TASK_MAX_RUNS;
+      if (maxRunsRaw) {
+        try {
+          maxRuns = parseMaxRuns(maxRunsRaw) ?? DEFAULT_TASK_MAX_RUNS;
+        } catch {
+          maxRuns = DEFAULT_TASK_MAX_RUNS;
+        }
+      }
 
       let context: Record<string, unknown> | undefined;
       const contextStr = contextValue?.trim();
@@ -268,6 +296,7 @@ export function TaskForm(props: TaskFormProps): React.ReactNode {
           onSuccessTaskId,
           onFailureTaskId,
           silentChain: silentChain || undefined,
+          maxRuns,
           context,
         };
       } else {
@@ -279,6 +308,7 @@ export function TaskForm(props: TaskFormProps): React.ReactNode {
           onSuccessTaskId,
           onFailureTaskId,
           silentChain: silentChain || undefined,
+          maxRuns,
           context,
         };
       }

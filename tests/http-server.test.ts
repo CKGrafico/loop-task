@@ -45,6 +45,7 @@ const fakeTask: TaskDefinition = {
   commandArgs: [],
   onSuccessTaskId: null,
   onFailureTaskId: null,
+  maxRuns: 5,
   createdAt: new Date().toISOString(),
 };
 

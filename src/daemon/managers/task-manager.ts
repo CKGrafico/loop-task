@@ -1,5 +1,6 @@
 import crypto from "node:crypto";
 import type { TaskDefinition } from "../../types.js";
+import { DEFAULT_TASK_MAX_RUNS } from "../../types.js";
 import { saveTask, loadAllTasks, deleteTask as deleteTaskState } from "../state/index.js";
 import { daemonLog } from "../daemon-log.js";
 import type { RecipeTaskStore } from "../recipe/task-store.js";
@@ -15,7 +16,10 @@ export class TaskManager {
   init(): void {
     const saved = loadAllTasks();
     for (const task of saved) {
-      this.tasks.set(task.id, task);
+      this.tasks.set(task.id, {
+        ...task,
+        maxRuns: task.maxRuns ?? DEFAULT_TASK_MAX_RUNS,
+      });
     }
     if (saved.length > 0) {
       daemonLog(`loaded ${saved.length} task(s) from persisted state`);
@@ -25,6 +29,8 @@ export class TaskManager {
   create(input: Omit<TaskDefinition, "createdAt">): TaskDefinition {
     const task: TaskDefinition = {
       ...input,
+      id: input.id ?? crypto.randomUUID().slice(0, 8),
+      maxRuns: input.maxRuns ?? DEFAULT_TASK_MAX_RUNS,
       createdAt: new Date().toISOString(),
     };
     this.tasks.set(task.id, task);
@@ -81,6 +87,7 @@ export class TaskManager {
       commandArgs,
       onSuccessTaskId: null,
       onFailureTaskId: null,
+      maxRuns: DEFAULT_TASK_MAX_RUNS,
     });
   }
 

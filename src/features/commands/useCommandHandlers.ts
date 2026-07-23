@@ -6,6 +6,7 @@ import { groupRunsByCycle } from "../../widgets/right-panel/RunHistory.js";
 import { container } from "../../shared/container/index.js";
 import { TYPES } from "../../shared/services/types.js";
 import type { SettingsService } from "../../shared/services/types.js";
+import { renderChainDiagram } from "../chain-editor/renderChainDiagram.js";
 
 export function useCommandHandlers(context: CommandHandlerContext) {
   const {
@@ -17,7 +18,7 @@ export function useCommandHandlers(context: CommandHandlerContext) {
     setSearchValue, setSearchState,
     setFilters, setSort, setCurrentProjectId,
     setProjectFilters, setProjectSelectedIndex,
-    setDebugMode, setExportModal,
+    setDebugMode, setExportModal, setDiagramModal,
     push, pop, refresh, refreshTasks, refreshProjects, pushToast,
     loopService, taskService, projectService, exportService,
     runAction, handleOpenRunLog,
@@ -167,6 +168,12 @@ export function useCommandHandlers(context: CommandHandlerContext) {
         pushToast("success", t(!current ? "board.toastMcpEnabled" : "board.toastMcpDisabled"));
       } catch (e) {
         pushToast("error", t("board.toastMcpToggleError", { message: (e as Error).message }));
+      }
+    },
+    diagram: () => {
+      if (activeTab === "loops" && selected?.taskId) {
+        const diagram = renderChainDiagram(selected.taskId, tasks);
+        setDiagramModal(diagram);
       }
     },
     export: () => {

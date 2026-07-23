@@ -41,6 +41,16 @@ export class LoopController extends EventEmitter {
   private skippedCount = 0;
   private _silentChainCount = 0;
   private _totalRunCount = 0;
+  private taskRunCounts = new Map<string, number>();
+
+  getTaskRunCount(taskId: string): number {
+    return this.taskRunCounts.get(taskId) ?? 0;
+  }
+
+  incrementTaskRunCount(taskId: string): void {
+    const current = this.taskRunCounts.get(taskId) ?? 0;
+    this.taskRunCounts.set(taskId, current + 1);
+  }
 
   constructor(
     id: string,
@@ -92,6 +102,7 @@ export class LoopController extends EventEmitter {
     if (this._loopActive) return;
     this._loopActive = true;
     this.skippedCount = 0;
+    this.taskRunCounts.clear();
     this.logStream?.end();
     this.abortController = new AbortController();
     this.logStream = RotatingWriteStream.create(this.logPath);
@@ -119,7 +130,7 @@ export class LoopController extends EventEmitter {
     }
   }
 
-  stopLoop(interruptCurrentRun = false): void {
+  async stopLoop(interruptCurrentRun = false): Promise<void> {
     if (this._status === "running" || this._status === "waiting" || this._status === "paused") {
       this._paused = true;
       this._status = "idle";
@@ -135,6 +146,9 @@ export class LoopController extends EventEmitter {
         this.resumeResolve = null;
       }
       this.emit("stopped");
+      if (this.loopPromise) {
+        await this.loopPromise;
+      }
     }
   }
 

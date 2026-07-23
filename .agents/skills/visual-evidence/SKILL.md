@@ -1,3 +1,14 @@
+---
+name: visual-evidence
+description: Capture deterministic, asserted CLI evidence for loop-task changes. Use after implementing changes that affect CLI output or the TUI board, when evidence is requested, or when auditable proof of CLI behavior is required.
+allowed-tools: Bash(pnpm:*), Bash(node:*), Bash(tsx:*)
+license: MIT
+compatibility: Requires Node.js, pnpm, and the loop-task visual evidence harness in src/visual-evidence/.
+metadata:
+  author: loop-task
+  version: "1.0"
+  generatedBy: "manual"
+---
 # Skill: visual-evidence
 
 CLI-adapted visual evidence harness for loop-task. Captures CLI stdout/stderr as deterministic, asserted evidence — not screenshots.

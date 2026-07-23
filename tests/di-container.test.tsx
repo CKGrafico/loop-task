@@ -100,6 +100,7 @@ describe("DI container with mock services", () => {
       commandArgs: ["hello"],
       onSuccessTaskId: null,
       onFailureTaskId: null,
+      maxRuns: 5,
     });
 
     expect(taskService.create).toHaveBeenCalledTimes(1);

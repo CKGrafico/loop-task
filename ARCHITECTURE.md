@@ -65,10 +65,10 @@ loop-task/
 │   │
 │   ├── features/               # FSD: User interactions (commands, overlays, forms, editors)
 │   │   ├── commands/           # useCommandHandlers, useGlobalShortcuts, useContextualActions, commands registry
-│   │   ├── overlays/           # useOverlayStack, OverlayStack, ContextHelpModal, ExportModal, WelcomeScreen, etc.
+│   │   ├── overlays/           # useOverlayStack, OverlayStack, ContextHelpModal, ExportModal, DiagramModal, WelcomeScreen, etc.
 │   │   ├── forms/              # FormRouter (view-based conditional rendering)
 │   │   ├── code-editor/        # CodeEditorModal, CodeEditorPreview, useEditorKeyboard
-│   │   ├── chain-editor/       # ChainEditor
+│   │   ├── chain-editor/       # ChainEditor, renderChainDiagram (ASCII art renderer)
 │   │   └── state/              # useAppState (centralized state hook)
 │   │
 │   ├── entities/               # FSD: Business domain models (types + filters + sort)
@@ -303,7 +303,7 @@ graph TB
 
 **Name:** CLI Client (`src/cli.ts`, `src/client/`)
 
-**Responsibility:** Commander-based CLI with subcommands: `start`, `stop`, `restart`, `new` (deprecated), `run`, `board` (default), `status [--json]`, `export`, `import`, `project *`.
+**Responsibility:** Commander-based CLI with subcommands: `start`, `stop`, `restart`, `new` (deprecated), `run`, `board` (default), `status [--json]`, `export`, `import`, `diagram`, `project *`.
 
 **Key files:**
 - `src/cli.ts` - Commander program definition, routes to client/commands or daemon/spawner

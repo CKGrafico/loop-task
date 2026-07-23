@@ -199,6 +199,7 @@ export function registerMcpTools(server: McpServer, deps: McpToolDeps): void {
         steps: z.array(z.object({ commands: z.array(z.object({ command: z.string(), commandArgs: z.array(z.string()) })) })).optional().describe("Task steps"),
         onSuccessTaskId: z.string().nullable().optional().describe("Task to run on success"),
         onFailureTaskId: z.string().nullable().optional().describe("Task to run on failure"),
+        maxRuns: z.number().optional().describe("Maximum number of runs"),
         silentChain: z.boolean().optional().describe("Suppress chain output"),
         context: z.record(z.string(), z.unknown()).optional().describe("Context for chain interpolation"),
       },
@@ -218,6 +219,7 @@ export function registerMcpTools(server: McpServer, deps: McpToolDeps): void {
           steps: args.steps as TaskDefinition["steps"],
           onSuccessTaskId: (args.onSuccessTaskId as string | null) ?? null,
           onFailureTaskId: (args.onFailureTaskId as string | null) ?? null,
+          maxRuns: args.maxRuns as number | undefined,
           silentChain: args.silentChain as boolean | undefined,
           context: args.context as Record<string, unknown> | undefined,
         };
@@ -247,6 +249,7 @@ export function registerMcpTools(server: McpServer, deps: McpToolDeps): void {
         steps: z.array(z.object({ commands: z.array(z.object({ command: z.string(), commandArgs: z.array(z.string()) })) })).optional().describe("Task steps"),
         onSuccessTaskId: z.string().nullable().optional().describe("Task to run on success"),
         onFailureTaskId: z.string().nullable().optional().describe("Task to run on failure"),
+        maxRuns: z.number().optional().describe("Maximum number of runs"),
         silentChain: z.boolean().optional().describe("Suppress chain output"),
         context: z.record(z.string(), z.unknown()).optional().describe("Context for chain interpolation"),
       },
@@ -266,6 +269,7 @@ export function registerMcpTools(server: McpServer, deps: McpToolDeps): void {
           steps: args.steps as TaskDefinition["steps"],
           onSuccessTaskId: (args.onSuccessTaskId as string | null) ?? null,
           onFailureTaskId: (args.onFailureTaskId as string | null) ?? null,
+          maxRuns: args.maxRuns as number | undefined,
           silentChain: args.silentChain as boolean | undefined,
           context: args.context as Record<string, unknown> | undefined,
         };

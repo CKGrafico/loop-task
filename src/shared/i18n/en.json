@@ -619,6 +619,8 @@
   "wizard.onFailurePrompt": "On failure, chain to? (optional)",
   "wizard.silentChainPrompt": "Silent chain? (suppress log output)",
   "wizard.silentChainHint": "Skip logging for this task when chained",
+  "wizard.taskMaxRunsPrompt": "Max runs per loop session?",
+  "wizard.taskMaxRunsHint": "Fail task after N executions within one loop session. Default: 5",
   "wizard.contextPrompt": "Initial context? (optional)",
   "wizard.contextHint": "JSON object with string values, e.g. {\"env\":\"staging\"}",
   "wizard.contextInvalid": "Invalid context: must be a flat JSON object with non-nested, non-array values",
@@ -670,5 +672,11 @@
   "errors.recipeFieldLocked": "Recipe loops only allow editing interval, maxRuns, and context",
   "board.recipeBadge": "R",
   "board.recipeFile": "Recipe",
-  "board.recipeTooltip": "Recipe loops are managed by .loops/recipes/*.json"
+  "board.recipeTooltip": "Recipe loops are managed by .loops/recipes/*.json",
+  "cmd.diagram": "Diagram task chain",
+  "diagram.modalTitle": "Chain Diagram",
+  "diagram.hint": "up/down:scroll  c:copy  esc:close",
+  "diagram.noTaskChain": "This loop has no task chain.",
+  "diagram.loopNotFound": "Loop not found: {id}",
+  "diagram.noTaskLinked": "Loop {id} has no task chain"
 }

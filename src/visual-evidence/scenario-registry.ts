@@ -119,3 +119,23 @@ register("sample-version", async (_cli) => ({
     },
   ],
 }));
+
+// ─── GH-58: Per-task max runs limit ───
+
+register("gh-58-per-task-max-runs", async (_cli) => ({
+  changeId: "gh-58-per-task-max-runs",
+  steps: [
+    {
+      args: ["--help"],
+      label: "CLI starts and shows help",
+      assert: (r) => {
+        if (r.exitCode !== 0) {
+          throw new Error(`Expected exit code 0, got ${r.exitCode}`);
+        }
+        if (!r.stdout.includes("loop-task")) {
+          throw new Error("Help output missing 'loop-task'");
+        }
+      },
+    },
+  ],
+}));

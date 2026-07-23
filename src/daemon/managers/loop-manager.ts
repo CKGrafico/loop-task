@@ -248,20 +248,24 @@ export class LoopManager {
     return true;
   }
 
-  stopLoop(id: string): boolean {
+  async stopLoop(id: string): Promise<boolean> {
     const entry = this.loops.get(id) ?? this.recipes.get(id);
     if (!entry) return false;
-    entry.controller.stopLoop(true);
+    await entry.controller.stopLoop(true);
     if (this.loops.has(id)) {
       this.persist(id, entry.controller, entry.options, entry.intervalHuman);
     }
     return true;
   }
 
-  stopAllLoops(): number {
+  async stopAllLoops(): Promise<number> {
+    const stops: Promise<void>[] = [];
+    for (const [, entry] of this.loops) {
+      stops.push(entry.controller.stopLoop(true));
+    }
+    await Promise.all(stops);
     let count = 0;
     for (const [id, entry] of this.loops) {
-      entry.controller.stopLoop(true);
       this.persist(id, entry.controller, entry.options, entry.intervalHuman);
       count++;
     }

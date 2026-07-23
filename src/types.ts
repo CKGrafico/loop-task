@@ -19,6 +19,8 @@ export interface TaskStep {
   commands: TaskCommand[];
 }
 
+export const DEFAULT_TASK_MAX_RUNS = 5;
+
 export interface TaskDefinition {
   id: string;
   name: string;
@@ -29,6 +31,7 @@ export interface TaskDefinition {
   onSuccessTaskId: string | null;
   onFailureTaskId: string | null;
   silentChain?: boolean;
+  maxRuns: number;
   context?: Record<string, unknown>;
   createdAt: string;
 }

@@ -15,6 +15,7 @@ The canonical hybrid chain has five positions, each a separate Task:
 | Selection | Concrete | Query for eligible work | `number`, `title`, `body` |
 | Reservation | Concrete | Claim the work item (transition its state marker) | Nothing (or confirmation) |
 | Work | AI | Perform the judgment-heavy task | Result summary (optional) |
+| Verification | Concrete | Independently check the expected result | Nothing |
 | Finalization | Concrete | Commit, label transition, PR creation | Nothing |
 | Recovery | Concrete | Revert state, put item back in queue | Nothing |
 
@@ -63,11 +64,13 @@ Keep the AI payload focused on the interpolated values. The agent receives struc
 Place the AI Task at the branch point of the chain. Everything before it is concrete (scaffold). Everything after it depends on its result:
 
 ```
-Selection (concrete) → Reservation (concrete) → AI Work → onSuccess: Finalization (concrete)
-                                                      → onFailure: Recovery (concrete)
+Selection (concrete) → Reservation (concrete) → AI Work → Verification → Finalization (concrete)
+                                                       ↘ failure       → Recovery (concrete)
 ```
 
 The AI Task is the only Task that can fail unpredictably. The scaffold absorbs that failure: recovery reverts external state and returns the item to the queue.
+
+Every AI Task also needs a timeout and retry policy. Retry transient runner or network failures only. Route invalid output, failed verification, and repository-state errors to recovery without retrying blindly.
 
 ## Recovery for AI Tasks
 
@@ -80,6 +83,8 @@ Recovery sequence:
 3. Return to a clean baseline (sync with the default branch).
 
 After recovery, the item is eligible for the next iteration's selection Task. The Loop continues to the next cadence.
+
+Recovery must be idempotent. Releasing an already released item, restoring an already clean worktree, or repeating an already completed local cleanup should succeed without creating a second side effect.
 
 ## When to Use an AI Task vs a Concrete Command
 
