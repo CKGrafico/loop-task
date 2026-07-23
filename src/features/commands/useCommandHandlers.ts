@@ -170,6 +170,67 @@ export function useCommandHandlers(context: CommandHandlerContext) {
         pushToast("error", t("board.toastMcpToggleError", { message: (e as Error).message }));
       }
     },
+    telemetry: async () => {
+      try {
+        const settingsService = container.get<SettingsService>(TYPES.SettingsService);
+        const settings = await settingsService.getSettings();
+        const status = settings.telemetryEnabled ? t("telemetry.statusEnabled") : t("telemetry.statusDisabled");
+        const endpoint = settings.telemetryEndpoint ?? t("telemetry.exportNotConfigured");
+        const hasHeaders = !!(process.env.OTEL_EXPORTER_OTLP_HEADERS || process.env.OTEL_EXPORTER_OTLP_TRACES_HEADERS);
+        const agents = settings.telemetryAutoInstrumentAgents ? t("telemetry.statusEnabled") : t("telemetry.statusDisabled");
+        const capture = settings.telemetryCaptureContent ? t("telemetry.statusEnabled") : t("telemetry.statusDisabled");
+        const exportState = !settings.telemetryEnabled
+          ? t("telemetry.statusDisabled")
+          : !settings.telemetryEndpoint
+            ? t("telemetry.exportNotConfigured")
+            : t("telemetry.exportConfigured");
+        const info = [
+          t("telemetry.infoEnabled", { status }),
+          t("telemetry.infoExport", { state: exportState }),
+          t("telemetry.infoEndpoint", { endpoint }),
+          t("telemetry.infoProtocol", { protocol: settings.telemetryProtocol }),
+          t("telemetry.infoAgents", { status: agents }),
+          t("telemetry.infoCapture", { status: capture }),
+          t("telemetry.infoHeaders", { status: hasHeaders ? "configured" : "not configured" }),
+          t("telemetry.infoService", { name: settings.telemetryServiceName }),
+        ].join(" | ");
+        pushToast("info", info);
+      } catch (e) {
+        pushToast("error", (e as Error).message);
+      }
+    },
+    "toggle-telemetry": async () => {
+      try {
+        const settingsService = container.get<SettingsService>(TYPES.SettingsService);
+        const current = await settingsService.getTelemetryEnabled();
+        await settingsService.setTelemetryEnabled(!current);
+        if (!current && !(await settingsService.getSettings()).telemetryEndpoint) {
+          pushToast("success", t("board.toastTelemetryNotConfigured"));
+        } else {
+          pushToast("success", t(!current ? "board.toastTelemetryEnabled" : "board.toastTelemetryDisabled"));
+        }
+      } catch (e) {
+        pushToast("error", t("board.toastTelemetryToggleError", { message: (e as Error).message }));
+      }
+    },
+    "telemetry-diagnostics": async () => {
+      try {
+        const { sendRequest } = await import("../../client/ipc.js");
+        const res = await sendRequest({ type: "telemetry-test" });
+        if (res.type === "ok") {
+          const result = res.data as { success: boolean; message: string };
+          if (result.success) {
+            pushToast("success", t("board.toastTelemetryTestSucceeded", { endpoint: result.message }));
+          } else {
+            pushToast("error", t("board.toastTelemetryTestFailed", { message: result.message }));
+          }
+        } else {
+          pushToast("error", t("board.toastTelemetryTestFailed", { message: "request failed" }));
+        }
+      } catch (e) {
+        pushToast("error", t("board.toastTelemetryTestFailed", { message: (e as Error).message }));
+      }
+    },
     diagram: () => {
       if (activeTab === "loops" && selected?.taskId) {
         const diagram = renderChainDiagram(selected.taskId, tasks);

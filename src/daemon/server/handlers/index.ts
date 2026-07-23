@@ -48,6 +48,7 @@ import {
 } from "./settings-handlers.js";
 
 import { handleDiagnostics } from "./diagnostics-handlers.js";
+import { handleTelemetryTest } from "./telemetry-handlers.js";
 
 export {
   handleStart,
@@ -76,6 +77,7 @@ export {
   handleSettingsGet,
   handleSettingsSet,
   handleDiagnostics,
+  handleTelemetryTest,
 };
 
 /**
@@ -191,6 +193,10 @@ export async function dispatch(
 
     case "diagnostics":
       handleDiagnostics(request, socket, ctx);
+      break;
+
+    case "telemetry-test":
+      handleTelemetryTest(request, socket, ctx.telemetryManager);
       break;
 
     default:

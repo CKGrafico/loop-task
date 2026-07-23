@@ -1,5 +1,5 @@
 import fs from "node:fs";
-import type { DaemonSettings } from "../types.js";
+import type { DaemonSettings, TelemetrySettings } from "../types.js";
 import { settingsJson } from "../shared/config/paths.js";
 import { daemonLog } from "./daemon-log.js";
 
@@ -11,6 +11,13 @@ const DEFAULTS: DaemonSettings = {
   // access is the operator's job at the network layer; restrict the bind with
   // `loop-task http-host <ip|local>` when you want loopback-only.
   httpApiHost: "0.0.0.0",
+  telemetryEnabled: true,
+  telemetryEndpoint: undefined,
+  telemetryProtocol: "http/protobuf",
+  telemetryAutoInstrumentAgents: true,
+  telemetryCaptureContent: false,
+  telemetryCaptureCommandOutput: false,
+  telemetryServiceName: "loop-task",
 };
 
 export class SettingsManager {
@@ -50,6 +57,19 @@ export class SettingsManager {
       }
     }
     return this.get();
+  }
+
+  getTelemetrySettings(): TelemetrySettings {
+    const s = this.settings;
+    return {
+      enabled: s.telemetryEnabled,
+      endpoint: s.telemetryEndpoint,
+      protocol: s.telemetryProtocol,
+      autoInstrumentAgents: s.telemetryAutoInstrumentAgents,
+      captureContent: s.telemetryCaptureContent,
+      captureCommandOutput: s.telemetryCaptureCommandOutput,
+      serviceName: s.telemetryServiceName,
+    };
   }
 
   onChange(callback: (settings: DaemonSettings) => void): void {

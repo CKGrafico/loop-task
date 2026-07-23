@@ -27,6 +27,7 @@ import { RecipeScanner } from "./recipe/scanner.js";
 import { RecipeTaskStore } from "./recipe/task-store.js";
 import { DeferredReloadManager } from "./recipe/deferred-reload.js";
 import { setRecipeSelfWriteNotifier } from "./recipe/file-writer.js";
+import { TelemetryManager } from "./telemetry/index.js";
 import path from "node:path";
 
 function cleanupStaleProcesses(): void {
@@ -48,7 +49,8 @@ async function main(): Promise<void> {
   const manager = new LoopManager(taskManager);
   const settingsManager = new SettingsManager();
   settingsManager.load();
-  const server = new IpcServer(manager, taskManager, settingsManager);
+  const telemetryManager = new TelemetryManager(settingsManager.get());
+  const server = new IpcServer(manager, taskManager, settingsManager, telemetryManager);
   const projectManager = (manager as unknown as { projectManager: ProjectManager }).projectManager;
   const httpServer = new HttpApiServer(manager, taskManager, projectManager, settingsManager);
   const mcpServer = new McpApiServer(manager, taskManager, projectManager, mcpTransport);
@@ -119,6 +121,9 @@ async function main(): Promise<void> {
       });
     }
 
+    // Telemetry runtime reconfiguration
+    telemetryManager.onSettingsChanged(settings);
+
     currentHttpHost = newHost;
   });
 
@@ -176,6 +181,7 @@ async function main(): Promise<void> {
     daemonLog(`shutting down pid=${process.pid}`);
     try {
       killAllActiveProcesses();
+      await telemetryManager.shutdown();
       fileWatcher.stop();
       removeDaemonPid();
       removeDaemonSignature();

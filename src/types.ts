@@ -117,6 +117,16 @@ export interface LoopMeta {
   recipeFile?: string;
 }
 
+export interface TelemetrySettings {
+  enabled: boolean;
+  endpoint?: string;
+  protocol: "grpc" | "http/protobuf";
+  autoInstrumentAgents: boolean;
+  captureContent: boolean;
+  captureCommandOutput: boolean;
+  serviceName: string;
+}
+
 export interface DaemonSettings {
   httpApiEnabled: boolean;
   mcpApiEnabled: boolean;
@@ -128,6 +138,13 @@ export interface DaemonSettings {
    * for loopback-only, or a specific IP to bind a single interface.
    */
   httpApiHost: string;
+  telemetryEnabled: boolean;
+  telemetryEndpoint?: string;
+  telemetryProtocol: "grpc" | "http/protobuf";
+  telemetryAutoInstrumentAgents: boolean;
+  telemetryCaptureContent: boolean;
+  telemetryCaptureCommandOutput: boolean;
+  telemetryServiceName: string;
 }
 
 export type IpcRequest =
@@ -157,6 +174,7 @@ export type IpcRequest =
   | { type: "project-delete"; payload: { id: string } }
   | { type: "settings-get" }
   | { type: "settings-set"; settings: Partial<DaemonSettings> }
+  | { type: "telemetry-test" }
   | { type: "diagnostics" }
   | { type: "subscribe" }
   | { type: "shutdown" };
