@@ -1,5 +1,5 @@
 import crypto from "node:crypto";
-import type { TaskDefinition } from "../../types.js";
+import { DEFAULT_TASK_MAX_RUNS, type TaskDefinition } from "../../types.js";
 import type { RecipeFile, RecipeLoopsEntry } from "./validator.js";
 
 export interface RemappedRecipe {
@@ -24,6 +24,7 @@ export function remapRecipeIds(recipe: RecipeFile): RemappedRecipe {
       commandArgs: task.commandArgs ?? [],
       onSuccessTaskId: task.onSuccessTaskId ? remapTable.get(task.onSuccessTaskId) ?? null : null,
       onFailureTaskId: task.onFailureTaskId ? remapTable.get(task.onFailureTaskId) ?? null : null,
+      maxRuns: DEFAULT_TASK_MAX_RUNS,
       createdAt: new Date().toISOString(),
     };
 
