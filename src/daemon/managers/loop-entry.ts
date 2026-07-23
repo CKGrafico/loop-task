@@ -3,6 +3,7 @@ import type { LoopControllerState } from "../../core/loop/types.js";
 import type { LoopMeta, TaskDefinition } from "../../types.js";
 import { getLogPath } from "../state/index.js";
 import { buildLoopOptions, type StoredLoop } from "./loop-options.js";
+import type { TelemetryManager } from "../telemetry/telemetry-manager.js";
 
 export type TaskResolverFn = (taskId: string) => TaskDefinition | null;
 export type ProjectDirFn = (projectId: string) => string | undefined;
@@ -12,6 +13,7 @@ export function createLoopEntry(
   taskResolver: TaskResolverFn,
   getProjectDirectory: ProjectDirFn,
   state?: LoopControllerState,
+  telemetryManager?: TelemetryManager,
 ): StoredLoop {
   const options = buildLoopOptions(meta);
   const logPath = getLogPath(meta.id);
@@ -23,6 +25,7 @@ export function createLoopEntry(
     taskResolver,
     state,
     projectDir,
+    telemetryManager,
   );
   return { controller, options, intervalHuman: meta.intervalHuman };
 }

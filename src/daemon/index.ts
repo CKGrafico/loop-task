@@ -50,6 +50,7 @@ async function main(): Promise<void> {
   const settingsManager = new SettingsManager();
   settingsManager.load();
   const telemetryManager = new TelemetryManager(settingsManager.get());
+  manager.setTelemetryManager(telemetryManager);
   const server = new IpcServer(manager, taskManager, settingsManager, telemetryManager);
   const projectManager = (manager as unknown as { projectManager: ProjectManager }).projectManager;
   const httpServer = new HttpApiServer(manager, taskManager, projectManager, settingsManager);

@@ -34,6 +34,12 @@ export interface TaskDefinition {
   maxRuns: number;
   context?: Record<string, unknown>;
   createdAt: string;
+  telemetry?: TaskTelemetryConfig;
+}
+
+export interface TaskTelemetryConfig {
+  enabled?: boolean;
+  integration?: "auto" | "opencode" | "claude-code" | "generic" | "none";
 }
 
 export interface LoopOptions {

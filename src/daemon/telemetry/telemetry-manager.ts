@@ -66,13 +66,16 @@ export class TelemetryManager {
 
     daemonLog(`telemetry: settings changed, reconfiguring adapter`);
 
-    // Flush and shutdown old adapter
-    this.adapter.flush().catch((err) => {
-      daemonLog(`telemetry: flush during reconfigure failed: ${String(err)}`);
-    });
-    this.adapter.shutdown().catch((err) => {
-      daemonLog(`telemetry: shutdown during reconfigure failed: ${String(err)}`);
-    });
+    // Flush and shutdown old adapter before creating new one
+    const oldAdapter = this.adapter;
+    (async () => {
+      try {
+        await oldAdapter.flush();
+        await oldAdapter.shutdown();
+      } catch (err) {
+        daemonLog(`telemetry: flush/shutdown during reconfigure failed: ${String(err)}`);
+      }
+    })();
 
     // Create new adapter with updated settings
     this.adapter = this.createAdapter(newSettings);

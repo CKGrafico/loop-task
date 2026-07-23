@@ -135,6 +135,7 @@ export interface AgentUsage {
   provider?: string;
   model?: string;
   sessionId?: string;
+  integration?: string;
 }
 
 /** Per-task telemetry override */

@@ -16,6 +16,7 @@ import { createLoopEntry, metaToState } from "./loop-entry.js";
 import { wireEvents, persistLoop, buildMeta, buildRecipeMeta } from "./loop-serialization.js";
 import { writeRecipeOverrides } from "../recipe/file-writer.js";
 import type { RecipeScanner } from "../recipe/scanner.js";
+import type { TelemetryManager } from "../telemetry/telemetry-manager.js";
 
 export class LoopManager {
   private loops = new Map<string, StoredLoop>();
@@ -25,10 +26,15 @@ export class LoopManager {
   private taskManager: TaskManager;
   private projectManager: ProjectManager;
   private recipeScanner: RecipeScanner | null = null;
+  private telemetryManager: TelemetryManager | null = null;
 
   constructor(taskManager: TaskManager, projectManager?: ProjectManager) {
     this.taskManager = taskManager;
     this.projectManager = projectManager || new ProjectManager();
+  }
+
+  setTelemetryManager(mgr: TelemetryManager): void {
+    this.telemetryManager = mgr;
   }
 
   setRecipeScanner(scanner: RecipeScanner): void {
@@ -62,7 +68,7 @@ export class LoopManager {
         saveLoop(meta);
       }
 
-      const entry = createLoopEntry(meta, this.taskResolver, this.getProjectDirectory.bind(this), metaToState(meta));
+      const entry = createLoopEntry(meta, this.taskResolver, this.getProjectDirectory.bind(this), metaToState(meta), this.telemetryManager ?? undefined);
       this.loops.set(meta.id, entry);
       this.wireUp(meta.id, entry);
       if (shouldAutoStart(meta.status)) {
@@ -79,7 +85,7 @@ export class LoopManager {
     const id = crypto.randomUUID().slice(0, 8);
     const logPath = getLogPath(id);
     const projectDir = this.getProjectDirectory(options.projectId ?? "default");
-    const controller = new LoopController(id, options, logPath, this.taskResolver, undefined, projectDir);
+    const controller = new LoopController(id, options, logPath, this.taskResolver, undefined, projectDir, this.telemetryManager ?? undefined);
     const entry: StoredLoop = { controller, options, intervalHuman };
     this.loops.set(id, entry);
     controller.start();
@@ -361,7 +367,7 @@ export class LoopManager {
           existing.options.cwd !== (meta.cwd ?? "");
         if (configChanged) {
           void existing.controller.stop().then(() => {
-            const entry = createLoopEntry(meta, this.taskResolver, this.getProjectDirectory.bind(this), metaToState(meta));
+      const entry = createLoopEntry(meta, this.taskResolver, this.getProjectDirectory.bind(this), metaToState(meta), this.telemetryManager ?? undefined);
             this.loops.set(meta.id, entry);
             this.wireUp(meta.id, entry);
             if (shouldAutoStart(meta.status)) {
@@ -370,7 +376,7 @@ export class LoopManager {
           });
         }
       } else {
-        const entry = createLoopEntry(meta, this.taskResolver, this.getProjectDirectory.bind(this), metaToState(meta));
+        const entry = createLoopEntry(meta, this.taskResolver, this.getProjectDirectory.bind(this), metaToState(meta), this.telemetryManager ?? undefined);
         this.loops.set(meta.id, entry);
         this.wireUp(meta.id, entry);
         if (shouldAutoStart(meta.status)) {

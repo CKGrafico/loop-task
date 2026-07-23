@@ -8,6 +8,8 @@ import { parseStdout } from "../context/context-parser.js";
 import { interpolate } from "../context/template.js";
 import { resolveEffectiveCwd } from "../command/resolve-cwd.js";
 import type { TaskResolver } from "./types.js";
+import type { TelemetryManager } from "../../daemon/telemetry/telemetry-manager.js";
+import type { TelemetrySpan } from "../../daemon/telemetry/index.js";
 
 export interface ExecuteRunAccess {
   _status: import("../../types.js").LoopStatus;
@@ -28,9 +30,11 @@ export interface ExecuteRunAccess {
   lastDuration: number | null;
   emit(event: string, ...args: unknown[]): boolean;
   checkLogRotation(): void;
+  telemetryManager: TelemetryManager | null;
+  readonly id: string;
 }
 
-export async function executeRunImpl(ctrl: ExecuteRunAccess, signal: AbortSignal): Promise<{ exitCode: number; totalDuration: number; chainContext: Record<string, unknown> }> {
+export async function executeRunImpl(ctrl: ExecuteRunAccess, signal: AbortSignal): Promise<{ exitCode: number; totalDuration: number; chainContext: Record<string, unknown>; runId: string; loopSpan?: TelemetrySpan }> {
   ctrl._status = "running";
   ctrl._forceRun = false;
   ctrl.runCount++;
@@ -71,56 +75,109 @@ export async function executeRunImpl(ctrl: ExecuteRunAccess, signal: AbortSignal
 
   const shouldCaptureStdout = hasChainTasks || taskSteps.length > 1 || taskSteps[0]!.commands.length > 1;
 
+  // Telemetry: create loop run span
+  const telemetry = ctrl.telemetryManager?.getAdapter();
+  const runId = `${ctrl.id}-${ctrl.runCount}`;
+  const loopSpan = telemetry?.startLoop({
+    loopId: ctrl.id,
+    loopName: ctrl.options.description || ctrl.id,
+    runId,
+    projectId: ctrl.options.projectId,
+  });
+
+  // Telemetry: create task span
+  const taskSpan = (task && telemetry)
+    ? telemetry.startTask(
+      {
+        taskId: task.id,
+        taskName: task.name,
+        runId,
+        loopId: ctrl.id,
+        loopName: ctrl.options.description || ctrl.id,
+        projectId: ctrl.options.projectId,
+      },
+      loopSpan,
+    )
+    : undefined;
+
+  // Build telemetry context for commands
+  const telemetryCtx = telemetry
+    ? {
+      telemetry,
+      loopSpan,
+      taskSpan,
+      runId,
+      loopId: ctrl.id,
+      loopName: ctrl.options.description || ctrl.id,
+      taskId: task?.id,
+      taskName: task?.name,
+      projectId: ctrl.options.projectId,
+    }
+    : undefined;
+
   let exitCode = 0;
   let totalDuration = 0;
 
-  for (const step of taskSteps) {
-    if (signal.aborted || ctrl.runAbortController?.signal.aborted) break;
-    const stepResults = await Promise.allSettled(
-      step.commands.map((cmd) =>
-        executeCommand(
-          interpolate(cmd.command, chainContext),
-          cmd.commandArgs.map(a => interpolate(a, chainContext)),
-          cwd,
-          ctrl.logStream!,
-          AbortSignal.any([signal, ctrl.runAbortController!.signal]),
-          ctrl.runCount,
-          shouldCaptureStdout,
+  try {
+    for (const step of taskSteps) {
+      if (signal.aborted || ctrl.runAbortController?.signal.aborted) break;
+      const stepResults = await Promise.allSettled(
+        step.commands.map((cmd) =>
+          executeCommand(
+            interpolate(cmd.command, chainContext),
+            cmd.commandArgs.map(a => interpolate(a, chainContext)),
+            cwd,
+            ctrl.logStream!,
+            AbortSignal.any([signal, ctrl.runAbortController!.signal]),
+            ctrl.runCount,
+            shouldCaptureStdout,
+            false,
+            telemetryCtx,
+          )
         )
-      )
-    );
-
-    if (signal.aborted || ctrl.runAbortController?.signal.aborted) break;
-
-    ctrl.checkLogRotation();
-
-    let stepStdout = "";
-    for (const r of stepResults) {
-      if (r.status === "fulfilled") {
-        totalDuration += r.value.duration;
-        if (r.value.stdout) stepStdout += (stepStdout ? "\n" : "") + r.value.stdout;
-      }
-    }
-
-    if (shouldCaptureStdout && stepStdout) {
-      const parsed = parseStdout(stepStdout);
-      if (parsed !== null) {
-        Object.assign(chainContext, parsed);
-      }
-    }
-
-    const stepFailure = stepResults.some(
-      (r) => r.status === "rejected" || (r.status === "fulfilled" && r.value.exitCode !== 0)
-    );
-    if (stepFailure) {
-      const failed = stepResults.find(
-        (r): r is PromiseFulfilledResult<ExecutionResult> =>
-          r.status === "fulfilled" && r.value.exitCode !== 0
       );
-      exitCode = failed ? failed.value.exitCode : 1;
-      break;
+
+      if (signal.aborted || ctrl.runAbortController?.signal.aborted) break;
+
+      ctrl.checkLogRotation();
+
+      let stepStdout = "";
+      for (const r of stepResults) {
+        if (r.status === "fulfilled") {
+          totalDuration += r.value.duration;
+          if (r.value.stdout) stepStdout += (stepStdout ? "\n" : "") + r.value.stdout;
+        }
+      }
+
+      if (shouldCaptureStdout && stepStdout) {
+        const parsed = parseStdout(stepStdout);
+        if (parsed !== null) {
+          Object.assign(chainContext, parsed);
+        }
+      }
+
+      const stepFailure = stepResults.some(
+        (r) => r.status === "rejected" || (r.status === "fulfilled" && r.value.exitCode !== 0)
+      );
+      if (stepFailure) {
+        const failed = stepResults.find(
+          (r): r is PromiseFulfilledResult<ExecutionResult> =>
+            r.status === "fulfilled" && r.value.exitCode !== 0
+        );
+        exitCode = failed ? failed.value.exitCode : 1;
+        break;
+      }
+    }
+  } finally {
+    // End telemetry spans
+    if (taskSpan) {
+      taskSpan.end(exitCode === 0 ? "ok" : "error");
+    }
+    if (loopSpan) {
+      loopSpan.end(exitCode === 0 ? "ok" : "error");
     }
   }
+
   ctrl.runAbortController = null;
 
   ctrl.lastExitCode = exitCode;
@@ -147,5 +204,5 @@ export async function executeRunImpl(ctrl: ExecuteRunAccess, signal: AbortSignal
     });
   }
 
-  return { exitCode, totalDuration, chainContext };
+  return { exitCode, totalDuration, chainContext, runId, loopSpan };
 }
