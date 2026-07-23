@@ -1,5 +1,6 @@
 {
   "$schema": "https://opencode.ai/config.json",
+  "default_agent": "fullstack-engineer",
   "agent": {
     "build": {
       "disable": true
@@ -12,7 +13,9 @@
     "skill": {
       "ob-*": "allow",
       "openspec-*": "allow"
-    }
+    },
+    "question": "allow",
+    "todowrite": "allow"
   },
   "model": "opencode-go/glm-5.1",
   "plugin": [

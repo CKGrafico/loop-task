@@ -19,6 +19,7 @@ export class TaskManager {
   create(input: Omit<TaskDefinition, "createdAt">): TaskDefinition {
     const task: TaskDefinition = {
       ...input,
+      id: input.id ?? crypto.randomUUID().slice(0, 8),
       createdAt: new Date().toISOString(),
     };
     this.tasks.set(task.id, task);
