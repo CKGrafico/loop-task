@@ -51,7 +51,7 @@ vi.mock("../src/daemon/managers/loop-manager.js", () => ({
 }));
 
 // Mock TaskManager
-const mockTaskCreate = vi.fn().mockReturnValue({ id: "t1", name: "Task", command: "echo", commandArgs: [], onSuccessTaskId: null, onFailureTaskId: null, createdAt: new Date().toISOString() });
+const mockTaskCreate = vi.fn().mockReturnValue({ id: "t1", name: "Task", command: "echo", commandArgs: [], onSuccessTaskId: null, onFailureTaskId: null, maxRuns: 5, createdAt: new Date().toISOString() });
 const mockTaskUpdate = vi.fn().mockReturnValue(null);
 const mockTaskList = vi.fn().mockReturnValue([]);
 const mockTaskGet = vi.fn().mockReturnValue(null);
@@ -379,7 +379,7 @@ describe("IpcServer", () => {
 
 
   it("routes task-create request", async () => {
-    const taskDef = { id: "t1", name: "Task", command: "echo", commandArgs: [], onSuccessTaskId: null, onFailureTaskId: null };
+    const taskDef = { id: "t1", name: "Task", command: "echo", commandArgs: [], onSuccessTaskId: null, onFailureTaskId: null, maxRuns: 5 };
     const responses = await sendRequest({ type: "task-create", payload: taskDef });
     expect(responses[0].type).toBe("ok");
     expect(mockTaskCreate).toHaveBeenCalled();
