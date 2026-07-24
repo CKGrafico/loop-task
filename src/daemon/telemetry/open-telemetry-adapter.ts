@@ -474,7 +474,20 @@ export class OpenTelemetryAdapter implements Telemetry {
   async flush(): Promise<void> {
     if (!this.sdk) return;
     try {
-      await (this.sdk as unknown as { forceFlush: () => Promise<void> }).forceFlush();
+      const sdkInternals = this.sdk as unknown as {
+        _tracerProvider?: { forceFlush?: () => Promise<void> };
+        _meterProvider?: { forceFlush?: () => Promise<void> };
+      };
+      const providers = [sdkInternals._tracerProvider, sdkInternals._meterProvider]
+        .filter((provider): provider is { forceFlush: () => Promise<void> } =>
+          typeof provider?.forceFlush === "function"
+        );
+
+      if (providers.length === 0) {
+        throw new Error("OpenTelemetry SDK providers do not support forceFlush");
+      }
+
+      await Promise.all(providers.map((provider) => provider.forceFlush()));
       daemonLog("telemetry: SDK flushed");
       this.lastSuccessfulExport = new Date().toISOString();
       if (this.status.exporterState !== "healthy") {
@@ -483,6 +496,7 @@ export class OpenTelemetryAdapter implements Telemetry {
     } catch (err) {
       daemonLog(`telemetry: flush failed: ${String(err)}`);
       this.lastExportError = err instanceof Error ? err.message : String(err);
+      throw err;
     }
   }
 

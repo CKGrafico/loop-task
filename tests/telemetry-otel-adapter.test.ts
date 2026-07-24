@@ -179,3 +179,15 @@ describe("OpenTelemetryAdapter.resolveProtocol", () => {
     }
   });
 });
+
+describe("OpenTelemetryAdapter.flush", () => {
+  it("surfaces SDK flush errors instead of reporting success", async () => {
+    const adapter = new OpenTelemetryAdapter(makeSettings({ telemetryEnabled: false }));
+    (adapter as unknown as { sdk: unknown }).sdk = {};
+
+    await expect(adapter.flush()).rejects.toThrow(
+      "OpenTelemetry SDK providers do not support forceFlush",
+    );
+    expect(adapter.getStatus().lastExportError).toContain("do not support forceFlush");
+  });
+});
