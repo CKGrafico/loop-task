@@ -285,6 +285,8 @@ export class OpenTelemetryAdapter implements Telemetry {
       [CORRELATION_KEYS.LOOP_ID]: input.loopId,
       ...(input.taskId ? { [CORRELATION_KEYS.TASK_ID]: input.taskId } : {}),
       ...(input.taskName ? { [CORRELATION_KEYS.TASK_NAME]: input.taskName } : {}),
+      ...(input.cwd ? { "loop_task.command.cwd": input.cwd } : {}),
+      ...(input.integrationId ? { [CORRELATION_KEYS.AGENT_INTEGRATION]: input.integrationId } : {}),
     });
     if (this.settings.telemetryCaptureContent && input.commandLine) {
       span.setAttribute("loop_task.command.full", input.commandLine);

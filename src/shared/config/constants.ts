@@ -10,6 +10,9 @@ export const MAX_LOG_BYTES = 1024 * 1024;
 
 export const MAX_CONTEXT_STDOUT_BYTES = 1024 * 1024;
 
+/** Max bytes for stdout attached to a span attribute (16KB) */
+export const MAX_SPAN_OUTPUT_BYTES = 16 * 1024;
+
 export const MAX_LOG_GENERATIONS = 3;
 
 export const MAX_INMEMORY_RUN_HISTORY = 100;

@@ -5,7 +5,7 @@ import type { ExecutionResult } from "../../types.js";
 import { Logger } from "../../logger.js";
 import { formatDuration } from "../../duration.js";
 import { t } from "../../shared/i18n/index.js";
-import { MAX_CONTEXT_STDOUT_BYTES } from "../../shared/config/constants.js";
+import { MAX_CONTEXT_STDOUT_BYTES, MAX_SPAN_OUTPUT_BYTES } from "../../shared/config/constants.js";
 import { StdoutCaptureTransform } from "./stdout-capture-transform.js";
 import { killProcessTree } from "./process-tree.js";
 import type { Telemetry, TelemetrySpan } from "../../daemon/telemetry/index.js";
@@ -146,6 +146,9 @@ export async function executeCommand(
     );
     telemetryEnv = prepared.env;
     detectedIntegrationId = prepared.integrationId;
+    if (detectedIntegrationId && commandSpan) {
+      commandSpan.setAttribute("loop_task.agent.integration", detectedIntegrationId);
+    }
   }
 
   const baseEnv = childEnv();
@@ -208,7 +211,7 @@ export async function executeCommand(
     if (commandSpan) {
       commandSpan.setAttribute("process.exit.code", result.exitCode ?? 0);
       if (telemetryCtx?.telemetry.getStatus().captureCommandOutput && stdoutCapture) {
-        commandSpan.setAttribute("loop_task.command.stdout", stdoutCapture.getCaptured());
+        commandSpan.setAttribute("loop_task.command.stdout", truncateForSpan(stdoutCapture.getCaptured(), MAX_SPAN_OUTPUT_BYTES));
       }
     }
 
@@ -251,7 +254,7 @@ export async function executeCommand(
     if (commandSpan) {
       commandSpan.setAttribute("process.exit.code", exitCode);
       if (telemetryCtx?.telemetry.getStatus().captureCommandOutput && stdoutCapture) {
-        commandSpan.setAttribute("loop_task.command.stdout", stdoutCapture.getCaptured());
+        commandSpan.setAttribute("loop_task.command.stdout", truncateForSpan(stdoutCapture.getCaptured(), MAX_SPAN_OUTPUT_BYTES));
       }
       commandSpan.end(signal?.aborted ? "cancelled" : "error");
     }
@@ -337,4 +340,10 @@ function tryParseAgentUsage(
   } catch {
     // Telemetry must never fail execution
   }
+}
+
+function truncateForSpan(text: string, maxBytes: number): string {
+  const buf = Buffer.from(text, "utf-8");
+  if (buf.length <= maxBytes) return text;
+  return buf.subarray(0, maxBytes).toString("utf-8") + `\n... [truncated, ${buf.length} bytes total]`;
 }

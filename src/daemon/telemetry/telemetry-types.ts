@@ -97,6 +97,7 @@ export interface CommandTelemetryInput {
   loopId: string;
   taskId?: string;
   taskName?: string;
+  integrationId?: string;
 }
 
 export interface RetryTelemetryInput {
