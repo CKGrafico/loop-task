@@ -83,13 +83,8 @@ export async function runLoop(ctrl: RunAccess): Promise<void> {
 
       const runStartedAtMs = Date.now();
 
-      // Reset per-task run counts at the start of each iteration.
-      // Task maxRuns limits how many times a task can be called within a
-      // single chain execution (prevents infinite A->B->A loops), NOT across
-      // separate loop iterations.
       ctrl.resetTaskRunCounts();
 
-      // Per-task maxRuns check
       let exitCode: number;
       let totalDuration: number;
       let chainContext: Record<string, unknown>;

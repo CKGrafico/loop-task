@@ -74,6 +74,8 @@ program
       stopDaemon(pid);
       removeDaemonPid();
       removeDaemonSignature();
+    } else {
+      stopDaemon(0);
     }
     console.log("Starting fresh daemon...");
     ensureDaemon();

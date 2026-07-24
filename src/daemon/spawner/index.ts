@@ -1,4 +1,4 @@
-import { spawn } from "node:child_process";
+import { spawn, execSync } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -83,7 +83,55 @@ function releaseStartLock(fd: number): void {
   }
 }
 
+/**
+ * Find PIDs of all running loop-task daemon processes, excluding the current
+ * process and optionally a tracked PID.
+ */
+function findOrphanedDaemonPids(excludePid?: number): number[] {
+  const pids: number[] = [];
+  try {
+    const platform = process.platform;
+    let output: string;
+    if (platform === "win32") {
+      output = execSync(
+        `wmic process where "name='node.exe'" get ProcessId,CommandLine /format:csv`,
+        { encoding: "utf-8", timeout: 3000 },
+      );
+      for (const line of output.split("\n")) {
+        if (line.includes("daemon/index.js") || line.includes("daemon/index.ts")) {
+          const parts = line.trim().split(",");
+          const pid = parseInt(parts[parts.length - 1] ?? "", 10);
+          if (!Number.isNaN(pid) && pid !== process.pid && pid !== excludePid) {
+            pids.push(pid);
+          }
+        }
+      }
+    } else {
+      output = execSync("pgrep -f 'daemon/index'", {
+        encoding: "utf-8",
+        timeout: 3000,
+      });
+      for (const line of output.split("\n")) {
+        const pid = parseInt(line.trim(), 10);
+        if (!Number.isNaN(pid) && pid !== process.pid && pid !== excludePid) {
+          pids.push(pid);
+        }
+      }
+    }
+  } catch {
+    // pgrep not available or no matches
+  }
+  return pids;
+}
+
 export function stopDaemon(pid: number): void {
+  killDaemonPid(pid);
+  killOrphanedDaemons(pid);
+  removeDaemonPid();
+  removeDaemonSignature();
+}
+
+function killDaemonPid(pid: number): void {
   try {
     process.kill(pid, "SIGTERM");
   } catch {
@@ -105,9 +153,25 @@ export function stopDaemon(pid: number): void {
       // best effort
     }
   }
+}
 
-  removeDaemonPid();
-  removeDaemonSignature();
+function killOrphanedDaemons(excludePid?: number): void {
+  const orphans = findOrphanedDaemonPids(excludePid);
+  for (const orphanPid of orphans) {
+    try {
+      process.kill(orphanPid, "SIGTERM");
+    } catch {
+      // already gone
+    }
+  }
+  blockingWait(1000);
+  for (const pid of findOrphanedDaemonPids(excludePid)) {
+    try {
+      process.kill(pid, "SIGKILL");
+    } catch {
+      // best effort
+    }
+  }
 }
 
 export function ensureDaemon(): void {
