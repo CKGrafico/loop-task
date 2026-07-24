@@ -9,10 +9,10 @@ This file provides syntax patterns for each position in the hybrid chain. The ag
 Run repository preflight before selecting work:
 
 ```
-git status --porcelain && git switch main && git pull --ff-only
+git status --porcelain && git switch main && git fetch origin && git rebase origin/main
 ```
 
-Keep this separate from selection. A dirty worktree, missing `main` branch, or non-fast-forward update stops the chain before any issue is reserved.
+Keep this separate from selection. A dirty worktree, missing `main` branch, or diverged history stops the chain before any issue is reserved.
 
 ## Selection
 
@@ -152,7 +152,7 @@ git clean -fd
 git switch main
 ```
 ```
-git pull --ff-only
+git fetch origin && git rebase origin/main
 ```
 ```
 gh issue edit {{number}} --remove-label "code:doing" --add-label "code:pick"
@@ -172,7 +172,7 @@ git clean -fd
 git switch main
 ```
 ```
-git pull --ff-only
+git fetch origin && git rebase origin/main
 ```
 ```
 az boards work-item update {{number}} --fields "System.Tags=code:pick" --output json

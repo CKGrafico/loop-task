@@ -13,10 +13,10 @@ Keep executables separate from prompts. `opencode run "/plan-goal ..."` is valid
 Run preflight before selection or mutation:
 
 ```sh
-git status --porcelain && git switch main && git pull --ff-only
+git status --porcelain && git switch main && git fetch origin && git rebase origin/main
 ```
 
-The clean check prevents an automated Task from overwriting local work. Fast-forward-only pull prevents an unattended merge. If either check fails, stop and report the exact next action.
+The clean check prevents an automated Task from overwriting local work. Fetch + rebase prevents an unattended merge. If either check fails, stop and report the exact next action.
 
 ## Timeouts and retries
 
