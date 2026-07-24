@@ -50,9 +50,9 @@ Before starting an iteration, the Loop checks whether `maxRuns` has been reached
 ### 2. Delay and scheduling
 
 - **First iteration, immediate = true**: starts immediately. No delay.
-- **First iteration, immediate = false**: computes a phase delay using `computePhase(loopId, interval)` and waits.
+- **First iteration, immediate = false**: computes a phase delay using `computePhase(loopId, cadence)` and waits.
 - **First iteration, restored nextRunAt**: waits until that time.
-- **Subsequent iterations**: scheduled at `runStartedAtMs + interval`. Missed points counted in `skippedCount` and skipped.
+- **Subsequent iterations**: scheduled at `runStartedAtMs + cadence`. Missed points counted in `skippedCount` and skipped.
 
 ### 3. Context creation
 
@@ -114,7 +114,7 @@ The iteration context (always in-memory), any running Task's live output stream,
 
 Loops with status `running` or `waiting` are auto-started. Loops that were `paused` or `idle` are restored in that state. Preserved `nextRunAt` and `remainingDelayMs` resume the delay. Running Loops restart fresh (the interrupted Task cannot be resumed mid-execution).
 
-## Manual-Only Loops (interval = 0)
+## Manual-Only Loops (intervalHuman = "0")
 
 - Start immediately enters `idle`. No auto-scheduling.
 - Each trigger executes one iteration, then returns to `idle`.

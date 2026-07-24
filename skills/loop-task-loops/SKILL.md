@@ -78,7 +78,7 @@ For interface-specific syntax vocabulary to compose concrete tasks from the ques
 
 | Property | Meaning |
 |---|---|
-| cadence (interval) | How often iterations become eligible |
+| cadence (intervalHuman) | How often iterations become eligible |
 | initial Task (taskId) | First Task of each iteration, or null for inline payload |
 | Project membership (projectId) | Which Project scopes this Loop |
 | immediate | Whether the first iteration runs without waiting |
@@ -91,13 +91,13 @@ For every property including runtime state, see [references/domain-reference.md]
 
 ## Cadence
 
-Cadence is the interval at which a Loop becomes eligible to start a new iteration. Supported units: seconds, minutes, hours, days, weeks.
+Cadence is set via `intervalHuman` — a human-readable string like "10s", "20m", "1h", "1d". It is parsed to milliseconds internally. Use "0" for manual loops.
 
-**First iteration**: `immediate = true` starts right away. `immediate = false` waits for a computed phase delay that distributes Loops across their interval.
+**First iteration**: `immediate = true` starts right away. `immediate = false` waits for a computed phase delay that distributes Loops across their cadence.
 
 **Next iteration**: scheduled relative to the _start_ of the current iteration, not its end. If an iteration overruns the cadence, missed points are **skipped** (counted, not queued).
 
-**Manual-only** (cadence = 0): the Loop never auto-schedules. Each iteration must be triggered explicitly. After each trigger, the Loop returns to idle.
+**Manual-only** (intervalHuman = "0"): the Loop never auto-schedules. Each iteration must be triggered explicitly. After each trigger, the Loop returns to idle.
 
 See [references/lifecycle.md](references/lifecycle.md) for the full state-transition diagram and restoration semantics.
 
