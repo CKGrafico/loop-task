@@ -54,6 +54,7 @@ export function executeChain(options: ChainExecuteOptions): Promise<ChainExecute
   let prevExit = exitCode;
   let totalExtraDuration = 0;
   let finalExitCode = exitCode;
+  let hadSilentChain = false;
 
   return (async () => {
     while (currentTargetId) {
@@ -84,6 +85,7 @@ export function executeChain(options: ChainExecuteOptions): Promise<ChainExecute
       const isSilent = chainTask.silentChain === true;
       if (isSilent) {
         controller.incrementSilentChainCount();
+        hadSilentChain = true;
       }
 
       if (logStream && !isSilent) {
@@ -223,6 +225,14 @@ export function executeChain(options: ChainExecuteOptions): Promise<ChainExecute
       currentTargetId = (chainExitCode === 0 ? chainTask.onSuccessTaskId : chainTask.onFailureTaskId) ?? null;
       prevBranch = chainExitCode === 0 ? "onSuccess" : "onFailure";
       prevExit = chainExitCode;
+    }
+
+    // If any silent chain task ran, remove all records for this chain group
+    // (including the main task record) — the run was uninteresting.
+    if (hadSilentChain) {
+      const filtered = runHistory.filter(r => r.chainGroupId !== chainGroupId);
+      runHistory.length = 0;
+      runHistory.push(...filtered);
     }
 
     return { runHistory, lastExitCode: finalExitCode, lastDuration: totalExtraDuration };

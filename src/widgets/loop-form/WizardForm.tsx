@@ -65,12 +65,12 @@ export function WizardForm(props: WizardFormProps): React.ReactNode {
   // Without this, onChange("Existing task") + onAdvance() run in the same
   // tick: setValues queues a state update, but findNextField reads stale
   // resolvedValues where taskMode is still "" → taskId is wrongly skipped.
-  const resolvedValuesRef = useRef<Record<string, string>>({});
   const computeResolved = (raw: Record<string, string>): Record<string, string> => {
     const result: Record<string, string> = {};
     for (const s of steps) result[s.key] = raw[s.key] ?? s.defaultValue ?? "";
     return result;
   };
+  const resolvedValuesRef = useRef<Record<string, string>>(computeResolved({}));
 
   const setValue = useCallback((key: string, next: string) => {
     resolvedValuesRef.current = computeResolved({ ...resolvedValuesRef.current, [key]: next });
