@@ -19,7 +19,7 @@ import {
   getDataDir,
 } from "../../shared/config/paths.js";
 
-export { getDataDir, getPidFile, getSocketPath } from "../../shared/config/paths.js";
+export { getDataDir, getPidFile, getSocketPath, getDaemonStartLockFile } from "../../shared/config/paths.js";
 
 type SelfWriteNotifier = (filePath: string, content: string) => void;
 let selfWriteNotifier: SelfWriteNotifier | null = null;

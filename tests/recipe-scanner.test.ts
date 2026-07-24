@@ -89,6 +89,25 @@ describe("RecipeScanner", () => {
     expect(scanner.listRecipes()).toHaveLength(0);
   });
 
+  it("scanDirectory discovers recipes added after the initial scan", () => {
+    const recipesDir = path.join(tmpDir, ".loops/recipes");
+    fs.mkdirSync(recipesDir, { recursive: true });
+    fs.writeFileSync(
+      path.join(recipesDir, "first.json"),
+      JSON.stringify(validRecipe, null, 2),
+    );
+
+    scanner.scanDirectory("test-project", tmpDir);
+    fs.writeFileSync(
+      path.join(recipesDir, "second.json"),
+      JSON.stringify(validRecipe, null, 2),
+    );
+
+    scanner.scanDirectory("test-project", tmpDir);
+
+    expect(scanner.listRecipes()).toHaveLength(2);
+  });
+
   it("unloadRecipe removes recipe and tasks", () => {
     const recipesDir = path.join(tmpDir, ".loops/recipes");
     fs.mkdirSync(recipesDir, { recursive: true });

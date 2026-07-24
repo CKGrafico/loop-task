@@ -173,6 +173,9 @@ async function main(): Promise<void> {
     }
   }
 
+  // Reconcile after watchers are attached so files created during startup cannot be missed.
+  recipeScanner.scanAllProjects();
+
   daemonLog(`recipe scanner initialized`);
 
   let shuttingDown = false;

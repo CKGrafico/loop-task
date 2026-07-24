@@ -56,6 +56,10 @@ export function getSignatureFile(): string {
   return path.join(getDataDir(), "daemon.sig");
 }
 
+export function getDaemonStartLockFile(): string {
+  return path.join(getDataDir(), "daemon.start.lock");
+}
+
 export function getDaemonLogFile(): string {
   return path.join(getDataDir(), "daemon.log");
 }
