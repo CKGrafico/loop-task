@@ -92,17 +92,19 @@ export function executeChain(options: ChainExecuteOptions): Promise<ChainExecute
 
       const chainStartedAt = new Date().toISOString();
       const chainOffset = !isSilent && fs.existsSync(logPath) ? fs.statSync(logPath).size : 0;
-      runHistory.push({
-        runNumber: runCount,
-        startedAt: chainStartedAt,
-        exitCode: -1,
-        duration: 0,
-        logSize: 0,
-        status: "running",
-        logOffset: chainOffset,
-        chainGroupId,
-        chainName: chainTask.name,
-      });
+      if (!isSilent) {
+        runHistory.push({
+          runNumber: runCount,
+          startedAt: chainStartedAt,
+          exitCode: -1,
+          duration: 0,
+          logSize: 0,
+          status: "running",
+          logOffset: chainOffset,
+          chainGroupId,
+          chainName: chainTask.name,
+        });
+      }
 
       const singleCommandFallback: TaskCommand = {
         command: chainTask.command,

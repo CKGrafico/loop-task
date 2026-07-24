@@ -10,8 +10,6 @@ import { t } from "../../shared/i18n/index.js";
 const DESC_WIDTH = 32;
 const SINCE_WIDTH = 13;
 const RUNS_WIDTH = 4;
-const SKIPPED_WIDTH = 4;
-const SILENT_WIDTH = 4;
 const STATUS_WIDTH = 8;
 const COL_GAP = 1;
 const LIMIT = 15;
@@ -62,12 +60,18 @@ export function Navigator(props: {
     return proj?.color ?? theme.text.muted;
   }
 
+  function projectName(loop: LoopMeta): string {
+    const proj = projects.find((p) => p.id === loop.projectId);
+    return proj?.name ?? "Default";
+  }
+
   function isFailed(loop: LoopMeta): boolean {
     return loop.lastExitCode !== null && loop.lastExitCode !== 0;
   }
 
   function renderLoop(loop: LoopMeta, isSelected: boolean): React.ReactNode {
-    const desc = truncate(describeLoop(loop), DESC_WIDTH);
+    const rawDesc = describeLoop(loop);
+    const desc = truncate(`${projectName(loop)}: ${rawDesc}`, DESC_WIDTH);
     const since = sinceLabel(loop);
     const timing = timingLabel(loop);
     const failed = isFailed(loop);
@@ -88,8 +92,6 @@ export function Navigator(props: {
         <Text color={fg}>{desc.padEnd(DESC_WIDTH + COL_GAP)}</Text>
         <Text color={fg}>{since.padEnd(SINCE_WIDTH + COL_GAP)}</Text>
         <Text color={fg}>{String(loop.runCount).padStart(RUNS_WIDTH) + " ".repeat(COL_GAP)}</Text>
-        <Text color={fg}>{String(loop.skippedCount).padStart(SKIPPED_WIDTH) + " ".repeat(COL_GAP)}</Text>
-        <Text color={fg}>{String(loop.silentChainCount ?? 0).padStart(SILENT_WIDTH) + " ".repeat(COL_GAP)}</Text>
         <Text color={isSelected ? theme.text.inverse : sColor}>{statusText.padEnd(STATUS_WIDTH + 1 + COL_GAP)}</Text>
         <Text color={fg}>{timing}</Text>
         {loop.status === "running" ? (
@@ -116,8 +118,6 @@ export function Navigator(props: {
             <Text color={theme.text.muted}>{t("board.headerDescription").padEnd(DESC_WIDTH + COL_GAP)}</Text>
             <Text color={theme.text.muted}>{t("board.headerSince").padEnd(SINCE_WIDTH + COL_GAP)}</Text>
             <Text color={theme.text.muted}>{t("board.headerRuns").padStart(RUNS_WIDTH) + " ".repeat(COL_GAP)}</Text>
-            <Text color={theme.text.muted}>{t("board.headerSkipped").padStart(SKIPPED_WIDTH) + " ".repeat(COL_GAP)}</Text>
-            <Text color={theme.text.muted}>{t("board.headerSilent").padStart(SILENT_WIDTH) + " ".repeat(COL_GAP)}</Text>
             <Text color={theme.text.muted}>{t("board.headerStatus").padEnd(STATUS_WIDTH + COL_GAP)}</Text>
             <Text color={theme.text.muted}>{t("board.headerTiming")}</Text>
           </Box>

@@ -131,7 +131,7 @@ export function App(props: { onQuit: () => void }): React.ReactNode {
             <LeftPanel
               isFocused={s.focusedPanel === "left" && !anyModalOpen} navActive={inputOwner === "panel"}
               activeTab={s.activeTab} query={s.leftPanelQuery} loops={s.visible} selectedIndex={s.clampedIndex}
-              filters={s.filters} sort={s.sort} breakpoint={breakpoint} projects={s.projects}
+              filters={s.filters} sort={s.sort} breakpoint={breakpoint} projects={s.filteredProjects}
               onSelect={(i) => s.setSelectedIndex(i)} onActivate={(i) => { s.setSelectedIndex(i); }}
               tasks={s.filteredTasks} taskSelectedIndex={s.taskClampedIndex}
               onTaskSelect={(i) => s.setTaskSelectedIndex(i)}
