@@ -96,6 +96,19 @@ export class TelemetryManager {
    * and attempting a flush. Returns success or error message.
    */
   async testConnection(): Promise<{ success: boolean; message: string }> {
+    const firstAttempt = await this.testAdapterConnection();
+    if (firstAttempt.success || firstAttempt.message === "OpenTelemetry is disabled" || firstAttempt.message === "No endpoint configured") {
+      return firstAttempt;
+    }
+
+    // Recreate the exporter once so a first-run or collector startup race does not
+    // require the user to toggle telemetry off and on manually.
+    daemonLog(`telemetry: connection test failed, recreating adapter before retry: ${firstAttempt.message}`);
+    await this.recreateAdapter();
+    return this.testAdapterConnection();
+  }
+
+  private async testAdapterConnection(): Promise<{ success: boolean; message: string }> {
     const status = this.adapter.getStatus();
 
     if (!status.enabled) {
@@ -129,6 +142,16 @@ export class TelemetryManager {
       const msg = err instanceof Error ? err.message : String(err);
       return { success: false, message: msg };
     }
+  }
+
+  private async recreateAdapter(): Promise<void> {
+    const oldAdapter = this.adapter;
+    try {
+      await oldAdapter.shutdown();
+    } catch (err) {
+      daemonLog(`telemetry: adapter recreation shutdown failed: ${String(err)}`);
+    }
+    this.adapter = this.createAdapter(this.settings);
   }
 
   /** Flush pending telemetry */

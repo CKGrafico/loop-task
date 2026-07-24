@@ -1,6 +1,7 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi } from "vitest";
 import { TelemetryManager } from "../src/daemon/telemetry/telemetry-manager.js";
 import type { DaemonSettings } from "../src/types.js";
+import type { Telemetry } from "../src/daemon/telemetry/telemetry.js";
 
 function makeSettings(overrides: Partial<DaemonSettings> = {}): DaemonSettings {
   return {
@@ -63,6 +64,54 @@ describe("TelemetryManager", () => {
     const result = await mgr.testConnection();
     expect(result.success).toBe(false);
     expect(result.message).toContain("endpoint");
+  });
+
+  it("recreates the adapter and retries after a transient exporter failure", async () => {
+    const mgr = new TelemetryManager(makeSettings({ telemetryEnabled: false }));
+    const settings = makeSettings({ telemetryEnabled: true, telemetryEndpoint: "http://localhost:4318" });
+    const span = {
+      setAttribute: vi.fn(),
+      setAttributes: vi.fn(),
+      recordError: vi.fn(),
+      ok: vi.fn(),
+      end: vi.fn(),
+      getTraceContext: vi.fn(() => ({})),
+    };
+    const status = {
+      enabled: true,
+      exporterConfigured: true,
+      endpoint: settings.telemetryEndpoint,
+      protocol: settings.telemetryProtocol,
+      serviceName: settings.telemetryServiceName,
+      exporterState: "configured" as const,
+    };
+    const failingAdapter = {
+      getStatus: () => status,
+      startLoop: () => span,
+      flush: vi.fn().mockRejectedValue(new Error("Not Found")),
+      shutdown: vi.fn().mockResolvedValue(undefined),
+    } as unknown as Telemetry;
+    const succeedingAdapter = {
+      getStatus: () => status,
+      startLoop: () => span,
+      flush: vi.fn().mockResolvedValue(undefined),
+      shutdown: vi.fn().mockResolvedValue(undefined),
+    } as unknown as Telemetry;
+    const internals = mgr as unknown as {
+      adapter: Telemetry;
+      settings: DaemonSettings;
+      createAdapter: (value: DaemonSettings) => Telemetry;
+    };
+    internals.adapter = failingAdapter;
+    internals.settings = settings;
+    internals.createAdapter = vi.fn(() => succeedingAdapter);
+
+    const result = await mgr.testConnection();
+
+    expect(result.success).toBe(true);
+    expect(failingAdapter.shutdown).toHaveBeenCalledOnce();
+    expect(internals.createAdapter).toHaveBeenCalledOnce();
+    expect(succeedingAdapter.flush).toHaveBeenCalledOnce();
   });
 
   it("onSettingsChanged reconfigures adapter from disabled to enabled", () => {
