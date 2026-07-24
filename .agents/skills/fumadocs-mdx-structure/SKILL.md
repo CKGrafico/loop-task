@@ -1,4 +1,6 @@
 ---
+metadata:
+  internal: true
 name: fumadocs-mdx-structure
 description: Create MDX documentation files with proper frontmatter, imports, and component integration. Apply when creating or updating Fumadocs documentation pages in content/docs/.
 ---

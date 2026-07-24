@@ -1,4 +1,6 @@
 ---
+metadata:
+  internal: true
 name: tailwind-design-system
 description: Skill for creating and managing a Design System using Tailwind CSS and shadcn/ui. Use when defining design tokens, setting up theming with CSS variables, building a consistent UI component library, initializing a design system configuration, or wrapping shadcn/ui components into design system primitives.
 allowed-tools: Read, Write, Edit, Bash, Glob, Grep

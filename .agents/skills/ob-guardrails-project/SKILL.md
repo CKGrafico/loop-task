@@ -1,4 +1,6 @@
 ---
+metadata:
+  internal: true
 name: ob-guardrails-project
 description: Project-specific guardrails extracted from ARCHITECTURE.md and project config files. Populated by /make-guardrails. Load this skill before implementing any change to understand boundaries, conventions, and constraints for this codebase.
 license: MIT

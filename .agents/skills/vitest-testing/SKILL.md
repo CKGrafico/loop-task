@@ -1,4 +1,6 @@
 ---
+metadata:
+  internal: true
 name: vitest-testing
 description: Modern TypeScript/JavaScript testing with Vitest. Fast unit and integration tests, native ESM support, Vite-powered HMR, and comprehensive mocking. Use for testing TS/JS projects.
 allowed-tools: Bash, Read, Edit, Write, Grep, Glob, TodoWrite

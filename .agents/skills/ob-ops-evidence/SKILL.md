@@ -1,4 +1,6 @@
 ---
+metadata:
+  internal: true
 name: ob-ops-evidence
 description: Produce auditable evidence that a completed change works, and publish it to the originating issue/PR. Decides whether evidence is required, delegates to a project-provided evidence harness when one exists (else captures a screenshot generically), writes evidence/evidence.json with a passed/skipped/failed/blocked status, and separately publishes an idempotent verified comment. Load after a change is implemented. Invoked by the /ops-evidence command and the plan-goal pipeline.
 license: MIT

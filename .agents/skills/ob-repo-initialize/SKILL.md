@@ -1,4 +1,6 @@
 ---
+metadata:
+  internal: true
 name: ob-repo-initialize
 description: Initialize the project. Presents a single form with all setup questions, then executes selected steps. Invoked by the /init command (alias: /repo-initialize).
 license: MIT

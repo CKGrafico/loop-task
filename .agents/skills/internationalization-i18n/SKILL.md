@@ -1,4 +1,6 @@
 ---
+metadata:
+  internal: true
 name: internationalization-i18n
 description: Implement internationalization (i18n) best practices for web and mobile applications to support multiple languages and locales.
 ---

@@ -1,4 +1,6 @@
 ---
+metadata:
+  internal: true
 name: terminal-ui
 description: Terminal User Interface (TUI) performance and UX guidelines for TypeScript applications using Ink and Clack. This skill should be used when building CLI tools, interactive terminal prompts, or developer tooling with TUI components. Triggers on tasks involving TUI components, CLI prompts, terminal rendering, keyboard input handling, or developer tooling.
 ---

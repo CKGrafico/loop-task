@@ -1,4 +1,6 @@
 ---
+metadata:
+  internal: true
 name: ob-repo-help
 description: The full command reference for this project - every /command with when to use it and the typical workflows. Load when the user asks for help, the command list, or at the end of repo initialization. Invoked by the /repo-help command and the repo-initialize flow.
 license: MIT

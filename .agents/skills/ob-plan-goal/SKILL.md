@@ -1,4 +1,6 @@
 ---
+metadata:
+  internal: true
 name: ob-plan-goal
 description: Autonomous pipeline: explore, propose, apply, archive, then merge/PR/push. For loop-engineering. Invoked by the /plan-goal command.
 license: MIT

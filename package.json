@@ -28,7 +28,9 @@
     "release:dry": "npm publish --dry-run",
     "release": "npm publish",
     "visual-evidence": "tsx src/visual-evidence/cli.ts",
-    "visual-evidence:publish": "tsx src/visual-evidence/publish.ts"
+    "visual-evidence:publish": "tsx src/visual-evidence/publish.ts",
+    "skills:mark-internal": "node scripts/mark-agent-skills-internal.mjs",
+    "prepare": "husky"
   },
   "keywords": [
     "cli",
@@ -99,6 +101,7 @@
     "@vitest/coverage-v8": "^3.1.0",
     "eslint": "^9.25.0",
     "ink-testing-library": "^4.0.0",
+    "husky": "^9.1.7",
     "tsx": "^4.19.0",
     "typescript": "^5.8.0",
     "typescript-eslint": "^8.30.0",

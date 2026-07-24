@@ -1,4 +1,6 @@
 ---
+metadata:
+  internal: true
 name: inversify-hooks
 description: Set up and use dependency injection in React with inversify-hooks (a React layer over inversify-props / InversifyJS 8). Use when wiring up a DI container in a React app, injecting services into components via the useInject hook, registering singletons/transients, injecting dependencies into other services with @inject, or mocking injected services in tests.
 ---

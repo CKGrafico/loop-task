@@ -4,6 +4,7 @@ description: Reliable, composable browser automation using OpenCode Browser prim
 license: MIT
 compatibility: Requires opencode-browser extension installed and running.
 metadata:
+  internal: true
   author: copilots
   version: "1.0"
 ---

@@ -8,6 +8,7 @@ paths:
   - "**/*.jsx"
 license: MIT
 metadata:
+  internal: true
   author: patterns.dev
   version: "1.1"
 related_skills:

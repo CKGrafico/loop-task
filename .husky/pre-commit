@@ -1,0 +1,4 @@
+#!/usr/bin/env sh
+
+pnpm run skills:mark-internal
+git add -- .agents/skills

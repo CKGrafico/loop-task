@@ -1,4 +1,6 @@
 ---
+metadata:
+  internal: true
 name: ob-plan-propose
 description: Parse a work item or idea and produce an OpenSpec change plan (proposal.md, specs, tasks.md) with enriched task assignments (agent, tier, depends_on, touches). Load when turning a requirement into a structured plan. Invoked by the /plan-propose command (interactive) and the plan-goal pipeline (autonomous).
 license: MIT

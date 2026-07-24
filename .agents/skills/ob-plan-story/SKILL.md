@@ -1,4 +1,6 @@
 ---
+metadata:
+  internal: true
 name: ob-plan-story
 description: Write a detailed, repo-aware user story from a feature idea or need. Loads the @user-story skill for Mike Cohn format + Gherkin acceptance criteria, analyzes the codebase for concrete context, and produces a development-ready story. Use when the user wants to write a user story, create a story from a feature idea, or turn a need into a structured story with acceptance criteria. Invoked by the /plan-story command.
 license: MIT

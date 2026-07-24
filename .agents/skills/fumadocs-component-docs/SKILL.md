@@ -1,4 +1,6 @@
 ---
+metadata:
+  internal: true
 name: fumadocs-component-docs
 description: Create component documentation with installation, usage examples, and preview sections. Apply when documenting 8-bit components with proper structure and examples.
 ---

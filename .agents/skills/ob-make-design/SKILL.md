@@ -1,4 +1,6 @@
 ---
+metadata:
+  internal: true
 name: ob-make-design
 description: Generate or update DESIGN.md by analyzing the codebase design system (Tailwind, CSS vars, tokens, UI framework config). Safe to run at any time. Invoked by the /make-design command and the repo-initialize flow.
 license: MIT

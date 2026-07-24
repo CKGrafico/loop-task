@@ -1,4 +1,6 @@
 ---
+metadata:
+  internal: true
 name: ob-make-user-model
 description: Set the model for a tier (plan, build, or fast). Team-wide or user-local override. Invoked by the /make-user-model command.
 license: MIT

@@ -1,4 +1,6 @@
 ---
+metadata:
+  internal: true
 name: ob-make-guardrails
 description: Generate or update the ob-guardrails-project skill from ARCHITECTURE.md and relevant project files, then wire it into every engineer agent. Invoked by the /make-guardrails command and the repo-initialize flow.
 license: MIT

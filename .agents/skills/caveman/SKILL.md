@@ -1,4 +1,6 @@
 ---
+metadata:
+  internal: true
 name: caveman
 description: >
   Ultra-compressed communication mode. Cuts output tokens 65% (measured) by speaking like caveman

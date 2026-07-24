@@ -1,4 +1,6 @@
 ---
+metadata:
+  internal: true
 name: agentmemory-agents
 description: How agentmemory wires into host coding agents via the connect command. Use when installing agentmemory into a specific agent, when asked which agents are supported, or when a connect adapter writes the wrong config path.
 user-invocable: false

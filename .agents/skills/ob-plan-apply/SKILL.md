@@ -1,4 +1,6 @@
 ---
+metadata:
+  internal: true
 name: ob-plan-apply
 description: Implement tasks from a plan. OpenSpec-annotated tasks (from ob-plan-propose) run as parallel subagent waves; Todo pane tasks (from /plan-quick) run sequentially in-session. Load when implementing a prepared plan. Invoked by the /plan-apply command (interactive) and the plan-goal pipeline (autonomous).
 license: MIT

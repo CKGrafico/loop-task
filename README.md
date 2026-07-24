@@ -64,6 +64,18 @@ npx loop-task
 npx loop-task new 30m -- npm test
 ```
 
+## Agent skills
+
+Install the public Loop Task skills with:
+
+```bash
+npx skills add ckgrafico/loop-task
+```
+
+The repository also contains internal development skills under `.agents/skills/`.
+They are marked internal automatically by the repository pre-commit hook and are
+not intended for installation by Loop Task users.
+
 ## Requirements
 
 - **Node.js >= 20** - required for all commands including the board

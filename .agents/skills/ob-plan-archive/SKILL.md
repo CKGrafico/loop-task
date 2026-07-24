@@ -1,4 +1,6 @@
 ---
+metadata:
+  internal: true
 name: ob-plan-archive
 description: Archive a completed OpenSpec change and update documentation. Interactive mode finds the oldest merged unarchived change and opens an archive PR; autonomous mode archives a named change in place on the current branch. Invoked by the /plan-archive command (interactive) and the plan-goal pipeline (autonomous).
 license: MIT

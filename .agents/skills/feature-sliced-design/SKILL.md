@@ -1,4 +1,6 @@
 ---
+metadata:
+  internal: true
 name: feature-sliced-design
 description: >
   Official Feature-Sliced Design (FSD) v2.1 skill for applying the methodology

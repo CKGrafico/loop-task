@@ -9,6 +9,7 @@ description: |
   voice, negative parallelisms, and filler phrases.
 license: MIT
 metadata:
+  internal: true
   version: "2.9.1"
 ---
 

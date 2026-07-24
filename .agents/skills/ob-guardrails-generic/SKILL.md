@@ -1,4 +1,6 @@
 ---
+metadata:
+  internal: true
 name: ob-guardrails-generic
 description: Generic guardrails, foundational rules that all agents follow. Users add specialized guardrails skills for specific concerns. Covers secrets, code quality, security, tool usage, and engineer workflow.
 license: MIT

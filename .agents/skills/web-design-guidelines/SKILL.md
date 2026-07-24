@@ -19,6 +19,7 @@ compatibility: >
   component architecture, or React behavior.
 license: MIT
 metadata:
+  internal: true
   tags: frontend, ui-review, ux, usability, design-audit, heuristics, accessibility-basics, responsive-basics
   platforms: Claude, ChatGPT, Gemini, Codex
   version: "2.0"

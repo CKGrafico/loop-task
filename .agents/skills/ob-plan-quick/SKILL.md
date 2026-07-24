@@ -1,4 +1,6 @@
 ---
+metadata:
+  internal: true
 name: ob-plan-quick
 description: Quick plan: analyze the codebase and create a task checklist using the Todo pane. No files, no OpenSpec. Invoked by the /plan-quick command.
 license: MIT

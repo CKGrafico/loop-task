@@ -1,4 +1,6 @@
 ---
+metadata:
+  internal: true
 name: ob-make-engineer
 description: Create a custom engineer agent via persona-driven interactive design. Invoked by the /make-engineer command.
 license: MIT

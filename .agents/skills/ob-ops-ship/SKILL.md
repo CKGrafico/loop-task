@@ -1,4 +1,6 @@
 ---
+metadata:
+  internal: true
 name: ob-ops-ship
 description: Create a pull request for the current feature branch, with screenshots if UI changed. Load when shipping a finished feature branch. Invoked by the /ops-ship command and the plan-goal pipeline (pr mode).
 license: MIT

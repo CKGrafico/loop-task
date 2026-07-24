@@ -1,4 +1,6 @@
 ---
+metadata:
+  internal: true
 name: ob-plan-explore
 description: Explore an idea or requirement before planning. Invoked by the /plan-explore command.
 license: MIT

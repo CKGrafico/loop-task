@@ -4,6 +4,7 @@ description: Parse GitHub Issue URL and create OpenSpec change. Use when user pr
 license: MIT
 compatibility: Requires openspec CLI and gh CLI.
 metadata:
+  internal: true
   author: copilots
   version: "1.1"
 ---

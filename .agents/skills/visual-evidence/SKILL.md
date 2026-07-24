@@ -5,6 +5,7 @@ allowed-tools: Bash(pnpm:*), Bash(node:*), Bash(tsx:*)
 license: MIT
 compatibility: Requires Node.js, pnpm, and the loop-task visual evidence harness in src/visual-evidence/.
 metadata:
+  internal: true
   author: loop-task
   version: "1.0"
   generatedBy: "manual"
