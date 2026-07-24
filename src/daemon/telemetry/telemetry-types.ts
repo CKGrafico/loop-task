@@ -90,6 +90,7 @@ export interface TaskTelemetryInput {
 
 export interface CommandTelemetryInput {
   command: string;
+  commandLine: string;
   argumentCount: number;
   cwd: string;
   runId: string;

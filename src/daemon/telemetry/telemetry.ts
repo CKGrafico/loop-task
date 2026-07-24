@@ -25,7 +25,7 @@ export interface Telemetry {
   /** Record a failure on the current active span */
   recordFailure(error: unknown, attributes?: Record<string, unknown>): void;
   /** Record agent usage data (tokens, cost) */
-  recordAgentUsage(input: AgentUsage): void;
+  recordAgentUsage(input: AgentUsage, span?: TelemetrySpan): void;
   /** Prepare environment variables for a child process */
   prepareChildProcess(
     invocation: import("./telemetry-types.js").CommandInvocation,

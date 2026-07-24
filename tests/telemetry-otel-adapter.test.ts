@@ -44,7 +44,9 @@ describe("OpenTelemetryAdapter.prepareChildProcess", () => {
       { runId: "run-1", loopId: "loop-1", loopName: "test" },
     );
     expect(result.env.OTEL_EXPORTER_OTLP_ENDPOINT).toBe("http://localhost:4318");
+    expect(result.env.OTEL_EXPORTER_OTLP_TRACES_ENDPOINT).toBe("http://localhost:4318");
     expect(result.env.OTEL_EXPORTER_OTLP_PROTOCOL).toBe("http/protobuf");
+    expect(result.env.OTEL_TRACES_EXPORTER).toBe("otlp");
   });
 
   it("injects trace context when provided", () => {
@@ -118,6 +120,18 @@ describe("OpenTelemetryAdapter.prepareChildProcess", () => {
     );
     expect(result.env.CLAUDE_CODE_ENABLE_TELEMETRY).toBe("1");
     expect(result.integrationId).toBe("claude-code");
+  });
+
+  it("auto-detects OpenCode and Claude Code through absolute Windows paths", () => {
+    const adapter = new OpenTelemetryAdapter(makeSettings());
+    const context = { runId: "run-1", loopId: "loop-1", loopName: "test" };
+
+    expect(adapter.prepareChildProcess(
+      { command: "C:/tools/opencode.exe", args: ["run", "task"], cwd: "/tmp" }, context,
+    ).integrationId).toBe("opencode");
+    expect(adapter.prepareChildProcess(
+      { command: "C:/tools/claude.exe", args: ["--print", "task"], cwd: "/tmp" }, context,
+    ).integrationId).toBe("claude-code");
   });
 
   it("does not inject agent-specific vars for generic commands", () => {

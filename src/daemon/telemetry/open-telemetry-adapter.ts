@@ -286,8 +286,8 @@ export class OpenTelemetryAdapter implements Telemetry {
       ...(input.taskId ? { [CORRELATION_KEYS.TASK_ID]: input.taskId } : {}),
       ...(input.taskName ? { [CORRELATION_KEYS.TASK_NAME]: input.taskName } : {}),
     });
-    if (this.settings.telemetryCaptureContent && input.command) {
-      span.setAttribute("loop_task.command.full", input.command);
+    if (this.settings.telemetryCaptureContent && input.commandLine) {
+      span.setAttribute("loop_task.command.full", input.commandLine);
     }
     const ctx = trace.setSpan(parentCtx, span);
     this.commandCounter.add(1, { "process.executable.name": input.command });
@@ -328,8 +328,8 @@ export class OpenTelemetryAdapter implements Telemetry {
     }
   }
 
-  recordAgentUsage(input: AgentUsage): void {
-    const activeSpan = trace.getActiveSpan();
+  recordAgentUsage(input: AgentUsage, parent?: TelemetrySpan): void {
+    const activeSpan = parent instanceof OtelSpan ? parent["span"] : trace.getActiveSpan();
     if (!activeSpan) return;
 
     if (input.inputTokens !== undefined) {
@@ -387,7 +387,9 @@ export class OpenTelemetryAdapter implements Telemetry {
     }
 
     env.OTEL_EXPORTER_OTLP_ENDPOINT = endpoint;
+    env.OTEL_EXPORTER_OTLP_TRACES_ENDPOINT = endpoint;
     env.OTEL_EXPORTER_OTLP_PROTOCOL = protocol;
+    env.OTEL_TRACES_EXPORTER = "otlp";
 
     const authHeaders = process.env.OTEL_EXPORTER_OTLP_HEADERS
       ?? process.env.OTEL_EXPORTER_OTLP_TRACES_HEADERS;

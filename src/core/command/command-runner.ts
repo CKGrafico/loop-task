@@ -111,6 +111,7 @@ export async function executeCommand(
     ? telemetryCtx.telemetry.startCommand(
       {
         command,
+        commandLine: formatCommandLine(command, commandArgs),
         argumentCount: commandArgs.length,
         cwd,
         runId: telemetryCtx.runId,
@@ -183,7 +184,7 @@ export async function executeCommand(
     activePids.add(child.pid);
   }
 
-  const stdoutCapture = captureStdout
+  const stdoutCapture = (captureStdout || !!detectedIntegrationId)
     ? new StdoutCaptureTransform(MAX_CONTEXT_STDOUT_BYTES)
     : null;
 
@@ -205,7 +206,10 @@ export async function executeCommand(
     logStream.write(t("loop.exitMarker", { code: String(result.exitCode), duration: formatDuration(duration) }));
 
     if (commandSpan) {
-      commandSpan.ok();
+      commandSpan.setAttribute("process.exit.code", result.exitCode ?? 0);
+      if (telemetryCtx?.telemetry.getStatus().captureCommandOutput && stdoutCapture) {
+        commandSpan.setAttribute("loop_task.command.stdout", stdoutCapture.getCaptured());
+      }
     }
 
     // Attempt to parse agent usage from output
@@ -214,7 +218,12 @@ export async function executeCommand(
         telemetryCtx!.telemetry,
         detectedIntegrationId,
         { exitCode: result.exitCode ?? 0, stdout: stdoutCapture.getCaptured(), duration },
+        commandSpan,
       );
+    }
+
+    if (commandSpan) {
+      commandSpan.ok();
     }
 
     return {
@@ -240,6 +249,10 @@ export async function executeCommand(
     logStream.write(t("loop.exitMarker", { code: exitCode, duration: formatDuration(duration) }));
 
     if (commandSpan) {
+      commandSpan.setAttribute("process.exit.code", exitCode);
+      if (telemetryCtx?.telemetry.getStatus().captureCommandOutput && stdoutCapture) {
+        commandSpan.setAttribute("loop_task.command.stdout", stdoutCapture.getCaptured());
+      }
       commandSpan.end(signal?.aborted ? "cancelled" : "error");
     }
 
@@ -249,6 +262,7 @@ export async function executeCommand(
         telemetryCtx!.telemetry,
         detectedIntegrationId,
         { exitCode, stdout: stdoutCapture.getCaptured(), duration },
+        commandSpan,
       );
     }
 
@@ -309,6 +323,7 @@ function tryParseAgentUsage(
   telemetry: Telemetry,
   integrationId: string,
   result: CommandResult,
+  span?: TelemetrySpan,
 ): void {
   try {
     const integrations = getAgentIntegrations();
@@ -317,7 +332,7 @@ function tryParseAgentUsage(
     const usage = match.parseUsage(result);
     if (usage) {
       usage.integration = integrationId;
-      telemetry.recordAgentUsage(usage);
+      telemetry.recordAgentUsage(usage, span);
     }
   } catch {
     // Telemetry must never fail execution
