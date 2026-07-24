@@ -98,7 +98,7 @@ describe("Per-task maxRuns", () => {
       expect(ctrl.getTaskRunCount("task1")).toBe(2);
     });
 
-    it("clears task run counts on start", () => {
+    it("resets task run counts", () => {
       const taskMap = new Map<string, TaskDefinition>();
       const task = makeTask();
       taskMap.set("task1", task);
@@ -107,9 +107,8 @@ describe("Per-task maxRuns", () => {
       ctrl.incrementTaskRunCount("task1");
       expect(ctrl.getTaskRunCount("task1")).toBe(1);
 
-      ctrl.start();
+      ctrl.resetTaskRunCounts();
       expect(ctrl.getTaskRunCount("task1")).toBe(0);
-      ctrl.stop();
     });
   });
 

@@ -34,6 +34,7 @@ export interface RunAccess extends DelayAccess, ExecuteRunAccess {
   checkLogRotation(): void;
   getTaskRunCount(taskId: string): number;
   incrementTaskRunCount(taskId: string): void;
+  resetTaskRunCounts(): void;
 }
 
 export async function runLoop(ctrl: RunAccess): Promise<void> {

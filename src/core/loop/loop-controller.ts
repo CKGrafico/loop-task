@@ -54,6 +54,10 @@ export class LoopController extends EventEmitter {
     this.taskRunCounts.set(taskId, current + 1);
   }
 
+  resetTaskRunCounts(): void {
+    this.taskRunCounts.clear();
+  }
+
   constructor(
     id: string,
     options: LoopOptions,
@@ -110,7 +114,7 @@ export class LoopController extends EventEmitter {
     if (this._loopActive) return;
     this._loopActive = true;
     this.skippedCount = 0;
-    this.taskRunCounts.clear();
+    this.resetTaskRunCounts();
     this.logStream?.end();
     this.abortController = new AbortController();
     this.logStream = RotatingWriteStream.create(this.logPath);
