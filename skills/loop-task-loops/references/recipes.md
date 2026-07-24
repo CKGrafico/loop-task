@@ -83,7 +83,7 @@ Loops coordinate through shared labels. One Loop's finalization label is another
 ```
 ┌──────────────────┐                     ┌──────────────────┐
 │   Refine Loop    │                     │  Implement Loop  │
-│  (every 30 min)  │                     │   (every 1 hour)  │
+│  (every 20m)    │                     │   (every 1d)     │
 │                  │                     │                  │
 │  select          │                     │  select           │
 │  refine:pick     │                     │  code:pick        │
@@ -110,12 +110,12 @@ Improvements Loop (every 6h)
   │
   ▼  produces issues with code:pick / refine:pick
   
-Refine Loop (every 30 min)
+Refine Loop (every 20m)
   │  selects refine:pick, refines with AI, adds code:pick
   │
   ▼  produces issues with code:pick
   
-Implement Loop (every 1 hour)
+Implement Loop (Every 1h)
      selects code:pick, implements with AI, creates PR, adds code:done
 ```
 
@@ -128,7 +128,7 @@ When the refine AI has questions, it labels the issue `refine:questions`. The us
 ```
 ┌────────────────┐     ┌────────────────┐     ┌────────────────┐
 │  Refine Loop   │     │  User answers  │     │ Re-refine Loop │
-│  (every 30m)   │     │  (manual)       │     │  (every 10m)   │
+│  (every 20m)   │     │  (manual)       │     │  (every 10s)   │
 │                │     │                │     │                │
 │ select         │     │                │     │ select         │
 │ refine:pick    │     │                │     │ refine:answers │

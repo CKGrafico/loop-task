@@ -11,6 +11,7 @@ import { remapRecipeIds } from "./id-remapper.js";
 import { RecipeTaskStore } from "./task-store.js";
 import { getLogPath } from "../state/index.js";
 import { daemonLog } from "../daemon-log.js";
+import { parseDuration } from "../../duration.js";
 
 export interface RecipeEntry {
   id: string;
@@ -105,8 +106,11 @@ export class RecipeScanner {
     this.recipeTaskStore.setMany(tasks);
 
     const projectDir = this.projectManager?.get(projectId)?.directory ?? "";
+    const intervalHuman = recipeLoop.intervalHuman ?? "0";
+    const interval = intervalHuman === "0" || intervalHuman === "manual" ? 0 : parseDuration(intervalHuman);
+
     const options: LoopOptions = {
-      interval: recipeLoop.interval ?? 0,
+      interval,
       taskId: recipeLoop.taskId ?? null,
       command: recipeLoop.command ?? "",
       commandArgs: recipeLoop.commandArgs ?? [],
@@ -119,8 +123,6 @@ export class RecipeScanner {
       offset: recipeLoop.offset ?? null,
       context: recipeLoop.context,
     };
-
-    const intervalHuman = recipeLoop.intervalHuman ?? "manual";
 
     const taskResolver = (taskId: string) =>
       this.recipeTaskStore.get(taskId) ?? null;

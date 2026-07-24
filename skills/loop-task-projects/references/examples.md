@@ -23,17 +23,17 @@ projects:
 loops:
   - purpose: Sync user data from upstream
     project: User Service
-    cadence: Every 1 hour
+    cadence: Every 1h
     initial-task: sync-users
 
   - purpose: Process pending payments
     project: Payment Service
-    cadence: Every 15 minutes
+    cadence: Every 15m
     initial-task: process-payments
 
   - purpose: Send pending notifications
     project: Notification Service
-    cadence: Every 5 minutes
+    cadence: Every 5m
     initial-task: send-notifications
 ```
 
@@ -56,12 +56,12 @@ projects:
 loops:
   - purpose: Health check
     project: Production
-    cadence: Every 5 minutes
+    cadence: Every 5m
     initial-task: check-health
 
   - purpose: Health check
     project: Staging
-    cadence: Every 15 minutes
+    cadence: Every 15m
     initial-task: check-health
 ```
 
@@ -81,12 +81,12 @@ before deletion:
   loops:
     - purpose: Run legacy ETL
       project: Legacy Pipeline
-      cadence: Every 1 day
+      cadence: Every 1d
       cwd: /pipelines/legacy/etl   # explicit cwd
 
     - purpose: Monitor legacy data
       project: Legacy Pipeline
-      cadence: Every 30 minutes
+      cadence: Every 20m
       # No explicit cwd — relies on Project's directory
 
 after deleting "Legacy Pipeline":
@@ -129,12 +129,12 @@ tasks:
 loops:
   - purpose: Health check frontend
     project: Frontend
-    cadence: Every 5 minutes
+    cadence: Every 5m
     initial-task: check-frontend-health
 
   - purpose: Health check backend
     project: Backend
-    cadence: Every 5 minutes
+    cadence: Every 5m
     initial-task: check-backend-health
 
   # Both health-check Tasks reference notify-oncall on failure:
@@ -157,18 +157,18 @@ project:
 loops:
   - purpose: Refine issues
     project: Product Delivery
-    cadence: Every 30 minutes
+    cadence: Every 20m
     initial-task: find-refinement-candidate
 
   - purpose: Implement issues
     project: Product Delivery
-    cadence: Every 1 hour
+    cadence: Every 1h
     maxRuns: 8
     initial-task: find-implementable-issue
 
   - purpose: Review pull requests
     project: Product Delivery
-    cadence: Every 15 minutes
+    cadence: Every 15m
     initial-task: find-reviewable-pr
 ```
 

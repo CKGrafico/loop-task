@@ -12,7 +12,7 @@ project:
 
 loop:
   purpose: Keep the local repository in sync and process one stale work item
-  cadence: Every 30 minutes
+  cadence: Every 20m
   first-iteration: immediate
   maximum-iterations: unlimited
   initial-task: sync-repository
@@ -71,7 +71,7 @@ project:
 
 loop:
   purpose: Find one issue that needs refinement and improve its quality
-  cadence: Every 30 minutes
+  cadence: Every 20m
   first-iteration: immediate
   maximum-iterations: unlimited
   initial-task: find-refinement-candidate
@@ -117,7 +117,7 @@ project:
 
 loop:
   purpose: Implement one issue from the ready backlog
-  cadence: Every 1 hour
+  cadence: Every 1h
   first-iteration: delayed (wait for cadence alignment)
   maximum-iterations: 8 per day
   initial-task: find-implementable-issue
@@ -175,7 +175,7 @@ project:
 
 loop:
   purpose: Monitor a service endpoint and attempt recovery on failure
-  cadence: Every 5 minutes
+  cadence: Every 5m
   first-iteration: immediate
   maximum-iterations: unlimited
   initial-task: check-health
@@ -223,13 +223,13 @@ project:
 # Loop A: Refine
 loop-a:
   purpose: Find one issue needing refinement and improve its quality
-  cadence: Every 30 minutes
+  cadence: Every 20m
   initial-task: find-refinement-candidate
 
 # Loop B: Implement
 loop-b:
   purpose: Implement one refined issue
-  cadence: Every 1 hour
+  cadence: Every 1h
   initial-task: find-implementable-issue
 
 # The handoff: Loop A's finalization Task labels the issue "code:pick".
@@ -248,7 +248,7 @@ project:
 
 loop:
   purpose: Wait for a deployment to reach a healthy state
-  cadence: Every 10 seconds
+  cadence: Every 10s
   first-iteration: immediate
   maximum-iterations: 60 (poll for up to 10 minutes)
   initial-task: check-deployment-status

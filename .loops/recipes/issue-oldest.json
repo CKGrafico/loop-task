@@ -3,8 +3,7 @@
   "loops": [
     {
       "taskId": "list-issues",
-      "interval": 0,
-      "intervalHuman": "manual",
+      "intervalHuman": "0",
       "description": "List all repo issues (open + closed), print the oldest"
     }
   ],
@@ -32,7 +31,9 @@
       "id": "print-oldest",
       "name": "Print oldest issue",
       "command": "echo",
-      "commandArgs": ["oldest issue: #{{oldestNumber}} {{oldestTitle}} ({{oldestCreatedAt}}) - total: {{total}}"],
+      "commandArgs": [
+        "oldest issue: #{{oldestNumber}} {{oldestTitle}} ({{oldestCreatedAt}}) - total: {{total}}"
+      ],
       "onSuccessTaskId": null,
       "onFailureTaskId": null
     }

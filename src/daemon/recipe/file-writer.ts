@@ -10,7 +10,6 @@ export function setRecipeSelfWriteNotifier(notifier: SelfWriteNotifier | null): 
 }
 
 export interface RecipeOverrideFields {
-  interval?: number;
   intervalHuman?: string;
   maxRuns?: number | null;
   context?: Record<string, unknown>;
@@ -33,9 +32,6 @@ export function writeRecipeOverrides(
 
   const loop = data.loops[0] as Record<string, unknown>;
 
-  if (overrides.interval !== undefined) {
-    loop.interval = overrides.interval;
-  }
   if (overrides.intervalHuman !== undefined) {
     loop.intervalHuman = overrides.intervalHuman;
   }

@@ -6,7 +6,7 @@
 
 ```
 Loop:
-  cadence: every 5 minutes
+  cadence: Every 5m
   immediate: true
   initial-task: check-health
 
@@ -34,7 +34,7 @@ The alert Task only executes on failure. The Loop continues to next iteration re
 
 ```
 Loop:
-  cadence: every 1 hour
+  cadence: Every 1h
   initial-task: detect-changes
 
 Tasks:
@@ -74,7 +74,7 @@ Tasks:
 
 ```
 Loop:
-  cadence: every 30 minutes
+  cadence: every 20m
   immediate: true
   initial-task: select-item
 
@@ -127,7 +127,7 @@ Selection and reservation are separate. "No work found" is failure with no succe
 
 ```
 Loop:
-  cadence: every 10 seconds
+  cadence: Every 10s
   maxRuns: 30
   initial-task: check-condition
 
@@ -149,7 +149,7 @@ After 30 attempts, the Loop pauses. For "stop on first success", set `maxRuns: 1
 
 ```
 Loop:
-  cadence: every 1 day
+  cadence: Every 1d
   initial-task: inspect-state
 
 Tasks:
@@ -189,7 +189,7 @@ Inspect before changing. Validate after changing.
 
 ```
 Loop:
-  cadence: every 30 minutes
+  cadence: every 20m
   immediate: true
   initial-task: collect-context
 
@@ -243,7 +243,7 @@ Context is collected before the agent runs. Verification is independent.
 
 ```
 Loop:
-  cadence: every 1 hour
+  cadence: Every 1h
   initial-task: find-work
 
 Tasks:

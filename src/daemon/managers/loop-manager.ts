@@ -164,7 +164,6 @@ export class LoopManager {
         if (recipeEntry) {
           try {
             writeRecipeOverrides(recipeEntry.filePath, {
-              interval: options.interval,
               intervalHuman,
               maxRuns: options.maxRuns,
               context: options.context,

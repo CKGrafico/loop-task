@@ -1,6 +1,5 @@
 export interface RecipeLoopsEntry {
   taskId?: string;
-  interval?: number;
   intervalHuman?: string;
   immediate?: boolean;
   maxRuns?: number | null;
