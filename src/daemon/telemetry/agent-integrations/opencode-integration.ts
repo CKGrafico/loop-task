@@ -53,10 +53,15 @@ export class OpenCodeTelemetryIntegration implements AgentTelemetryIntegration {
 
       const usage: AgentUsage = {};
       if (typeof parsed.inputTokens === "number") usage.inputTokens = parsed.inputTokens;
+      if (typeof parsed.input_tokens === "number") usage.inputTokens = parsed.input_tokens;
       if (typeof parsed.outputTokens === "number") usage.outputTokens = parsed.outputTokens;
+      if (typeof parsed.output_tokens === "number") usage.outputTokens = parsed.output_tokens;
       if (typeof parsed.cacheReadTokens === "number") usage.cacheReadTokens = parsed.cacheReadTokens;
+      if (typeof parsed.cache_read_tokens === "number") usage.cacheReadTokens = parsed.cache_read_tokens;
       if (typeof parsed.cacheWriteTokens === "number") usage.cacheWriteTokens = parsed.cacheWriteTokens;
+      if (typeof parsed.cache_write_tokens === "number") usage.cacheWriteTokens = parsed.cache_write_tokens;
       if (typeof parsed.cost === "number") usage.costUsd = parsed.cost;
+      if (typeof parsed.cost_usd === "number") usage.costUsd = parsed.cost_usd;
       if (typeof parsed.model === "string") usage.model = parsed.model;
       if (typeof parsed.provider === "string") usage.provider = parsed.provider;
       if (typeof parsed.sessionId === "string") usage.sessionId = parsed.sessionId;
